@@ -6,35 +6,33 @@
 
 | Field | Value |
 | --- | --- |
-| **Current phase** | **0 — Repo, tooling, CI** |
+| **Current phase** | **1 — Core foundations** |
 | Phase started | 2026-10-16 |
 | Target exit date | — |
-| Branch | `phase/00-tooling` |
-| Last green CI run | [CI run 38853907685](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38853907685) on `1f082d2` (PR [#1](https://github.com/jeshiomurmu/OpenCaller/pull/1)), 2026-10-16, all 6 jobs green |
+| Branch | `phase/01-core-foundations` |
+| Last green CI run | Phase 0: [CI on `main`](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38855255085) (`2c21f97`). Phase 1: PR #2 run [38862968837](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38862968837) in progress on `730dbb7`; [38861932267](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38861932267) was all green on `f5d828b` |
 | App version | 0.0.0 |
 
 ## Current phase checklist
 
-Copied from `docs/implementation_plan.md` → Phase 0. Tick here as you go; copy the ticked list back to the plan when the phase exits.
+Copied from `docs/implementation_plan.md` → Phase 1. Tick here as you go; copy the ticked list back to the plan when the phase exits.
 
-- [ ] `git init`, `main` branch, push to GitHub `jeshiomurmu/opencaller` (private until v0.1) — pushed (`phase/00-tooling`, PR #1); **repo is currently public**, see Open issues
-- [x] Add `LICENSE` (GPL-3.0 full text from gnu.org) and `CHANGELOG.md` — CI compared `LICENSE` byte-for-byte with a live download of https://www.gnu.org/licenses/gpl-3.0.txt (sha256 `3972dc97…36986`); the `license` job now checks that hash offline; `NOTICE.md` added too
-- [x] Create Android Gradle project in `android/` with version catalog and `build-logic` convention plugins — 7 plugins, CI `android` green
-- [x] Create empty modules from `architecture.md` §3 and wire them in `settings.gradle.kts` — 12 core + 21 feature, all compiled and linted in CI
-- [x] Flavors `foss` and `play`; `applicationId io.github.jeshiomurmu.opencaller`; `minSdk 29`, `compileSdk 36`, `targetSdk 36` — `testFossDebugUnitTest`, `testPlayDebugUnitTest`, `assembleFossDebug`, `assemblePlayDebug` green
-- [x] Spotless (ktlint), Detekt, Android Lint configured; `./gradlew check` green — CI runs `spotlessCheck detekt lint` (34 modules), unit tests and `./gradlew check`
-- [x] Ktor server skeleton in `backend/server` with `/health` — `./gradlew check` green locally and in CI (2 tests)
-- [x] `infra/docker/compose.yml`: postgres, redis, minio, server — CI job `compose smoke`: `up --build --wait` all healthy, `GET /health` → `{"status":"ok","version":"<sha>"}`
-- [x] GitHub Actions `ci.yml`: Android check + assemble both flavors; backend check — plus `emulator` (API 29, 36), `compose smoke`, `license`
-- [x] Review drafted ADRs 0001 (consent-first data), 0002 (Ktor backend), 0003 (GPL-3.0) in `docs/decisions/` — all remain Accepted
+- [x] `core:common`: `AppResult`, `AppError`, `DispatcherProvider`, `Clock`, `RedactingTree`. The masking logic (`LogRedactor`) is pure Kotlin in `core:common`; the Timber `RedactingTree` lives in `app` because Timber is an AAR and `core:common` must stay JVM-only (open issue 9)
+- [x] `core:model`: `PhoneNumber`, `CallerInfo`, `NameSource`, `SpamVerdict`, `BlockRule`, `Decision`, `MessageCategory`, `OtpInfo` (+ `SenderId`, `Address`, `UserPreferences`), KDoc on every public type, pure Kotlin
+- [x] `core:phonenumber`: normalizer (E.164), number type, country, bucket hasher; tests TC-PN-001…005 with BD, IN, US, GB, NG, AE fixtures; bucket vectors shared with the backend (CI `cmp`s both copies). JaCoCo gate ≥ 90 % lines in `check` (98.3 % locally). Default region from the SIM is the caller's job (`core:telephony`, later phase; open issue 12)
+- [x] `core:database`: Room + SQLCipher, all 13 entities from `architecture.md` §6, DAOs, schema v1 exported and committed (CI fails if it drifts), `MigrationTestHelper` harness; passphrase = 32 random bytes wrapped by an Android Keystore AES-GCM key, stored in DataStore. Instrumented tests (header ≠ `SQLite format 3`, wrong key, Keystore round-trip/tamper, every DAO, migration) green on API 29 and 36
+- [x] `core:datastore`: `UserSettings` proto (blocking toggles, spam threshold, allowed countries, overlay, announce mode, theme, onboarding step) with protobuf-lite codegen and a `Flow<UserPreferences>` data source
+- [x] `core:designsystem`: `OpenCallerTheme` with exactly the `design.md` §2 tokens (light + dark), semantic colours via `LocalOpenCallerSemanticColors`, Noto Sans typography (fonts bundled, OFL in `NOTICE.md`), spacing/shape tokens, previews (light, dark, fontScale 2f); WCAG contrast unit test. `core:ui`: `SourceChip`, `RiskBanner`, `VerifiedBadge`, `EmptyState`
+- [x] `core:testing`: `MainDispatcherRule`, `TestDispatcherProvider`, `FakeClock`, `Fixtures` + `fixtures/` (numbers, bucket vectors)
+- [x] App shell: Hilt `Application`, `MainActivity`, Navigation Compose type-safe routes, bottom bar with 5 tabs (Calls, Messages, Contacts, Protection, Me) showing `EmptyState` placeholders. CI `emulator` job opens every tab in light and dark mode on API 29 and 36 and checks screenshot luminance. The tab is named "Protection" as P-01 asked, not "Blocking" (open issue 13)
 
-**Exit criteria:** CI green on `main`; `assembleFossDebug` installs and opens an empty app on an emulator; `curl localhost:8080/health` returns 200.
+**Exit criteria:** unit tests ≥ 90% line coverage on `core:phonenumber`; DB opens encrypted (verified by a test that the file header is not `SQLite format 3`); app shell navigates in light/dark.
 
 ## Next step
 
-Merge PR #1 into `main` (squash) so CI runs green on `main` (the last exit criterion), then run **P-01** from `docs/prompts.md`.
+Review and merge PR [#2](https://github.com/jeshiomurmu/OpenCaller/pull/2) (squash), confirm CI is green on `main`, copy the ticked checklist into `docs/implementation_plan.md`, then **run P-02**.
 
-Exit criteria status: CI green on the PR ✅ (pending on `main` until merge). `app-foss-debug.apk` installs and opens on API 29 and API 36 emulators ✅ (CI `emulator` jobs). `curl localhost:8080/health` returns 200 ✅ (CI `compose smoke` and local run).
+Exit criteria status: `core:phonenumber` line coverage ≥ 90 % ✅ (JaCoCo gate in `check`; 98.3 % locally). DB opens encrypted ✅ (`EncryptedDatabaseTest` on API 29 and 36). App shell navigates in light/dark ✅ (CI `emulator` walk, screenshots uploaded as artifacts).
 
 ## Open issues / blockers
 
@@ -43,9 +41,17 @@ Exit criteria status: CI green on the PR ✅ (pending on `main` until merge). `a
 3. **Compose is held at BOM 2026.06.01 (Compose 1.11.x).** Compose 1.12+ requires `compileSdk 37`, and `architecture.md` §2 fixes `compileSdk 36`. Raising compileSdk to 37 (targetSdk can stay 36) would allow current Compose; needs a decision/ADR.
 4. **Lint `OldTargetApi` disabled.** Android 17 (API 37) is out; `targetSdk 36` is fixed by `architecture.md` §2. Revisit before the first Play release (Phase 15).
 5. **Detekt 1.23.8 Gradle plugin** triggers Gradle 10/11 deprecation warnings (`ReportingExtension.file`, `Configuration.setVisible`). Detekt 2.0 is still alpha; upgrade when it is stable.
-6. **Module tests.** Only `app` has unit tests so far; `./gradlew check` in CI runs every module's tests as they are added (Phase 1).
+6. **Room 3.** Room 3.x exists but drops the SupportSQLite APIs that SQLCipher's `SupportOpenHelperFactory` plugs into, so the project stays on Room 2.8.5. Revisit when SQLCipher ships a Room 3 driver (needs an ADR).
 7. **Gradle 9.8.1** is used for both builds. AGP 9.4.0 declares Gradle ≥ 9.6.0 (minimum and default 9.6.0).
-8. **Agent sandbox limits** (informational): `dl.google.com`, `www.gnu.org` and `cgr.dev` are blocked and there is no KVM, so Android, emulator and LICENSE checks run only in CI.
+8. **Agent sandbox limits** (informational): `dl.google.com`, `github.com`, `www.gnu.org` and `cgr.dev` are blocked and there is no KVM, so Android, emulator and LICENSE checks run only in CI. JVM modules (`core:common`, `core:model`, `core:phonenumber`, `core:testing`, proto mapping) and the backend were also run locally.
+9. **`RedactingTree` location.** The spec puts it in `core:common`, but Timber is an Android library and `core:common` must not depend on Android. `LogRedactor` (the masking) is in `core:common`; the `Timber.Tree` wrapper is in `app` (`logging/RedactingTree.kt`). Move it into a small Android module if features need to plant it themselves.
+10. **Wrong SQLCipher key wipes the DB.** Android's default `DatabaseErrorHandler` deletes a database file it cannot open. If the Keystore key is lost (e.g. a device restore without the key), the user's block rules and local data are recreated empty instead of being kept. Decide before Phase 3 whether to surface this (custom error handler + "reset local data" UX) or accept it.
+11. **compileSdk 37 also holds back Navigation.** Navigation 2.10 needs `compileSdk 37` (same as issue 3), so Navigation Compose is pinned at 2.9.8.
+12. **Default region.** `PhoneNumberNormalizer` takes `defaultRegion` explicitly; reading it from the SIM/network (with a locale fallback) belongs to `core:telephony` (no telephony work in Phase 1).
+13. **Tab naming.** `implementation_plan.md` says "Blocking"; P-01 and the app say "Protection". Pick one and align the docs before Phase 3.
+14. **Derived colour roles.** `design.md` §2 doesn't define every Material 3 role (e.g. dark semantic containers, `surfaceContainer*`). These are derived by blending §2 tokens (`ColorScheme.kt`, `OpenCallerSemanticColors.kt`). A designer should confirm the result.
+15. **Module types.** `core:phonenumber`, `core:testing` and `core:datastore` are JVM modules (no Android API needed), so they test without Robolectric. `core:database`, `core:designsystem` and `core:ui` are Android libraries.
+16. **API 29 emulator night mode.** `cmd uimode night yes` from the shell has no effect on the API 29 image. `scripts/ci/emulator-smoke.sh` retries as root and then falls back to the persisted setting plus a reboot.
 
 ## Verified dependency versions
 
@@ -74,11 +80,26 @@ Fill as dependencies are added (the source of truth is `libs.versions.toml`; thi
 | reactivecircus/android-emulator-runner | v2 | https://github.com/ReactiveCircus/android-emulator-runner (README) | 2026-10-16 |
 | actions/upload-artifact | v7 | https://github.com/actions/upload-artifact (README) | 2026-10-16 |
 | GPL-3.0 text | sha256 `3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986` (matched a live gnu.org download in CI) | https://www.gnu.org/licenses/gpl-3.0.txt | 2026-10-16 |
+| libphonenumber | 9.0.41 | Maven Central `com/googlecode/libphonenumber/libphonenumber/maven-metadata.xml` | 2026-10-16 |
+| kotlinx-coroutines (core, android, test) | 1.11.0 | Maven Central `org/jetbrains/kotlinx/kotlinx-coroutines-core/maven-metadata.xml` | 2026-10-16 |
+| kotlinx-serialization-core | 1.11.0 | Maven Central `org/jetbrains/kotlinx/kotlinx-serialization-core/maven-metadata.xml` | 2026-10-16 |
+| Timber | 5.0.1 | Maven Central `com/jakewharton/timber/timber/maven-metadata.xml` | 2026-10-16 |
+| protobuf (kotlin-lite, protoc) | 4.36.2 | Maven Central `com/google/protobuf/protobuf-kotlin-lite/maven-metadata.xml`, `.../protoc/maven-metadata.xml` | 2026-10-16 |
+| protobuf Gradle plugin | 0.10.0 | Gradle Plugin Portal `com/google/protobuf/com.google.protobuf.gradle.plugin/maven-metadata.xml` | 2026-10-16 |
+| SQLCipher for Android (`net.zetetic:sqlcipher-android`) | 4.19.1 | Maven Central `net/zetetic/sqlcipher-android/maven-metadata.xml` | 2026-10-16 |
+| AndroidX SQLite (`sqlite`, `sqlite-framework`) | 2.7.1 | https://developer.android.com/jetpack/androidx/releases/sqlite | 2026-10-16 |
+| AndroidX DataStore (core, preferences) | 1.2.1 | https://developer.android.com/jetpack/androidx/releases/datastore | 2026-10-16 |
+| Navigation Compose | 2.9.8 (2.10 requires compileSdk 37) | https://developer.android.com/jetpack/androidx/releases/navigation | 2026-10-16 |
+| AndroidX Test (core 1.7.0, runner 1.7.0, ext-junit 1.3.0) | see left | https://developer.android.com/jetpack/androidx/releases/test | 2026-10-16 |
+| JaCoCo (Gradle `jacoco` plugin tool version) | 0.8.15 | Maven Central `org/jacoco/org.jacoco.agent/maven-metadata.xml` | 2026-10-16 |
+| Noto Sans / Noto Sans Mono fonts | 2.015 / 2.014 (OFL-1.1) | https://github.com/notofonts/latin-greek-cyrillic, https://raw.githubusercontent.com/google/fonts/main/ofl/notosans/METADATA | 2026-10-16 |
+| Material Symbols (12 vector icons) | `master` of google/material-design-icons (Apache-2.0); `material-icons-core` is frozen at 1.7.8, so not used | https://github.com/google/material-design-icons | 2026-10-16 |
 
 ## Progress log (newest first)
 
 | Date | Phase | What changed | Verified by |
 | --- | --- | --- | --- |
+| 2026-10-16 | 1 | Phase 1 foundations (PR #2): `core:common`, `core:model`, `core:phonenumber` (+ backend `BucketHasher` with shared vectors), `core:database` (Room + SQLCipher, Keystore-wrapped passphrase, schema v1), `core:datastore` (proto), `core:designsystem` (tokens, Noto Sans, icons), `core:ui` components, `core:testing`, app shell with 5 tabs. CI: Room schema drift check, instrumented DB tests and a light/dark tab walk on API 29 + 36 | CI on PR #2 (see Status): spotless, detekt, lint, unit tests ×2 flavors, assemble ×2, `check` (JaCoCo ≥ 90 % on `core:phonenumber`), backend `check` + vector `cmp`, `connectedDebugAndroidTest` on API 29 + 36, emulator walk of all 5 tabs light + dark. Locally: 41 JVM tests, coverage 98.3 %, backend 4 tests |
 | 2026-10-16 | 0 | Push access restored; PR #1 opened. CI fixes: feature guard allowed own path, Compose BOM → 2026.06.01 (compileSdk 36), `fullBackupContent` for API 29–30, MinIO healthcheck via static BusyBox. Added LICENSE + CI jobs `emulator` (API 29/36), `compose smoke`, `license` | CI green: android (spotless, detekt, lint ×34, unit tests ×2 flavors, assemble ×2, `check`), backend, emulator API 29 + 36 ("OpenCaller" on screen), compose smoke (`/health` 200), license (matches gnu.org) |
 | 2026-10-16 | 0 | Bootstrapped `android/` (catalog, 7 convention plugins, 35 modules, flavors, Compose MainActivity, Spotless/Detekt/Lint), `backend/server/` (Ktor `/health`, Dockerfile), `infra/docker/compose.yml`, `ci.yml`, CHANGELOG, NOTICE; ADRs reviewed | Backend `./gradlew check` green; compose up, all healthy, `/health` 200; Spotless + Detekt on Android sources green. Android build/CI not yet run at that point |
 | 2026-10-15 | — | Planning docs created | Human review |
@@ -87,4 +108,4 @@ Fill as dependencies are added (the source of truth is `libs.versions.toml`; thi
 
 | Phase | Started | Exited | Notes |
 | --- | --- | --- | --- |
-| | | | |
+| 0 — Repo, tooling, CI | 2026-10-16 | 2026-10-16 | PR #1 merged; CI green on `main` (`2c21f97`); emulator install/launch API 29 + 36; `/health` 200. Open: repo is public (plan says private until v0.1) |

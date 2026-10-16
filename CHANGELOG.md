@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Core foundations (Phase 1): `core:common` (`AppResult`, `AppError`, `DispatcherProvider`, `Clock`, log redaction),
+  `core:model` domain types, `core:phonenumber` (libphonenumber normalizer, bucket hasher with vectors shared with the
+  server), SQLCipher-encrypted Room database with all entities and DAOs and a Keystore-wrapped passphrase,
+  Proto DataStore user settings, design system (color tokens, Noto Sans, spacing/shape tokens, icons),
+  `core:ui` components (`SourceChip`, `RiskBanner`, `VerifiedBadge`, `EmptyState`), `core:testing` utilities and an app
+  shell with five bottom-bar tabs.
+- Server `BucketHasher` matching the app's lookup buckets.
+- CI: instrumented database tests and a light/dark tab walk on API 29 and 36 emulators; Room schema and bucket-vector
+  consistency checks.
+
 - Android Gradle project (`android/`) with a version catalog, `build-logic` convention plugins
   (`opencaller.android.application`, `.library`, `.feature`, `.compose`, `.hilt`, `.room`, `opencaller.jvm.library`)
   and every `core:*` and `feature:*` module from `docs/architecture.md` §3 as an empty module.

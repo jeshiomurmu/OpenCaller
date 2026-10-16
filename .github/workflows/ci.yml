@@ -39,6 +39,15 @@ jobs:
           assembleFossDebug assemblePlayDebug
           check
 
+      # Room writes the schema while compiling; it must be committed (docs/architecture.md §6).
+      - name: Room schemas are committed
+        run: |
+          git add --intent-to-add core/database/schemas
+          if ! git diff --exit-code -- core/database/schemas; then
+            echo "::error::Room schema changed or missing: commit android/core/database/schemas (diff above)"
+            exit 1
+          fi
+
   backend:
     name: backend
     runs-on: ubuntu-latest
@@ -58,6 +67,9 @@ jobs:
 
       - name: Check (format, static analysis, tests)
         run: ./gradlew check
+
+      - name: Bucket test vectors match the app's copy
+        run: cmp src/test/resources/fixtures/bucket_vectors.csv ../../android/core/testing/src/main/resources/fixtures/bucket_vectors.csv
 
   emulator:
     name: emulator (API ${{ matrix.api-level }})
@@ -88,21 +100,25 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Install and launch on emulator
+      - name: Instrumented tests, then walk the app in light and dark mode
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}
           target: google_apis
           arch: x86_64
           disable-animations: true
-          script: scripts/ci/emulator-smoke.sh android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/emulator/api-${{ matrix.api-level }}.png
+          script: |
+            cd android && ./gradlew :core:database:connectedDebugAndroidTest || { find core/database/build/outputs/androidTest-results -name '*.xml' -exec cat {} +; exit 1; }
+            scripts/ci/emulator-smoke.sh android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/emulator/api-${{ matrix.api-level }}
 
-      - name: Upload screenshot
+      - name: Upload screenshots and test reports
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: emulator-api-${{ matrix.api-level }}
-          path: build/emulator/
+          path: |
+            build/emulator/
+            android/core/database/build/reports/androidTests/
           if-no-files-found: ignore
 
   compose:

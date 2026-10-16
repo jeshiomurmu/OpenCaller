@@ -18,8 +18,12 @@ naming:
     ignoreAnnotated: ['Composable']
 
 style:
+  MagicNumber:
+    # Design tokens (colors, dp, sp) and named constants are declared as properties; literals inside
+    # function bodies are still reported.
+    ignorePropertyDeclaration: true
   MaxLineLength:
     maxLineLength: 140
   UnusedPrivateMember:
     # Preview functions are private and only used by tooling.
-    ignoreAnnotated: ['Preview']
+    ignoreAnnotated: ['Preview', 'OpenCallerPreviews']

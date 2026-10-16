@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- SourceChip: where a caller's name came from (docs/design.md §5). -->
+    <string name="source_contact">Contact</string>
+    <string name="source_self_registered">Self-registered</string>
+    <string name="source_verified_business">Verified business</string>
+    <string name="source_sender_registry">Sender registry</string>
+    <string name="source_community_label">Community label</string>
+    <string name="source_device_inference">On this device</string>
+
+    <!-- RiskBanner, e.g. "Likely scam · Loan · 214 reports". -->
+    <string name="risk_likely_scam">Likely scam</string>
+    <string name="risk_suspicious">Suspicious</string>
+    <string name="risk_banner_separator">" · "</string>
+    <plurals name="risk_report_count">
+        <item quantity="one">%d report</item>
+        <item quantity="other">%d reports</item>
+    </plurals>
+
+    <!-- VerifiedBadge. -->
+    <string name="verified_business">Verified business</string>
+    <string name="verified_business_explain">Verified business. Tap to see how it was verified.</string>
+</resources>

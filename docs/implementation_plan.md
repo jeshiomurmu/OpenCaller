@@ -28,15 +28,15 @@ Rough effort for one full-time developer working with an AI agent: Phases 0–7 
 ## Phase 0 — Repo, tooling, CI
 
 - [ ] `git init`, `main` branch, push to GitHub `jeshiomurmu/opencaller` (private until v0.1)
-- [ ] Add `LICENSE` (GPL-3.0 full text from gnu.org) and `CHANGELOG.md`
-- [ ] Create Android Gradle project in `android/` with version catalog and `build-logic` convention plugins
-- [ ] Create empty modules from `architecture.md` §3 and wire them in `settings.gradle.kts`
-- [ ] Flavors `foss` and `play`; `applicationId io.github.jeshiomurmu.opencaller`; `minSdk 29`, `compileSdk 36`, `targetSdk 36`
-- [ ] Spotless (ktlint), Detekt, Android Lint configured; `./gradlew check` green
-- [ ] Ktor server skeleton in `backend/server` with `/health`
-- [ ] `infra/docker/compose.yml`: postgres, redis, minio, server
-- [ ] GitHub Actions `ci.yml`: Android check + assemble both flavors; backend check
-- [ ] Review drafted ADRs 0001 (consent-first data), 0002 (Ktor backend), 0003 (GPL-3.0) in `docs/decisions/`
+- [x] Add `LICENSE` (GPL-3.0 full text from gnu.org) and `CHANGELOG.md`
+- [x] Create Android Gradle project in `android/` with version catalog and `build-logic` convention plugins
+- [x] Create empty modules from `architecture.md` §3 and wire them in `settings.gradle.kts`
+- [x] Flavors `foss` and `play`; `applicationId io.github.jeshiomurmu.opencaller`; `minSdk 29`, `compileSdk 36`, `targetSdk 36`
+- [x] Spotless (ktlint), Detekt, Android Lint configured; `./gradlew check` green
+- [x] Ktor server skeleton in `backend/server` with `/health`
+- [x] `infra/docker/compose.yml`: postgres, redis, minio, server
+- [x] GitHub Actions `ci.yml`: Android check + assemble both flavors; backend check
+- [x] Review drafted ADRs 0001 (consent-first data), 0002 (Ktor backend), 0003 (GPL-3.0) in `docs/decisions/`
 
 **Exit:** CI green on `main`; `assembleFossDebug` installs and opens an empty app on an emulator; `curl localhost:8080/health` returns 200.
 

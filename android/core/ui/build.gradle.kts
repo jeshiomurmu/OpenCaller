@@ -6,3 +6,10 @@ plugins {
 android {
     namespace = "io.github.jeshiomurmu.opencaller.core.ui"
 }
+
+dependencies {
+    api(projects.core.designsystem)
+    api(projects.core.model)
+
+    testImplementation(libs.junit4)
+}
