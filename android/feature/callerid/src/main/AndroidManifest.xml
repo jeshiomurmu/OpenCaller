@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        Caller ID in screening-only mode. Each one is optional and asked for after an explainer: drawing over other apps
+        (the caller card), notifications (heads-up caller ID and the after-call summary) and, on Android 12+, the call
+        state (to close the card when the call ends).
+    -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
+    <application>
+        <!-- Block and Not spam on the after-call notification; only OpenCaller's own PendingIntents reach it. -->
+        <receiver
+            android:name=".AfterCallActionReceiver"
+            android:exported="false" />
+    </application>
+
+</manifest>

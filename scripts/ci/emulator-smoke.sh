@@ -24,7 +24,7 @@ tabs=(
   "Calls|Your call history will appear here."
   "Messages|Your messages will appear here."
   "Contacts|Your contacts will appear here."
-  "Protection|Spam protection and blocking rules will appear here."
+  "Protection|Your rules"
   "Me|Permissions &amp; roles"
 )
 # docs/design.md §8 "Role lost" (app/src/main/res/values/strings.xml: banner_screening_off).

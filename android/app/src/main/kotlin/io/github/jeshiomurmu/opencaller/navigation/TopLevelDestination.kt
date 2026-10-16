@@ -35,6 +35,18 @@ data class PermissionsRoute(
     val explain: String? = null,
 )
 
+/** Protection → Your rules. */
+@Serializable
+data object BlockingRulesRoute
+
+/** Protection → Blocked calls. */
+@Serializable
+data object BlockedCallsRoute
+
+/** Me → Settings → About → version ×7. */
+@Serializable
+data object ScreeningDebugRoute
+
 /** The five bottom-bar tabs (docs/design.md §6), in display order. */
 enum class TopLevelDestination(
     val route: Any,

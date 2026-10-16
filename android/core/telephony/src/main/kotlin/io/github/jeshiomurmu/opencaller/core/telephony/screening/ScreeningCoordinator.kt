@@ -3,6 +3,7 @@ package io.github.jeshiomurmu.opencaller.core.telephony.screening
 import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.common.Clock
 import io.github.jeshiomurmu.opencaller.core.common.DispatcherProvider
+import io.github.jeshiomurmu.opencaller.core.model.CallerIdSurface
 import io.github.jeshiomurmu.opencaller.core.model.Decision
 import io.github.jeshiomurmu.opencaller.core.model.ScreeningEvent
 import io.github.jeshiomurmu.opencaller.core.model.ScreeningReason
@@ -18,6 +19,15 @@ import javax.inject.Singleton
 fun interface CallerIdPresenter {
     /** Called on the main thread once [result] has been sent to Android, for calls that ring or are silenced. */
     fun present(result: ScreeningResult)
+}
+
+/** Told when caller ID was shown for a call, and where (the debug QA export uses this). */
+fun interface CallerIdListener {
+    /** Caller ID for [result] is showing on [surface]. */
+    fun onCallerIdShown(
+        result: ScreeningResult,
+        surface: CallerIdSurface,
+    )
 }
 
 /** Where screening decisions are logged (the `screening_event` table). */
@@ -104,6 +114,13 @@ class ScreeningCoordinator
             }
         }
     }
+
+/**
+ * True when a summary should follow the call: an incoming call that rang (or was silenced) from a number that isn't
+ * a contact. Blocked calls go to the blocked-calls log instead.
+ */
+val ScreeningResult.wantsAfterCall: Boolean
+    get() = showsCallerId && caller.number != null && reason != ScreeningReason.CONTACT
 
 /** The log entry for [this] result; emergency calls are logged without their number. */
 fun ScreeningResult.toEvent(atMillis: Long): ScreeningEvent =

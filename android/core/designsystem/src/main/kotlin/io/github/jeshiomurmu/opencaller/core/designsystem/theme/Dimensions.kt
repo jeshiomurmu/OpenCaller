@@ -41,6 +41,15 @@ object OpenCallerSpacing {
 
     /** Size of icons inside chips and badges. */
     val iconSmall: Dp = 18.dp
+
+    /** Caller avatars and business logos: a 40 dp circle (docs/design.md §10). */
+    val avatar: Dp = 40.dp
+}
+
+/** Elevation from docs/design.md §4: tonal surfaces everywhere, except the caller-card overlay. */
+object OpenCallerElevation {
+    /** Material level 3, so the caller card reads above other apps. */
+    val callerCardOverlay: Dp = 6.dp
 }
 
 /** Corner shapes from docs/design.md §4. */

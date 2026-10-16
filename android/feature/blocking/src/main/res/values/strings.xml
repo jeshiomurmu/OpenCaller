@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Protection tab. -->
+    <string name="blocking_title">Blocking</string>
+    <string name="blocking_section_calls">Block calls</string>
+    <string name="blocking_hidden">Block hidden numbers</string>
+    <string name="blocking_hidden_summary">Android shares hidden callers only with your phone app, so this works once OpenCaller can be your phone app.</string>
+    <string name="blocking_foreign">Block calls from other countries</string>
+    <string name="blocking_foreign_summary">Your country: %1$s. Countries you allow below still ring.</string>
+    <string name="blocking_foreign_summary_unknown">Your country isn\'t known yet, so no call counts as foreign.</string>
+    <string name="blocking_non_contacts">Block numbers not in your contacts</string>
+    <string name="blocking_non_contacts_summary">Verified businesses still ring.</string>
+    <string name="blocking_top_spammers">Reject spam calls</string>
+    <string name="blocking_top_spammers_summary">When off, spam calls arrive silently instead of being rejected.</string>
+    <string name="blocking_contacts_missing">OpenCaller can\'t see your contacts, so no call is blocked for not being a contact.</string>
+    <string name="blocking_fix">Fix</string>
+
+    <string name="blocking_section_threshold">Spam threshold</string>
+    <string name="threshold_low">Block more</string>
+    <string name="threshold_low_summary" formatted="false">Blocks numbers with some spam reports (score 40% and up).</string>
+    <string name="threshold_medium">Balanced</string>
+    <string name="threshold_medium_summary" formatted="false">Recommended. Blocks likely spam (score 60% and up).</string>
+    <string name="threshold_high">Block only certain spam</string>
+    <string name="threshold_high_summary" formatted="false">Blocks only near-certain spam (score 85% and up). Others ring, marked Suspicious.</string>
+
+    <string name="blocking_section_countries">Allowed countries</string>
+    <string name="blocking_countries_none">No countries allowed yet.</string>
+    <string name="blocking_country_input">Country code, e.g. US</string>
+    <string name="blocking_country_add">Add</string>
+    <string name="blocking_country_remove">Remove %1$s</string>
+    <string name="blocking_country_error">Enter a two-letter country code, such as US or BD.</string>
+
+    <string name="blocking_rules">Your rules</string>
+    <string name="blocking_rules_summary">Block, silence or always allow numbers</string>
+    <string name="blocking_log">Blocked calls</string>
+    <string name="blocking_log_summary">See blocked calls and undo a block</string>
+
+    <string name="report_title">Report %1$s as spam?</string>
+    <string name="report_body">Your report stays on this phone for now and is shared when community reports start. Only the number and the label are sent, never your contacts or call history.</string>
+    <string name="report_confirm">Report</string>
+    <string name="report_and_block">Report and block</string>
+    <string name="report_cancel">Cancel</string>
+    <string name="report_done">Reported %1$s</string>
+    <string name="report_done_blocked">Reported and blocked %1$s</string>
+    <string name="blocking_failed">Something went wrong. Please try again.</string>
+
+    <!-- Rules editor. -->
+    <string name="rules_title">Your rules</string>
+    <string name="rules_add_title">Add a rule</string>
+    <string name="rules_hint_exact">Phone number</string>
+    <string name="rules_hint_prefix">Starts with, e.g. +1555123*</string>
+    <string name="rules_hint_country">Country code, e.g. NG</string>
+    <string name="rules_hint_regex">Pattern, e.g. ^\\+1900</string>
+    <string name="rules_add">Add rule</string>
+    <string name="rules_empty">No rules yet. Your rules are checked before every call.</string>
+    <string name="rules_added">Rule added</string>
+    <string name="rules_blocked">Blocked %1$s</string>
+    <string name="rules_undo">Undo</string>
+    <string name="rules_problem_empty">Enter a number or a pattern.</string>
+    <string name="rules_problem_too_long">That\'s too long.</string>
+    <string name="rules_problem_not_a_number">That isn\'t a valid phone number.</string>
+    <string name="rules_problem_not_a_prefix">Start with + and the country code, e.g. +1555.</string>
+    <string name="rules_problem_unknown_country">Enter a two-letter country code, such as US or BD.</string>
+    <string name="rules_problem_invalid_regex">That pattern isn\'t valid.</string>
+    <string name="rules_problem_slow_regex">That pattern is too slow to check during a call. Try a simpler one.</string>
+
+    <string name="test_title">Test a number</string>
+    <string name="test_hint">Phone number</string>
+    <string name="test_run">Test</string>
+    <string name="test_not_a_number">That isn\'t a valid phone number.</string>
+    <string name="test_contact">%1$s rings: it\'s in your contacts.</string>
+    <string name="test_allow_rule">%1$s rings: your rule %2$s always allows it.</string>
+    <string name="test_block_rule">%1$s is blocked by your rule %2$s.</string>
+    <string name="test_silence_rule">%1$s rings silently because of your rule %2$s.</string>
+    <string name="test_foreign">%1$s is blocked: it\'s from another country.</string>
+    <string name="test_non_contact">%1$s is blocked: it isn\'t in your contacts.</string>
+    <string name="test_spam_blocked">%1$s is blocked: it\'s on the spam list.</string>
+    <string name="test_spam_silenced">%1$s rings silently: it\'s on the spam list.</string>
+    <string name="test_suspicious">%1$s rings, marked Suspicious.</string>
+    <string name="test_rings">%1$s rings. No rule or setting stops it.</string>
+    <string name="test_emergency">Emergency numbers always ring.</string>
+    <string name="test_failed_open">%1$s would ring: the check couldn\'t finish in time.</string>
+
+    <!-- Blocked-calls log. -->
+    <string name="log_title">Blocked calls</string>
+    <string name="log_empty">No blocked calls yet.</string>
+    <string name="log_hidden">Hidden number</string>
+    <string name="log_silenced">Silenced</string>
+    <string name="log_blocked">Blocked</string>
+    <string name="log_reason_rule">your rule</string>
+    <string name="log_reason_hidden">hidden number</string>
+    <string name="log_reason_foreign">another country</string>
+    <string name="log_reason_non_contact">not in contacts</string>
+    <string name="log_reason_spam">spam list</string>
+    <string name="log_unblock">Unblock</string>
+    <string name="log_unblocked">%1$s will ring next time</string>
+</resources>

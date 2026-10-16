@@ -7,9 +7,12 @@ import io.github.jeshiomurmu.opencaller.core.datastore.UserSettingsDataSource
 import io.github.jeshiomurmu.opencaller.core.model.AccessItem
 import io.github.jeshiomurmu.opencaller.core.model.AccessItemStatus
 import io.github.jeshiomurmu.opencaller.core.model.OnboardingStep
+import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import io.github.jeshiomurmu.opencaller.core.telephony.AccessStatusSource
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
@@ -48,6 +51,21 @@ class MainViewModel
                             .takeIf { it == AccessItemStatus.NOT_GRANTED || it == AccessItemStatus.COMING_LATER },
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), AppUiState())
+
+        private val report = MutableStateFlow<String?>(null)
+
+        /** A number (E.164) the user asked to report from the after-call notification, until the dialog shows. */
+        val pendingReport: StateFlow<String?> = report.asStateFlow()
+
+        /** The app was opened by the after-call notification's Report for [e164]. */
+        fun requestReport(e164: String?) {
+            if (e164 != null && PhoneNumber.isE164(e164)) report.value = e164
+        }
+
+        /** The report dialog is showing. */
+        fun reportShown() {
+            report.value = null
+        }
 
         private companion object {
             const val STOP_TIMEOUT_MILLIS = 5_000L

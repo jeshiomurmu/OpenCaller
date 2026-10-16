@@ -17,7 +17,10 @@ import io.github.jeshiomurmu.opencaller.core.datastore.UserSettingsDataSource
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 import io.github.jeshiomurmu.opencaller.core.telephony.AccessStatusSource
 import io.github.jeshiomurmu.opencaller.core.telephony.DeviceAccessStatusSource
+import io.github.jeshiomurmu.opencaller.core.telephony.screening.CallerIdListener
+import io.github.jeshiomurmu.opencaller.core.telephony.screening.ContactLookup
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.DeviceSources
+import io.github.jeshiomurmu.opencaller.core.telephony.screening.HomeRegionProvider
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ListSources
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.NoNetworkLookup
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.RuleValidator
@@ -50,6 +53,16 @@ internal interface TelephonyModule {
     /** Debug builds add the QA export; release builds have no listeners. */
     @Multibinds
     fun screeningEventListeners(): Set<ScreeningEventListener>
+
+    /** Debug builds add the QA export; release builds have no listeners. */
+    @Multibinds
+    fun callerIdListeners(): Set<CallerIdListener>
+
+    @Binds
+    fun homeRegionProvider(impl: DeviceHomeRegionProvider): HomeRegionProvider
+
+    @Binds
+    fun contactLookup(impl: AndroidContactLookup): ContactLookup
 
     companion object {
         @Provides

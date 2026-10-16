@@ -30,6 +30,10 @@ class AccessStatusTest {
         assertEquals(AccessItemStatus.NOT_APPLICABLE, oldAndroid.statusOf(AccessItem.NOTIFICATIONS))
         assertTrue(oldAndroid.isSettled(AccessItem.NOTIFICATIONS))
         assertFalse(oldAndroid.isSettled(AccessItem.OVERLAY))
+        // Call state needs no permission before Android 12 (the default), so it is settled there.
+        assertEquals(AccessItemStatus.NOT_APPLICABLE, nothingGranted.statusOf(AccessItem.CALL_STATE))
+        val android12 = nothingGranted.copy(permissions = nothingGranted.permissions.copy(callState = PermissionStatus.DENIED))
+        assertEquals(AccessItemStatus.NOT_GRANTED, android12.statusOf(AccessItem.CALL_STATE))
     }
 
     @Test

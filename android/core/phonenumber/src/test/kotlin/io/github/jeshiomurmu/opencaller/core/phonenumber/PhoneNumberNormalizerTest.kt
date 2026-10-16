@@ -128,6 +128,16 @@ class PhoneNumberNormalizerTest {
     }
 
     @Test
+    fun displayFormatsAreNationalAtHome() {
+        val us = PhoneNumber("+12015550123")
+        assertEquals("(201) 555-0123", normalizer.format(us, "us"))
+        assertEquals("+1 201-555-0123", normalizer.format(us, "BD"))
+        assertEquals("+1 201-555-0123", normalizer.format(us, null))
+        assertEquals("01712-345678", normalizer.format(PhoneNumber("+8801712345678"), "BD"))
+        assertEquals("+880 ••• 5678", normalizer.masked(PhoneNumber("+8801712345678")))
+    }
+
+    @Test
     fun supportedRegions() {
         assertTrue(normalizer.isSupportedRegion("bd"))
         assertTrue(normalizer.isSupportedRegion("US"))

@@ -17,4 +17,23 @@
     <string name="permissions_caller_id_notification">Caller ID appears as a notification.</string>
     <string name="permissions_after_call_notification">Call summaries arrive as notifications.</string>
     <string name="permissions_after_call_history">Call summaries stay in your call history in the app.</string>
+
+    <!-- About and the debug screen (docs/architecture.md §12). -->
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version %1$s</string>
+    <plurals name="settings_debug_taps">
+        <item quantity="one">%1$d more tap for the debug screen</item>
+        <item quantity="other">%1$d more taps for the debug screen</item>
+    </plurals>
+    <string name="debug_title">Screening debug</string>
+    <string name="debug_no_decisions">No calls screened yet.</string>
+    <string name="debug_latency">Local decisions: p50 %1$d ms · p95 %2$d ms · max %3$d ms · n=%4$d</string>
+    <plurals name="debug_recent">
+        <item quantity="one">Last %1$d decision</item>
+        <item quantity="other">Last %1$d decisions, newest first</item>
+    </plurals>
+    <string name="debug_event">%1$s · %2$s · %3$d ms</string>
+    <string name="debug_spam">spam score %1$s</string>
+    <string name="debug_stir">STIR %1$s</string>
+    <string name="debug_hidden">no number</string>
 </resources>

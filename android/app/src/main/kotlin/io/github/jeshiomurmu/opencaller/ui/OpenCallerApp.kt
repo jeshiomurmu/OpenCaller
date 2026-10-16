@@ -8,6 +8,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -30,13 +31,20 @@ import io.github.jeshiomurmu.opencaller.core.model.AccessItem
 import io.github.jeshiomurmu.opencaller.core.model.AccessItemStatus
 import io.github.jeshiomurmu.opencaller.core.ui.EmptyState
 import io.github.jeshiomurmu.opencaller.core.ui.WarningBanner
+import io.github.jeshiomurmu.opencaller.feature.blocking.BlockedLogRoute
+import io.github.jeshiomurmu.opencaller.feature.blocking.BlockingRoute
+import io.github.jeshiomurmu.opencaller.feature.blocking.RulesRoute
+import io.github.jeshiomurmu.opencaller.feature.settings.DebugRoute
 import io.github.jeshiomurmu.opencaller.feature.settings.PermissionsStatusRoute
+import io.github.jeshiomurmu.opencaller.navigation.BlockedCallsRoute
+import io.github.jeshiomurmu.opencaller.navigation.BlockingRulesRoute
 import io.github.jeshiomurmu.opencaller.navigation.CallsRoute
 import io.github.jeshiomurmu.opencaller.navigation.ContactsRoute
 import io.github.jeshiomurmu.opencaller.navigation.MeRoute
 import io.github.jeshiomurmu.opencaller.navigation.MessagesRoute
 import io.github.jeshiomurmu.opencaller.navigation.PermissionsRoute
 import io.github.jeshiomurmu.opencaller.navigation.ProtectionRoute
+import io.github.jeshiomurmu.opencaller.navigation.ScreeningDebugRoute
 import io.github.jeshiomurmu.opencaller.navigation.TopLevelDestination
 
 /**
@@ -47,9 +55,13 @@ import io.github.jeshiomurmu.opencaller.navigation.TopLevelDestination
 fun OpenCallerApp(
     state: AppUiState,
     modifier: Modifier = Modifier,
+    reportNumber: String? = null,
+    onReportShown: () -> Unit = {},
     navController: NavHostController = rememberNavController(),
 ) {
     val openPermissions = { item: AccessItem? -> navController.navigate(PermissionsRoute(explain = item?.name)) { launchSingleTop = true } }
+    // The after-call notification's Report opens the Protection tab, which shows the report dialog.
+    LaunchedEffect(reportNumber) { if (reportNumber != null) navController.navigateToTab(TopLevelDestination.PROTECTION) }
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -64,17 +76,52 @@ fun OpenCallerApp(
         },
         bottomBar = { TabBar(navController) },
     ) { padding ->
-        NavHost(navController = navController, startDestination = CallsRoute, modifier = Modifier.padding(padding)) {
-            composable<CallsRoute> {
-                CallsScreen(defaultPhoneApp = state.defaultPhoneApp, onSetDefault = { openPermissions(AccessItem.DEFAULT_PHONE_APP) })
-            }
-            composable<MessagesRoute> { PlaceholderScreen(TopLevelDestination.MESSAGES) }
-            composable<ContactsRoute> { PlaceholderScreen(TopLevelDestination.CONTACTS) }
-            composable<ProtectionRoute> { PlaceholderScreen(TopLevelDestination.PROTECTION) }
-            composable<MeRoute> { MeScreen(onOpenPermissions = { openPermissions(null) }) }
-            composable<PermissionsRoute> { entry ->
-                PermissionsStatusRoute(explain = entry.toRoute<PermissionsRoute>().explain?.let(AccessItem::valueOf))
-            }
+        AppNavHost(
+            state = state,
+            navController = navController,
+            reportNumber = reportNumber,
+            onReportShown = onReportShown,
+            openPermissions = openPermissions,
+            modifier = Modifier.padding(padding),
+        )
+    }
+}
+
+@Composable
+private fun AppNavHost(
+    state: AppUiState,
+    navController: NavHostController,
+    reportNumber: String?,
+    onReportShown: () -> Unit,
+    openPermissions: (AccessItem?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    NavHost(navController = navController, startDestination = CallsRoute, modifier = modifier) {
+        composable<CallsRoute> {
+            CallsScreen(defaultPhoneApp = state.defaultPhoneApp, onSetDefault = { openPermissions(AccessItem.DEFAULT_PHONE_APP) })
+        }
+        composable<MessagesRoute> { PlaceholderScreen(TopLevelDestination.MESSAGES) }
+        composable<ContactsRoute> { PlaceholderScreen(TopLevelDestination.CONTACTS) }
+        composable<ProtectionRoute> {
+            BlockingRoute(
+                onOpenRules = { navController.navigate(BlockingRulesRoute) { launchSingleTop = true } },
+                onOpenBlockedLog = { navController.navigate(BlockedCallsRoute) { launchSingleTop = true } },
+                onFixContacts = { openPermissions(AccessItem.CONTACTS) },
+                reportNumber = reportNumber,
+            )
+            LaunchedEffect(reportNumber) { if (reportNumber != null) onReportShown() }
+        }
+        composable<BlockingRulesRoute> { RulesRoute() }
+        composable<BlockedCallsRoute> { BlockedLogRoute() }
+        composable<MeRoute> {
+            MeScreen(
+                onOpenPermissions = { openPermissions(null) },
+                onOpenDebug = { navController.navigate(ScreeningDebugRoute) { launchSingleTop = true } },
+            )
+        }
+        composable<ScreeningDebugRoute> { DebugRoute() }
+        composable<PermissionsRoute> { entry ->
+            PermissionsStatusRoute(explain = entry.toRoute<PermissionsRoute>().explain?.let(AccessItem::valueOf))
         }
     }
 }
@@ -107,11 +154,17 @@ internal fun PlaceholderScreen(
     EmptyState(icon = destination.icon, message = stringResource(destination.placeholder), modifier = modifier)
 }
 
-// Permissions & roles lives under the Me tab.
+// Permissions & roles and the debug screen live under the Me tab; the rules and the blocked log under Protection.
 private fun NavDestination?.isOn(destination: TopLevelDestination): Boolean =
-    this?.hierarchy?.any {
-        it.hasRoute(destination.route::class) || (destination == TopLevelDestination.ME && it.hasRoute(PermissionsRoute::class))
+    this?.hierarchy?.any { node ->
+        node.hasRoute(destination.route::class) || CHILDREN[destination].orEmpty().any { node.hasRoute(it) }
     } == true
+
+private val CHILDREN =
+    mapOf(
+        TopLevelDestination.ME to listOf(PermissionsRoute::class, ScreeningDebugRoute::class),
+        TopLevelDestination.PROTECTION to listOf(BlockingRulesRoute::class, BlockedCallsRoute::class),
+    )
 
 // Standard tab navigation: one copy of each tab on the back stack, state saved and restored per tab.
 private fun NavHostController.navigateToTab(destination: TopLevelDestination) {

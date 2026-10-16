@@ -80,6 +80,22 @@ class PhoneNumberNormalizer(
     fun countryOf(number: PhoneNumber): String? =
         regionCode(number) ?: util.getRegionCodeForCountryCode(countryCallingCode(number)).takeIf(::isGeographicRegion)
 
+    /**
+     * [number] for display (docs/design.md §7): national format when it belongs to [homeRegion], international
+     * otherwise, e.g. `(201) 555-0123` in the US and `+1 201-555-0123` elsewhere.
+     */
+    fun format(
+        number: PhoneNumber,
+        homeRegion: String?,
+    ): String {
+        val parsed = parse(number)
+        val home = homeRegion?.let { util.getCountryCodeForRegion(it.uppercase()) }
+        return util.format(parsed, if (home == parsed.countryCode) PhoneNumberFormat.NATIONAL else PhoneNumberFormat.INTERNATIONAL)
+    }
+
+    /** [number] with its middle hidden, e.g. `+880 ••• 1234`, for confirmations such as "Blocked … · Undo". */
+    fun masked(number: PhoneNumber): String = "+${countryCallingCode(number)} ••• ${number.e164.takeLast(MASKED_VISIBLE_DIGITS)}"
+
     /** True when [regionCode] (ISO 3166-1 alpha-2, any case) is a region with a numbering plan. */
     fun isSupportedRegion(regionCode: String): Boolean = regionCode.uppercase() in util.supportedRegions
 
@@ -134,6 +150,7 @@ class PhoneNumberNormalizer(
         const val UNKNOWN_REGION = "ZZ"
         val SHORT_CODE = Regex("""^\d{3,8}$""")
         const val VISUAL_SEPARATORS = " -().\u00A0"
+        const val MASKED_VISIBLE_DIGITS = 4
         val LINE_TYPES =
             mapOf(
                 PhoneNumberType.FIXED_LINE to LineType.FIXED_LINE,

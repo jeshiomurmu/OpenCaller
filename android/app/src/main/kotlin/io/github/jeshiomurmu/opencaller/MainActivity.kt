@@ -1,5 +1,6 @@
 package io.github.jeshiomurmu.opencaller
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -14,6 +15,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
 import io.github.jeshiomurmu.opencaller.core.telephony.RefreshAccessOnResume
+import io.github.jeshiomurmu.opencaller.feature.callerid.CallerIdIntents
 import io.github.jeshiomurmu.opencaller.feature.onboarding.OnboardingRoute
 import io.github.jeshiomurmu.opencaller.ui.OpenCallerApp
 import javax.inject.Inject
@@ -31,15 +33,23 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         // Roles and permissions can change in system settings while the app is away (TC-ONB-005).
         lifecycle.addObserver(refreshAccessOnResume)
+        if (savedInstanceState == null) viewModel.requestReport(intent?.getStringExtra(CallerIdIntents.EXTRA_REPORT_NUMBER))
         setContent {
             OpenCallerTheme {
                 val state by viewModel.uiState.collectAsStateWithLifecycle()
+                val report by viewModel.pendingReport.collectAsStateWithLifecycle()
                 when {
                     state.loading -> Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {}
                     state.showOnboarding -> OnboardingRoute()
-                    else -> OpenCallerApp(state = state)
+                    else -> OpenCallerApp(state = state, reportNumber = report, onReportShown = viewModel::reportShown)
                 }
             }
         }
+    }
+
+    // The after-call notification's Report reuses the running activity.
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        viewModel.requestReport(intent.getStringExtra(CallerIdIntents.EXTRA_REPORT_NUMBER))
     }
 }

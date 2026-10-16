@@ -13,9 +13,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -25,11 +30,16 @@ import io.github.jeshiomurmu.opencaller.core.designsystem.preview.OpenCallerPrev
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacing
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
 
-/** Settings home (Me tab until profiles arrive): entry points to each settings page. */
+/**
+ * Settings home (Me tab until profiles arrive): entry points to each settings page, and About with the app version.
+ * Tapping the version [DEBUG_TAPS] times opens the debug screen (docs/architecture.md §12).
+ */
 @Composable
 fun SettingsScreen(
     onOpenPermissions: () -> Unit,
     modifier: Modifier = Modifier,
+    versionName: String = "",
+    onOpenDebug: () -> Unit = {},
 ) {
     Column(modifier = modifier.fillMaxSize().padding(vertical = OpenCallerSpacing.m)) {
         Text(
@@ -42,7 +52,32 @@ fun SettingsScreen(
             summary = stringResource(R.string.settings_permissions_summary),
             onClick = onOpenPermissions,
         )
+        AboutRow(versionName = versionName, onOpenDebug = onOpenDebug)
     }
+}
+
+/** Number of taps on the version that open the debug screen. */
+const val DEBUG_TAPS = 7
+
+@Composable
+private fun AboutRow(
+    versionName: String,
+    onOpenDebug: () -> Unit,
+) {
+    var taps by rememberSaveable { mutableIntStateOf(0) }
+    val left = DEBUG_TAPS - taps
+    val hint = if (taps in 1 until DEBUG_TAPS) pluralStringResource(R.plurals.settings_debug_taps, left, left) else null
+    SettingsRow(
+        title = stringResource(R.string.settings_about),
+        summary = hint ?: stringResource(R.string.settings_version, versionName),
+        onClick = {
+            taps += 1
+            if (taps >= DEBUG_TAPS) {
+                taps = 0
+                onOpenDebug()
+            }
+        },
+    )
 }
 
 @Composable
@@ -74,6 +109,6 @@ private fun SettingsRow(
 @Composable
 private fun SettingsScreenPreview() {
     OpenCallerTheme {
-        Surface(color = MaterialTheme.colorScheme.surface) { SettingsScreen(onOpenPermissions = {}) }
+        Surface(color = MaterialTheme.colorScheme.surface) { SettingsScreen(onOpenPermissions = {}, versionName = "0.0.0") }
     }
 }
