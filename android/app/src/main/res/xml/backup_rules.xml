@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 10-11 (API 29-30): back up nothing (privacy, docs/rules.md §2). Android 12+ uses data_extraction_rules.xml. -->
+<full-backup-content>
+    <exclude domain="root" path="." />
+    <exclude domain="device_root" path="." />
+    <exclude domain="external" path="." />
+</full-backup-content>

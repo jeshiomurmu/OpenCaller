@@ -1,0 +1,152 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: android
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # Caches Gradle dependencies and validates the Gradle wrapper JAR checksum.
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Lint, test and assemble both flavors
+        # --continue: run every task and report all failures in one CI run.
+        run: >-
+          ./gradlew --continue
+          spotlessCheck detekt lint
+          testFossDebugUnitTest testPlayDebugUnitTest
+          assembleFossDebug assemblePlayDebug
+          check
+
+  backend:
+    name: backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend/server
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Check (format, static analysis, tests)
+        run: ./gradlew check
+
+  emulator:
+    name: emulator (API ${{ matrix.api-level }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        # minSdk and targetSdk.
+        api-level: [29, 36]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Assemble foss debug APK
+        working-directory: android
+        run: ./gradlew assembleFossDebug
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install and launch on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: scripts/ci/emulator-smoke.sh android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/emulator/api-${{ matrix.api-level }}.png
+
+      - name: Upload screenshot
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: emulator-api-${{ matrix.api-level }}
+          path: build/emulator/
+          if-no-files-found: ignore
+
+  compose:
+    name: compose smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Create .env with throwaway credentials
+        working-directory: infra/docker
+        run: |
+          sed -e "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$(openssl rand -hex 16)/" \
+              -e "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=$(openssl rand -hex 16)/" \
+              -e "s/^MINIO_ROOT_PASSWORD=.*/MINIO_ROOT_PASSWORD=$(openssl rand -hex 16)/" \
+              .env.example > .env
+
+      - name: Build and start the stack
+        run: GIT_SHA="${GITHUB_SHA::7}" docker compose -f infra/docker/compose.yml up -d --build --wait --wait-timeout 300
+
+      - name: GET /health
+        run: |
+          curl -fsS localhost:8080/health | tee health.json
+          echo
+          grep -q "\"status\":\"ok\",\"version\":\"${GITHUB_SHA::7}\"" health.json
+
+      - name: Service status and logs
+        if: always()
+        run: |
+          docker compose -f infra/docker/compose.yml ps
+          docker compose -f infra/docker/compose.yml logs --no-color --tail 200
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose -f infra/docker/compose.yml down -v
+
+  license:
+    name: license
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      # sha256 of https://www.gnu.org/licenses/gpl-3.0.txt, verified in CI against a live download on 2026-10-16
+      # (offline check: a live download made CI depend on www.gnu.org being reachable).
+      - name: LICENSE is the verbatim GPL-3.0 text from gnu.org
+        run: echo "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986  LICENSE" | sha256sum --check

@@ -1,0 +1,25 @@
+# Detekt configuration for the Android project. Builds upon detekt's default config;
+# only deviations from the defaults are listed here (see docs/rules.md §4).
+config:
+  validation: true
+
+complexity:
+  LongMethod:
+    # docs/rules.md §4: max function length ~40 lines.
+    threshold: 40
+  LongParameterList:
+    # Composables take many optional parameters by design.
+    ignoreDefaultParameters: true
+    ignoreAnnotated: ['Composable']
+
+naming:
+  FunctionNaming:
+    # Composable functions are PascalCase.
+    ignoreAnnotated: ['Composable']
+
+style:
+  MaxLineLength:
+    maxLineLength: 140
+  UnusedPrivateMember:
+    # Preview functions are private and only used by tooling.
+    ignoreAnnotated: ['Preview']
