@@ -31,8 +31,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
 
       - name: Lint, test and assemble both flavors
+        # --continue: run every task and report all failures in one CI run.
         run: >-
-          ./gradlew
+          ./gradlew --continue
           spotlessCheck detekt lint
           testFossDebugUnitTest testPlayDebugUnitTest
           assembleFossDebug assemblePlayDebug
