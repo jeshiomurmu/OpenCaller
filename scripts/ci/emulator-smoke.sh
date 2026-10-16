@@ -47,23 +47,54 @@ tap_text() {
   adb shell input tap $(((x1 + x2) / 2)) $(((y1 + y2) / 2))
 }
 
-# Switches system night mode to yes|no. `cmd uimode night` has no effect on some images (seen on the API 29
-# emulator); then the persistent setting is written and the emulator rebooted, since it is read at boot.
-set_night_mode() {
-  adb shell cmd uimode night "$1" > /dev/null
-  if adb shell cmd uimode night | grep -q "Night mode: $1"; then return 0; fi
-  echo "cmd uimode night $1 had no effect; setting ui_night_mode and rebooting"
-  adb shell settings put secure ui_night_mode "$([[ "$1" == "yes" ]] && echo 2 || echo 1)"
-  adb reboot
+night_mode_is() {
+  adb shell cmd uimode night | grep -q "Night mode: $1"
+}
+
+wait_for_boot() {
   adb wait-for-device
   until [[ "$(adb shell getprop sys.boot_completed | tr -d '\r')" == "1" ]]; do sleep 2; done
+}
+
+# Switches system night mode to yes|no. On the API 29 emulator `cmd uimode night` from the unprivileged shell
+# was observed to have no effect, and a single settings write + reboot only worked in some runs, so the
+# script tries, in order: the plain shell command, the same command as root (google_apis images allow `adb root`), and
+# finally the persisted ui_night_mode setting plus a reboot, retrying the command once the system has booted.
+set_night_mode() {
+  local setting
+  setting="$([[ "$1" == "yes" ]] && echo 2 || echo 1)"
+  adb shell cmd uimode night "$1" > /dev/null
+  if night_mode_is "$1"; then return 0; fi
+
+  echo "cmd uimode night $1 had no effect as shell; retrying as root"
+  if adb root; then
+    sleep 2
+    wait_for_boot
+    adb shell cmd uimode night "$1" > /dev/null
+    if night_mode_is "$1"; then return 0; fi
+  fi
+
+  echo "cmd uimode night $1 had no effect as root; setting ui_night_mode and rebooting"
+  adb shell settings put secure ui_night_mode "$setting"
+  adb shell settings get secure ui_night_mode
+  adb shell sync
+  sleep 3
+  adb reboot
+  wait_for_boot
+  adb root || true
+  sleep 2
+  wait_for_boot
   adb shell input keyevent KEYCODE_WAKEUP
   adb shell wm dismiss-keyguard || true
-  if ! adb shell cmd uimode night | grep -q "Night mode: $1"; then
-    echo "::error::could not switch system night mode to $1"
-    adb shell cmd uimode night || true
-    exit 1
-  fi
+  for _ in $(seq 1 10); do
+    if night_mode_is "$1"; then return 0; fi
+    adb shell cmd uimode night "$1" > /dev/null || true
+    sleep 3
+  done
+  echo "::error::could not switch system night mode to $1"
+  adb shell cmd uimode night || true
+  adb shell settings get secure ui_night_mode || true
+  exit 1
 }
 
 assert_alive() {
