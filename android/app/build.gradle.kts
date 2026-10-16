@@ -72,6 +72,7 @@ dependencies {
     implementation(projects.feature.settings)
 
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.coroutines.android)
@@ -79,4 +80,5 @@ dependencies {
     implementation(libs.timber)
 
     testImplementation(libs.junit4)
+    testImplementation(projects.core.testing)
 }

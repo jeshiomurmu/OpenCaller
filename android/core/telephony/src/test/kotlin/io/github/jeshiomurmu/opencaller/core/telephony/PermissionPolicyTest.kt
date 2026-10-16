@@ -12,7 +12,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [Build.VERSION_CODES.BAKLAVA])
+@Config(sdk = [Build.VERSION_CODES.VANILLA_ICE_CREAM])
 class PermissionPolicyTest {
     private val noRoles = RoleState(RoleStatus.NOT_HELD, RoleStatus.NOT_HELD, RoleStatus.NOT_HELD)
     private val dialer = noRoles.copy(dialer = RoleStatus.HELD)

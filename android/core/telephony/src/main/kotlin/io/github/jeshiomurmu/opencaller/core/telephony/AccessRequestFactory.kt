@@ -59,13 +59,11 @@ class AccessRequestFactory
                 }
 
                 AccessItem.NOTIFICATIONS -> {
-                    when (PermissionPolicy.decide(Manifest.permission.POST_NOTIFICATIONS, roleState)) {
-                        PermissionDecision.Allowed -> AccessRequest.RuntimePermission(Manifest.permission.POST_NOTIFICATIONS)
-
-                        // Before Android 13 the user turns notifications back on in the app's notification settings.
-                        PermissionDecision.NotNeeded -> settingsFor(item)
-
-                        is PermissionDecision.RequiresRole -> null
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        permissionRequest(Manifest.permission.POST_NOTIFICATIONS, roleState)
+                    } else {
+                        // Before Android 13 there is no permission: the user turns notifications on in settings.
+                        settingsFor(item)
                     }
                 }
 

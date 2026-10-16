@@ -14,5 +14,15 @@
     <string name="placeholder_messages">Your messages will appear here.</string>
     <string name="placeholder_contacts">Your contacts will appear here.</string>
     <string name="placeholder_protection">Spam protection and blocking rules will appear here.</string>
-    <string name="placeholder_me">Your profile and settings will appear here.</string>
+    <string name="placeholder_me">Your profile will appear here.</string>
+
+    <!-- Degraded mode (docs/design.md §8, "Role lost"). -->
+    <string name="banner_screening_off">OpenCaller can\'t screen calls right now. Turn call screening back on.</string>
+    <string name="banner_fix">Fix</string>
+
+    <!-- Calls tab: default phone app card (TC-ONB-003). -->
+    <string name="calls_default_app_title">Set as default phone app</string>
+    <string name="calls_default_app_body">See caller ID right on the call screen and keep your call history in one place.</string>
+    <string name="calls_default_app_later">OpenCaller\'s own phone app arrives in a later update. Caller ID already works with the phone app you use now.</string>
+    <string name="calls_default_app_action">Set as default</string>
 </resources>

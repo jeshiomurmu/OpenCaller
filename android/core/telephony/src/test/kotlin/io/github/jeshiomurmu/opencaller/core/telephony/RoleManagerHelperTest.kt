@@ -21,7 +21,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowRoleManager
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [Build.VERSION_CODES.Q, Build.VERSION_CODES.BAKLAVA])
+@Config(sdk = [Build.VERSION_CODES.Q, Build.VERSION_CODES.VANILLA_ICE_CREAM])
 class RoleManagerHelperTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val user = Process.myUserHandle()

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_permissions">Permissions &amp; roles</string>
+    <string name="settings_permissions_summary">Caller ID, contacts, notifications and default apps</string>
+
+    <string name="permissions_title">Permissions &amp; roles</string>
+    <string name="permissions_fix">Fix</string>
+    <string name="permissions_status_on">On</string>
+    <string name="permissions_status_off">Off</string>
+    <string name="permissions_status_coming_later">Coming in a later update</string>
+    <string name="permissions_status_not_needed">Not needed on this phone</string>
+    <string name="permissions_settings_missing">That settings page isn\'t available on this phone. Look for OpenCaller in your phone\'s Settings app.</string>
+    <string name="permissions_how_title">How OpenCaller works right now</string>
+    <string name="permissions_caller_id_in_call">Caller ID appears on OpenCaller\'s call screen.</string>
+    <string name="permissions_caller_id_overlay">Caller ID appears as a card over your phone app.</string>
+    <string name="permissions_caller_id_notification">Caller ID appears as a notification.</string>
+    <string name="permissions_after_call_notification">Call summaries arrive as notifications.</string>
+    <string name="permissions_after_call_history">Call summaries stay in your call history in the app.</string>
+</resources>

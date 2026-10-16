@@ -40,7 +40,7 @@ import org.robolectric.shadows.ShadowRoleManager
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [Build.VERSION_CODES.BAKLAVA])
+@Config(sdk = [Build.VERSION_CODES.VANILLA_ICE_CREAM])
 class OnboardingViewModelTest {
     @get:Rule
     val mainDispatcher = MainDispatcherRule()

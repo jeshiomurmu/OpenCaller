@@ -43,7 +43,7 @@
     <string name="explain_contacts_why">When someone in your contacts calls, OpenCaller shows the name you saved and never marks them as spam.</string>
     <string name="explain_contacts_never">Your contacts stay on this phone. OpenCaller never uploads, shares or sells them.</string>
     <string name="explain_notifications_title">Get call summaries and alerts</string>
-    <string name="explain_notifications_why">OpenCaller uses notifications for the summary after a call, blocked-call alerts and caller ID when it can't show over other apps.</string>
+    <string name="explain_notifications_why">OpenCaller uses notifications for the summary after a call, blocked-call alerts and caller ID when it can\'t show over other apps.</string>
     <string name="explain_notifications_never">No ads, no promotions. Without notifications, summaries stay in your call history in the app.</string>
     <string name="explain_dialer_title">Make OpenCaller your phone app</string>
     <string name="explain_dialer_why">As your phone app, OpenCaller shows caller ID right on the call screen and keeps your call history in one place.</string>

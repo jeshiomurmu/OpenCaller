@@ -22,7 +22,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowRoleManager
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [Build.VERSION_CODES.BAKLAVA])
+@Config(sdk = [Build.VERSION_CODES.VANILLA_ICE_CREAM])
 class AccessRequestFactoryTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val fresh = RoleState(RoleStatus.NOT_HELD, RoleStatus.APP_NOT_ELIGIBLE, RoleStatus.APP_NOT_ELIGIBLE)

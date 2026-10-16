@@ -52,7 +52,7 @@ fun OnboardingScreen(
             val progress = stringResource(R.string.onboarding_progress, state.stepNumber, state.stepCount)
             when (val page = state.page) {
                 OnboardingPage.Loading, OnboardingPage.Finished -> {
-                    Unit
+                    // Nothing to draw while settings load, or once the app shell takes over.
                 }
 
                 OnboardingPage.Welcome -> {

@@ -144,7 +144,7 @@ private fun ExtraRow(
                 }
 
                 AccessItemStatus.COMING_LATER, AccessItemStatus.NOT_APPLICABLE -> {
-                    Unit
+                    // No action: the status line says why.
                 }
             }
         }
