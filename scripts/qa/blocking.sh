@@ -67,30 +67,46 @@ next_event() {
 
 field() { cut -f "$2" <<< "$1"; }
 
-# ring <tc> <number> <decision> <reason>: incoming call; checks the logged decision and whether the call is still
-# ringing two seconds later (rejected calls are gone), then hangs up.
+# The phone's call state from the telephony registry: 0 idle, 1 ringing, 2 off-hook (dialling or in a call).
+# (`adb emu gsm list` lists no calls on recent emulator images.)
+call_state() { adb shell dumpsys telephony.registry | tr -d '\r' | grep -oE 'mCallState=[0-9]' | head -1 | cut -d= -f2; }
+
+wait_for_state() {
+  for _ in $(seq 1 40); do
+    if [[ "$(call_state)" == "$1" ]]; then return 0; fi
+    sleep 0.5
+  done
+  return 1
+}
+
+hang_up() {
+  adb emu gsm cancel "$1" > /dev/null || true
+  wait_for_state 0 || { adb shell input keyevent KEYCODE_ENDCALL || true; wait_for_state 0 || true; }
+}
+
+# ring <tc> <number> <decision> <reason>: incoming call; checks the logged decision and whether the phone is still
+# ringing two seconds later (a rejected call is gone, an allowed or silenced one rings), then hangs up.
 ring() {
-  local tc="$1" number="$2" want_decision="$3" want_reason="$4" before event decision reason calls
+  local tc="$1" number="$2" want_decision="$3" want_reason="$4" before event decision reason state
   before="$(count)"
   adb emu gsm call "$number" > /dev/null
   if ! event="$(next_event "$before")"; then
     fail "$tc" "no screening decision logged for $number"
-    adb emu gsm cancel "$number" > /dev/null || true
+    hang_up "$number"
     return
   fi
   sleep 2
-  calls="$(adb emu gsm list | tr -d '\r')"
-  adb emu gsm cancel "$number" > /dev/null || true
-  sleep 1
+  state="$(call_state)"
+  hang_up "$number"
   decision="$(field "$event" 4)"
   reason="$(field "$event" 5)"
   local ringing=no
-  if grep -q "${number: -4}" <<< "$calls"; then ringing=yes; fi
+  if [[ "$state" == 1 ]]; then ringing=yes; fi
   if [[ "$decision" == "$want_decision" && "$reason" == "$want_reason" ]] &&
     { [[ "$want_decision" == BLOCK && "$ringing" == no ]] || [[ "$want_decision" != BLOCK && "$ringing" == yes ]]; }; then
-    pass "$tc" "$number → $decision ($reason), latency $(field "$event" 7) ms, still ringing: $ringing"
+    pass "$tc" "$number → $decision ($reason), latency $(field "$event" 7) ms, ringing after 2 s: $ringing"
   else
-    fail "$tc" "$number → $decision ($reason), still ringing: $ringing; expected $want_decision ($want_reason). Calls: ${calls//$'\n'/ | }"
+    fail "$tc" "$number → $decision ($reason), ringing after 2 s: $ringing (call state $state); expected $want_decision ($want_reason)"
   fi
 }
 
@@ -101,7 +117,7 @@ wait_for_text() {
     if dump | grep -qF "text=\"$1"; then return 0; fi
     sleep 1
   done
-  echo "::error::'$1' not found on screen"
+  echo "::error::'$1' not found on screen; showing: $(dump | grep -oE 'text="[^"]+"' | head -40 | tr '\n' ' ')"
   return 1
 }
 
@@ -115,8 +131,11 @@ tap_text() {
 }
 
 open_app() {
+  wait_for_state 0 || true
+  adb shell input keyevent KEYCODE_HOME
+  sleep 1
   adb shell am start -W -n "$app_id/$activity" > /dev/null
-  wait_for_text "Calls"
+  wait_for_text "Protection"
 }
 
 # --- Setup -------------------------------------------------------------------------------------------------------
@@ -184,18 +203,16 @@ risk="$(events | grep -F "+12015550131" | tail -1 | cut -f 9)"
 qa_ok rule --es type EXACT --es pattern +12015550140 --es action BLOCK
 before="$(count)"
 adb shell am start -a android.intent.action.CALL -d tel:+12015550140 > /dev/null
+if wait_for_state 2; then went_out=yes; else went_out=no; fi
 event="$(next_event "$before" || true)"
-sleep 3
-calls="$(adb emu gsm list | tr -d '\r')"
-if ! grep -qi "outbound.*0140" <<< "$calls"; then
-  fail TC-BLK-012 "the outgoing call did not go out: ${calls//$'\n'/ | }"
+if [[ "$went_out" != yes ]]; then
+  fail TC-BLK-012 "the outgoing call did not go out (call state $(call_state))"
 elif [[ -n "$event" && ("$(field "$event" 3)" != OUTGOING || "$(field "$event" 4)" != ALLOW) ]]; then
   fail TC-BLK-012 "outgoing call screened as '$event'"
 else
-  pass TC-BLK-012 "outgoing call to a blocked number proceeds (${calls//$'\n'/ | }; logged: ${event:-not screened})"
+  pass TC-BLK-012 "outgoing call to a blocked number is dialling (logged: ${event:-not screened})"
 fi
-adb emu gsm cancel +12015550140 > /dev/null || true
-adb shell input keyevent KEYCODE_ENDCALL || true
+hang_up +12015550140
 sleep 2
 
 qa_ok rule --es type EXACT --es pattern +12015550150 --es action BLOCK
