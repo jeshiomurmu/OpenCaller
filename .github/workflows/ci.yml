@@ -39,11 +39,6 @@ jobs:
           assembleFossDebug assemblePlayDebug
           check
 
-      # TEMPORARY (Phase 3): confirm which savedstate/lifecycle versions the caller-card overlay resolves to.
-      - name: Resolved AndroidX versions for feature:callerid
-        if: always()
-        run: ./gradlew -q :feature:callerid:dependencyInsight --configuration debugRuntimeClasspath --dependency androidx.savedstate:savedstate || true
-
       # Room writes the schema while compiling; it must be committed (docs/architecture.md §6).
       - name: Room schemas are committed
         run: |
@@ -111,6 +106,9 @@ jobs:
           api-level: ${{ matrix.api-level }}
           target: google_apis
           arch: x86_64
+          # system_server ran out of its 16 MB heap on the API 29 image (DeadSystemException mid-test, run 38891529407).
+          ram-size: 4096M
+          heap-size: 512M
           disable-animations: true
           script: |
             cd android && ./gradlew --continue :core:database:connectedDebugAndroidTest :app:connectedFossDebugAndroidTest || { find core/database/build/outputs/androidTest-results app/build/outputs/androidTest-results \( -name '*.xml' -o -name '*.txt' \) -exec cat {} +; adb logcat -d -b crash; adb logcat -d | grep -iE 'opencaller|AndroidRuntime|RoleController|Killing' | tail -n 400; exit 1; }

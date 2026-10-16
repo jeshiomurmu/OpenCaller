@@ -202,18 +202,21 @@ risk="$(events | grep -F "+12015550131" | tail -1 | cut -f 9)"
 
 qa_ok rule --es type EXACT --es pattern +12015550140 --es action BLOCK
 before="$(count)"
-adb shell am start -a android.intent.action.CALL -d tel:+12015550140 > /dev/null
-if wait_for_state 2; then went_out=yes; else went_out=no; fi
+echo "  $(adb shell am start -a android.intent.action.CALL -d tel:+12015550140 | tr -d '\r' | tr '\n' ' ')"
 event="$(next_event "$before" || true)"
-if [[ "$went_out" != yes ]]; then
-  fail TC-BLK-012 "the outgoing call did not go out (call state $(call_state))"
+sleep 3
+hang_up +12015550140
+sleep 2
+# The system call log (readable by the shell) records an outgoing call (type 2) only if it was placed.
+placed="$(adb shell content query --uri content://call_log/calls --projection number:type --where "type=2" | tr -d '\r' | grep -c "0140" || true)"
+if [[ "$placed" -lt 1 ]]; then
+  fail TC-BLK-012 "no outgoing call to +12015550140 in the call log; logged decision: ${event:-none}"
+  adb shell dumpsys telecom | tr -d '\r' | grep -iE "disconnect|0140" | tail -n 20 || true
 elif [[ -n "$event" && ("$(field "$event" 3)" != OUTGOING || "$(field "$event" 4)" != ALLOW) ]]; then
   fail TC-BLK-012 "outgoing call screened as '$event'"
 else
-  pass TC-BLK-012 "outgoing call to a blocked number is dialling (logged: ${event:-not screened})"
+  pass TC-BLK-012 "outgoing call to a blocked number was placed (call log); screening: ${event:-not consulted}"
 fi
-hang_up +12015550140
-sleep 2
 
 qa_ok rule --es type EXACT --es pattern +12015550150 --es action BLOCK
 ring TC-BLK-015 +12015550150 BLOCK rule

@@ -69,7 +69,7 @@ Exit criteria status: on fresh API 29 and API 36 emulators onboarding grants the
 29. **Regex rules on Android.** The platform regex engine (ICU) can't be interrupted, so a runaway pattern keeps one of 4 daemon threads busy until it finishes (bounded by the 16-character input); the editor rejects slow patterns and a pattern that times out twice is skipped.
 30. **"Not spam" from the after-call notification** adds an exact allow rule and queues a NOT_SPAM report. Revisit in Phase 5 once community scores exist (an allow rule also overrides the user's own later block rules for that number).
 31. **Screening log retention** is 90 days, with no "clear history" action yet.
-32. **Temporary CI step** "Resolved AndroidX versions for feature:callerid" prints the resolved savedstate version; remove it once recorded.
+32. **Emulator memory.** The API 29 image ran `system_server` with a 16 MB heap and died mid-test once (run 38891529407); the CI emulators now get `ram-size: 4096M` and `heap-size: 512M`. Watch for repeats.
 
 
 ## Verified dependency versions

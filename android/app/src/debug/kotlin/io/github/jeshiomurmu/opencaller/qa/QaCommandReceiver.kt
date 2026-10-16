@@ -64,7 +64,14 @@ class QaCommandReceiver : BroadcastReceiver() {
         val pending = goAsync()
         val roles = context.getSystemService(RoleManager::class.java)
         CoroutineScope(dispatchers.io).launch {
-            val result = if (intent.getStringExtra(EXTRA_CMD) == "role") "ok held=${roles.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)}" else run(intent)
+            val result =
+                if (intent.getStringExtra(EXTRA_CMD) ==
+                    "role"
+                ) {
+                    "ok held=${roles.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)}"
+                } else {
+                    run(intent)
+                }
             pending.resultData = result
             pending.finish()
         }
