@@ -22,6 +22,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.TimeSource
 
 /**
@@ -51,14 +52,21 @@ class ScreeningEngine(
     /** Screens [call]. Never throws except to propagate the caller's own cancellation. */
     suspend fun screen(call: ScreeningCall): ScreeningResult {
         val started = timeSource.markNow()
-        val result = decideWithinBudget(call)
-        return result.copy(latencyMs = started.elapsedNow().inWholeMilliseconds.toInt())
+        val steps = StepTimes(timeSource)
+        val result = decideWithinBudget(call, steps)
+        val latencyMs = started.elapsedNow().inWholeMilliseconds.toInt()
+        // Debug builds only (no tree is planted in release); durations and the reason code, never the number.
+        Timber.d("Screening timings: %s in %d ms; %s", result.reason.code, latencyMs, steps)
+        return result.copy(latencyMs = latencyMs)
     }
 
     // Any failure inside the decision means "let the call ring" (docs/rules.md §2), whatever its type.
     @Suppress("TooGenericExceptionCaught")
-    private suspend fun decideWithinBudget(call: ScreeningCall): ScreeningResult {
-        val work = scope.async { decide(call) }
+    private suspend fun decideWithinBudget(
+        call: ScreeningCall,
+        steps: StepTimes,
+    ): ScreeningResult {
+        val work = scope.async { decide(call, steps) }
         return try {
             withTimeoutOrNull(config.budgetMillis) { work.await() } ?: failOpen(call, ScreeningReason.TIMEOUT).also {
                 work.cancel()
@@ -80,19 +88,22 @@ class ScreeningEngine(
         reason: ScreeningReason,
     ) = ScreeningResult(Decision.ALLOW, reason, call.direction, CallerInfo(number = null, verification = call.verification))
 
-    private suspend fun decide(call: ScreeningCall): ScreeningResult {
+    private suspend fun decide(
+        call: ScreeningCall,
+        steps: StepTimes,
+    ): ScreeningResult {
         val handle = call.handle?.trim().orEmpty()
-        if (handle.isNotEmpty() && device.emergencyNumbers.isEmergency(handle)) {
+        if (handle.isNotEmpty() && steps.measure("emergency") { device.emergencyNumbers.isEmergency(handle) }) {
             return ScreeningResult(Decision.ALLOW, ScreeningReason.EMERGENCY, call.direction, CallerInfo(number = null))
         }
-        val region = device.homeRegion.homeRegion()
+        val region = steps.measure("region") { device.homeRegion.homeRegion() }
         val number = handle.takeIf { it.isNotEmpty() }?.let { normalizer.fromHandle(it, region ?: UNKNOWN_REGION) }
-        val caller = describer.describe(number, call)
+        val caller = steps.measure("describe") { describer.describe(number, call) }
         return when {
             call.direction == Direction.OUTGOING -> allow(ScreeningReason.OUTGOING, call, caller)
             handle.isEmpty() -> decideHidden(device.settings.current(), call, caller)
             number == null -> allow(ScreeningReason.UNKNOWN_FORMAT, call, caller)
-            else -> decideNumber(number, region, call, caller)
+            else -> decideNumber(number, region, call, caller, steps)
         }
     }
 
@@ -117,9 +128,10 @@ class ScreeningEngine(
         region: String?,
         call: ScreeningCall,
         caller: CallerInfo,
+        steps: StepTimes,
     ): ScreeningResult =
         supervisorScope {
-            val lookups = LocalLookups(this, number)
+            val lookups = LocalLookups(this, number, steps)
             try {
                 val prefs = lookups.prefs.await()
                 val decided =
@@ -185,20 +197,21 @@ class ScreeningEngine(
     private inner class LocalLookups(
         scope: CoroutineScope,
         number: PhoneNumber,
+        steps: StepTimes,
     ) {
-        val prefs = scope.async { device.settings.current() }
-        val contactName = scope.async { device.contacts.displayName(number) }
-        val verified = scope.async { lists.verifiedBusinesses.isVerifiedBusiness(number) }
-        val rules = scope.async { lists.rules.callRules() }
+        val prefs = scope.async { steps.measure("settings") { device.settings.current() } }
+        val contactName = scope.async { steps.measure("contacts") { device.contacts.displayName(number) } }
+        val verified = scope.async { steps.measure("verified") { lists.verifiedBusinesses.isVerifiedBusiness(number) } }
+        val rules = scope.async { steps.measure("rules") { lists.rules.callRules() } }
         val spamHit =
             scope.async {
                 rules.join()
-                lists.spamList.find(number)
+                steps.measure("spam") { lists.spamList.find(number) }
             }
         val reputation =
             scope.async {
                 spamHit.join()
-                lists.reputation.find(number)
+                steps.measure("reputation") { lists.reputation.find(number) }
             }
     }
 
@@ -222,4 +235,25 @@ class ScreeningEngine(
     private companion object {
         const val UNKNOWN_REGION = "ZZ"
     }
+}
+
+/** How long each step of one decision took, for the debug log. Lookups run concurrently, so they can overlap. */
+private class StepTimes(
+    private val timeSource: TimeSource,
+) {
+    private val millis = ConcurrentHashMap<String, Long>()
+
+    inline fun <T> measure(
+        step: String,
+        block: () -> T,
+    ): T {
+        val started = timeSource.markNow()
+        try {
+            return block()
+        } finally {
+            millis[step] = started.elapsedNow().inWholeMilliseconds
+        }
+    }
+
+    override fun toString(): String = millis.entries.sortedBy { it.key }.joinToString(" ") { "${it.key}=${it.value}" }
 }

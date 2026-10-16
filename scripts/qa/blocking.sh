@@ -155,6 +155,8 @@ open_app() {
 
 # --- Setup -------------------------------------------------------------------------------------------------------
 adb wait-for-device
+# Room for every call's "Screening timings" debug line (read back after the latency check).
+adb logcat -G 16M || true
 adb install -r "$apk" > /dev/null
 adb shell pm grant "$app_id" android.permission.READ_CONTACTS
 adb shell pm grant "$app_id" android.permission.READ_PHONE_STATE
@@ -265,6 +267,10 @@ for round in 1 2 3 4; do
   ring "SAMPLE $round" "+1201555018$round" ALLOW no_match
 done
 events > "$out/screening_events.tsv"
+# Per-step durations of every decision (debug log of ScreeningEngine; durations and reason codes only).
+adb logcat -d | tr -d '\r' | grep -F "Screening timings:" > "$out/screening_timings.txt" || true
+echo "Slowest decisions (step durations in ms; lookups overlap):"
+sed -E 's/.*Screening timings: //' "$out/screening_timings.txt" | sort -t' ' -k3,3 -n -r | head -n 6 | sed 's/^/  /' || true
 caller_ids > "$out/caller_id.tsv"
 python3 - "$out/screening_events.tsv" << 'PY'
 import math, sys
