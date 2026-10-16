@@ -22,8 +22,9 @@ class AndroidFeatureConventionPlugin : Plugin<Project> {
             val modulePath = path
             configurations.configureEach {
                 withDependencies {
+                    // A module's own path appears here too (its androidTest classpath depends on it).
                     filterIsInstance<ProjectDependency>()
-                        .firstOrNull { it.path.startsWith(":feature:") }
+                        .firstOrNull { it.path.startsWith(":feature:") && it.path != modulePath }
                         ?.let { throw GradleException("$modulePath must not depend on ${it.path}: features depend on core modules only") }
                 }
             }
