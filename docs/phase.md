@@ -6,33 +6,30 @@
 
 | Field | Value |
 | --- | --- |
-| **Current phase** | **1 — Core foundations** |
+| **Current phase** | **2 — Onboarding, roles, permissions** |
 | Phase started | 2026-10-16 |
 | Target exit date | — |
-| Branch | `phase/01-core-foundations` |
-| Last green CI run | Phase 0: [CI on `main`](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38855255085) (`2c21f97`). Phase 1: PR #2 run [38862968837](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38862968837) in progress on `730dbb7`; [38861932267](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38861932267) was all green on `f5d828b` |
+| Branch | `phase/02-onboarding` |
+| Last green CI run | [CI on `main`](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38867777494) (`aede43d`, Phase 1 merge), 2026-10-16, all 6 jobs green |
 | App version | 0.0.0 |
 
 ## Current phase checklist
 
-Copied from `docs/implementation_plan.md` → Phase 1. Tick here as you go; copy the ticked list back to the plan when the phase exits.
+Copied from `docs/implementation_plan.md` → Phase 2. Tick here as you go; copy the ticked list back to the plan when the phase exits.
 
-- [x] `core:common`: `AppResult`, `AppError`, `DispatcherProvider`, `Clock`, `RedactingTree`. The masking logic (`LogRedactor`) is pure Kotlin in `core:common`; the Timber `RedactingTree` lives in `app` because Timber is an AAR and `core:common` must stay JVM-only (open issue 9)
-- [x] `core:model`: `PhoneNumber`, `CallerInfo`, `NameSource`, `SpamVerdict`, `BlockRule`, `Decision`, `MessageCategory`, `OtpInfo` (+ `SenderId`, `Address`, `UserPreferences`), KDoc on every public type, pure Kotlin
-- [x] `core:phonenumber`: normalizer (E.164), number type, country, bucket hasher; tests TC-PN-001…005 with BD, IN, US, GB, NG, AE fixtures; bucket vectors shared with the backend (CI `cmp`s both copies). JaCoCo gate ≥ 90 % lines in `check` (98.3 % locally). Default region from the SIM is the caller's job (`core:telephony`, later phase; open issue 12)
-- [x] `core:database`: Room + SQLCipher, all 13 entities from `architecture.md` §6, DAOs, schema v1 exported and committed (CI fails if it drifts), `MigrationTestHelper` harness; passphrase = 32 random bytes wrapped by an Android Keystore AES-GCM key, stored in DataStore. Instrumented tests (header ≠ `SQLite format 3`, wrong key, Keystore round-trip/tamper, every DAO, migration) green on API 29 and 36
-- [x] `core:datastore`: `UserSettings` proto (blocking toggles, spam threshold, allowed countries, overlay, announce mode, theme, onboarding step) with protobuf-lite codegen and a `Flow<UserPreferences>` data source
-- [x] `core:designsystem`: `OpenCallerTheme` with exactly the `design.md` §2 tokens (light + dark), semantic colours via `LocalOpenCallerSemanticColors`, Noto Sans typography (fonts bundled, OFL in `NOTICE.md`), spacing/shape tokens, previews (light, dark, fontScale 2f); WCAG contrast unit test. `core:ui`: `SourceChip`, `RiskBanner`, `VerifiedBadge`, `EmptyState`
-- [x] `core:testing`: `MainDispatcherRule`, `TestDispatcherProvider`, `FakeClock`, `Fixtures` + `fixtures/` (numbers, bucket vectors)
-- [x] App shell: Hilt `Application`, `MainActivity`, Navigation Compose type-safe routes, bottom bar with 5 tabs (Calls, Messages, Contacts, Protection, Me) showing `EmptyState` placeholders. CI `emulator` job opens every tab in light and dark mode on API 29 and 36 and checks screenshot luminance. The tab is named "Protection" as P-01 asked, not "Blocking" (open issue 13)
+- [ ] Welcome + privacy explainer screens (what leaves the phone, what never does)
+- [ ] `RoleManagerHelper`: query/request `ROLE_CALL_SCREENING`, `ROLE_DIALER`, `ROLE_SMS`
+- [ ] Permission explainers + requests per `architecture.md` §5 (only after the matching role)
+- [ ] Overlay permission flow (`SYSTEM_ALERT_WINDOW`)
+- [ ] Notification permission (API 33+)
+- [ ] Onboarding state persisted; re-entry from Settings → Permissions status screen
+- [ ] Handle "role revoked later" (re-check on resume, banner)
 
-**Exit criteria:** unit tests ≥ 90% line coverage on `core:phonenumber`; DB opens encrypted (verified by a test that the file header is not `SQLite format 3`); app shell navigates in light/dark.
+**Exit criteria:** on a fresh emulator, onboarding grants call-screening role; denying each permission shows the degraded-mode banner, never a crash (TC-ONB-001…008).
 
 ## Next step
 
-Review and merge PR [#2](https://github.com/jeshiomurmu/OpenCaller/pull/2) (squash), confirm CI is green on `main`, copy the ticked checklist into `docs/implementation_plan.md`, then **run P-02**.
-
-Exit criteria status: `core:phonenumber` line coverage ≥ 90 % ✅ (JaCoCo gate in `check`; 98.3 % locally). DB opens encrypted ✅ (`EncryptedDatabaseTest` on API 29 and 36). App shell navigates in light/dark ✅ (CI `emulator` walk, screenshots uploaded as artifacts).
+Phase 2 in progress (prompt P-02).
 
 ## Open issues / blockers
 
@@ -108,4 +105,5 @@ Fill as dependencies are added (the source of truth is `libs.versions.toml`; thi
 
 | Phase | Started | Exited | Notes |
 | --- | --- | --- | --- |
+| 1 — Core foundations | 2026-10-16 | 2026-10-16 | PR #2 merged; CI green on `main` (`aede43d`, run 38867777494); `core:phonenumber` coverage ≥ 90 %; encrypted DB verified on API 29 + 36; 5 tabs walked in light/dark on API 29 + 36 |
 | 0 — Repo, tooling, CI | 2026-10-16 | 2026-10-16 | PR #1 merged; CI green on `main` (`2c21f97`); emulator install/launch API 29 + 36; `/health` 200. Open: repo is public (plan says private until v0.1) |

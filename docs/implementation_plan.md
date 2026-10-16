@@ -42,14 +42,14 @@ Rough effort for one full-time developer working with an AI agent: Phases 0–7 
 
 ## Phase 1 — Core foundations
 
-- [ ] `core:common`: `AppResult`, `AppError`, `DispatcherProvider`, `Clock`, `RedactingTree`
-- [ ] `core:model`: `PhoneNumber`, `CallerInfo`, `NameSource`, `SpamVerdict`, `BlockRule`, `Decision`, `MessageCategory`, `OtpInfo`
-- [ ] `core:phonenumber`: normalizer (E.164, default region from SIM/locale), number type, country, bucket hasher; unit tests incl. BD, IN, US, UK, NG numbers
-- [ ] `core:database`: Room + SQLCipher, all entities from `architecture.md` §6, DAOs, schema export, migration test harness
-- [ ] `core:datastore`: `UserSettings` proto (blocking toggles, thresholds, overlay, announce, theme)
-- [ ] `core:designsystem`: theme, tokens from `design.md`, typography with Noto Sans, base components; previews
-- [ ] `core:testing`: fakes, `MainDispatcherRule`, fixtures
-- [ ] App shell: `MainActivity`, bottom navigation (Calls, Messages, Contacts, Blocking, Me) with placeholder screens
+- [x] `core:common`: `AppResult`, `AppError`, `DispatcherProvider`, `Clock`, `RedactingTree`
+- [x] `core:model`: `PhoneNumber`, `CallerInfo`, `NameSource`, `SpamVerdict`, `BlockRule`, `Decision`, `MessageCategory`, `OtpInfo`
+- [x] `core:phonenumber`: normalizer (E.164, default region from SIM/locale), number type, country, bucket hasher; unit tests incl. BD, IN, US, UK, NG numbers
+- [x] `core:database`: Room + SQLCipher, all entities from `architecture.md` §6, DAOs, schema export, migration test harness
+- [x] `core:datastore`: `UserSettings` proto (blocking toggles, thresholds, overlay, announce, theme)
+- [x] `core:designsystem`: theme, tokens from `design.md`, typography with Noto Sans, base components; previews
+- [x] `core:testing`: fakes, `MainDispatcherRule`, fixtures
+- [x] App shell: `MainActivity`, bottom navigation (Calls, Messages, Contacts, Protection, Me) with placeholder screens
 
 **Exit:** unit tests ≥ 90% line coverage on `core:phonenumber`; DB opens encrypted (verified by a test that the file header is not `SQLite format 3`); app shell navigates in light/dark.
 
