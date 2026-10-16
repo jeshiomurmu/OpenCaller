@@ -1,6 +1,7 @@
 package io.github.jeshiomurmu.opencaller.core.database
 
 import android.content.Context
+import android.database.DatabaseErrorHandler
 import android.database.sqlite.SQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -65,19 +66,26 @@ class EncryptedDatabaseTest {
         }
 
     @Test
-    fun cannotBeOpenedWithoutTheRightPassphrase() =
+    fun cannotBeReadWithoutTheRightPassphrase() =
         runTest {
             OpenCallerDatabaseFactory.create(context, passphrase, NAME).run {
                 blockRuleDao().insert(rule)
                 close()
             }
+            // A no-op error handler: the default one deletes files it cannot open.
             val path = context.getDatabasePath(NAME).path
-            val plainOpen = runCatching { SQLiteDatabase.openDatabase(path, null, SQLiteDatabase.OPEN_READONLY).use { it.version } }
+            val plainOpen =
+                runCatching {
+                    SQLiteDatabase.openDatabase(path, null, SQLiteDatabase.OPEN_READONLY, DatabaseErrorHandler {}).use { it.version }
+                }
             assertTrue("plain SQLite could read the file", plainOpen.isFailure)
 
+            // With a wrong key SQLCipher either fails or (default error handler) recreates an empty database;
+            // either way the stored rule must never be readable.
             val wrong = OpenCallerDatabaseFactory.create(context, "wrong".toByteArray(), NAME)
-            assertTrue(runCatching { wrong.openHelper.writableDatabase }.isFailure)
+            val rulesWithWrongKey = runCatching { wrong.blockRuleDao().enabledRules() }.getOrNull()
             wrong.close()
+            assertTrue("data readable with a wrong passphrase", rulesWithWrongKey.isNullOrEmpty())
         }
 
     private companion object {

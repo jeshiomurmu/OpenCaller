@@ -108,7 +108,7 @@ jobs:
           arch: x86_64
           disable-animations: true
           script: |
-            cd android && ./gradlew :core:database:connectedDebugAndroidTest
+            cd android && ./gradlew :core:database:connectedDebugAndroidTest || { find core/database/build/outputs/androidTest-results -name '*.xml' -exec cat {} +; exit 1; }
             scripts/ci/emulator-smoke.sh android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/emulator/api-${{ matrix.api-level }}
 
       - name: Upload screenshots and test reports
