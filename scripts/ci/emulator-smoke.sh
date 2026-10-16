@@ -106,12 +106,16 @@ set_night_mode() {
   exit 1
 }
 
-assert_alive() {
+assert_no_crash() {
   if adb logcat -d -b crash | grep -q "$app_id"; then
     echo "::error::$app_id crashed"
     adb logcat -d -b crash
     exit 1
   fi
+}
+
+assert_alive() {
+  assert_no_crash
   if ! adb shell pidof "$app_id" > /dev/null; then
     echo "::error::$app_id is not running"
     exit 1
@@ -121,6 +125,30 @@ assert_alive() {
 on_screen() {
   dump | grep -qF "text=\"$1\""
 }
+
+# wait_quietly <text> <seconds>: like wait_for_text, but only returns non-zero (no error, no dump).
+wait_quietly() {
+  for _ in $(seq 1 "$2"); do
+    if on_screen "$1"; then return 0; fi
+    sleep 1
+  done
+  return 1
+}
+
+# What was going on when the script failed: crashes, the window in front, and the app's, the role controller's and
+# the activity manager's log lines.
+report_failure() {
+  local status=$?
+  if [[ "$status" -ne 0 ]]; then
+    echo "::group::Diagnostics (smoke script exited with $status)"
+    adb logcat -d -b crash || true
+    adb shell dumpsys window | tr -d '\r' | grep -E "mCurrentFocus|mFocusedApp" || true
+    adb logcat -d | tr -d '\r' | grep -iE "$app_id|RoleController|RequestRole|ActivityTaskManager|AndroidRuntime|lowmemorykiller|Killing" |
+      tail -n 200 || true
+    echo "::endgroup::"
+  fi
+}
+trap report_failure EXIT
 
 relaunch() {
   adb shell input keyevent KEYCODE_HOME
@@ -153,6 +181,15 @@ check_process_death() {
 grant_call_screening() {
   wait_for_text "Let OpenCaller check incoming calls"
   tap_text "Continue"
+  # Once (run 38903662245, API 29) the app left the screen after this tap and the dialog never came; nothing was
+  # logged then. A crash still fails here; otherwise say what was in front and ask once more from the app.
+  if ! wait_quietly "Set as default" 15; then
+    assert_no_crash
+    echo "::warning::TC-ONB-001: no role dialog 15 s after Continue; in front: $(adb shell dumpsys window | tr -d '\r' | grep -m1 mCurrentFocus)"
+    adb shell am start -W -n "$app_id/$activity" > /dev/null
+    wait_for_text "Let OpenCaller check incoming calls"
+    tap_text "Continue"
+  fi
   wait_for_text "Set as default"
   if on_screen "OpenCaller"; then tap_text "OpenCaller"; fi
   tap_text "Set as default"
