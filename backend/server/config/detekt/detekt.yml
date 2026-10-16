@@ -1,0 +1,8 @@
+# Detekt configuration for the backend. Builds upon detekt's default config;
+# only deviations from the defaults are listed here.
+config:
+  validation: true
+
+style:
+  MaxLineLength:
+    maxLineLength: 140

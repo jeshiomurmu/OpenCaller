@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-15
+- Reviewed: 2026-10-16 (Phase 0): Kotlin + Ktor decision unchanged; remains Accepted. Note: MinIO upstream no longer publishes container images and its repository is archived, so the object-storage choice needs a follow-up decision (see `docs/phase.md` → Open issues)
 
 ## Context
 
