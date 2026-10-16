@@ -4,6 +4,9 @@ plugins {
 
 android {
     namespace = "io.github.jeshiomurmu.opencaller.feature.callerid"
+
+    // Robolectric tests read the notification and caller card strings.
+    testOptions.unitTests.isIncludeAndroidResources = true
 }
 
 // Caller ID while OpenCaller is not the default phone app: the caller card over other apps (or a heads-up

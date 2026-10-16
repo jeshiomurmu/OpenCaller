@@ -17,6 +17,8 @@ class RuleValidatorTest {
         assertEquals(valid("+8801712345678"), validator.validate(RuleType.EXACT, " 01712-345678 ", "BD"))
         assertEquals(valid("+12015550123"), validator.validate(RuleType.EXACT, "+1 201 555 0123", null))
         assertEquals(invalid(RuleProblem.NOT_A_NUMBER), validator.validate(RuleType.EXACT, "12345", "US"))
+        // Outside assigned ranges, as spam numbers often are: kept as typed, like the engine reads callers.
+        assertEquals(valid("+15551230001"), validator.validate(RuleType.EXACT, "+1 555 123 0001", "US"))
         assertEquals(invalid(RuleProblem.EMPTY), validator.validate(RuleType.EXACT, "   ", "US"))
         assertEquals(invalid(RuleProblem.TOO_LONG), validator.validate(RuleType.EXACT, "1".repeat(201), "US"))
     }

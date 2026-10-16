@@ -1,6 +1,5 @@
 package io.github.jeshiomurmu.opencaller.core.telephony.screening
 
-import io.github.jeshiomurmu.opencaller.core.common.getOrNull
 import io.github.jeshiomurmu.opencaller.core.model.RuleType
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 import java.util.regex.PatternSyntaxException
@@ -71,10 +70,10 @@ class RuleValidator(
         homeRegion: String?,
     ): RuleValidation =
         when (type) {
+            // Read like the engine reads a caller: valid numbers, and any +E.164 shape outside assigned ranges.
             RuleType.EXACT -> {
                 normalizer
-                    .normalize(input, homeRegion ?: UNKNOWN_REGION)
-                    .getOrNull()
+                    .fromHandle(input, homeRegion ?: UNKNOWN_REGION)
                     ?.let { RuleValidation.Valid(it.e164) }
                     ?: RuleValidation.Invalid(RuleProblem.NOT_A_NUMBER)
             }

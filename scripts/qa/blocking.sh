@@ -128,11 +128,14 @@ if [[ "$sdk" -ge 33 ]]; then adb shell pm grant "$app_id" android.permission.POS
 adb shell appops set "$app_id" SYSTEM_ALERT_WINDOW allow
 # Granting the role can end the app's process on recent Android versions; the role stays granted.
 adb shell cmd role add-role-holder "$role" "$app_id" 0 || adb shell cmd role add-role-holder "$role" "$app_id"
+# `cmd role get-role-holders` doesn't exist on API 29, so ask the app (RoleManager.isRoleHeld).
+held=""
 for _ in $(seq 1 20); do
-  if adb shell cmd role get-role-holders "$role" | tr -d '\r' | grep -qx "$app_id"; then break; fi
+  held="$(qa role)"
+  if [[ "$held" == "ok held=true" ]]; then break; fi
   sleep 1
 done
-adb shell cmd role get-role-holders "$role" | tr -d '\r' | grep -qx "$app_id" || { echo "::error::call screening role not granted"; exit 1; }
+[[ "$held" == "ok held=true" ]] || { echo "::error::call screening role not granted ($held)"; exit 1; }
 qa_ok reset
 # Keep the process alive (and the encrypted database open) like a phone in everyday use.
 open_app

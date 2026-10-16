@@ -1,5 +1,6 @@
 package io.github.jeshiomurmu.opencaller.qa
 
+import android.app.role.RoleManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -36,6 +37,7 @@ import javax.inject.Inject
  * - `spam --es number E164 --es score 0.9 [--es category C]`: adds a spam list entry.
  * - `region [--es region BD]`: overrides the SIM country (no value: back to the real one).
  * - `verified --es number E164`: treats a number as a verified business.
+ * - `role`: "ok held=true|false" for the call screening role (`cmd role get-role-holders` doesn't exist on API 29).
  */
 @AndroidEntryPoint
 class QaCommandReceiver : BroadcastReceiver() {
@@ -60,8 +62,9 @@ class QaCommandReceiver : BroadcastReceiver() {
         intent: Intent,
     ) {
         val pending = goAsync()
+        val roles = context.getSystemService(RoleManager::class.java)
         CoroutineScope(dispatchers.io).launch {
-            val result = run(intent)
+            val result = if (intent.getStringExtra(EXTRA_CMD) == "role") "ok held=${roles.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)}" else run(intent)
             pending.resultData = result
             pending.finish()
         }

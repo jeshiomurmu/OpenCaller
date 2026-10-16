@@ -212,7 +212,8 @@ class RulesViewModel
         }
 
         private fun runTest(input: String) {
-            val number = normalizer.normalize(input, homeRegion.homeRegion() ?: UNKNOWN_REGION).getOrNull()
+            // Read like the screening engine reads a caller, so numbers outside assigned ranges can be tested too.
+            val number = normalizer.fromHandle(input, homeRegion.homeRegion() ?: UNKNOWN_REGION)
             if (number == null) {
                 update { it.copy(testOutcome = TestOutcome.NotANumber) }
                 return
