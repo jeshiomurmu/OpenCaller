@@ -26,13 +26,10 @@ object Ui {
     val device: UiDevice by lazy { UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()) }
     val context: Context get() = InstrumentationRegistry.getInstrumentation().targetContext
 
-    /** Role dialog: AlertDialog buttons on API 29, matched by text as a fallback on newer PermissionControllers. */
-    val roleAccept: List<BySelector> = listOf(By.res("android", "button1"), By.text(Pattern.compile("(?i)set as default")))
+    /** Role dialog's decline button: AlertDialog button on API 29, matched by text on newer PermissionControllers. */
     val roleDecline: List<BySelector> = listOf(By.res("android", "button2"), By.text(Pattern.compile("(?i)cancel")))
 
-    /** Runtime permission dialog (com.android.permissioncontroller or Google's build of it). */
-    val permissionAllow: List<BySelector> =
-        listOf(By.res(Pattern.compile(".*:id/permission_allow(_foreground_only)?_button")), By.text(Pattern.compile("(?i)allow")))
+    /** Runtime permission dialog's deny button (com.android.permissioncontroller or Google's build of it). */
     val permissionDeny: List<BySelector> =
         listOf(By.res(Pattern.compile(".*:id/permission_deny_button")), By.text(Pattern.compile("(?i)(deny|don.t allow)")))
 
@@ -91,32 +88,18 @@ object Ui {
                     .use { it.readBytes().decodeToString() }
             }
 
-    /**
-     * Gives or takes the call screening role through the shell, the way a user would in system settings. Flag 1 is
-     * RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP: without it Android kills the app, and with it this test process.
-     * The change is asynchronous, so this waits until RoleManager reports it.
-     */
-    fun setCallScreeningRole(held: Boolean) {
-        val action = if (held) "add-role-holder" else "remove-role-holder"
-        val output = shell("cmd role $action ${RoleManager.ROLE_CALL_SCREENING} ${context.packageName} $DONT_KILL_APP")
-        val deadline = System.currentTimeMillis() + TIMEOUT_MILLIS
-        while (holdsCallScreeningRole() != held && System.currentTimeMillis() < deadline) Thread.sleep(POLL_MILLIS)
-        if (holdsCallScreeningRole() != held) fail("cmd role $action did not take effect: $output")
+    /** Takes the call screening role away (shell `cmd role`), so each test starts without it. */
+    fun removeCallScreeningRole() {
+        shell("cmd role remove-role-holder ${RoleManager.ROLE_CALL_SCREENING} ${context.packageName}")
     }
 
     fun holdsCallScreeningRole(): Boolean = context.getSystemService(RoleManager::class.java).isRoleHeld(RoleManager.ROLE_CALL_SCREENING)
 
-    /** Accepts the role dialog. Newer PermissionControllers list the candidate apps and need OpenCaller picked first. */
-    fun acceptRoleDialog() {
+    /** Waits until another app (e.g. a system settings page) is in front. */
+    fun waitUntilAppLeavesForeground() {
         val deadline = System.currentTimeMillis() + TIMEOUT_MILLIS
-        while (roleAccept.none { device.hasObject(it) } && System.currentTimeMillis() < deadline) Thread.sleep(POLL_MILLIS)
-        device.findObject(By.text(string(io.github.jeshiomurmu.opencaller.R.string.app_name)))?.click()
-        tapSystemButton(roleAccept)
-    }
-
-    /** Brings OpenCaller back to the front the way the launcher does (from the shell, which may start activities). */
-    fun relaunchFromLauncher() {
-        shell("am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n ${context.packageName}/$MAIN_ACTIVITY")
+        while (device.currentPackageName == context.packageName && System.currentTimeMillis() < deadline) Thread.sleep(POLL_MILLIS)
+        device.waitForIdle()
     }
 
     fun windowDump(): String {
@@ -126,8 +109,6 @@ object Ui {
     }
 
     private const val POLL_MILLIS = 250L
-    private const val DONT_KILL_APP = 1
-    private const val MAIN_ACTIVITY = "io.github.jeshiomurmu.opencaller.MainActivity"
 }
 
 /**

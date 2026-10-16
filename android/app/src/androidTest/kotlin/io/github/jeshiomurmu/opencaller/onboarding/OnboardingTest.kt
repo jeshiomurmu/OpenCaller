@@ -21,8 +21,10 @@ import io.github.jeshiomurmu.opencaller.feature.onboarding.R as OnboardingR
 import io.github.jeshiomurmu.opencaller.feature.settings.R as SettingsR
 
 /**
- * Onboarding test cases TC-ONB-001…008 (docs/testing.md), run on API 29 and API 36 emulators in CI. Each test
- * starts from cleared app data (test orchestrator `clearPackageData`) and without the call screening role.
+ * Onboarding test cases (docs/testing.md) that don't change the call screening role, run on API 29 and API 36
+ * emulators in CI. Each test starts from cleared app data (test orchestrator `clearPackageData`) and without the
+ * role. Granting or revoking the role can make Android kill the app process, which here is also the test process,
+ * so TC-ONB-001, 003 (with the role held) and 005 run in scripts/ci/emulator-smoke.sh, driven from outside the app.
  */
 @RunWith(AndroidJUnit4::class)
 class OnboardingTest {
@@ -39,25 +41,14 @@ class OnboardingTest {
 
     @Before
     fun setUp() {
-        Ui.setCallScreeningRole(held = false)
+        Ui.removeCallScreeningRole()
         Ui.device.setOrientationNatural()
     }
 
     private fun cleanUp() {
         scenario?.close()
         Ui.device.setOrientationNatural()
-        Ui.setCallScreeningRole(held = false)
-    }
-
-    @Test
-    fun tcOnb001_grantingCallScreeningMovesToTheNextStep() {
-        launchAndPassIntro()
-        waitFor(callScreeningTitle)
-        tap(string(UiR.string.explainer_continue))
-        Ui.acceptRoleDialog()
-
-        waitFor(contactsTitle)
-        assertTrue("OpenCaller holds ROLE_CALL_SCREENING", Ui.holdsCallScreeningRole())
+        Ui.removeCallScreeningRole()
     }
 
     @Test
@@ -81,31 +72,13 @@ class OnboardingTest {
     }
 
     @Test
-    fun tcOnb003_skippingTheDialerRoleKeepsScreeningOnlyMode() {
-        Ui.setCallScreeningRole(held = true)
+    fun tcOnb003_skippingTheDialerRoleOffersItOnTheCallsTab() {
         launchAndPassIntro()
-        // Call screening is already on, so onboarding goes straight to contacts.
-        waitFor(contactsTitle)
+        waitFor(callScreeningTitle)
         skipRemainingSteps()
 
         waitFor(callsTab)
         waitFor(string(AppR.string.calls_default_app_title))
-        assertFalse("no degraded banner in screening-only mode", isShown(banner, timeoutMillis = SHORT_WAIT_MILLIS))
-    }
-
-    @Test
-    fun tcOnb005_revokingTheRoleLaterShowsTheBannerOnResume() {
-        Ui.setCallScreeningRole(held = true)
-        launchAndPassIntro()
-        skipRemainingSteps()
-        waitFor(callsTab)
-        assertFalse(isShown(banner, timeoutMillis = SHORT_WAIT_MILLIS))
-
-        Ui.setCallScreeningRole(held = false)
-        Ui.device.pressHome()
-        Ui.relaunchFromLauncher()
-
-        waitFor(banner)
     }
 
     @Test
@@ -133,8 +106,8 @@ class OnboardingTest {
         tap(string(OnboardingR.string.onboarding_set_up))
         waitFor(string(UiR.string.explain_overlay_title))
         tap(string(UiR.string.explainer_open_settings))
-        // System overlay settings: leave without allowing.
-        Ui.device.waitForIdle()
+        // System overlay settings: wait until it is in front, then leave without allowing.
+        Ui.waitUntilAppLeavesForeground()
         Ui.device.pressBack()
 
         waitFor(string(OnboardingR.string.onboarding_extras_title))
