@@ -11,6 +11,7 @@
 #   TC-BLK-009  spam list 0.9 rejected / 0.7 rings as Suspicious (threshold high)
 #   TC-BLK-012  outgoing call to a blocked number proceeds
 #   TC-BLK-015  Unblock in the blocked-calls log, next call rings
+#   LATENCY     p95 of the local decisions (export and debug screen) under 50 ms, over 30+ calls
 #
 # Usage: scripts/qa/blocking.sh <debug-apk> <applicationId> <out-dir>
 set -euo pipefail
@@ -132,7 +133,7 @@ tap_text() {
 }
 
 # add_contact <name> <number>: a local (account-less) contact, written through the contacts provider like the
-# Contacts app would (the shell holds WRITE_CONTACTS).
+# Contacts app would (the shell holds WRITE_CONTACTS). `adb shell` re-splits its arguments, so <name> is one word.
 add_contact() {
   local uri=content://com.android.contacts id
   adb shell content insert --uri "$uri/raw_contacts" --bind account_type:n: --bind account_name:n:
@@ -186,7 +187,7 @@ qa_ok rule --es type PREFIX --es pattern '+1555123*' --es action BLOCK
 ring TC-BLK-003 +15551230001 BLOCK rule
 ring TC-BLK-003 +15551240001 ALLOW no_match
 
-add_contact "QA Contact" +12015550160
+add_contact Ada +12015550160
 qa_ok rule --es type PREFIX --es pattern '+1201555016*' --es action BLOCK
 ring TC-BLK-001 +12015550160 ALLOW contact
 ring TC-BLK-001 +12015550161 BLOCK rule
@@ -254,6 +255,15 @@ adb shell input keyevent KEYCODE_HOME
 ring TC-BLK-015 +12015550150 ALLOW no_match
 
 # --- Latency -----------------------------------------------------------------------------------------------------
+# With the dozen calls above, p95 would just be the slowest call. Four more rounds over every local path (contact,
+# rule, spam list, Suspicious card, no match) bring the sample to over 30 decisions.
+for round in 1 2 3 4; do
+  ring "SAMPLE $round" +12015550160 ALLOW contact
+  ring "SAMPLE $round" +15551230002 BLOCK rule
+  ring "SAMPLE $round" +12015550130 BLOCK spam_list
+  ring "SAMPLE $round" +12015550131 ALLOW no_match
+  ring "SAMPLE $round" "+1201555018$round" ALLOW no_match
+done
 events > "$out/screening_events.tsv"
 caller_ids > "$out/caller_id.tsv"
 python3 - "$out/screening_events.tsv" << 'PY'

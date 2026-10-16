@@ -1,10 +1,17 @@
 package io.github.jeshiomurmu.opencaller.core.telephony.screening
 
+import io.github.jeshiomurmu.opencaller.core.data.CachedReputation
 import io.github.jeshiomurmu.opencaller.core.model.CallerInfo
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import io.github.jeshiomurmu.opencaller.core.model.SpamVerdict
 import io.github.jeshiomurmu.opencaller.core.model.UserPreferences
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
+
+/** What the device already knows about a number: verified business (step 7) and the reputation cache (step 9). */
+internal class KnownCaller(
+    val verified: Boolean,
+    val cached: CachedReputation?,
+)
 
 /** What [ScreeningEngine] knows about a caller: country, line type, spam verdict and the caller card details. */
 internal class CallerDescriber(
@@ -28,9 +35,9 @@ internal class CallerDescriber(
         caller: CallerInfo,
         listVerdict: SpamVerdict?,
         prefs: UserPreferences,
+        known: KnownCaller,
     ): CallerInfo {
-        val verified = lists.verifiedBusinesses.isVerifiedBusiness(number)
-        val cached = lists.reputation.find(number)
+        val cached = known.cached
         val network = lists.network.lookup(number)
         val verdict =
             listVerdict
@@ -43,7 +50,7 @@ internal class CallerDescriber(
             displayName = named?.first,
             nameSource = named?.second,
             spamVerdict = verdict,
-            verifiedBusinessId = cached?.verifiedBusinessId ?: VERIFIED_WITHOUT_ID.takeIf { verified },
+            verifiedBusinessId = cached?.verifiedBusinessId ?: VERIFIED_WITHOUT_ID.takeIf { known.verified },
             logoUrl = cached?.logoUrl,
             callReason = cached?.callReason,
             lineType = cached?.lineType ?: caller.lineType,

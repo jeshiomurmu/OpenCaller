@@ -8,6 +8,7 @@ import io.github.jeshiomurmu.opencaller.core.model.RuleAction
 import io.github.jeshiomurmu.opencaller.core.model.RuleTarget
 import io.github.jeshiomurmu.opencaller.core.model.RuleType
 import io.github.jeshiomurmu.opencaller.core.model.UserPreferences
+import kotlinx.coroutines.delay
 
 /** In-memory screening inputs; every field can be changed by a test. */
 class FakeSources {
@@ -25,9 +26,20 @@ class FakeSources {
     var settingsRead = 0
     var failWith: Exception? = null
 
+    /** Thrown by the spam list lookup. */
+    var spamListFailure: Exception? = null
+
+    /** Virtual time each local lookup takes (settings, contacts, rules, spam list, verified business, reputation). */
+    var lookupDelayMillis = 0L
+
+    private suspend fun lookupDelay() {
+        if (lookupDelayMillis > 0) delay(lookupDelayMillis)
+    }
+
     fun device(): DeviceSources =
         DeviceSources(
             settings = {
+                lookupDelay()
                 settingsRead++
                 failWith?.let { throw it }
                 prefs
@@ -36,7 +48,10 @@ class FakeSources {
                 object : ContactLookup {
                     override fun canRead(): Boolean = canReadContacts
 
-                    override suspend fun displayName(number: PhoneNumber): String? = contacts[number].takeIf { canReadContacts }
+                    override suspend fun displayName(number: PhoneNumber): String? {
+                        lookupDelay()
+                        return contacts[number].takeIf { canReadContacts }
+                    }
                 },
             homeRegion = { homeRegion },
             emergencyNumbers = { it in emergencyNumbers },
@@ -45,12 +60,23 @@ class FakeSources {
     fun lists(): ListSources =
         ListSources(
             rules = {
+                lookupDelay()
                 rulesRead++
                 rules.toList()
             },
-            verifiedBusinesses = { it in verifiedBusinesses },
-            spamList = { spamList[it] },
-            reputation = { reputation[it] },
+            verifiedBusinesses = {
+                lookupDelay()
+                it in verifiedBusinesses
+            },
+            spamList = {
+                lookupDelay()
+                spamListFailure?.let { failure -> throw failure }
+                spamList[it]
+            },
+            reputation = {
+                lookupDelay()
+                reputation[it]
+            },
             network = { network.lookup(it) },
         )
 

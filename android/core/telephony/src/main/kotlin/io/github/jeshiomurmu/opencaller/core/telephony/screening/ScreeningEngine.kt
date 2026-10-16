@@ -16,8 +16,10 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 import kotlin.time.TimeSource
@@ -90,7 +92,7 @@ class ScreeningEngine(
             call.direction == Direction.OUTGOING -> allow(ScreeningReason.OUTGOING, call, caller)
             handle.isEmpty() -> decideHidden(device.settings.current(), call, caller)
             number == null -> allow(ScreeningReason.UNKNOWN_FORMAT, call, caller)
-            else -> decideNumber(number, region, device.settings.current(), call, caller)
+            else -> decideNumber(number, region, call, caller)
         }
     }
 
@@ -106,24 +108,35 @@ class ScreeningEngine(
             allow(ScreeningReason.NO_MATCH, call, caller)
         }
 
-    // Steps 2–4, then the settings (6–7), then the spam list and the caller card (8–11).
+    // Steps 2–4, then the settings (6–7), then the spam list and the caller card (8–11). The local lookups start
+    // together, so the call waits for the slowest of them rather than for their sum; the decision still takes them in
+    // order. A lookup's failure only counts if the decision needs its answer, and lookups still running when the
+    // decision is made are cancelled. The network (step 10) is never prefetched.
     private suspend fun decideNumber(
         number: PhoneNumber,
         region: String?,
-        prefs: UserPreferences,
         call: ScreeningCall,
         caller: CallerInfo,
-    ): ScreeningResult {
-        val contactName = device.contacts.displayName(number)
-        val decided =
-            if (contactName != null) {
-                allow(ScreeningReason.CONTACT, call, caller.copy(displayName = contactName, nameSource = NameSource.CONTACT))
-            } else {
-                matcher.firstMatch(lists.rules.callRules(), number)?.let { ruleResult(it, call, caller) }
-                    ?: blockedBySettings(number, region, prefs, call, caller)
+    ): ScreeningResult =
+        supervisorScope {
+            val lookups = LocalLookups(this, number)
+            try {
+                val prefs = lookups.prefs.await()
+                val decided =
+                    lookups.contactName.await()?.let { name ->
+                        allow(ScreeningReason.CONTACT, call, caller.copy(displayName = name, nameSource = NameSource.CONTACT))
+                    } ?: matcher.firstMatch(lookups.rules.await(), number)?.let { ruleResult(it, call, caller) }
+                        ?: blockedBySettings(
+                            number,
+                            region,
+                            prefs,
+                            lookups,
+                        )?.let { ScreeningResult(Decision.BLOCK, it, call.direction, caller) }
+                decided ?: decideBySpamList(number, prefs, lookups, call, caller)
+            } finally {
+                coroutineContext.cancelChildren()
             }
-        return decided ?: decideBySpamList(number, prefs, call, caller)
-    }
+        }
 
     // Steps 6 and 7. Without the contacts permission everyone looks like a non-contact, so step 7 never blocks then
     // (the blocking settings show a banner instead).
@@ -131,40 +144,51 @@ class ScreeningEngine(
         number: PhoneNumber,
         region: String?,
         prefs: UserPreferences,
-        call: ScreeningCall,
-        caller: CallerInfo,
-    ): ScreeningResult? {
-        val reason =
-            when {
-                prefs.blockForeignNumbers && region != null && describer.isForeign(number, region, prefs) -> {
-                    ScreeningReason.FOREIGN
-                }
-
-                prefs.blockNonContacts && device.contacts.canRead() && !lists.verifiedBusinesses.isVerifiedBusiness(number) -> {
-                    ScreeningReason.NON_CONTACT
-                }
-
-                else -> {
-                    null
-                }
+        lookups: LocalLookups,
+    ): ScreeningReason? =
+        when {
+            prefs.blockForeignNumbers && region != null && describer.isForeign(number, region, prefs) -> {
+                ScreeningReason.FOREIGN
             }
-        return reason?.let { ScreeningResult(Decision.BLOCK, it, call.direction, caller) }
-    }
+
+            prefs.blockNonContacts && device.contacts.canRead() && !lookups.verified.await() -> {
+                ScreeningReason.NON_CONTACT
+            }
+
+            else -> {
+                null
+            }
+        }
 
     // Step 8, then what the caller card shows for a call that rings.
     private suspend fun decideBySpamList(
         number: PhoneNumber,
         prefs: UserPreferences,
+        lookups: LocalLookups,
         call: ScreeningCall,
         caller: CallerInfo,
     ): ScreeningResult {
-        val verdict = lists.spamList.find(number)?.let { describer.verdict(it.score, it.category.ifBlank { null }, it.reportCount, prefs) }
+        val verdict = lookups.spamHit.await()?.let { describer.verdict(it.score, it.category.ifBlank { null }, it.reportCount, prefs) }
         return if (verdict?.level == RiskLevel.LIKELY_SPAM) {
             val decision = if (prefs.blockTopSpammers) Decision.BLOCK else Decision.SILENCE
             ScreeningResult(decision, ScreeningReason.SPAM_LIST, call.direction, caller.copy(spamVerdict = verdict))
         } else {
-            allow(ScreeningReason.NO_MATCH, call, describer.enrich(number, caller, verdict, prefs))
+            val known = KnownCaller(verified = lookups.verified.await(), cached = lookups.reputation.await())
+            allow(ScreeningReason.NO_MATCH, call, describer.enrich(number, caller, verdict, prefs, known))
         }
+    }
+
+    // On-device answers for one number, fetched concurrently (see decideNumber).
+    private inner class LocalLookups(
+        scope: CoroutineScope,
+        number: PhoneNumber,
+    ) {
+        val prefs = scope.async { device.settings.current() }
+        val contactName = scope.async { device.contacts.displayName(number) }
+        val rules = scope.async { lists.rules.callRules() }
+        val spamHit = scope.async { lists.spamList.find(number) }
+        val verified = scope.async { lists.verifiedBusinesses.isVerifiedBusiness(number) }
+        val reputation = scope.async { lists.reputation.find(number) }
     }
 
     private fun ruleResult(

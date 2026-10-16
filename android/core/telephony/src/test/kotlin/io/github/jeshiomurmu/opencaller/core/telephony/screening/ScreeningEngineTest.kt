@@ -341,4 +341,28 @@ class ScreeningEngineTest {
             assertEquals(RiskLevel.SUSPICIOUS, caller.spamVerdict?.level)
             assertEquals("Card delivery", caller.callReason)
         }
+
+    @Test
+    fun localLookupsRunTogether() =
+        runTest {
+            sources.lookupDelayMillis = 100
+            val result = engine().incoming(us)
+            assertEquals(ScreeningReason.NO_MATCH, result.reason)
+            // Six lookups of 100 ms each: one after another they would take 600 ms.
+            assertTrue("latency ${result.latencyMs} ms", result.latencyMs < 200)
+        }
+
+    @Test
+    fun aFailedLookupOnlyCountsWhenTheDecisionNeedsIt() =
+        runTest {
+            sources.spamListFailure = IllegalStateException("spam list unavailable")
+            sources.contacts[us] = "Ada"
+            sources.rule(RuleType.EXACT, bd.e164)
+            val engine = engine()
+            assertEquals(ScreeningReason.CONTACT, engine.incoming(us).reason)
+            assertEquals(ScreeningReason.RULE, engine.incoming(bd).reason)
+            val unknown = engine.incoming(PhoneNumber("+12015550199"))
+            assertEquals(Decision.ALLOW, unknown.decision)
+            assertEquals(ScreeningReason.ERROR, unknown.reason)
+        }
 }
