@@ -8,7 +8,6 @@ import io.github.jeshiomurmu.opencaller.onboarding.Ui.isShown
 import io.github.jeshiomurmu.opencaller.onboarding.Ui.string
 import io.github.jeshiomurmu.opencaller.onboarding.Ui.tap
 import io.github.jeshiomurmu.opencaller.onboarding.Ui.waitFor
-import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -28,7 +27,7 @@ import io.github.jeshiomurmu.opencaller.feature.settings.R as SettingsR
 @RunWith(AndroidJUnit4::class)
 class OnboardingTest {
     @get:Rule
-    val dumpOnFailure = DumpWindowOnFailure()
+    val dumpOnFailure = DumpWindowOnFailure(::cleanUp)
 
     private var scenario: ActivityScenario<MainActivity>? = null
 
@@ -44,8 +43,7 @@ class OnboardingTest {
         Ui.device.setOrientationNatural()
     }
 
-    @After
-    fun tearDown() {
+    private fun cleanUp() {
         scenario?.close()
         Ui.device.setOrientationNatural()
         Ui.setCallScreeningRole(held = false)
@@ -56,7 +54,7 @@ class OnboardingTest {
         launchAndPassIntro()
         waitFor(callScreeningTitle)
         tap(string(UiR.string.explainer_continue))
-        Ui.tapSystemButton(Ui.roleAccept)
+        Ui.acceptRoleDialog()
 
         waitFor(contactsTitle)
         assertTrue("OpenCaller holds ROLE_CALL_SCREENING", Ui.holdsCallScreeningRole())

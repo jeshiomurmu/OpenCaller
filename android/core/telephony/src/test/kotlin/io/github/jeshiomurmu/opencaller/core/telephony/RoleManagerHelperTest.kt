@@ -28,8 +28,9 @@ class RoleManagerHelperTest {
 
     @Before
     fun setUp() {
-        // Robolectric treats a role as available while it has any holder; "" stands for "some other app".
-        AppRole.entries.forEach { ShadowRoleManager.addRoleHolder(it.androidName, "", user) }
+        // Robolectric treats a role as available while it has a holder (and drops it with its last holder), so
+        // another app holds every role, as the stock dialer or SMS app would.
+        AppRole.entries.forEach { ShadowRoleManager.addRoleHolder(it.androidName, OTHER_APP, user) }
     }
 
     @Test
@@ -62,7 +63,7 @@ class RoleManagerHelperTest {
 
     @Test
     fun unavailableRoleHasNoRequest() {
-        ShadowRoleManager.removeRoleHolder(RoleManager.ROLE_CALL_SCREENING, "", user)
+        ShadowRoleManager.removeRoleHolder(RoleManager.ROLE_CALL_SCREENING, OTHER_APP, user)
         val helper = RoleManagerHelper(context)
         assertFalse(helper.isRoleAvailable(AppRole.CALL_SCREENING))
         assertEquals(RoleStatus.UNAVAILABLE, helper.roleState.value.callScreening)
@@ -72,5 +73,9 @@ class RoleManagerHelperTest {
     @Test
     fun availableRoleHasARequestIntent() {
         assertNotNull(RoleManagerHelper(context).createRequestIntent(AppRole.CALL_SCREENING))
+    }
+
+    private companion object {
+        const val OTHER_APP = "com.example.stockphone"
     }
 }

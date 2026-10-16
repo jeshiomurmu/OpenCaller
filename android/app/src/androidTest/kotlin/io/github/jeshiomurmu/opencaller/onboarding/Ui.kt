@@ -2,7 +2,6 @@ package io.github.jeshiomurmu.opencaller.onboarding
 
 import android.app.role.RoleManager
 import android.content.Context
-import android.content.Intent
 import androidx.annotation.StringRes
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
@@ -12,6 +11,7 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
 import org.junit.Assert.fail
+import org.junit.AssumptionViolatedException
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
@@ -91,17 +91,32 @@ object Ui {
                     .use { it.readBytes().decodeToString() }
             }
 
+    /**
+     * Gives or takes the call screening role through the shell, the way a user would in system settings. Flag 1 is
+     * RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP: without it Android kills the app, and with it this test process.
+     * The change is asynchronous, so this waits until RoleManager reports it.
+     */
     fun setCallScreeningRole(held: Boolean) {
         val action = if (held) "add-role-holder" else "remove-role-holder"
-        shell("cmd role $action ${RoleManager.ROLE_CALL_SCREENING} ${context.packageName}")
+        val output = shell("cmd role $action ${RoleManager.ROLE_CALL_SCREENING} ${context.packageName} $DONT_KILL_APP")
+        val deadline = System.currentTimeMillis() + TIMEOUT_MILLIS
+        while (holdsCallScreeningRole() != held && System.currentTimeMillis() < deadline) Thread.sleep(POLL_MILLIS)
+        if (holdsCallScreeningRole() != held) fail("cmd role $action did not take effect: $output")
     }
 
     fun holdsCallScreeningRole(): Boolean = context.getSystemService(RoleManager::class.java).isRoleHeld(RoleManager.ROLE_CALL_SCREENING)
 
-    /** Brings OpenCaller back to the front the way the launcher does. */
+    /** Accepts the role dialog. Newer PermissionControllers list the candidate apps and need OpenCaller picked first. */
+    fun acceptRoleDialog() {
+        val deadline = System.currentTimeMillis() + TIMEOUT_MILLIS
+        while (roleAccept.none { device.hasObject(it) } && System.currentTimeMillis() < deadline) Thread.sleep(POLL_MILLIS)
+        device.findObject(By.text(string(io.github.jeshiomurmu.opencaller.R.string.app_name)))?.click()
+        tapSystemButton(roleAccept)
+    }
+
+    /** Brings OpenCaller back to the front the way the launcher does (from the shell, which may start activities). */
     fun relaunchFromLauncher() {
-        val launch = requireNotNull(context.packageManager.getLaunchIntentForPackage(context.packageName))
-        context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        shell("am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n ${context.packageName}/$MAIN_ACTIVITY")
     }
 
     fun windowDump(): String {
@@ -111,10 +126,17 @@ object Ui {
     }
 
     private const val POLL_MILLIS = 250L
+    private const val DONT_KILL_APP = 1
+    private const val MAIN_ACTIVITY = "io.github.jeshiomurmu.opencaller.MainActivity"
 }
 
-/** Adds the on-screen hierarchy to any failure, so CI logs show what was on screen. */
-class DumpWindowOnFailure : TestRule {
+/**
+ * Adds the on-screen hierarchy to any failure (taken before [cleanUp] closes the app), so CI logs show what was on
+ * screen. Skipped tests (assumptions) pass through unchanged.
+ */
+class DumpWindowOnFailure(
+    private val cleanUp: () -> Unit,
+) : TestRule {
     override fun apply(
         base: Statement,
         description: Description,
@@ -123,8 +145,12 @@ class DumpWindowOnFailure : TestRule {
             override fun evaluate() {
                 try {
                     base.evaluate()
+                } catch (e: AssumptionViolatedException) {
+                    throw e
                 } catch (e: Throwable) {
                     throw AssertionError("${e.message}\n--- window hierarchy ---\n${Ui.windowDump()}", e)
+                } finally {
+                    cleanUp()
                 }
             }
         }
