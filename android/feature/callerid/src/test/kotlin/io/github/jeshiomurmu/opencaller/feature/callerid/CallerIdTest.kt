@@ -33,6 +33,7 @@ import io.github.jeshiomurmu.opencaller.core.telephony.AccessStatusSource
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.CallerIdListener
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ScreeningResult
 import io.github.jeshiomurmu.opencaller.core.testing.TestDispatcherProvider
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.Assert.assertEquals
@@ -46,6 +47,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.VANILLA_ICE_CREAM])
 class CallerIdTest {

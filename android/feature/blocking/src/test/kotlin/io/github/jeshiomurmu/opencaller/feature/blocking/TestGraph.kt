@@ -25,6 +25,7 @@ import io.github.jeshiomurmu.opencaller.core.telephony.screening.TimeLimitedRege
 import io.github.jeshiomurmu.opencaller.core.testing.FakeClock
 import io.github.jeshiomurmu.opencaller.core.testing.TestDispatcherProvider
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -36,6 +37,7 @@ import kotlin.time.TimeSource
  * Real repositories over an unencrypted in-memory database (direct executors, so writes are visible at once) and
  * the real screening engine with an empty contact list, for view model tests.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class TestGraph {
     val db: OpenCallerDatabase =
         Room

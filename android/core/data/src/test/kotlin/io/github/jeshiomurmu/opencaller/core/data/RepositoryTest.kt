@@ -25,6 +25,7 @@ import io.github.jeshiomurmu.opencaller.core.model.ScreeningReason
 import io.github.jeshiomurmu.opencaller.core.testing.FakeClock
 import io.github.jeshiomurmu.opencaller.core.testing.Fixtures
 import io.github.jeshiomurmu.opencaller.core.testing.TestDispatcherProvider
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -38,6 +39,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /** Repositories against an unencrypted in-memory Room database (SQLCipher's native library is Android-only). */
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.VANILLA_ICE_CREAM])
 class RepositoryTest {
@@ -104,7 +106,7 @@ class RepositoryTest {
 
             val recent = events.recent(10).ok()
             assertEquals(listOf(Decision.ALLOW, Decision.SILENCE), recent.map { it.decision })
-            val saved = events.find(id).ok()
+            val saved = checkNotNull(events.find(id).ok())
             assertEquals(event(Decision.SILENCE, at = clock.nowMillis()).copy(id = id), saved)
             assertNull(recent.first().number)
             assertEquals(
@@ -134,7 +136,7 @@ class RepositoryTest {
                 db.screeningEventDao().insert(
                     event(Decision.ALLOW, at = 1).toEntity().copy(reason = "from_the_future", stirStatus = 9),
                 )
-            val saved = events.find(id).ok()
+            val saved = checkNotNull(events.find(id).ok())
             assertEquals(ScreeningReason.NO_MATCH, saved.reason)
             assertEquals(CallerVerification.UNKNOWN, saved.verification)
         }
@@ -147,7 +149,7 @@ class RepositoryTest {
             assertEquals(4, hits.size)
             spam.upsert(hits, listVersion = 1)
             assertEquals(AppResult.Success(4), spam.count())
-            val hit = spam.find(PhoneNumber("+12015550100")).ok()
+            val hit = checkNotNull(spam.find(PhoneNumber("+12015550100")).ok())
             assertEquals(0.9f, hit.score)
             assertEquals("Loan", hit.category)
             assertNull(spam.find(number).getOrNull())
@@ -185,7 +187,7 @@ class RepositoryTest {
                     expiresAt = clock.nowMillis() + 1000,
                 ),
             )
-            val cached = reputation.findFresh(number).ok()
+            val cached = checkNotNull(reputation.findFresh(number).ok())
             assertEquals("b1", cached.verifiedBusinessId)
             assertEquals(LineType.MOBILE, cached.lineType)
             clock.advanceBy(1000)

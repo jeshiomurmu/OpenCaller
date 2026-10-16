@@ -142,7 +142,7 @@ private fun DraftEditor(
         ChoiceRow(
             RuleAction.entries,
             draft.action,
-            { stringResource(it.labelRes()) },
+            RuleAction::labelRes,
         ) { onEvent(RulesEvent.EditDraft(draft.copy(action = it))) }
         Button(onClick = { onEvent(RulesEvent.SaveDraft) }, enabled = !draft.saving) { Text(text = stringResource(R.string.rules_add)) }
     }

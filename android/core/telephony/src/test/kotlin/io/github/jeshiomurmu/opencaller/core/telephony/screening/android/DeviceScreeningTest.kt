@@ -19,6 +19,7 @@ import io.github.jeshiomurmu.opencaller.core.telephony.screening.device.LocalVer
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.device.callResponseFor
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.device.screeningCall
 import io.github.jeshiomurmu.opencaller.core.testing.TestDispatcherProvider
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -33,6 +34,7 @@ import org.robolectric.annotation.Config
 import java.util.Locale
 import java.util.Optional
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.Q, Build.VERSION_CODES.VANILLA_ICE_CREAM])
 class DeviceScreeningTest {

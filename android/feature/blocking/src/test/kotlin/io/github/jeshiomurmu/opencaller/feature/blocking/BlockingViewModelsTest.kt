@@ -14,6 +14,7 @@ import io.github.jeshiomurmu.opencaller.core.model.SpamThreshold
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.RuleProblem
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ScreeningCall
 import io.github.jeshiomurmu.opencaller.core.testing.MainDispatcherRule
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -25,6 +26,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.VANILLA_ICE_CREAM])
 class BlockingViewModelsTest {
