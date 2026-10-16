@@ -1,0 +1,6 @@
+This project's agent rules live in docs/rules.md. Read docs/rules.md and docs/phase.md before every task.
+Work only on the current phase listed in docs/phase.md.
+Never invent library versions, Gradle coordinates or Android APIs; verify them first.
+Never upload contacts, call logs or SMS bodies to any server.
+Every change ships with tests and a green `./gradlew check`.
+Update docs/phase.md at the end of every task.

@@ -1,0 +1,51 @@
+# Gradle / Android
+.gradle/
+build/
+**/build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+output-metadata.json
+
+# Signing material (never commit)
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Kotlin
+.kotlin/
+
+# Secrets
+.env
+.env.*
+!.env.example
+google-services.json
+**/secrets/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# ML artifacts (publish via releases, not git)
+ml/**/data/
+ml/**/checkpoints/
+ml/**/*.pt
+ml/**/*.onnx
+
+# Logs
+*.log
