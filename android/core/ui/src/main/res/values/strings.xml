@@ -20,4 +20,38 @@
     <!-- VerifiedBadge. -->
     <string name="verified_business">Verified business</string>
     <string name="verified_business_explain">Verified business. Tap to see how it was verified.</string>
+
+    <!-- PermissionExplainer (docs/design.md §5). -->
+    <string name="explainer_continue">Continue</string>
+    <string name="explainer_not_now">Not now</string>
+    <string name="explainer_never_title">What OpenCaller never does</string>
+    <string name="explainer_open_settings">Open settings</string>
+
+    <!-- Short names of roles and permissions. -->
+    <string name="access_call_screening">Caller ID &amp; spam protection</string>
+    <string name="access_contacts">Contacts</string>
+    <string name="access_notifications">Notifications</string>
+    <string name="access_default_phone_app">Default phone app</string>
+    <string name="access_default_sms_app">Default SMS app</string>
+    <string name="access_overlay">Caller ID over other apps</string>
+
+    <!-- Explainers: why we ask, what we never do (docs/design.md §7, docs/architecture.md §5 and §10). -->
+    <string name="explain_call_screening_title">Let OpenCaller check incoming calls</string>
+    <string name="explain_call_screening_why">Android asks you to choose a caller ID &amp; spam app. With it, OpenCaller can show who is calling and stop spam before your phone rings. It works with your current phone app.</string>
+    <string name="explain_call_screening_never">OpenCaller never blocks your outgoing calls or emergency numbers. If something goes wrong while checking a call, the call rings as usual.</string>
+    <string name="explain_contacts_title">Use your own names for your contacts</string>
+    <string name="explain_contacts_why">When someone in your contacts calls, OpenCaller shows the name you saved and never marks them as spam.</string>
+    <string name="explain_contacts_never">Your contacts stay on this phone. OpenCaller never uploads, shares or sells them.</string>
+    <string name="explain_notifications_title">Get call summaries and alerts</string>
+    <string name="explain_notifications_why">OpenCaller uses notifications for the summary after a call, blocked-call alerts and caller ID when it can\'t show over other apps.</string>
+    <string name="explain_notifications_never">No ads, no promotions. Without notifications, summaries stay in your call history in the app.</string>
+    <string name="explain_dialer_title">Make OpenCaller your phone app</string>
+    <string name="explain_dialer_why">As your phone app, OpenCaller shows caller ID right on the call screen and keeps your call history in one place.</string>
+    <string name="explain_dialer_never">Your call history stays on this phone. OpenCaller never uploads it.</string>
+    <string name="explain_sms_title">Make OpenCaller your SMS app</string>
+    <string name="explain_sms_why">As your SMS app, OpenCaller sorts messages, filters spam and warns you about risky codes and links.</string>
+    <string name="explain_sms_never">Your messages stay on this phone. OpenCaller never uploads them.</string>
+    <string name="explain_overlay_title">Show caller ID over other apps</string>
+    <string name="explain_overlay_why">This lets OpenCaller show a small caller card on top of your phone app during a call. Without it, caller ID appears as a notification.</string>
+    <string name="explain_overlay_never">The card appears only for calls. OpenCaller never reads what is on your screen.</string>
 </resources>

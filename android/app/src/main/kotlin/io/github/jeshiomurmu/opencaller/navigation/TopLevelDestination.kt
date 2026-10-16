@@ -26,6 +26,15 @@ data object ProtectionRoute
 @Serializable
 data object MeRoute
 
+/**
+ * Settings → Permissions & roles (under the Me tab). [explain] is an `AccessItem` name whose explainer opens
+ * right away, e.g. from the degraded-mode banner's Fix.
+ */
+@Serializable
+data class PermissionsRoute(
+    val explain: String? = null,
+)
+
 /** The five bottom-bar tabs (docs/design.md §6), in display order. */
 enum class TopLevelDestination(
     val route: Any,

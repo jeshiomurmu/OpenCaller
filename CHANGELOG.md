@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Onboarding, roles and permissions (Phase 2): Welcome and privacy screens, then call screening role, contacts and
+  notification requests, each behind an explainer, and optional extras (default phone/SMS app, caller ID over other
+  apps) in at most five steps; progress survives rotation and process death. Settings → Permissions & roles status
+  screen with Fix actions; app-wide banner while call screening is off; Calls tab card for the default phone app.
+  `RoleManagerHelper`, `PermissionPolicy` (call log/phone permissions only with the dialer role, SMS only with the
+  SMS role) and a pass-through `CallScreeningService` so the role can be granted.
+- CI: instrumented onboarding tests (TC-ONB-001/002/003/005/006/007/008) on API 29 and 36; the emulator smoke test
+  walks onboarding and checks that it resumes after the process is killed.
 - Core foundations (Phase 1): `core:common` (`AppResult`, `AppError`, `DispatcherProvider`, `Clock`, log redaction),
   `core:model` domain types, `core:phonenumber` (libphonenumber normalizer, bucket hasher with vectors shared with the
   server), SQLCipher-encrypted Room database with all entities and DAOs and a Keystore-wrapped passphrase,

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!--
+            Android only offers the caller ID & spam role (RoleManager.ROLE_CALL_SCREENING) to apps that declare a
+            CallScreeningService. Phase 2 lets every call through; screening decisions arrive in Phase 3.
+        -->
+        <service
+            android:name=".screening.OpenCallerScreeningService"
+            android:exported="true"
+            android:permission="android.permission.BIND_SCREENING_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.CallScreeningService" />
+            </intent-filter>
+        </service>
+    </application>
+
+</manifest>

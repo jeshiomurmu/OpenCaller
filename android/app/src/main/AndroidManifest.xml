@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--
+        Requested only after an explainer (docs/architecture.md §5). Call log, phone and SMS permissions are added
+        with the dialer and SMS app phases, and only requested while OpenCaller holds the matching role.
+    -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
     <application
         android:name=".OpenCallerApplication"
         android:allowBackup="false"

@@ -6,33 +6,32 @@
 
 | Field | Value |
 | --- | --- |
-| **Current phase** | **1 — Core foundations** |
+| **Current phase** | **2 — Onboarding, roles, permissions** |
 | Phase started | 2026-10-16 |
 | Target exit date | — |
-| Branch | `phase/01-core-foundations` |
-| Last green CI run | Phase 0: [CI on `main`](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38855255085) (`2c21f97`). Phase 1: PR #2 run [38862968837](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38862968837) in progress on `730dbb7`; [38861932267](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38861932267) was all green on `f5d828b` |
+| Branch | `phase/02-onboarding` |
+| Last green CI run | Phase 2: [run 38879129151](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38879129151) on `f6b7392` (`phase/02-onboarding`, PR #3), 2026-10-16, all 6 jobs green. `main`: [run 38867777494](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38867777494) (`aede43d`) |
 | App version | 0.0.0 |
 
 ## Current phase checklist
 
-Copied from `docs/implementation_plan.md` → Phase 1. Tick here as you go; copy the ticked list back to the plan when the phase exits.
+Copied from `docs/implementation_plan.md` → Phase 2. Tick here as you go; copy the ticked list back to the plan when the phase exits.
 
-- [x] `core:common`: `AppResult`, `AppError`, `DispatcherProvider`, `Clock`, `RedactingTree`. The masking logic (`LogRedactor`) is pure Kotlin in `core:common`; the Timber `RedactingTree` lives in `app` because Timber is an AAR and `core:common` must stay JVM-only (open issue 9)
-- [x] `core:model`: `PhoneNumber`, `CallerInfo`, `NameSource`, `SpamVerdict`, `BlockRule`, `Decision`, `MessageCategory`, `OtpInfo` (+ `SenderId`, `Address`, `UserPreferences`), KDoc on every public type, pure Kotlin
-- [x] `core:phonenumber`: normalizer (E.164), number type, country, bucket hasher; tests TC-PN-001…005 with BD, IN, US, GB, NG, AE fixtures; bucket vectors shared with the backend (CI `cmp`s both copies). JaCoCo gate ≥ 90 % lines in `check` (98.3 % locally). Default region from the SIM is the caller's job (`core:telephony`, later phase; open issue 12)
-- [x] `core:database`: Room + SQLCipher, all 13 entities from `architecture.md` §6, DAOs, schema v1 exported and committed (CI fails if it drifts), `MigrationTestHelper` harness; passphrase = 32 random bytes wrapped by an Android Keystore AES-GCM key, stored in DataStore. Instrumented tests (header ≠ `SQLite format 3`, wrong key, Keystore round-trip/tamper, every DAO, migration) green on API 29 and 36
-- [x] `core:datastore`: `UserSettings` proto (blocking toggles, spam threshold, allowed countries, overlay, announce mode, theme, onboarding step) with protobuf-lite codegen and a `Flow<UserPreferences>` data source
-- [x] `core:designsystem`: `OpenCallerTheme` with exactly the `design.md` §2 tokens (light + dark), semantic colours via `LocalOpenCallerSemanticColors`, Noto Sans typography (fonts bundled, OFL in `NOTICE.md`), spacing/shape tokens, previews (light, dark, fontScale 2f); WCAG contrast unit test. `core:ui`: `SourceChip`, `RiskBanner`, `VerifiedBadge`, `EmptyState`
-- [x] `core:testing`: `MainDispatcherRule`, `TestDispatcherProvider`, `FakeClock`, `Fixtures` + `fixtures/` (numbers, bucket vectors)
-- [x] App shell: Hilt `Application`, `MainActivity`, Navigation Compose type-safe routes, bottom bar with 5 tabs (Calls, Messages, Contacts, Protection, Me) showing `EmptyState` placeholders. CI `emulator` job opens every tab in light and dark mode on API 29 and 36 and checks screenshot luminance. The tab is named "Protection" as P-01 asked, not "Blocking" (open issue 13)
+- [x] Welcome + privacy explainer screens (what leaves the phone, what never does) — `feature:onboarding`, copy from `prd.md` §5 / `architecture.md` §10; max 5 numbered steps (Welcome, Privacy, Call screening, Permissions, Extras)
+- [x] `RoleManagerHelper`: query/request `ROLE_CALL_SCREENING`, `ROLE_DIALER`, `ROLE_SMS` — availability, held, own-manifest eligibility, request intent, `StateFlow<RoleState>`; dialer and SMS show "coming later" until the app ships their components (open issue 17); Robolectric tests on SDK 29 and 35
+- [x] Permission explainers + requests per `architecture.md` §5 (only after the matching role) — `core:ui` `PermissionExplainer`/`AccessItemExplainer` before every request (TC-ONB-004); `PermissionPolicy` allows call log/phone permissions only with `ROLE_DIALER` and SMS permissions only with `ROLE_SMS` (Robolectric `PermissionPolicyTest`)
+- [x] Overlay permission flow (`SYSTEM_ALERT_WINDOW`) — optional extra; denied → caller ID falls back to a notification (TC-ONB-007, API 29 + 36)
+- [x] Notification permission (API 33+) — skipped below 33; denied → after-call summaries stay in the in-app history (TC-ONB-006, API 36)
+- [x] Onboarding state persisted; re-entry from Settings → Permissions status screen — step in `UserSettings`, open extra in `SavedStateHandle`; rotation + recreation (instrumented) and real process death (`am kill`, smoke script) resume at the same step (TC-ONB-008); Me → Settings → Permissions & roles with Fix (explainer first, settings page once blocked)
+- [x] Handle "role revoked later" (re-check on resume, banner) — `RefreshAccessOnResume`; app-wide degraded-mode banner with Fix; revoking via `cmd role` shows the banner on return (TC-ONB-005, API 29 + 36)
 
-**Exit criteria:** unit tests ≥ 90% line coverage on `core:phonenumber`; DB opens encrypted (verified by a test that the file header is not `SQLite format 3`); app shell navigates in light/dark.
+**Exit criteria:** on a fresh emulator, onboarding grants call-screening role; denying each permission shows the degraded-mode banner, never a crash (TC-ONB-001…008).
 
 ## Next step
 
-Review and merge PR [#2](https://github.com/jeshiomurmu/OpenCaller/pull/2) (squash), confirm CI is green on `main`, copy the ticked checklist into `docs/implementation_plan.md`, then **run P-02**.
+Review and merge PR [#3](https://github.com/jeshiomurmu/OpenCaller/pull/3) (squash), confirm CI is green on `main`, copy the ticked checklist into `docs/implementation_plan.md`, then **run P-03**.
 
-Exit criteria status: `core:phonenumber` line coverage ≥ 90 % ✅ (JaCoCo gate in `check`; 98.3 % locally). DB opens encrypted ✅ (`EncryptedDatabaseTest` on API 29 and 36). App shell navigates in light/dark ✅ (CI `emulator` walk, screenshots uploaded as artifacts).
+Exit criteria status: on fresh API 29 and API 36 emulators onboarding grants the call screening role in the system dialog (TC-ONB-001, smoke script) ✅; denying the role or each permission shows the degraded-mode banner or the documented fallback, never a crash (TC-ONB-002, 006, 007) ✅; TC-ONB-003, 004, 005, 008 ✅. See `docs/testing.md` → "Where they run (Phase 2)".
 
 ## Open issues / blockers
 
@@ -52,6 +51,13 @@ Exit criteria status: `core:phonenumber` line coverage ≥ 90 % ✅ (JaCoCo gate
 14. **Derived colour roles.** `design.md` §2 doesn't define every Material 3 role (e.g. dark semantic containers, `surfaceContainer*`). These are derived by blending §2 tokens (`ColorScheme.kt`, `OpenCallerSemanticColors.kt`). A designer should confirm the result.
 15. **Module types.** `core:phonenumber`, `core:testing` and `core:datastore` are JVM modules (no Android API needed), so they test without Robolectric. `core:database`, `core:designsystem` and `core:ui` are Android libraries.
 16. **API 29 emulator night mode.** `cmd uimode night yes` from the shell has no effect on the API 29 image. `scripts/ci/emulator-smoke.sh` retries as root and then falls back to the persisted setting plus a reboot.
+17. **Default phone and SMS app roles show "Coming in a later update".** Android grants `ROLE_DIALER` / `ROLE_SMS` only to apps that ship an in-call UI / SMS receivers; stubbing them now would leave calls without an in-call screen or drop incoming SMS. `RoleEligibility` checks the app's own manifest, so both turn on automatically when Phases 6 and 7 add those components. TC-ONB-003's card shows the "later" text until then.
+18. **Role changes kill the app process on API 36.** Granting or revoking `ROLE_CALL_SCREENING` (system dialog or `cmd role`, even with the don't-kill flag) ended the app process, which in instrumented tests is also the test process. TC-ONB-001, 003 (role held) and 005 therefore run in `scripts/ci/emulator-smoke.sh` via adb. The app copes (the step is persisted and onboarding resumes). Re-check on a physical Android 16 phone before Phase 3.
+19. **Robolectric runs SDK 35, not 36.** Robolectric 4.17's Android 16 image needs Java 21 (`DefaultSdkProvider`); the project builds with JDK 17. Move tests to SDK 36 when the toolchain moves to Java 21 (needs a decision).
+20. **TC-ONB-006 / 007 are verified at the fallback-decision level.** The after-call card and the caller ID card don't exist yet; tests check that the fallback is chosen and shown in Settings and that nothing crashes. Re-run against the real surfaces in Phase 3.
+21. **Not yet requested:** `WRITE_CONTACTS` (contacts editing, Phase 6) and `READ_PHONE_STATE` / `READ_PHONE_NUMBERS` (SIM info, with the `core:telephony` SIM work). `architecture.md` §5 lists them for onboarding; add them with the screens that need them.
+22. **Test fake duplicated.** `FakeAccessStatusSource` exists in three test source sets (onboarding, settings, app) because `core:testing` is a JVM module and `AccessStatusSource` lives in the Android `core:telephony`. Consider Android test fixtures later.
+23. **Maven Central returned HTTP 403** for the Robolectric/Turbine POMs in one CI run (run 38871676332, 2026-10-16); the next run resolved them. Watch for repeats: the branch's Gradle cache is read-only, so new dependencies are downloaded on every run.
 
 ## Verified dependency versions
 
@@ -93,12 +99,18 @@ Fill as dependencies are added (the source of truth is `libs.versions.toml`; thi
 | AndroidX Test (core 1.7.0, runner 1.7.0, ext-junit 1.3.0) | see left | https://developer.android.com/jetpack/androidx/releases/test | 2026-10-16 |
 | JaCoCo (Gradle `jacoco` plugin tool version) | 0.8.15 | Maven Central `org/jacoco/org.jacoco.agent/maven-metadata.xml` | 2026-10-16 |
 | Noto Sans / Noto Sans Mono fonts | 2.015 / 2.014 (OFL-1.1) | https://github.com/notofonts/latin-greek-cyrillic, https://raw.githubusercontent.com/google/fonts/main/ofl/notosans/METADATA | 2026-10-16 |
-| Material Symbols (12 vector icons) | `master` of google/material-design-icons (Apache-2.0); `material-icons-core` is frozen at 1.7.8, so not used | https://github.com/google/material-design-icons | 2026-10-16 |
+| Material Symbols (16 vector icons; Phase 2 added notifications, lock, check_circle, layers) | `master` of google/material-design-icons (Apache-2.0); `material-icons-core` is frozen at 1.7.8, so not used | https://github.com/google/material-design-icons | 2026-10-16 |
+| AndroidX Lifecycle (common, runtime-compose, viewmodel-compose, viewmodel-savedstate) | 2.10.0 (2.11.0 moved Compose to compileSdk 37, 2.11.0-beta01 notes) | https://developer.android.com/jetpack/androidx/releases/lifecycle | 2026-10-16 |
+| AndroidX Hilt (`hilt-lifecycle-viewmodel-compose`) | 1.3.0 (1.4.0 moved Compose to compileSdk 37, 1.4.0-beta01 notes) | https://developer.android.com/jetpack/androidx/releases/hilt | 2026-10-16 |
+| Robolectric | 4.17 (tests use SDK 29 and 35; SDK 36 needs Java 21) | Maven Central `org/robolectric/robolectric/maven-metadata.xml`; `DefaultSdkProvider` in the 4.17 jar | 2026-10-16 |
+| AndroidX Test UiAutomator | 2.4.0 | https://developer.android.com/jetpack/androidx/releases/test-uiautomator | 2026-10-16 |
+| AndroidX Test Orchestrator / Test Services | 1.6.1 / 1.6.0 | https://developer.android.com/jetpack/androidx/releases/test | 2026-10-16 |
 
 ## Progress log (newest first)
 
 | Date | Phase | What changed | Verified by |
 | --- | --- | --- | --- |
+| 2026-10-16 | 2 | Phase 2 onboarding (PR #3): access model types; `core:telephony` (`RoleManagerHelper`, `PermissionStatusReader`, `AccessStatusSource` refreshed on resume, `PermissionPolicy`, `AccessRequestFactory`, pass-through `CallScreeningService`); `core:ui` explainers, `WarningBanner`, request launcher; `feature:onboarding` (5 steps, persisted); `feature:settings` (Permissions & roles with Fix); app: degraded-mode banner, Calls card, Me → Settings. CI: app instrumented tests with the orchestrator; smoke script drives role grant/revoke and process death | CI run 38879129151 green: android (spotless, detekt, lint, unit + Robolectric tests ×2 flavors, assemble ×2, `check`), emulator API 29 + 36 (DB tests; `OnboardingTest` TC-ONB-002/003/006/007/008; smoke TC-ONB-008/001/003/005 + light/dark tab walk), backend, compose smoke, license |
 | 2026-10-16 | 1 | Phase 1 foundations (PR #2): `core:common`, `core:model`, `core:phonenumber` (+ backend `BucketHasher` with shared vectors), `core:database` (Room + SQLCipher, Keystore-wrapped passphrase, schema v1), `core:datastore` (proto), `core:designsystem` (tokens, Noto Sans, icons), `core:ui` components, `core:testing`, app shell with 5 tabs. CI: Room schema drift check, instrumented DB tests and a light/dark tab walk on API 29 + 36 | CI on PR #2 (see Status): spotless, detekt, lint, unit tests ×2 flavors, assemble ×2, `check` (JaCoCo ≥ 90 % on `core:phonenumber`), backend `check` + vector `cmp`, `connectedDebugAndroidTest` on API 29 + 36, emulator walk of all 5 tabs light + dark. Locally: 41 JVM tests, coverage 98.3 %, backend 4 tests |
 | 2026-10-16 | 0 | Push access restored; PR #1 opened. CI fixes: feature guard allowed own path, Compose BOM → 2026.06.01 (compileSdk 36), `fullBackupContent` for API 29–30, MinIO healthcheck via static BusyBox. Added LICENSE + CI jobs `emulator` (API 29/36), `compose smoke`, `license` | CI green: android (spotless, detekt, lint ×34, unit tests ×2 flavors, assemble ×2, `check`), backend, emulator API 29 + 36 ("OpenCaller" on screen), compose smoke (`/health` 200), license (matches gnu.org) |
 | 2026-10-16 | 0 | Bootstrapped `android/` (catalog, 7 convention plugins, 35 modules, flavors, Compose MainActivity, Spotless/Detekt/Lint), `backend/server/` (Ktor `/health`, Dockerfile), `infra/docker/compose.yml`, `ci.yml`, CHANGELOG, NOTICE; ADRs reviewed | Backend `./gradlew check` green; compose up, all healthy, `/health` 200; Spotless + Detekt on Android sources green. Android build/CI not yet run at that point |
@@ -108,4 +120,5 @@ Fill as dependencies are added (the source of truth is `libs.versions.toml`; thi
 
 | Phase | Started | Exited | Notes |
 | --- | --- | --- | --- |
+| 1 — Core foundations | 2026-10-16 | 2026-10-16 | PR #2 merged; CI green on `main` (`aede43d`, run 38867777494); `core:phonenumber` coverage ≥ 90 %; encrypted DB verified on API 29 + 36; 5 tabs walked in light/dark on API 29 + 36 |
 | 0 — Repo, tooling, CI | 2026-10-16 | 2026-10-16 | PR #1 merged; CI green on `main` (`2c21f97`); emulator install/launch API 29 + 36; `/health` 200. Open: repo is public (plan says private until v0.1) |

@@ -12,6 +12,14 @@ android {
         applicationId = "io.github.jeshiomurmu.opencaller"
         versionCode = 1
         versionName = "0.0.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Each instrumented test starts from a fresh install state (no settings, no granted permissions).
+        testInstrumentationRunnerArguments["clearPackageData"] = "true"
+    }
+
+    testOptions {
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
     }
 
     buildFeatures {
@@ -72,6 +80,7 @@ dependencies {
     implementation(projects.feature.settings)
 
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.coroutines.android)
@@ -79,4 +88,12 @@ dependencies {
     implementation(libs.timber)
 
     testImplementation(libs.junit4)
+    testImplementation(projects.core.testing)
+
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.uiautomator)
+    androidTestUtil(libs.androidx.test.orchestrator)
+    androidTestUtil(libs.androidx.test.services)
 }

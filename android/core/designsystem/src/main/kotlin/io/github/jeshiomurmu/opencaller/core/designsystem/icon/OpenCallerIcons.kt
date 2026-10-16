@@ -38,6 +38,18 @@ object OpenCallerIcons {
     /** Likely scam / spam. */
     @get:DrawableRes val Danger: Int = R.drawable.ic_dangerous
 
-    /** Suspicious. */
+    /** Suspicious; also degraded-mode warnings. */
     @get:DrawableRes val Warning: Int = R.drawable.ic_warning
+
+    /** Notifications permission. */
+    @get:DrawableRes val Notifications: Int = R.drawable.ic_notifications
+
+    /** Privacy. */
+    @get:DrawableRes val Privacy: Int = R.drawable.ic_lock
+
+    /** Granted / done. */
+    @get:DrawableRes val Granted: Int = R.drawable.ic_check_circle
+
+    /** Caller ID drawn over other apps. */
+    @get:DrawableRes val Overlay: Int = R.drawable.ic_layers
 }

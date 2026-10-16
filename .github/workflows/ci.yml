@@ -100,7 +100,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Instrumented tests, then walk the app in light and dark mode
+      - name: Instrumented tests (DB, onboarding TC-ONB-*), then walk the app in light and dark mode
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}
@@ -108,7 +108,7 @@ jobs:
           arch: x86_64
           disable-animations: true
           script: |
-            cd android && ./gradlew :core:database:connectedDebugAndroidTest || { find core/database/build/outputs/androidTest-results -name '*.xml' -exec cat {} +; exit 1; }
+            cd android && ./gradlew --continue :core:database:connectedDebugAndroidTest :app:connectedFossDebugAndroidTest || { find core/database/build/outputs/androidTest-results app/build/outputs/androidTest-results \( -name '*.xml' -o -name '*.txt' \) -exec cat {} +; adb logcat -d -b crash; adb logcat -d | grep -iE 'opencaller|AndroidRuntime|RoleController|Killing' | tail -n 400; exit 1; }
             scripts/ci/emulator-smoke.sh android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/emulator/api-${{ matrix.api-level }}
 
       - name: Upload screenshots and test reports
@@ -119,6 +119,7 @@ jobs:
           path: |
             build/emulator/
             android/core/database/build/reports/androidTests/
+            android/app/build/reports/androidTests/
           if-no-files-found: ignore
 
   compose:
