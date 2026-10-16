@@ -47,6 +47,25 @@ tap_text() {
   adb shell input tap $(((x1 + x2) / 2)) $(((y1 + y2) / 2))
 }
 
+# Switches system night mode to yes|no. `cmd uimode night` has no effect on some images (seen on the API 29
+# emulator); then the persistent setting is written and the emulator rebooted, since it is read at boot.
+set_night_mode() {
+  adb shell cmd uimode night "$1" > /dev/null
+  if adb shell cmd uimode night | grep -q "Night mode: $1"; then return 0; fi
+  echo "cmd uimode night $1 had no effect; setting ui_night_mode and rebooting"
+  adb shell settings put secure ui_night_mode "$([[ "$1" == "yes" ]] && echo 2 || echo 1)"
+  adb reboot
+  adb wait-for-device
+  until [[ "$(adb shell getprop sys.boot_completed | tr -d '\r')" == "1" ]]; do sleep 2; done
+  adb shell input keyevent KEYCODE_WAKEUP
+  adb shell wm dismiss-keyguard || true
+  if ! adb shell cmd uimode night | grep -q "Night mode: $1"; then
+    echo "::error::could not switch system night mode to $1"
+    adb shell cmd uimode night || true
+    exit 1
+  fi
+}
+
 assert_alive() {
   if adb logcat -d -b crash | grep -q "$app_id"; then
     echo "::error::$app_id crashed"
@@ -65,7 +84,7 @@ adb install -r "$apk"
 
 for mode in no yes; do
   theme=$([[ "$mode" == "yes" ]] && echo dark || echo light)
-  adb shell cmd uimode night "$mode"
+  set_night_mode "$mode"
   adb shell am force-stop "$app_id"
   adb logcat -c
   adb shell am start -W -n "$app_id/$activity"
@@ -88,5 +107,4 @@ for mode in no yes; do
   assert_alive
 done
 
-adb shell cmd uimode night no
 echo "OK: $app_id walked all ${#tabs[@]} tabs in light and dark mode"
