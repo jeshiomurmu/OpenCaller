@@ -2,6 +2,7 @@ plugins {
     id("opencaller.android.application")
     id("opencaller.android.compose")
     id("opencaller.android.hilt")
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -72,6 +73,10 @@ dependencies {
 
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.core)
+    implementation(libs.timber)
 
     testImplementation(libs.junit4)
 }

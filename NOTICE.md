@@ -25,14 +25,53 @@ Keep this list in sync with `android/gradle/libs.versions.toml` and `backend/ser
 
 | Component | Used in | License |
 | --- | --- | --- |
-| Kotlin standard library | app, server | Apache-2.0 |
-| AndroidX Activity, Jetpack Compose (UI, Material 3) | app | Apache-2.0 |
-| AndroidX Room | app | Apache-2.0 |
+| Kotlin standard library, kotlinx.coroutines, kotlinx.serialization | app, server | Apache-2.0 |
+| AndroidX Activity, Jetpack Compose (UI, Material 3), Navigation, DataStore, Room, SQLite | app | Apache-2.0 |
 | Dagger / Hilt | app | Apache-2.0 |
+| libphonenumber (Google) | app | Apache-2.0 |
+| Timber (Jake Wharton) | app | Apache-2.0 |
+| Protocol Buffers (Google, Java/Kotlin lite runtime) | app | BSD-3-Clause |
+| SQLCipher for Android (Zetetic LLC) | app | BSD-3-Clause, see below |
 | Ktor (server core, Netty engine, content negotiation) | server | Apache-2.0 |
 | Netty | server | Apache-2.0 |
 | kotlinx.serialization | server | Apache-2.0 |
 | Logback | server | EPL-1.0 / LGPL-2.1 (dual) |
+
+## Bundled fonts and icons
+
+| Asset | Location | License |
+| --- | --- | --- |
+| Noto Sans Regular & Medium 2.015, Noto Sans Mono SemiBold 2.014 (The Noto Project Authors, github.com/notofonts) | `android/core/designsystem/src/main/res/font/` | SIL Open Font License 1.1, full text in `android/core/designsystem/fonts/OFL.txt` |
+| Material Symbols Outlined icons (Google, github.com/google/material-design-icons) | `android/core/designsystem/src/main/res/drawable/ic_*.xml` | Apache-2.0, full text in `android/core/designsystem/fonts/MATERIAL_SYMBOLS_LICENSE.txt` |
+
+## SQLCipher for Android license
+
+```
+Copyright (c) 2008-2023, ZETETIC LLC
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
+    * Neither the name of the ZETETIC LLC nor the
+      names of its contributors may be used to endorse or promote products
+      derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY ZETETIC LLC ''AS IS'' AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL ZETETIC LLC BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
 
 ## ML models and datasets
 

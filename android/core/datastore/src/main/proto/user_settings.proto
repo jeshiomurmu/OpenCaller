@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package opencaller.datastore;
+
+option java_package = "io.github.jeshiomurmu.opencaller.core.datastore";
+option java_multiple_files = true;
+
+// User settings, persisted with Proto DataStore. Mapped to/from core:model's UserPreferences.
+// Unset fields and *_UNSPECIFIED values mean "use the UserPreferences default".
+message UserSettings {
+  bool block_hidden_numbers = 1;
+  bool block_foreign_numbers = 2;
+  bool block_non_contacts = 3;
+  optional bool block_top_spammers = 4;
+  SpamThresholdProto spam_threshold = 5;
+  // ISO 3166-1 alpha-2 region codes that are never treated as foreign.
+  repeated string allowed_region_codes = 6;
+  optional bool overlay_enabled = 7;
+  AnnounceCallerModeProto announce_caller_mode = 8;
+  ThemeModeProto theme_mode = 9;
+  OnboardingStepProto onboarding_step = 10;
+}
+
+enum SpamThresholdProto {
+  SPAM_THRESHOLD_UNSPECIFIED = 0;
+  SPAM_THRESHOLD_LOW = 1;
+  SPAM_THRESHOLD_MEDIUM = 2;
+  SPAM_THRESHOLD_HIGH = 3;
+}
+
+enum AnnounceCallerModeProto {
+  ANNOUNCE_CALLER_MODE_UNSPECIFIED = 0;
+  ANNOUNCE_CALLER_MODE_OFF = 1;
+  ANNOUNCE_CALLER_MODE_ALWAYS = 2;
+  ANNOUNCE_CALLER_MODE_HEADSET_ONLY = 3;
+}
+
+enum ThemeModeProto {
+  THEME_MODE_UNSPECIFIED = 0;
+  THEME_MODE_SYSTEM = 1;
+  THEME_MODE_LIGHT = 2;
+  THEME_MODE_DARK = 3;
+}
+
+enum OnboardingStepProto {
+  ONBOARDING_STEP_UNSPECIFIED = 0;
+  ONBOARDING_STEP_WELCOME = 1;
+  ONBOARDING_STEP_PRIVACY = 2;
+  ONBOARDING_STEP_ROLES = 3;
+  ONBOARDING_STEP_SIGN_UP = 4;
+  ONBOARDING_STEP_DONE = 5;
+}

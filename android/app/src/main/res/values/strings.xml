@@ -1,4 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name" translatable="false">OpenCaller</string>
+
+    <!-- Bottom navigation (docs/design.md §6). -->
+    <string name="tab_calls">Calls</string>
+    <string name="tab_messages">Messages</string>
+    <string name="tab_contacts">Contacts</string>
+    <string name="tab_protection">Protection</string>
+    <string name="tab_me">Me</string>
+
+    <!-- Placeholder screens until the feature modules land. -->
+    <string name="placeholder_calls">Your call history will appear here.</string>
+    <string name="placeholder_messages">Your messages will appear here.</string>
+    <string name="placeholder_contacts">Your contacts will appear here.</string>
+    <string name="placeholder_protection">Spam protection and blocking rules will appear here.</string>
+    <string name="placeholder_me">Your profile and settings will appear here.</string>
 </resources>

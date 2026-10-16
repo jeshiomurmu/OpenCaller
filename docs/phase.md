@@ -6,35 +6,31 @@
 
 | Field | Value |
 | --- | --- |
-| **Current phase** | **0 — Repo, tooling, CI** |
+| **Current phase** | **1 — Core foundations** |
 | Phase started | 2026-10-16 |
 | Target exit date | — |
-| Branch | `phase/00-tooling` |
-| Last green CI run | [CI run 38853907685](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38853907685) on `1f082d2` (PR [#1](https://github.com/jeshiomurmu/OpenCaller/pull/1)), 2026-10-16, all 6 jobs green |
+| Branch | `phase/01-core-foundations` |
+| Last green CI run | Phase 0: [CI on `main`](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38855255085) (`2c21f97`), 2026-10-16 |
 | App version | 0.0.0 |
 
 ## Current phase checklist
 
-Copied from `docs/implementation_plan.md` → Phase 0. Tick here as you go; copy the ticked list back to the plan when the phase exits.
+Copied from `docs/implementation_plan.md` → Phase 1. Tick here as you go; copy the ticked list back to the plan when the phase exits.
 
-- [ ] `git init`, `main` branch, push to GitHub `jeshiomurmu/opencaller` (private until v0.1) — pushed (`phase/00-tooling`, PR #1); **repo is currently public**, see Open issues
-- [x] Add `LICENSE` (GPL-3.0 full text from gnu.org) and `CHANGELOG.md` — CI compared `LICENSE` byte-for-byte with a live download of https://www.gnu.org/licenses/gpl-3.0.txt (sha256 `3972dc97…36986`); the `license` job now checks that hash offline; `NOTICE.md` added too
-- [x] Create Android Gradle project in `android/` with version catalog and `build-logic` convention plugins — 7 plugins, CI `android` green
-- [x] Create empty modules from `architecture.md` §3 and wire them in `settings.gradle.kts` — 12 core + 21 feature, all compiled and linted in CI
-- [x] Flavors `foss` and `play`; `applicationId io.github.jeshiomurmu.opencaller`; `minSdk 29`, `compileSdk 36`, `targetSdk 36` — `testFossDebugUnitTest`, `testPlayDebugUnitTest`, `assembleFossDebug`, `assemblePlayDebug` green
-- [x] Spotless (ktlint), Detekt, Android Lint configured; `./gradlew check` green — CI runs `spotlessCheck detekt lint` (34 modules), unit tests and `./gradlew check`
-- [x] Ktor server skeleton in `backend/server` with `/health` — `./gradlew check` green locally and in CI (2 tests)
-- [x] `infra/docker/compose.yml`: postgres, redis, minio, server — CI job `compose smoke`: `up --build --wait` all healthy, `GET /health` → `{"status":"ok","version":"<sha>"}`
-- [x] GitHub Actions `ci.yml`: Android check + assemble both flavors; backend check — plus `emulator` (API 29, 36), `compose smoke`, `license`
-- [x] Review drafted ADRs 0001 (consent-first data), 0002 (Ktor backend), 0003 (GPL-3.0) in `docs/decisions/` — all remain Accepted
+- [ ] `core:common`: `AppResult`, `AppError`, `DispatcherProvider`, `Clock`, `RedactingTree`
+- [ ] `core:model`: `PhoneNumber`, `CallerInfo`, `NameSource`, `SpamVerdict`, `BlockRule`, `Decision`, `MessageCategory`, `OtpInfo`
+- [ ] `core:phonenumber`: normalizer (E.164, default region from SIM/locale), number type, country, bucket hasher; unit tests incl. BD, IN, US, UK, NG numbers
+- [ ] `core:database`: Room + SQLCipher, all entities from `architecture.md` §6, DAOs, schema export, migration test harness
+- [ ] `core:datastore`: `UserSettings` proto (blocking toggles, thresholds, overlay, announce, theme)
+- [ ] `core:designsystem`: theme, tokens from `design.md`, typography with Noto Sans, base components; previews
+- [ ] `core:testing`: fakes, `MainDispatcherRule`, fixtures
+- [ ] App shell: `MainActivity`, bottom navigation (Calls, Messages, Contacts, Blocking, Me) with placeholder screens
 
-**Exit criteria:** CI green on `main`; `assembleFossDebug` installs and opens an empty app on an emulator; `curl localhost:8080/health` returns 200.
+**Exit criteria:** unit tests ≥ 90% line coverage on `core:phonenumber`; DB opens encrypted (verified by a test that the file header is not `SQLite format 3`); app shell navigates in light/dark.
 
 ## Next step
 
-Merge PR #1 into `main` (squash) so CI runs green on `main` (the last exit criterion), then run **P-01** from `docs/prompts.md`.
-
-Exit criteria status: CI green on the PR ✅ (pending on `main` until merge). `app-foss-debug.apk` installs and opens on API 29 and API 36 emulators ✅ (CI `emulator` jobs). `curl localhost:8080/health` returns 200 ✅ (CI `compose smoke` and local run).
+Phase 1 in progress (prompt P-01).
 
 ## Open issues / blockers
 
@@ -87,4 +83,4 @@ Fill as dependencies are added (the source of truth is `libs.versions.toml`; thi
 
 | Phase | Started | Exited | Notes |
 | --- | --- | --- | --- |
-| | | | |
+| 0 — Repo, tooling, CI | 2026-10-16 | 2026-10-16 | PR #1 merged; CI green on `main` (`2c21f97`); emulator install/launch API 29 + 36; `/health` 200. Open: repo is public (plan says private until v0.1) |
