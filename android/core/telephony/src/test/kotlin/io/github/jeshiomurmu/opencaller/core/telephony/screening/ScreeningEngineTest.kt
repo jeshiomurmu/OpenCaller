@@ -348,8 +348,9 @@ class ScreeningEngineTest {
             sources.lookupDelayMillis = 100
             val result = engine().incoming(us)
             assertEquals(ScreeningReason.NO_MATCH, result.reason)
-            // Six lookups of 100 ms each: one after another they would take 600 ms.
-            assertTrue("latency ${result.latencyMs} ms", result.latencyMs < 200)
+            // Six lookups of 100 ms each: one after another they would take 600 ms. Settings, contacts and the verified
+            // business check overlap with the three database reads, which run as one chain (300 ms).
+            assertEquals(300, result.latencyMs)
         }
 
     @Test

@@ -109,9 +109,9 @@ class ScreeningEngine(
         }
 
     // Steps 2–4, then the settings (6–7), then the spam list and the caller card (8–11). The local lookups start
-    // together, so the call waits for the slowest of them rather than for their sum; the decision still takes them in
-    // order. A lookup's failure only counts if the decision needs its answer, and lookups still running when the
-    // decision is made are cancelled. The network (step 10) is never prefetched.
+    // together (the database reads as one chain), so the call waits for the slowest of them rather than for their
+    // sum; the decision still takes them in order. A lookup's failure only counts if the decision needs its answer,
+    // and lookups still running when the decision is made are cancelled. The network (step 10) is never prefetched.
     private suspend fun decideNumber(
         number: PhoneNumber,
         region: String?,
@@ -178,17 +178,28 @@ class ScreeningEngine(
         }
     }
 
-    // On-device answers for one number, fetched concurrently (see decideNumber).
+    // On-device answers for one number, fetched concurrently (see decideNumber). The rules, the spam list and the
+    // reputation cache live in one encrypted database and are read one after another: concurrent readers make the
+    // connection pool open another connection, and opening one derives the SQLCipher key (about 0.5 s on the CI
+    // emulators). join() waits without rethrowing, so a failed read still only counts where its answer is needed.
     private inner class LocalLookups(
         scope: CoroutineScope,
         number: PhoneNumber,
     ) {
         val prefs = scope.async { device.settings.current() }
         val contactName = scope.async { device.contacts.displayName(number) }
-        val rules = scope.async { lists.rules.callRules() }
-        val spamHit = scope.async { lists.spamList.find(number) }
         val verified = scope.async { lists.verifiedBusinesses.isVerifiedBusiness(number) }
-        val reputation = scope.async { lists.reputation.find(number) }
+        val rules = scope.async { lists.rules.callRules() }
+        val spamHit =
+            scope.async {
+                rules.join()
+                lists.spamList.find(number)
+            }
+        val reputation =
+            scope.async {
+                spamHit.join()
+                lists.reputation.find(number)
+            }
     }
 
     private fun ruleResult(
