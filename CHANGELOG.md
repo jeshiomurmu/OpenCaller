@@ -17,5 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Spotless (ktlint), Detekt and Android Lint (warnings as errors, per-module baseline) for the Android project.
 - Ktor server (`backend/server/`) with `GET /health`, tests, Spotless, Detekt and a multi-stage, non-root Dockerfile.
 - Local development stack in `infra/docker/compose.yml`: PostgreSQL, Redis, MinIO and the server, with healthchecks.
-- GitHub Actions CI (`.github/workflows/ci.yml`) for the Android and backend builds.
-- `CHANGELOG.md` and `NOTICE.md`.
+- GitHub Actions CI (`.github/workflows/ci.yml`): Android lint/test/assemble, backend check, emulator smoke test
+  (API 29 and 36), compose smoke test and a LICENSE check against gnu.org.
+- `infra/docker/minio/Dockerfile`: Chainguard MinIO image plus a static BusyBox for the compose healthcheck.
+- `LICENSE` (GPL-3.0), `CHANGELOG.md` and `NOTICE.md`.

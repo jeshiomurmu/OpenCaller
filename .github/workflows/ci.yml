@@ -37,6 +37,7 @@ jobs:
           spotlessCheck detekt lint
           testFossDebugUnitTest testPlayDebugUnitTest
           assembleFossDebug assemblePlayDebug
+          check
 
   backend:
     name: backend
