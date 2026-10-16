@@ -20,6 +20,7 @@ import io.github.jeshiomurmu.opencaller.core.model.SpamThreshold
 import io.github.jeshiomurmu.opencaller.core.model.UserPreferences
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.RuleValidation
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.RuleValidator
+import io.github.jeshiomurmu.opencaller.core.telephony.screening.ScreeningWarmUp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -54,6 +55,8 @@ class QaCommandReceiver : BroadcastReceiver() {
     @Inject lateinit var export: QaExport
 
     @Inject lateinit var validator: RuleValidator
+
+    @Inject lateinit var warmUp: ScreeningWarmUp
 
     @Inject lateinit var dispatchers: DispatcherProvider
 
@@ -96,11 +99,7 @@ class QaCommandReceiver : BroadcastReceiver() {
             }
 
             "region" -> {
-                intent
-                    .getStringExtra("region")
-                    ?.uppercase()
-                    .also(hooks::setRegion)
-                    .let { "ok region=$it" }
+                setRegion(intent.getStringExtra("region")?.uppercase())
             }
 
             "verified" -> {
@@ -111,6 +110,13 @@ class QaCommandReceiver : BroadcastReceiver() {
                 "error unknown command $cmd"
             }
         }
+
+    // Like a SIM change on a phone: the new country's numbering metadata is loaded before the next call.
+    private suspend fun setRegion(region: String?): String {
+        hooks.setRegion(region)
+        warmUp.warmUp()
+        return "ok region=$region"
+    }
 
     private suspend fun reset(): String {
         val cleared = listOf(rules.deleteAll(), events.deleteAll(), spam.deleteAll())

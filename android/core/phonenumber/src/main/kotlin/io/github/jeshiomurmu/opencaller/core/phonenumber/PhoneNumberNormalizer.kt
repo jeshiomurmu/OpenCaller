@@ -96,6 +96,14 @@ class PhoneNumberNormalizer(
     /** [number] with its middle hidden, e.g. `+880 ••• 1234`, for confirmations such as "Blocked … · Undo". */
     fun masked(number: PhoneNumber): String = "+${countryCallingCode(number)} ••• ${number.e164.takeLast(MASKED_VISIBLE_DIGITS)}"
 
+    /** A valid example mobile number of [regionCode] (libphonenumber metadata), or `null` for an unknown region. */
+    fun exampleNumber(regionCode: String): PhoneNumber? =
+        util
+            .getExampleNumberForType(regionCode.uppercase(), PhoneNumberType.MOBILE)
+            ?.let { util.format(it, PhoneNumberFormat.E164) }
+            ?.takeIf(PhoneNumber::isE164)
+            ?.let(::PhoneNumber)
+
     /** True when [regionCode] (ISO 3166-1 alpha-2, any case) is a region with a numbering plan. */
     fun isSupportedRegion(regionCode: String): Boolean = regionCode.uppercase() in util.supportedRegions
 

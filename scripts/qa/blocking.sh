@@ -145,14 +145,17 @@ adb shell pm grant "$app_id" android.permission.READ_CONTACTS
 adb shell pm grant "$app_id" android.permission.READ_PHONE_STATE
 if [[ "$sdk" -ge 33 ]]; then adb shell pm grant "$app_id" android.permission.POST_NOTIFICATIONS; fi
 adb shell appops set "$app_id" SYSTEM_ALERT_WINDOW allow
-# Granting the role can end the app's process on recent Android versions; the role stays granted.
-adb shell cmd role add-role-holder "$role" "$app_id" 0 || adb shell cmd role add-role-holder "$role" "$app_id"
-# `cmd role get-role-holders` doesn't exist on API 29, so ask the app (RoleManager.isRoleHeld).
+# Granting the role can end the app's process on recent Android versions; the role stays granted. On API 29 the
+# shell command can time out waiting for the role controller although the grant still happens, so it is retried and
+# the result is read from the app (RoleManager.isRoleHeld; `cmd role get-role-holders` doesn't exist on API 29).
 held=""
-for _ in $(seq 1 20); do
-  held="$(qa role)"
-  if [[ "$held" == "ok held=true" ]]; then break; fi
-  sleep 1
+for attempt in 1 2; do
+  adb shell cmd role add-role-holder "$role" "$app_id" 0 || echo "add-role-holder attempt $attempt did not confirm"
+  for _ in $(seq 1 30); do
+    held="$(qa role)"
+    if [[ "$held" == "ok held=true" ]]; then break 2; fi
+    sleep 1
+  done
 done
 [[ "$held" == "ok held=true" ]] || { echo "::error::call screening role not granted ($held)"; exit 1; }
 qa_ok reset

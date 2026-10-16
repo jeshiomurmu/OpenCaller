@@ -138,6 +138,15 @@ class PhoneNumberNormalizerTest {
     }
 
     @Test
+    fun exampleNumbersAreValidMobileNumbersOfTheRegion() {
+        listOf("BD", "us", "IN", "GB", "NG", "AE").forEach { region ->
+            val example = checkNotNull(normalizer.exampleNumber(region)) { region }
+            assertEquals(region.uppercase(), normalizer.regionCode(example))
+        }
+        assertNull(normalizer.exampleNumber("ZZ"))
+    }
+
+    @Test
     fun supportedRegions() {
         assertTrue(normalizer.isSupportedRegion("bd"))
         assertTrue(normalizer.isSupportedRegion("US"))
