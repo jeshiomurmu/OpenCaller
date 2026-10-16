@@ -10,31 +10,35 @@
 | Phase started | 2026-10-16 |
 | Target exit date | — |
 | Branch | `phase/03-call-screening` |
-| Last green CI run | Phase 2: [run 38879129151](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38879129151) on `f6b7392` (`phase/02-onboarding`, PR #3), 2026-10-16, all 6 jobs green. `main`: [run 38867777494](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38867777494) (`aede43d`) |
+| Last green CI run | Phase 3: [run 38894580688](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38894580688) on `74d55ce` (`phase/03-call-screening`), 2026-10-16, all 6 jobs green, blocking QA on API 29 + 36. Phase 2: [run 38879129151](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38879129151) on `f6b7392` (`phase/02-onboarding`, PR #3), 2026-10-16, all 6 jobs green. `main`: [run 38867777494](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38867777494) (`aede43d`) |
 | App version | 0.0.0 |
 
 ## Current phase checklist
 
 Copied from `docs/implementation_plan.md` → Phase 3. Tick here as you go; copy the ticked list back to the plan when the phase exits.
 
-- [ ] `OpenCallerScreeningService` registered with `BIND_SCREENING_SERVICE`
-- [ ] `ScreeningEngine` with decision order from `architecture.md` §4.1, 1,500 ms budget, fail-open
-- [ ] Contact check via ContactsProvider `PhoneLookup`
-- [ ] Rules: exact, prefix, regex (with safe timeout), country; allow beats block
-- [ ] Toggles: block hidden, foreign (with allowed countries), non-contacts
-- [ ] Bundled seed spam list (empty in repo; dev fixture for tests) and `spam_list` lookup
-- [ ] STIR/SHAKEN verdict read on API 30+
-- [ ] Caller card overlay (`OverlayController`) for screening-only mode; after-call notification
-- [ ] Blocked-calls log screen + rules editor UI (`feature:blocking`)
-- [ ] `screening_event` logging + debug screen
+- [x] `OpenCallerScreeningService` registered with `BIND_SCREENING_SERVICE`
+- [x] `ScreeningEngine` with decision order from `architecture.md` §4.1, 1,500 ms budget, fail-open
+- [x] Contact check via ContactsProvider `PhoneLookup`
+- [x] Rules: exact, prefix, regex (with safe timeout), country; allow beats block
+- [x] Toggles: block hidden, foreign (with allowed countries), non-contacts
+- [x] Bundled seed spam list (empty in repo; dev fixture for tests) and `spam_list` lookup
+- [x] STIR/SHAKEN verdict read on API 30+
+- [x] Caller card overlay (`OverlayController`) for screening-only mode; after-call notification
+- [x] Blocked-calls log screen + rules editor UI (`feature:blocking`)
+- [x] `screening_event` logging + debug screen
 
 **Exit criteria:** with `adb emu gsm call`, every row in `testing.md` TC-BLK-* passes; p95 decision latency < 50 ms for local decisions (measured in debug screen); screening exception test proves fail-open.
 
 ## Next step
 
-Review and merge PR [#3](https://github.com/jeshiomurmu/OpenCaller/pull/3) (squash), confirm CI is green on `main`, copy the ticked checklist into `docs/implementation_plan.md`, then **run P-03**.
+Review and merge the Phase 3 PR (squash; the checklist is already ticked in `docs/implementation_plan.md`), confirm CI is green on `main`, then **run P-04** (backend MVP).
 
-Exit criteria status: on fresh API 29 and API 36 emulators onboarding grants the call screening role in the system dialog (TC-ONB-001, smoke script) ✅; denying the role or each permission shows the degraded-mode banner or the documented fallback, never a crash (TC-ONB-002, 006, 007) ✅; TC-ONB-003, 004, 005, 008 ✅. See `docs/testing.md` → "Where they run (Phase 2)".
+Exit criteria status (CI run 38894580688, `scripts/qa/blocking.sh` on API 29 and API 36):
+- `adb emu gsm call` cases: TC-BLK-002, 003, 006, 008, 009, 012 and 015 pass on both emulators, plus TC-BLK-004 against the device's own regex engine. TC-BLK-001 (contact rings despite a covering block rule) is added to the script in the hand-off commit; until then it is covered by `ScreeningEngineTest`.
+- Unit/Robolectric by nature: TC-BLK-005, 010, 011 and 013. Device only: TC-BLK-007 and TC-BLK-014 (issues 25 and 33).
+- p95 local decision latency on the debug screen: **43 ms on API 36** (p50 12 ms, n = 11) and **20 ms on API 29** (p50 10 ms, n = 11). Target < 50 ms ✅.
+- Fail-open: `ScreeningEngineTest` (an injected exception ends in ALLOW with reason `error`; a 3 s lookup ends in ALLOW at the 1,500 ms budget) and `ScreeningCoordinatorTest` (failures after the answer never affect the call) ✅.
 
 ## Open issues / blockers
 
@@ -49,7 +53,7 @@ Exit criteria status: on fresh API 29 and API 36 emulators onboarding grants the
 9. **`RedactingTree` location.** The spec puts it in `core:common`, but Timber is an Android library and `core:common` must not depend on Android. `LogRedactor` (the masking) is in `core:common`; the `Timber.Tree` wrapper is in `app` (`logging/RedactingTree.kt`). Move it into a small Android module if features need to plant it themselves.
 10. **Wrong SQLCipher key wipes the DB.** Android's default `DatabaseErrorHandler` deletes a database file it cannot open. If the Keystore key is lost (e.g. a device restore without the key), the user's block rules and local data are recreated empty instead of being kept. Decide before Phase 3 whether to surface this (custom error handler + "reset local data" UX) or accept it.
 11. **compileSdk 37 also holds back Navigation.** Navigation 2.10 needs `compileSdk 37` (same as issue 3), so Navigation Compose is pinned at 2.9.8.
-12. **Default region.** `PhoneNumberNormalizer` takes `defaultRegion` explicitly; reading it from the SIM/network (with a locale fallback) belongs to `core:telephony` (no telephony work in Phase 1).
+12. **Default region.** Resolved in Phase 3: `DeviceHomeRegionProvider` (`core:telephony`) reads the SIM country, then the network country, then the locale.
 13. **Tab naming.** `implementation_plan.md` says "Blocking"; P-01 and the app say "Protection". Pick one and align the docs before Phase 3.
 14. **Derived colour roles.** `design.md` §2 doesn't define every Material 3 role (e.g. dark semantic containers, `surfaceContainer*`). These are derived by blending §2 tokens (`ColorScheme.kt`, `OpenCallerSemanticColors.kt`). A designer should confirm the result.
 15. **Module types.** `core:phonenumber`, `core:testing` and `core:datastore` are JVM modules (no Android API needed), so they test without Robolectric. `core:database`, `core:designsystem` and `core:ui` are Android libraries.
@@ -57,8 +61,8 @@ Exit criteria status: on fresh API 29 and API 36 emulators onboarding grants the
 17. **Default phone and SMS app roles show "Coming in a later update".** Android grants `ROLE_DIALER` / `ROLE_SMS` only to apps that ship an in-call UI / SMS receivers; stubbing them now would leave calls without an in-call screen or drop incoming SMS. `RoleEligibility` checks the app's own manifest, so both turn on automatically when Phases 6 and 7 add those components. TC-ONB-003's card shows the "later" text until then.
 18. **Role changes kill the app process on API 36.** Granting or revoking `ROLE_CALL_SCREENING` (system dialog or `cmd role`, even with the don't-kill flag) ended the app process, which in instrumented tests is also the test process. TC-ONB-001, 003 (role held) and 005 therefore run in `scripts/ci/emulator-smoke.sh` via adb. The app copes (the step is persisted and onboarding resumes). Re-check on a physical Android 16 phone before Phase 3.
 19. **Robolectric runs SDK 35, not 36.** Robolectric 4.17's Android 16 image needs Java 21 (`DefaultSdkProvider`); the project builds with JDK 17. Move tests to SDK 36 when the toolchain moves to Java 21 (needs a decision).
-20. **TC-ONB-006 / 007 are verified at the fallback-decision level.** The after-call card and the caller ID card don't exist yet; tests check that the fallback is chosen and shown in Settings and that nothing crashes. Re-run against the real surfaces in Phase 3.
-21. **Not yet requested:** `WRITE_CONTACTS` (contacts editing, Phase 6) and `READ_PHONE_STATE` / `READ_PHONE_NUMBERS` (SIM info, with the `core:telephony` SIM work). `architecture.md` §5 lists them for onboarding; add them with the screens that need them.
+20. **TC-ONB-006 / 007 against the real surfaces.** Phase 3 added the caller ID card and the after-call notification. The emulator QA shows the overlay card (TC-BLK-009). `CallerIdTest` (Robolectric) covers the heads-up fallback and that nothing is posted without the notification permission. A manual pass with the overlay denied on a phone is still worth doing.
+21. **Not yet requested:** `WRITE_CONTACTS` (contacts editing, Phase 6) and `READ_PHONE_NUMBERS`. `READ_PHONE_STATE` is requested from Settings since Phase 3 (issue 28). `architecture.md` §5 lists them for onboarding; add them with the screens that need them.
 22. **Test fake duplicated.** `FakeAccessStatusSource` exists in three test source sets (onboarding, settings, app) because `core:testing` is a JVM module and `AccessStatusSource` lives in the Android `core:telephony`. Consider Android test fixtures later.
 23. **Maven Central returned HTTP 403** for the Robolectric/Turbine POMs in one CI run (run 38871676332, 2026-10-16); the next run resolved them. Watch for repeats: the branch's Gradle cache is read-only, so new dependencies are downloaded on every run.
 24. **Spam threshold semantics.** The Phase 3 spec fixes HIGH = 0.85 and MEDIUM = 0.6, so a higher threshold blocks *fewer* calls (the old `SpamThreshold` KDoc said the opposite and was rewritten). LOW = 0.4 is our choice (not in the spec); numbers listed from 0.4 up to the threshold show as Suspicious. Confirm LOW with the product owner.
@@ -71,6 +75,9 @@ Exit criteria status: on fresh API 29 and API 36 emulators onboarding grants the
 31. **Screening log retention** is 90 days, with no "clear history" action yet.
 32. **Emulator memory.** The API 29 image ran `system_server` with a 16 MB heap and died mid-test once (run 38891529407); the CI emulators now get `ram-size: 4096M` and `heap-size: 512M`. Watch for repeats.
 
+33. **STIR/SHAKEN (TC-BLK-014)** is read on API 30+ and mapped to the card ("Verified by carrier" / "Possibly spoofed"). The emulator can't sign calls, so it is tested at the mapping level only (`DeviceScreeningTest`); check on a carrier that signs calls.
+34. **Latency headroom and first calls.** p95 is 43 ms on the API 36 emulator; the slowest decision was the first spam-list hit. libphonenumber loads each country's metadata on first use. `ScreeningWarmUp` loads the home country at app start and on a SIM change, but the first call from a rarely seen country can still take tens of ms (about 70 ms observed for a cold country before the warm-up). That stays far inside the 1,500 ms budget, but it counts toward p95. Re-measure on a low-end phone.
+35. **Seed spam list is empty.** `assets/spam_list/seed.csv` has only comments; tests use `core/testing/.../fixtures/spam_list_small.csv`. Phase 5 fills `spam_list` from the server.
 
 ## Verified dependency versions
 
@@ -125,6 +132,7 @@ Fill as dependencies are added (the source of truth is `libs.versions.toml`; thi
 
 | Date | Phase | What changed | Verified by |
 | --- | --- | --- | --- |
+| 2026-10-16 | 3 | Phase 3 call screening: `core:model` screening types; `core:data` repositories + spam-list seeder; `core:telephony` `ScreeningEngine` (§4.1 order, 1,500 ms budget, fail-open, time-limited regex), `RuleValidator`, `OpenCallerScreeningService` + `CallResponse` mapping, contacts/region/emergency adapters, STIR mapping, warm-up; `core:ui` `CallerCard` (all states, previews); `feature:callerid` overlay + heads-up + after-call notification; `feature:blocking` settings, rules editor with Test a number, blocked-calls log with Unblock/Undo; `feature:settings` debug screen (About ×7, last 100 events, p50/p95). Debug-only QA receiver + export; `scripts/qa/blocking.sh` in CI | CI run 38894580688 green (6 jobs): android (spotless, detekt, lint, unit + Robolectric ×2 flavors, assemble ×2, `check`); emulator API 29 + 36: onboarding smoke, then blocking QA TC-BLK-002/003/004/006/008/009/012/015 PASS, debug-screen p95 43 ms (API 36) / 20 ms (API 29); backend; compose smoke; license |
 | 2026-10-16 | 2 | Phase 2 onboarding (PR #3): access model types; `core:telephony` (`RoleManagerHelper`, `PermissionStatusReader`, `AccessStatusSource` refreshed on resume, `PermissionPolicy`, `AccessRequestFactory`, pass-through `CallScreeningService`); `core:ui` explainers, `WarningBanner`, request launcher; `feature:onboarding` (5 steps, persisted); `feature:settings` (Permissions & roles with Fix); app: degraded-mode banner, Calls card, Me → Settings. CI: app instrumented tests with the orchestrator; smoke script drives role grant/revoke and process death | CI run 38879129151 green: android (spotless, detekt, lint, unit + Robolectric tests ×2 flavors, assemble ×2, `check`), emulator API 29 + 36 (DB tests; `OnboardingTest` TC-ONB-002/003/006/007/008; smoke TC-ONB-008/001/003/005 + light/dark tab walk), backend, compose smoke, license |
 | 2026-10-16 | 1 | Phase 1 foundations (PR #2): `core:common`, `core:model`, `core:phonenumber` (+ backend `BucketHasher` with shared vectors), `core:database` (Room + SQLCipher, Keystore-wrapped passphrase, schema v1), `core:datastore` (proto), `core:designsystem` (tokens, Noto Sans, icons), `core:ui` components, `core:testing`, app shell with 5 tabs. CI: Room schema drift check, instrumented DB tests and a light/dark tab walk on API 29 + 36 | CI on PR #2 (see Status): spotless, detekt, lint, unit tests ×2 flavors, assemble ×2, `check` (JaCoCo ≥ 90 % on `core:phonenumber`), backend `check` + vector `cmp`, `connectedDebugAndroidTest` on API 29 + 36, emulator walk of all 5 tabs light + dark. Locally: 41 JVM tests, coverage 98.3 %, backend 4 tests |
 | 2026-10-16 | 0 | Push access restored; PR #1 opened. CI fixes: feature guard allowed own path, Compose BOM → 2026.06.01 (compileSdk 36), `fullBackupContent` for API 29–30, MinIO healthcheck via static BusyBox. Added LICENSE + CI jobs `emulator` (API 29/36), `compose smoke`, `license` | CI green: android (spotless, detekt, lint ×34, unit tests ×2 flavors, assemble ×2, `check`), backend, emulator API 29 + 36 ("OpenCaller" on screen), compose smoke (`/health` 200), license (matches gnu.org) |

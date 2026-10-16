@@ -67,16 +67,16 @@ Rough effort for one full-time developer working with an AI agent: Phases 0–7 
 
 ## Phase 3 — Call screening + local blocking
 
-- [ ] `OpenCallerScreeningService` registered with `BIND_SCREENING_SERVICE`
-- [ ] `ScreeningEngine` with decision order from `architecture.md` §4.1, 1,500 ms budget, fail-open
-- [ ] Contact check via ContactsProvider `PhoneLookup`
-- [ ] Rules: exact, prefix, regex (with safe timeout), country; allow beats block
-- [ ] Toggles: block hidden, foreign (with allowed countries), non-contacts
-- [ ] Bundled seed spam list (empty in repo; dev fixture for tests) and `spam_list` lookup
-- [ ] STIR/SHAKEN verdict read on API 30+
-- [ ] Caller card overlay (`OverlayController`) for screening-only mode; after-call notification
-- [ ] Blocked-calls log screen + rules editor UI (`feature:blocking`)
-- [ ] `screening_event` logging + debug screen
+- [x] `OpenCallerScreeningService` registered with `BIND_SCREENING_SERVICE`
+- [x] `ScreeningEngine` with decision order from `architecture.md` §4.1, 1,500 ms budget, fail-open
+- [x] Contact check via ContactsProvider `PhoneLookup`
+- [x] Rules: exact, prefix, regex (with safe timeout), country; allow beats block
+- [x] Toggles: block hidden, foreign (with allowed countries), non-contacts
+- [x] Bundled seed spam list (empty in repo; dev fixture for tests) and `spam_list` lookup
+- [x] STIR/SHAKEN verdict read on API 30+
+- [x] Caller card overlay (`OverlayController`) for screening-only mode; after-call notification
+- [x] Blocked-calls log screen + rules editor UI (`feature:blocking`)
+- [x] `screening_event` logging + debug screen
 
 **Exit:** with `adb emu gsm call`, every row in `testing.md` TC-BLK-* passes; p95 decision latency < 50 ms for local decisions (measured in debug screen); screening exception test proves fail-open.
 

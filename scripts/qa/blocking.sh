@@ -4,6 +4,7 @@
 # decision from the debug export (files/qa/*.tsv, via run-as). Prints PASS/FAIL per case and the decision latency
 # (p50/p95, from the export and from the debug screen). Exits non-zero if any case fails.
 #
+#   TC-BLK-001  contact rings although a block rule covers it
 #   TC-BLK-002  exact block            TC-BLK-003  prefix block (+1555123*)
 #   TC-BLK-004  slow regex rejected     TC-BLK-006  foreign numbers (SIM BD), US allowed
 #   TC-BLK-008  non-contacts, verified business rings
@@ -130,6 +131,19 @@ tap_text() {
   adb shell input tap $(((x1 + x2) / 2)) $(((y1 + y2) / 2))
 }
 
+# add_contact <name> <number>: a local (account-less) contact, written through the contacts provider like the
+# Contacts app would (the shell holds WRITE_CONTACTS).
+add_contact() {
+  local uri=content://com.android.contacts id
+  adb shell content insert --uri "$uri/raw_contacts" --bind account_type:n: --bind account_name:n:
+  id="$(adb shell content query --uri "$uri/raw_contacts" --projection _id | tr -d '\r' | grep -oE '_id=[0-9]+' | cut -d= -f2 | sort -n | tail -1)"
+  [[ -n "$id" ]] || { echo "::error::could not create a raw contact"; return 1; }
+  adb shell content insert --uri "$uri/data" --bind "raw_contact_id:i:$id" \
+    --bind mimetype:s:vnd.android.cursor.item/name --bind "data1:s:$1"
+  adb shell content insert --uri "$uri/data" --bind "raw_contact_id:i:$id" \
+    --bind mimetype:s:vnd.android.cursor.item/phone_v2 --bind "data1:s:$2" --bind data2:i:2
+}
+
 open_app() {
   wait_for_state 0 || true
   adb shell input keyevent KEYCODE_HOME
@@ -171,6 +185,11 @@ ring TC-BLK-002 +12015550111 BLOCK rule
 qa_ok rule --es type PREFIX --es pattern '+1555123*' --es action BLOCK
 ring TC-BLK-003 +15551230001 BLOCK rule
 ring TC-BLK-003 +15551240001 ALLOW no_match
+
+add_contact "QA Contact" +12015550160
+qa_ok rule --es type PREFIX --es pattern '+1201555016*' --es action BLOCK
+ring TC-BLK-001 +12015550160 ALLOW contact
+ring TC-BLK-001 +12015550161 BLOCK rule
 
 answer="$(qa rule --es type REGEX --es pattern '(a+)+$' --es action BLOCK)"
 if [[ "$answer" == "error SLOW_REGEX" ]]; then pass TC-BLK-004 "editor rejected (a+)+\$ on this device"; else fail TC-BLK-004 "answer: $answer"; fi
