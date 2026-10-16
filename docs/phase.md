@@ -10,7 +10,7 @@
 | Phase started | 2026-10-16 |
 | Target exit date | — |
 | Branch | `phase/00-tooling` |
-| Last green CI run | [CI #7](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38853193598) on `9bd2d28` (PR [#1](https://github.com/jeshiomurmu/OpenCaller/pull/1)), 2026-10-16 |
+| Last green CI run | [CI run 38853907685](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38853907685) on `1f082d2` (PR [#1](https://github.com/jeshiomurmu/OpenCaller/pull/1)), 2026-10-16, all 6 jobs green |
 | App version | 0.0.0 |
 
 ## Current phase checklist
@@ -18,7 +18,7 @@
 Copied from `docs/implementation_plan.md` → Phase 0. Tick here as you go; copy the ticked list back to the plan when the phase exits.
 
 - [ ] `git init`, `main` branch, push to GitHub `jeshiomurmu/opencaller` (private until v0.1) — pushed (`phase/00-tooling`, PR #1); **repo is currently public**, see Open issues
-- [x] Add `LICENSE` (GPL-3.0 full text from gnu.org) and `CHANGELOG.md` — CI job `license` checks `LICENSE` is byte-identical to https://www.gnu.org/licenses/gpl-3.0.txt; `NOTICE.md` added too
+- [x] Add `LICENSE` (GPL-3.0 full text from gnu.org) and `CHANGELOG.md` — CI compared `LICENSE` byte-for-byte with a live download of https://www.gnu.org/licenses/gpl-3.0.txt (sha256 `3972dc97…36986`); the `license` job now checks that hash offline; `NOTICE.md` added too
 - [x] Create Android Gradle project in `android/` with version catalog and `build-logic` convention plugins — 7 plugins, CI `android` green
 - [x] Create empty modules from `architecture.md` §3 and wire them in `settings.gradle.kts` — 12 core + 21 feature, all compiled and linted in CI
 - [x] Flavors `foss` and `play`; `applicationId io.github.jeshiomurmu.opencaller`; `minSdk 29`, `compileSdk 36`, `targetSdk 36` — `testFossDebugUnitTest`, `testPlayDebugUnitTest`, `assembleFossDebug`, `assemblePlayDebug` green
@@ -73,7 +73,7 @@ Fill as dependencies are added (the source of truth is `libs.versions.toml`; thi
 | Docker images | `postgres:18`, `redis:8.8`, `eclipse-temurin:17-jdk-noble` / `17-jre-noble`, `busybox:stable-musl` (1.36, static) , `cgr.dev/chainguard/minio:latest` | https://hub.docker.com (tag API); MinIO RELEASE.2026-09-22 observed in CI | 2026-10-16 |
 | reactivecircus/android-emulator-runner | v2 | https://github.com/ReactiveCircus/android-emulator-runner (README) | 2026-10-16 |
 | actions/upload-artifact | v7 | https://github.com/actions/upload-artifact (README) | 2026-10-16 |
-| GPL-3.0 text | sha256 checked in CI against gnu.org | https://www.gnu.org/licenses/gpl-3.0.txt | 2026-10-16 |
+| GPL-3.0 text | sha256 `3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986` (matched a live gnu.org download in CI) | https://www.gnu.org/licenses/gpl-3.0.txt | 2026-10-16 |
 
 ## Progress log (newest first)
 

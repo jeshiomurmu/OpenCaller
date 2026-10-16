@@ -146,8 +146,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # sha256 of https://www.gnu.org/licenses/gpl-3.0.txt, verified in CI against a live download on 2026-10-16
+      # (offline check: a live download made CI depend on www.gnu.org being reachable).
       - name: LICENSE is the verbatim GPL-3.0 text from gnu.org
-        run: |
-          curl -fsSL --retry 5 --retry-all-errors https://www.gnu.org/licenses/gpl-3.0.txt -o "$RUNNER_TEMP/gpl-3.0.txt"
-          sha256sum "$RUNNER_TEMP/gpl-3.0.txt" LICENSE
-          cmp "$RUNNER_TEMP/gpl-3.0.txt" LICENSE
+        run: echo "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986  LICENSE" | sha256sum --check
