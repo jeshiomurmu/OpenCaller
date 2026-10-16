@@ -63,17 +63,27 @@ object Ui {
         return found ?: waitFor(text)
     }
 
-    /** Taps the first of [selectors] to appear (system dialogs differ between Android versions). */
+    /**
+     * Taps the first of [selectors] to appear (system dialogs differ between Android versions) and waits until it is
+     * gone. A tap that lands while the dialog is still animating in is ignored by the system (seen on API 36), so the
+     * tap is repeated until the button disappears.
+     */
     fun tapSystemButton(selectors: List<BySelector>) {
         val deadline = System.currentTimeMillis() + TIMEOUT_MILLIS
+        var tapped = false
         while (System.currentTimeMillis() < deadline) {
-            selectors.firstNotNullOfOrNull { device.findObject(it) }?.let {
-                it.click()
-                return
+            val selector = selectors.firstOrNull { device.hasObject(it) }
+            if (selector == null) {
+                if (tapped) return
+                Thread.sleep(POLL_MILLIS)
+                continue
             }
-            Thread.sleep(POLL_MILLIS)
+            device.waitForIdle()
+            device.findObject(selector)?.click()
+            tapped = true
+            device.wait(Until.gone(selector), TAP_SETTLE_MILLIS)
         }
-        fail("none of $selectors appeared")
+        if (tapped) fail("$selectors still on screen after tapping") else fail("none of $selectors appeared")
     }
 
     /** Runs [command] as the shell user and returns its output. */
@@ -109,6 +119,7 @@ object Ui {
     }
 
     private const val POLL_MILLIS = 250L
+    private const val TAP_SETTLE_MILLIS = 2_000L
 }
 
 /**
