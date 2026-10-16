@@ -46,7 +46,12 @@ enum OnboardingStepProto {
   ONBOARDING_STEP_UNSPECIFIED = 0;
   ONBOARDING_STEP_WELCOME = 1;
   ONBOARDING_STEP_PRIVACY = 2;
-  ONBOARDING_STEP_ROLES = 3;
-  ONBOARDING_STEP_SIGN_UP = 4;
+  ONBOARDING_STEP_CALL_SCREENING = 3;
   ONBOARDING_STEP_DONE = 5;
+  ONBOARDING_STEP_CONTACTS = 6;
+  ONBOARDING_STEP_NOTIFICATIONS = 7;
+  ONBOARDING_STEP_EXTRAS = 8;
+  // 4 was SIGN_UP (Phase 1 draft, never released); sign-up returns with its own value in a later phase.
+  reserved 4;
+  reserved "ONBOARDING_STEP_SIGN_UP";
 }

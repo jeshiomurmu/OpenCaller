@@ -33,8 +33,10 @@ private val onboardingSteps =
     mapOf(
         OnboardingStep.WELCOME to OnboardingStepProto.ONBOARDING_STEP_WELCOME,
         OnboardingStep.PRIVACY to OnboardingStepProto.ONBOARDING_STEP_PRIVACY,
-        OnboardingStep.ROLES to OnboardingStepProto.ONBOARDING_STEP_ROLES,
-        OnboardingStep.SIGN_UP to OnboardingStepProto.ONBOARDING_STEP_SIGN_UP,
+        OnboardingStep.CALL_SCREENING to OnboardingStepProto.ONBOARDING_STEP_CALL_SCREENING,
+        OnboardingStep.CONTACTS to OnboardingStepProto.ONBOARDING_STEP_CONTACTS,
+        OnboardingStep.NOTIFICATIONS to OnboardingStepProto.ONBOARDING_STEP_NOTIFICATIONS,
+        OnboardingStep.EXTRAS to OnboardingStepProto.ONBOARDING_STEP_EXTRAS,
         OnboardingStep.DONE to OnboardingStepProto.ONBOARDING_STEP_DONE,
     )
 

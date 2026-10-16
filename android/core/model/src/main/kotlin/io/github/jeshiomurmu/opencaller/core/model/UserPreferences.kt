@@ -36,19 +36,28 @@ enum class ThemeMode {
     DARK,
 }
 
-/** Steps of the onboarding flow, in order. */
+/**
+ * Steps of the onboarding flow, in order. The user sees at most five numbered steps: [CONTACTS] and
+ * [NOTIFICATIONS] share the "Permissions" step, and the optional roles and overlay share [EXTRAS].
+ */
 enum class OnboardingStep {
     /** Welcome screen. */
     WELCOME,
 
-    /** Privacy explainer. */
+    /** What leaves the phone and what never does. */
     PRIVACY,
 
-    /** Caller ID & spam role request. */
-    ROLES,
+    /** Explainer, then the caller ID & spam (call screening) role request. */
+    CALL_SCREENING,
 
-    /** Optional sign-up. */
-    SIGN_UP,
+    /** Explainer, then the contacts permission request. */
+    CONTACTS,
+
+    /** Explainer, then the notification permission request (Android 13+; skipped below). */
+    NOTIFICATIONS,
+
+    /** Optional: default phone app, default SMS app, caller ID over other apps. */
+    EXTRAS,
 
     /** Onboarding finished. */
     DONE,
