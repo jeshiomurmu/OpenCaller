@@ -20,6 +20,10 @@ interface SpamListDao {
     @Query("DELETE FROM spam_list WHERE listVersion < :version")
     suspend fun deleteOlderThan(version: Long): Int
 
+    /** Deletes every entry; returns the number removed. */
+    @Query("DELETE FROM spam_list")
+    suspend fun deleteAll(): Int
+
     /** Number of listed numbers. */
     @Query("SELECT COUNT(*) FROM spam_list")
     suspend fun count(): Int

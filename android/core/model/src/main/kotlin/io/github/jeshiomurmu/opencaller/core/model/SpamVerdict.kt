@@ -30,4 +30,21 @@ data class SpamVerdict(
         require(score in 0f..1f) { "score must be in 0..1" }
         require(reportCount >= 0) { "reportCount must not be negative" }
     }
+
+    /** How a score maps to a [RiskLevel]. */
+    companion object {
+        /** Lowest score shown as [RiskLevel.SUSPICIOUS]. */
+        const val SUSPICIOUS_MIN_SCORE: Float = 0.4f
+
+        /** [RiskLevel.LIKELY_SPAM] at or above [threshold], [RiskLevel.SUSPICIOUS] from [SUSPICIOUS_MIN_SCORE], else none. */
+        fun levelFor(
+            score: Float,
+            threshold: SpamThreshold,
+        ): RiskLevel =
+            when {
+                score >= threshold.minimumScore -> RiskLevel.LIKELY_SPAM
+                score >= SUSPICIOUS_MIN_SCORE -> RiskLevel.SUSPICIOUS
+                else -> RiskLevel.NONE
+            }
+    }
 }
