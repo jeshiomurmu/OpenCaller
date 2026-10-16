@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Server (Phase 4, part 1): PostgreSQL schema v1 (Flyway, as in `docs/architecture.md` §7) with Exposed tables;
+  configuration from environment variables only, refusing to start with a list of every missing or invalid value;
+  phone sign-in `POST /v1/auth/start|verify|refresh` — 6-digit codes valid 5 minutes with 5 attempts, stored only as a
+  keyed hash in Redis and sent by Twilio Programmable Messaging (or written to the log in development); 15-minute JWT
+  access tokens and 30-day rotating refresh tokens, where reusing a rotated token signs the device out; rate limits of
+  3 codes per hour per number and 10 per hour per address with `Retry-After`; RFC 9457 problem+json errors;
+  `X-Request-Id`; JSON logs with phone numbers redacted; Prometheus metrics on an internal port; `openapi.yaml`.
+- `scripts/smoke.sh`: API smoke test against the compose stack (run by the CI compose job).
 - Call screening and local blocking (Phase 3): `ScreeningEngine` decides every incoming call on the device in the
   documented order (emergency and outgoing calls always allowed; contacts, allow rules, block/silence rules, hidden,
   foreign and non-contact settings, spam list at the user's threshold, reputation cache, STIR/SHAKEN) within a hard

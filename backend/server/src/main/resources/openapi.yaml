@@ -1,0 +1,273 @@
+openapi: 3.1.0
+info:
+  title: OpenCaller API
+  version: "1"
+  description: |
+    OpenCaller server API v1 (docs/architecture.md §8). JSON over HTTPS.
+
+    Errors are RFC 9457 problem details (`application/problem+json`) with a stable machine-readable `code`.
+    Every response carries `X-Request-Id`; send your own (1–64 letters, digits, `-` or `_`) to correlate logs.
+    Prometheus metrics are served on a separate internal port and are not part of this API.
+  license:
+    name: GPL-3.0-only
+    identifier: GPL-3.0-only
+
+# Servers are deployment-specific; no production URL is kept in the repository (docs/rules.md §2).
+servers:
+  - url: http://localhost:8080
+    description: Local development stack (infra/docker/compose.yml)
+
+tags:
+  - name: health
+  - name: auth
+    description: Phone-number sign-in (docs/architecture.md §4.7)
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: Liveness check
+      operationId: getHealth
+      responses:
+        "200":
+          description: The server is running.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+
+  /v1/auth/start:
+    post:
+      tags: [auth]
+      summary: Send a sign-in code to a phone number
+      description: |
+        Sends a 6-digit code by SMS. The code is valid for 5 minutes and allows 5 attempts; requesting a new code
+        replaces the previous one. Limits: 3 requests per hour per number and 10 per hour per client address
+        (docs/rules.md §7); over the limit the response is 429 with `Retry-After`.
+      operationId: startAuth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StartRequest" }
+      responses:
+        "202":
+          description: The code was handed to the SMS provider.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StartResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503":
+          description: "The code could not be sent (`otp_delivery_failed`). Nothing was stored; try again later."
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /v1/auth/verify:
+    post:
+      tags: [auth]
+      summary: Exchange a code for tokens
+      description: |
+        Checks the code. On success the user is created (or found) for the number, a new device is registered and
+        tokens are returned. A code works once. After 5 wrong attempts it is invalidated (`code_invalidated`) and a
+        new one must be requested.
+      operationId: verifyAuth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VerifyRequest" }
+      responses:
+        "200":
+          description: Signed in.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TokenResponse" }
+        "400":
+          description: |
+            `invalid_phone_number`, `invalid_code_format`, `invalid_request`, `invalid_code` (detail says how many
+            attempts are left), `code_invalidated` (5 wrong attempts) or `code_expired` (no valid code: never sent,
+            expired, already used or invalidated).
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+
+  /v1/auth/refresh:
+    post:
+      tags: [auth]
+      summary: Rotate the refresh token
+      description: |
+        Returns a new access token and a new refresh token; the presented refresh token stops working. Presenting a
+        refresh token that was already rotated is treated as theft: every refresh token of that device is revoked
+        (`refresh_token_reused`) and the user must sign in again.
+      operationId: refreshAuth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RefreshRequest" }
+      responses:
+        "200":
+          description: New tokens.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TokenResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401":
+          description: "`invalid_refresh_token` (unknown or expired) or `refresh_token_reused` (the device's tokens were revoked)."
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+
+components:
+  securitySchemes:
+    accessToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Access token from verify/refresh, valid 15 minutes (`sub` = user ID, `did` = device ID). Endpoints that need it
+        arrive in the next steps of Phase 4; without a valid token they answer 401 `unauthorized`.
+
+  headers:
+    RequestId:
+      description: Request ID (yours if you sent a valid `X-Request-Id`, otherwise a generated UUID). Logged with the request.
+      schema: { type: string, maxLength: 64 }
+    RetryAfter:
+      description: Seconds until the rate-limit window resets.
+      schema: { type: integer, minimum: 1 }
+
+  responses:
+    BadRequest:
+      description: "`invalid_request` (unreadable JSON or missing fields) or `invalid_phone_number`."
+      headers:
+        X-Request-Id: { $ref: "#/components/headers/RequestId" }
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    PayloadTooLarge:
+      description: "`payload_too_large`: the body is larger than 16 KiB."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    UnsupportedMediaType:
+      description: "`unsupported_media_type`: send `application/json`."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    RateLimited:
+      description: "`rate_limited`: too many requests; wait `Retry-After` seconds."
+      headers:
+        Retry-After: { $ref: "#/components/headers/RetryAfter" }
+        X-Request-Id: { $ref: "#/components/headers/RequestId" }
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    E164:
+      type: string
+      description: Phone number in E.164 (`+`, country code, number; no spaces). Must be a valid number.
+      pattern: '^\+[1-9][0-9]{6,14}$'
+      examples: ["+14155552671"]
+
+    Health:
+      type: object
+      required: [status, version]
+      properties:
+        status: { type: string, const: ok }
+        version: { type: string, description: Git SHA of the build or `dev`. }
+
+    StartRequest:
+      type: object
+      required: [e164]
+      properties:
+        e164: { $ref: "#/components/schemas/E164" }
+
+    StartResponse:
+      type: object
+      required: [expiresInSeconds]
+      properties:
+        expiresInSeconds: { type: integer, const: 300 }
+
+    VerifyRequest:
+      type: object
+      required: [e164, code]
+      properties:
+        e164: { $ref: "#/components/schemas/E164" }
+        code: { type: string, pattern: '^[0-9]{6}$' }
+        integrityToken:
+          type: string
+          maxLength: 4096
+          description: Play Integrity token (play flavor). Accepted now; verified in a later phase.
+        flavor:
+          type: string
+          enum: [foss, play, unknown]
+          default: unknown
+          description: App build flavor, stored with the device.
+
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: { type: string, minLength: 1, maxLength: 128 }
+
+    TokenResponse:
+      type: object
+      required: [accessToken, accessTokenExpiresIn, refreshToken, refreshTokenExpiresIn, tokenType]
+      properties:
+        accessToken: { type: string, description: JWT (HS256). }
+        accessTokenExpiresIn: { type: integer, description: Seconds (900). }
+        refreshToken: { type: string, description: Opaque; store encrypted (Android Keystore). Rotates on every refresh. }
+        refreshTokenExpiresIn: { type: integer, description: Seconds (2,592,000 = 30 days). }
+        tokenType: { type: string, const: Bearer }
+
+    Problem:
+      type: object
+      description: RFC 9457 problem details.
+      required: [type, title, status, code]
+      properties:
+        type: { type: string, format: uri, examples: ["urn:opencaller:problem:rate_limited"] }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        code:
+          type: string
+          description: Stable machine-readable error code.
+          enum:
+            - invalid_request
+            - invalid_phone_number
+            - invalid_code_format
+            - invalid_code
+            - code_invalidated
+            - code_expired
+            - invalid_refresh_token
+            - refresh_token_reused
+            - unauthorized
+            - rate_limited
+            - otp_delivery_failed
+            - payload_too_large
+            - unsupported_media_type
+            - not_found
+            - method_not_allowed
+            - internal_error

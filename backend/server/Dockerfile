@@ -17,7 +17,8 @@ FROM eclipse-temurin:17-jre-noble AS runtime
 
 ARG GIT_SHA=dev
 ENV APP_VERSION=${GIT_SHA} \
-    PORT=8080
+    PORT=8080 \
+    METRICS_PORT=9090
 
 RUN groupadd --system --gid 10001 opencaller \
     && useradd --system --uid 10001 --gid opencaller --no-create-home --shell /usr/sbin/nologin opencaller
@@ -26,5 +27,6 @@ WORKDIR /app
 COPY --from=build /workspace/build/install/opencaller-server/ /app/
 
 USER 10001:10001
-EXPOSE 8080
+# 8080: API; 9090: Prometheus metrics (internal, not published by compose).
+EXPOSE 8080 9090
 ENTRYPOINT ["/app/bin/opencaller-server"]

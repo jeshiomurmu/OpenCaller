@@ -207,6 +207,8 @@ The server learns country code + bucket (thousands of candidate numbers), never 
 
 `POST /v1/auth/start {e164}` → server sends OTP (SMS/flash call via provider) → `POST /v1/auth/verify {e164, code, integrityToken?}` → `{accessToken (15 min), refreshToken (30 d, rotating)}`. Tokens are encrypted with an Android Keystore AES-GCM key and stored in DataStore (not the deprecated `security-crypto` library).
 
+Server side: codes are 6 digits, valid 5 minutes, at most 5 wrong attempts, single use; one pending code per number, kept in Redis only as HMAC-SHA256(server pepper, number + code). Refresh tokens are 256-bit random values stored as SHA-256 in `refresh_tokens`; each refresh marks the old row rotated and inserts a new one, and presenting an already-rotated token deletes every refresh token of that device (reuse detection). Access tokens are HS256 JWTs with `sub` = user ID and `did` = device ID.
+
 Names shown in live caller ID: `everyone` profiles appear in bucket results; `registered_only` profiles appear only in buckets fetched with a valid access token; `nobody` never appears.
 
 ### 4.8 Reporting
