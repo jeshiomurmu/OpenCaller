@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_progress">Step %1$d of %2$d</string>
+    <string name="onboarding_get_started">Get started</string>
+    <string name="onboarding_continue">Continue</string>
+    <string name="onboarding_finish">Finish</string>
+    <string name="onboarding_bullet">• %1$s</string>
+
+    <string name="onboarding_welcome_title">Know who\'s calling</string>
+    <string name="onboarding_welcome_body">OpenCaller shows who is calling and stops spam calls. It asks for one thing at a time and explains why first. You can say \"Not now\" to anything.</string>
+
+    <!-- docs/prd.md §5 and docs/architecture.md §10, in plain words. -->
+    <string name="onboarding_privacy_title">Your phone, your data</string>
+    <string name="onboarding_privacy_leaves_title">What leaves your phone</string>
+    <string name="onboarding_privacy_leaves_1">To check a caller, a short scrambled code made from the number. Never the full number.</string>
+    <string name="onboarding_privacy_leaves_2">A number you search for yourself.</string>
+    <string name="onboarding_privacy_leaves_3">A number you report as spam, with the label and comment you choose.</string>
+    <string name="onboarding_privacy_never_title">What never leaves your phone</string>
+    <string name="onboarding_privacy_never_1">Your contacts.</string>
+    <string name="onboarding_privacy_never_2">Your call history.</string>
+    <string name="onboarding_privacy_never_3">Your messages.</string>
+    <string name="onboarding_privacy_never_4">Anything for ads or tracking: OpenCaller has neither. Crash reports stay off unless you turn them on.</string>
+
+    <string name="onboarding_extras_title">Optional extras</string>
+    <string name="onboarding_extras_body">Turn these on now or later in Me → Settings → Permissions &amp; roles.</string>
+    <string name="onboarding_set_up">Set up</string>
+    <string name="onboarding_status_on">On</string>
+    <string name="onboarding_status_optional">Optional</string>
+    <string name="onboarding_status_coming_later">Coming in a later update</string>
+</resources>

@@ -1,5 +1,6 @@
 package io.github.jeshiomurmu.opencaller.core.telephony
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
@@ -78,7 +79,9 @@ internal object RoleEligibility {
     }
 }
 
-// The int-flag overloads are deprecated from API 33 in favour of ResolveInfoFlags.
+// The int-flag overloads are deprecated from API 33 in favour of ResolveInfoFlags. Every query is limited to
+// OpenCaller's own package, which is always visible, so no <queries> declaration is needed.
+@SuppressLint("QueryPermissionsNeeded")
 private fun PackageManager.activitiesFor(intent: Intent): List<ResolveInfo> =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         queryIntentActivities(intent, PackageManager.ResolveInfoFlags.of(0))
@@ -87,6 +90,7 @@ private fun PackageManager.activitiesFor(intent: Intent): List<ResolveInfo> =
         queryIntentActivities(intent, 0)
     }
 
+@SuppressLint("QueryPermissionsNeeded")
 private fun PackageManager.servicesFor(intent: Intent): List<ResolveInfo> =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         queryIntentServices(intent, PackageManager.ResolveInfoFlags.of(0))
@@ -95,6 +99,7 @@ private fun PackageManager.servicesFor(intent: Intent): List<ResolveInfo> =
         queryIntentServices(intent, 0)
     }
 
+@SuppressLint("QueryPermissionsNeeded")
 private fun PackageManager.receiversFor(intent: Intent): List<ResolveInfo> =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         queryBroadcastReceivers(intent, PackageManager.ResolveInfoFlags.of(0))

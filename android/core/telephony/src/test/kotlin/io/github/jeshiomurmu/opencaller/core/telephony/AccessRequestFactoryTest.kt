@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.role.RoleManager
 import android.content.Context
 import android.os.Build
+import android.os.Process
 import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
 import io.github.jeshiomurmu.opencaller.core.model.AccessItem
@@ -17,20 +18,21 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowRoleManager
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.BAKLAVA])
 class AccessRequestFactoryTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val fresh = RoleState(RoleStatus.NOT_HELD, RoleStatus.APP_NOT_ELIGIBLE, RoleStatus.APP_NOT_ELIGIBLE)
+    private val user = Process.myUserHandle()
     private lateinit var factory: AccessRequestFactory
 
     @Before
     fun setUp() {
-        val roleManager = shadowOf(context.getSystemService(RoleManager::class.java))
-        AppRole.entries.forEach { roleManager.addAvailableRole(it.androidName) }
+        // Robolectric treats a role as available while it has any holder; "" stands for "some other app".
+        AppRole.entries.forEach { ShadowRoleManager.addRoleHolder(it.androidName, "", user) }
         factory = AccessRequestFactory(context, RoleManagerHelper(context))
     }
 

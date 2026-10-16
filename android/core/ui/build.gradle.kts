@@ -10,6 +10,7 @@ android {
 dependencies {
     api(projects.core.designsystem)
     api(projects.core.model)
+    implementation(libs.androidx.activity.compose)
 
     testImplementation(libs.junit4)
 }

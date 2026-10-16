@@ -2,6 +2,7 @@ package io.github.jeshiomurmu.opencaller.core.datastore
 
 import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.DataStoreFactory
+import io.github.jeshiomurmu.opencaller.core.model.OnboardingStep
 import io.github.jeshiomurmu.opencaller.core.model.SpamThreshold
 import io.github.jeshiomurmu.opencaller.core.model.ThemeMode
 import io.github.jeshiomurmu.opencaller.core.model.UserPreferences
@@ -30,6 +31,15 @@ class UserSettingsDataSourceTest {
             val expected = UserPreferences(themeMode = ThemeMode.DARK, spamThreshold = SpamThreshold.HIGH)
             assertEquals(expected, first.preferences.first())
             assertEquals(expected, file.inputStream().use { UserSettingsSerializer.readFrom(it) }.toDomain())
+        }
+
+    @Test
+    fun inMemorySourceStartsFromTheGivenValueAndUpdates() =
+        runTest {
+            val source = UserSettingsDataSource.inMemory(UserPreferences(onboardingStep = OnboardingStep.CONTACTS))
+            assertEquals(OnboardingStep.CONTACTS, source.preferences.first().onboardingStep)
+            source.update { it.copy(onboardingStep = OnboardingStep.DONE) }
+            assertEquals(OnboardingStep.DONE, source.preferences.first().onboardingStep)
         }
 
     @Test(expected = CorruptionException::class)

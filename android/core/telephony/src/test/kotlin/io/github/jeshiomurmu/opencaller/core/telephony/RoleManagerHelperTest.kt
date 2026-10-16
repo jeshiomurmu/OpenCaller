@@ -3,6 +3,7 @@ package io.github.jeshiomurmu.opencaller.core.telephony
 import android.app.role.RoleManager
 import android.content.Context
 import android.os.Build
+import android.os.Process
 import androidx.test.core.app.ApplicationProvider
 import io.github.jeshiomurmu.opencaller.core.model.AppRole
 import io.github.jeshiomurmu.opencaller.core.model.RoleState
@@ -16,7 +17,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowRoleManager
 
@@ -24,12 +24,12 @@ import org.robolectric.shadows.ShadowRoleManager
 @Config(sdk = [Build.VERSION_CODES.Q, Build.VERSION_CODES.BAKLAVA])
 class RoleManagerHelperTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
-    private lateinit var roleManager: ShadowRoleManager
+    private val user = Process.myUserHandle()
 
     @Before
     fun setUp() {
-        roleManager = shadowOf(context.getSystemService(RoleManager::class.java))
-        AppRole.entries.forEach { roleManager.addAvailableRole(it.androidName) }
+        // Robolectric treats a role as available while it has any holder; "" stands for "some other app".
+        AppRole.entries.forEach { ShadowRoleManager.addRoleHolder(it.androidName, "", user) }
     }
 
     @Test
@@ -48,21 +48,21 @@ class RoleManagerHelperTest {
     @Test
     fun refreshPicksUpGrantedAndRevokedRoles() {
         val helper = RoleManagerHelper(context)
-        roleManager.addHeldRole(RoleManager.ROLE_CALL_SCREENING)
+        ShadowRoleManager.addRoleHolder(RoleManager.ROLE_CALL_SCREENING, context.packageName, user)
         assertEquals(RoleStatus.NOT_HELD, helper.roleState.value.callScreening)
 
         helper.refresh()
         assertEquals(RoleStatus.HELD, helper.roleState.value.callScreening)
         assertTrue(helper.isRoleHeld(AppRole.CALL_SCREENING))
 
-        roleManager.removeHeldRole(RoleManager.ROLE_CALL_SCREENING)
+        ShadowRoleManager.removeRoleHolder(RoleManager.ROLE_CALL_SCREENING, context.packageName, user)
         helper.refresh()
         assertEquals(RoleStatus.NOT_HELD, helper.roleState.value.callScreening)
     }
 
     @Test
     fun unavailableRoleHasNoRequest() {
-        roleManager.removeAvailableRole(RoleManager.ROLE_CALL_SCREENING)
+        ShadowRoleManager.removeRoleHolder(RoleManager.ROLE_CALL_SCREENING, "", user)
         val helper = RoleManagerHelper(context)
         assertFalse(helper.isRoleAvailable(AppRole.CALL_SCREENING))
         assertEquals(RoleStatus.UNAVAILABLE, helper.roleState.value.callScreening)

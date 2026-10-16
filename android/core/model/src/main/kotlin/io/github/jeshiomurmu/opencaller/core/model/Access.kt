@@ -100,6 +100,21 @@ enum class AccessItemStatus {
     COMING_LATER,
 }
 
+/** What came back from a permission dialog, role dialog or settings screen. */
+enum class AccessRequestOutcome {
+    /** The user granted it (or a settings screen returned; re-read the status to know). */
+    GRANTED,
+
+    /** The user said no; asking again is fine. */
+    DENIED,
+
+    /** The system no longer shows its dialog ("Don't ask again"); send the user to settings instead. */
+    BLOCKED,
+
+    /** The system screen doesn't exist on this device. */
+    UNAVAILABLE,
+}
+
 /** How the caller ID card is shown for an incoming call. */
 enum class CallerIdSurface {
     /** In OpenCaller's own in-call screen (default phone app). */

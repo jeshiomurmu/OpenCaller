@@ -1,6 +1,7 @@
 package io.github.jeshiomurmu.opencaller.core.telephony
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.os.Build
 import io.github.jeshiomurmu.opencaller.core.model.AppRole
 import io.github.jeshiomurmu.opencaller.core.model.RoleState
@@ -44,7 +45,11 @@ object PermissionPolicy {
             Manifest.permission.RECEIVE_WAP_PUSH,
         )
 
-    /** Decides whether [permission] may be requested given the roles OpenCaller holds. */
+    /**
+     * Decides whether [permission] may be requested given the roles OpenCaller holds. (POST_NOTIFICATIONS is a
+     * compile-time string constant that is only compared here, so referencing it is safe below API 33.)
+     */
+    @SuppressLint("InlinedApi")
     fun decide(
         permission: String,
         roles: RoleState,
