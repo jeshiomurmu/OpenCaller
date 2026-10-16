@@ -45,9 +45,12 @@ services:
       retries: 5
 
   minio:
-    # MinIO no longer publishes official container images; the default is Chainguard's free build.
-    # Override with MINIO_IMAGE in .env (see docs/phase.md → Open issues).
-    image: ${MINIO_IMAGE:-cgr.dev/chainguard/minio:latest}
+    # Chainguard's MinIO image plus a static BusyBox for the healthcheck (see minio/Dockerfile).
+    build:
+      context: minio
+      args:
+        MINIO_IMAGE: ${MINIO_IMAGE:-cgr.dev/chainguard/minio:latest}
+    image: opencaller/minio:dev
     restart: unless-stopped
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
@@ -59,7 +62,7 @@ services:
       - "127.0.0.1:9000:9000"
       - "127.0.0.1:9001:9001"
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "/usr/local/bin/busybox", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9000/minio/health/live"]
       interval: 10s
       timeout: 5s
       retries: 5
