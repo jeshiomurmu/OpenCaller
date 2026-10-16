@@ -19,7 +19,7 @@ import java.io.ByteArrayOutputStream
 import java.util.regex.Pattern
 
 /** UiAutomator helpers for driving OpenCaller and the system's role and permission dialogs. */
-internal object Ui {
+object Ui {
     private const val TIMEOUT_MILLIS = 10_000L
     private const val MAX_DUMP_CHARS = 20_000
 
@@ -114,7 +114,7 @@ internal object Ui {
 }
 
 /** Adds the on-screen hierarchy to any failure, so CI logs show what was on screen. */
-internal class DumpWindowOnFailure : TestRule {
+class DumpWindowOnFailure : TestRule {
     override fun apply(
         base: Statement,
         description: Description,
