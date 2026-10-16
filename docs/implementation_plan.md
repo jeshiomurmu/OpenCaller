@@ -55,28 +55,28 @@ Rough effort for one full-time developer working with an AI agent: Phases 0–7 
 
 ## Phase 2 — Onboarding, roles, permissions
 
-- [ ] Welcome + privacy explainer screens (what leaves the phone, what never does)
-- [ ] `RoleManagerHelper`: query/request `ROLE_CALL_SCREENING`, `ROLE_DIALER`, `ROLE_SMS`
-- [ ] Permission explainers + requests per `architecture.md` §5 (only after the matching role)
-- [ ] Overlay permission flow (`SYSTEM_ALERT_WINDOW`)
-- [ ] Notification permission (API 33+)
-- [ ] Onboarding state persisted; re-entry from Settings → Permissions status screen
-- [ ] Handle "role revoked later" (re-check on resume, banner)
+- [x] Welcome + privacy explainer screens (what leaves the phone, what never does)
+- [x] `RoleManagerHelper`: query/request `ROLE_CALL_SCREENING`, `ROLE_DIALER`, `ROLE_SMS`
+- [x] Permission explainers + requests per `architecture.md` §5 (only after the matching role)
+- [x] Overlay permission flow (`SYSTEM_ALERT_WINDOW`)
+- [x] Notification permission (API 33+)
+- [x] Onboarding state persisted; re-entry from Settings → Permissions status screen
+- [x] Handle "role revoked later" (re-check on resume, banner)
 
 **Exit:** on a fresh emulator, onboarding grants call-screening role; denying each permission shows the degraded-mode banner, never a crash (TC-ONB-001…008).
 
 ## Phase 3 — Call screening + local blocking
 
-- [ ] `OpenCallerScreeningService` registered with `BIND_SCREENING_SERVICE`
-- [ ] `ScreeningEngine` with decision order from `architecture.md` §4.1, 1,500 ms budget, fail-open
-- [ ] Contact check via ContactsProvider `PhoneLookup`
-- [ ] Rules: exact, prefix, regex (with safe timeout), country; allow beats block
-- [ ] Toggles: block hidden, foreign (with allowed countries), non-contacts
-- [ ] Bundled seed spam list (empty in repo; dev fixture for tests) and `spam_list` lookup
-- [ ] STIR/SHAKEN verdict read on API 30+
-- [ ] Caller card overlay (`OverlayController`) for screening-only mode; after-call notification
-- [ ] Blocked-calls log screen + rules editor UI (`feature:blocking`)
-- [ ] `screening_event` logging + debug screen
+- [x] `OpenCallerScreeningService` registered with `BIND_SCREENING_SERVICE`
+- [x] `ScreeningEngine` with decision order from `architecture.md` §4.1, 1,500 ms budget, fail-open
+- [x] Contact check via ContactsProvider `PhoneLookup`
+- [x] Rules: exact, prefix, regex (with safe timeout), country; allow beats block
+- [x] Toggles: block hidden, foreign (with allowed countries), non-contacts
+- [x] Bundled seed spam list (empty in repo; dev fixture for tests) and `spam_list` lookup
+- [x] STIR/SHAKEN verdict read on API 30+
+- [x] Caller card overlay (`OverlayController`) for screening-only mode; after-call notification
+- [x] Blocked-calls log screen + rules editor UI (`feature:blocking`)
+- [x] `screening_event` logging + debug screen
 
 **Exit:** with `adb emu gsm call`, every row in `testing.md` TC-BLK-* passes; p95 decision latency < 50 ms for local decisions (measured in debug screen); screening exception test proves fail-open.
 

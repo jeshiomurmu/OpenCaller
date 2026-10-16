@@ -12,6 +12,7 @@ package io.github.jeshiomurmu.opencaller.core.model
  * @property callReason business-provided reason for the call, if any.
  * @property lineType kind of line, if known.
  * @property regionCode ISO 3166-1 alpha-2 region of the number, if known.
+ * @property verification the carrier's STIR/SHAKEN verdict for the call (Android 11+).
  */
 data class CallerInfo(
     val number: PhoneNumber?,
@@ -23,6 +24,7 @@ data class CallerInfo(
     val callReason: String? = null,
     val lineType: LineType? = null,
     val regionCode: String? = null,
+    val verification: CallerVerification = CallerVerification.UNKNOWN,
 ) {
     /** True when the caller withheld their number. */
     val isHidden: Boolean get() = number == null

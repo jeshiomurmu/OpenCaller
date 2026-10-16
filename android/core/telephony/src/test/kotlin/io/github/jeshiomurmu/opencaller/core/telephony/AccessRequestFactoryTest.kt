@@ -58,6 +58,10 @@ class AccessRequestFactoryTest {
             AccessRequest.RuntimePermission(Manifest.permission.POST_NOTIFICATIONS),
             factory.requestFor(AccessItem.NOTIFICATIONS, fresh),
         )
+        assertEquals(
+            AccessRequest.RuntimePermission(Manifest.permission.READ_PHONE_STATE),
+            factory.requestFor(AccessItem.CALL_STATE, fresh),
+        )
     }
 
     @Test
@@ -80,5 +84,6 @@ class AccessRequestFactoryTest {
         val contacts = factory.settingsFor(AccessItem.CONTACTS).intent
         assertEquals(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, contacts.action)
         assertEquals("package:${context.packageName}", contacts.dataString)
+        assertEquals(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, factory.settingsFor(AccessItem.CALL_STATE).intent.action)
     }
 }

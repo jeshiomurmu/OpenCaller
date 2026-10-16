@@ -99,6 +99,21 @@ class DaoTest {
         }
 
     @Test
+    fun blockRuleLookupsUsedByUndo() =
+        runTest {
+            val dao = db.blockRuleDao()
+            val exact = dao.insert(rule(pattern = "+12015550123", createdAt = 1).copy(type = RuleType.EXACT))
+            dao.insert(rule(pattern = "+1201", createdAt = 2))
+            assertEquals(listOf(exact), dao.exactRulesFor("+12015550123").map { it.id })
+            assertEquals("+12015550123", dao.find(exact)?.pattern)
+            assertEquals(1, dao.setEnabled(exact, enabled = false))
+            assertEquals(listOf("+1201"), dao.enabledRules().map { it.pattern })
+            assertEquals(1, dao.deleteById(exact))
+            assertNull(dao.find(exact))
+            assertEquals(1, dao.deleteAll())
+        }
+
+    @Test
     fun screeningEvents() =
         runTest {
             val dao = db.screeningEventDao()
@@ -117,8 +132,35 @@ class DaoTest {
                 )
             }
             assertEquals(listOf(30L, 20L), dao.observeRecent(limit = 2).first().map { it.at })
+            assertEquals(listOf(30L, 20L), dao.recent(limit = 2).map { it.at })
             assertEquals(1, dao.deleteOlderThan(15))
         }
+
+    @Test
+    fun blockedLogShowsOnlyBlockedAndSilencedCalls() =
+        runTest {
+            val dao = db.screeningEventDao()
+            val decisions = listOf(Decision.ALLOW, Decision.BLOCK, Decision.SILENCE)
+            val ids = decisions.mapIndexed { i, decision -> dao.insert(event(decision, at = i.toLong())) }
+            assertEquals(listOf(Decision.SILENCE, Decision.BLOCK), dao.observeBlocked(limit = 10).first().map { it.decision })
+            assertEquals(Decision.ALLOW, dao.find(ids.first())?.decision)
+            assertEquals(3, dao.deleteAll())
+            assertEquals(0, db.spamListDao().deleteAll())
+        }
+
+    private fun event(
+        decision: Decision,
+        at: Long,
+    ) = ScreeningEventEntity(
+        e164 = "+12015550123",
+        direction = Direction.INCOMING,
+        decision = decision,
+        reason = "rule",
+        spamScore = null,
+        stirStatus = 1,
+        latencyMs = 3,
+        at = at,
+    )
 
     @Test
     fun messageMeta() =

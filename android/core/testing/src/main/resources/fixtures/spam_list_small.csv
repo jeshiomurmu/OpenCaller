@@ -1,0 +1,9 @@
+# Synthetic seed spam list for tests: e164,score,category,reportCount. Fictional numbers only.
++12015550100,0.9,Loan,214
++12015550101,0.7,Telemarketing,12
++12015550102,0.3,Survey,1
++8801712345670,0.95,Scam,560
+# invalid rows below are skipped by the parser
+12015550103,0.9,Loan,3
++12015550104,1.5,Loan,3
++12015550105,0.5,Loan

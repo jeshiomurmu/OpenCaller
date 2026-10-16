@@ -57,11 +57,17 @@ enum class PermissionStatus {
     NOT_REQUIRED,
 }
 
-/** Status of the permissions OpenCaller asks for during onboarding. */
+/**
+ * Status of the permissions OpenCaller asks for.
+ *
+ * @property callState phone state, used on Android 12+ to hide the caller card when the call ends
+ *   ([PermissionStatus.NOT_REQUIRED] below Android 12, where the call state needs no permission).
+ */
 data class PermissionState(
     val contacts: PermissionStatus,
     val notifications: PermissionStatus,
     val overlay: PermissionStatus,
+    val callState: PermissionStatus = PermissionStatus.NOT_REQUIRED,
 )
 
 /** Something the user can grant from onboarding or Settings → Permissions & roles. */
@@ -83,6 +89,9 @@ enum class AccessItem {
 
     /** Draw the caller ID card over other apps. */
     OVERLAY,
+
+    /** Read the call state (Android 12+), so the caller card closes when the call ends. */
+    CALL_STATE,
 }
 
 /** What the user sees for an [AccessItem]. */
@@ -156,6 +165,7 @@ data class AccessStatus(
             AccessItem.CONTACTS -> permissions.contacts.toItemStatus()
             AccessItem.NOTIFICATIONS -> permissions.notifications.toItemStatus()
             AccessItem.OVERLAY -> permissions.overlay.toItemStatus()
+            AccessItem.CALL_STATE -> permissions.callState.toItemStatus()
         }
 
     /** True when [item] is granted, or doesn't apply, so there is nothing left to ask for. */

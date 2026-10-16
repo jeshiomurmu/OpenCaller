@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Notification channels (Settings → Notifications). -->
+    <string name="channel_caller_id">Caller ID</string>
+    <string name="channel_caller_id_description">Who is calling, when OpenCaller can\'t show its card over your phone app.</string>
+    <string name="channel_after_call">After-call summary</string>
+    <string name="channel_after_call_description">A short summary after a call from a number that isn\'t in your contacts.</string>
+
+    <!-- Caller card over other apps. -->
+    <string name="callerid_close">Close</string>
+
+    <!-- After-call notification (docs/architecture.md §4.3). -->
+    <string name="after_call_title">Call from %1$s</string>
+    <string name="after_call_block">Block</string>
+    <string name="after_call_report">Report</string>
+    <string name="after_call_not_spam">Not spam</string>
+    <string name="after_call_save_contact">Save contact</string>
+    <string name="after_call_blocked">Blocked %1$s</string>
+    <string name="after_call_marked_not_spam">%1$s won\'t be flagged as spam on this phone</string>
+    <string name="after_call_failed">Something went wrong. Please try again.</string>
+</resources>

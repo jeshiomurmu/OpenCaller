@@ -3,8 +3,9 @@
 
     <application>
         <!--
-            Android only offers the caller ID & spam role (RoleManager.ROLE_CALL_SCREENING) to apps that declare a
-            CallScreeningService. Phase 2 lets every call through; screening decisions arrive in Phase 3.
+            Android binds this service for every incoming and outgoing call while OpenCaller holds the caller ID & spam
+            role (RoleManager.ROLE_CALL_SCREENING); only Telecom may bind it (BIND_SCREENING_SERVICE). Declaration as in
+            https://developer.android.com/reference/android/telecom/CallScreeningService.
         -->
         <service
             android:name=".screening.OpenCallerScreeningService"

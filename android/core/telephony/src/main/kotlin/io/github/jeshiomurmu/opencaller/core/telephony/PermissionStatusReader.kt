@@ -11,7 +11,7 @@ import io.github.jeshiomurmu.opencaller.core.model.PermissionState
 import io.github.jeshiomurmu.opencaller.core.model.PermissionStatus
 import javax.inject.Inject
 
-/** Reads the current state of the permissions OpenCaller asks for during onboarding. */
+/** Reads the current state of the permissions OpenCaller asks for. */
 class PermissionStatusReader
     @Inject
     constructor(
@@ -23,7 +23,16 @@ class PermissionStatusReader
                 contacts = runtime(Manifest.permission.READ_CONTACTS),
                 notifications = notifications(),
                 overlay = if (Settings.canDrawOverlays(context)) PermissionStatus.GRANTED else PermissionStatus.DENIED,
+                callState = callState(),
             )
+
+        // TelephonyCallback.CallStateListener needs READ_PHONE_STATE from Android 12; before that the call state is free.
+        private fun callState(): PermissionStatus =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                runtime(Manifest.permission.READ_PHONE_STATE)
+            } else {
+                PermissionStatus.NOT_REQUIRED
+            }
 
         private fun runtime(permission: String): PermissionStatus =
             if (context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED) {

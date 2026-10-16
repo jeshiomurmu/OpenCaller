@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import io.github.jeshiomurmu.opencaller.BuildConfig
 import io.github.jeshiomurmu.opencaller.R
 import io.github.jeshiomurmu.opencaller.core.designsystem.preview.OpenCallerPreviews
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerShape
@@ -78,6 +79,7 @@ private fun DefaultPhoneAppCard(
 internal fun MeScreen(
     onOpenPermissions: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenDebug: () -> Unit = {},
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         Text(
@@ -86,7 +88,7 @@ internal fun MeScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = OpenCallerSpacing.screenPadding, vertical = OpenCallerSpacing.m),
         )
-        SettingsScreen(onOpenPermissions = onOpenPermissions)
+        SettingsScreen(onOpenPermissions = onOpenPermissions, versionName = BuildConfig.VERSION_NAME, onOpenDebug = onOpenDebug)
     }
 }
 

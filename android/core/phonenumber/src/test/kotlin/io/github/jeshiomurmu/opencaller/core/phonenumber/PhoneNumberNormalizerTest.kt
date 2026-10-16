@@ -106,6 +106,54 @@ class PhoneNumberNormalizerTest {
         assertEquals(LineType.TOLL_FREE, normalizer.numberType(number))
     }
 
+    @Test
+    fun fromHandleReadsTelephonyHandles() {
+        assertEquals(PhoneNumber("+12015550123"), normalizer.fromHandle("+1 (201) 555-0123", "BD"))
+        assertEquals(PhoneNumber("+8801712345678"), normalizer.fromHandle("01712345678", "BD"))
+        // +1 555 is not an assigned area code, but the rules must still see the number (TC-BLK-003).
+        assertEquals(PhoneNumber("+15551230001"), normalizer.fromHandle("+15551230001", "US"))
+        assertNull(normalizer.fromHandle("", "US"))
+        assertNull(normalizer.fromHandle("  ", "US"))
+        assertNull(normalizer.fromHandle("123", "US"))
+        assertNull(normalizer.fromHandle("anonymous", "US"))
+    }
+
+    @Test
+    fun countryOfFallsBackToTheCallingCodesMainRegion() {
+        assertEquals("US", normalizer.countryOf(PhoneNumber("+12015550123")))
+        assertEquals("US", normalizer.countryOf(PhoneNumber("+15551230001")))
+        assertEquals("BD", normalizer.countryOf(PhoneNumber("+8801712345678")))
+        val freephone = checkNotNull(normalizer.normalize("+800 1234 5678", "US").getOrNull())
+        assertNull(normalizer.countryOf(freephone))
+    }
+
+    @Test
+    fun displayFormatsAreNationalAtHome() {
+        val us = PhoneNumber("+12015550123")
+        assertEquals("(201) 555-0123", normalizer.format(us, "us"))
+        assertEquals("+1 201-555-0123", normalizer.format(us, "BD"))
+        assertEquals("+1 201-555-0123", normalizer.format(us, null))
+        assertEquals("01712-345678", normalizer.format(PhoneNumber("+8801712345678"), "BD"))
+        assertEquals("+880 ••• 5678", normalizer.masked(PhoneNumber("+8801712345678")))
+    }
+
+    @Test
+    fun exampleNumbersAreValidMobileNumbersOfTheRegion() {
+        listOf("BD", "us", "IN", "GB", "NG", "AE").forEach { region ->
+            val example = checkNotNull(normalizer.exampleNumber(region)) { region }
+            assertEquals(region.uppercase(), normalizer.regionCode(example))
+        }
+        assertNull(normalizer.exampleNumber("ZZ"))
+    }
+
+    @Test
+    fun supportedRegions() {
+        assertTrue(normalizer.isSupportedRegion("bd"))
+        assertTrue(normalizer.isSupportedRegion("US"))
+        assertFalse(normalizer.isSupportedRegion("ZZ"))
+        assertFalse(normalizer.isSupportedRegion("USA"))
+    }
+
     /** One row of `fixtures/numbers.csv`. */
     private class NumberFixture(
         row: List<String>,

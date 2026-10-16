@@ -19,6 +19,7 @@ import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber as LibPhoneNumber
  * Region arguments are ISO 3166-1 alpha-2 codes (`BD`, `IN`, …), case-insensitive. Never throws: invalid
  * input becomes [AppError.Validation].
  */
+@Suppress("TooManyFunctions") // The app's one façade over libphonenumber: every number question goes through it.
 class PhoneNumberNormalizer(
     private val util: PhoneNumberUtil = PhoneNumberUtil.getInstance(),
 ) {
@@ -55,12 +56,62 @@ class PhoneNumberNormalizer(
         }
     }
 
+    /**
+     * Reads a telephony handle (the number part of a `tel:` URI) as a [PhoneNumber]: a valid number through
+     * [normalize], otherwise any `+` followed by 7–15 digits as it is, so numbers outside assigned ranges still
+     * match the user's rules. Returns `null` when the handle is not a phone number.
+     */
+    fun fromHandle(
+        raw: String,
+        defaultRegion: String,
+    ): PhoneNumber? {
+        val cleaned = raw.trim().filterNot { it in VISUAL_SEPARATORS }
+        if (cleaned.isEmpty()) return null
+        return when (val number = normalize(cleaned, defaultRegion)) {
+            is AppResult.Success -> number.value
+            is AppResult.Failure -> cleaned.takeIf(PhoneNumber::isE164)?.let(::PhoneNumber)
+        }
+    }
+
+    /**
+     * Country of [number] for country rules and allowed countries: its own region, or the main region of its
+     * calling code when the number is outside assigned ranges. `null` for non-geographic numbers.
+     */
+    fun countryOf(number: PhoneNumber): String? =
+        regionCode(number) ?: util.getRegionCodeForCountryCode(countryCallingCode(number)).takeIf(::isGeographicRegion)
+
+    /**
+     * [number] for display (docs/design.md §7): national format when it belongs to [homeRegion], international
+     * otherwise, e.g. `(201) 555-0123` in the US and `+1 201-555-0123` elsewhere.
+     */
+    fun format(
+        number: PhoneNumber,
+        homeRegion: String?,
+    ): String {
+        val parsed = parse(number)
+        val home = homeRegion?.let { util.getCountryCodeForRegion(it.uppercase()) }
+        return util.format(parsed, if (home == parsed.countryCode) PhoneNumberFormat.NATIONAL else PhoneNumberFormat.INTERNATIONAL)
+    }
+
+    /** [number] with its middle hidden, e.g. `+880 ••• 1234`, for confirmations such as "Blocked … · Undo". */
+    fun masked(number: PhoneNumber): String = "+${countryCallingCode(number)} ••• ${number.e164.takeLast(MASKED_VISIBLE_DIGITS)}"
+
+    /** A valid example mobile number of [regionCode] (libphonenumber metadata), or `null` for an unknown region. */
+    fun exampleNumber(regionCode: String): PhoneNumber? =
+        util
+            .getExampleNumberForType(regionCode.uppercase(), PhoneNumberType.MOBILE)
+            ?.let { util.format(it, PhoneNumberFormat.E164) }
+            ?.takeIf(PhoneNumber::isE164)
+            ?.let(::PhoneNumber)
+
+    /** True when [regionCode] (ISO 3166-1 alpha-2, any case) is a region with a numbering plan. */
+    fun isSupportedRegion(regionCode: String): Boolean = regionCode.uppercase() in util.supportedRegions
+
     /** Line type of [number] (mobile, fixed line, toll-free, …). */
     fun numberType(number: PhoneNumber): LineType = LINE_TYPES[util.getNumberType(parse(number))] ?: LineType.UNKNOWN
 
     /** ISO 3166-1 alpha-2 region of [number], or `null` for non-geographic numbers. */
-    fun regionCode(number: PhoneNumber): String? =
-        util.getRegionCodeForNumber(parse(number))?.takeIf { it.length == 2 && it != UNKNOWN_REGION }
+    fun regionCode(number: PhoneNumber): String? = util.getRegionCodeForNumber(parse(number))?.takeIf(::isGeographicRegion)
 
     /** Country calling code of [number], e.g. `880` for Bangladesh. Used to address lookup buckets. */
     fun countryCallingCode(number: PhoneNumber): Int = parse(number).countryCode
@@ -77,6 +128,8 @@ class PhoneNumberNormalizer(
         val simCode = util.getCountryCodeForRegion(simRegion.uppercase())
         return simCode != 0 && simCode != countryCallingCode(number)
     }
+
+    private fun isGeographicRegion(region: String): Boolean = region.length == 2 && region != UNKNOWN_REGION
 
     private fun parse(number: PhoneNumber): LibPhoneNumber = util.parse(number.e164, UNKNOWN_REGION)
 
@@ -104,6 +157,8 @@ class PhoneNumberNormalizer(
         const val MAX_INPUT_LENGTH = 64
         const val UNKNOWN_REGION = "ZZ"
         val SHORT_CODE = Regex("""^\d{3,8}$""")
+        const val VISUAL_SEPARATORS = " -().\u00A0"
+        const val MASKED_VISIBLE_DIGITS = 4
         val LINE_TYPES =
             mapOf(
                 PhoneNumberType.FIXED_LINE to LineType.FIXED_LINE,

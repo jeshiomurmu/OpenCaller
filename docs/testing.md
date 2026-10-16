@@ -38,7 +38,7 @@ Limits: the emulator cannot simulate hidden numbers, STIR/SHAKEN verdicts, dual 
 
 - `numbers.csv` — sample numbers per country (BD, IN, US, GB, NG, AE) with expected E.164, type, region
 - `sms_corpus/` — anonymised SMS samples labelled with category, otp code, brand, origin; split `train/val/test` (the `test` split is never used for training)
-- `spam_list_small.bin` — seed spam list for tests
+- `spam_list_small.csv` — synthetic seed spam list for tests (`e164,score,category,reportCount`)
 - `sender_ids.csv` — sample registry rows
 
 Never use real people's numbers. Use reserved/fictional ranges where possible (e.g. US 555-01XX) and synthetic numbers elsewhere.
@@ -97,6 +97,14 @@ Where they run (Phase 2):
 | TC-BLK-013 | Emergency | Dial local emergency number in test mode (do not place real call; verify routing code path with fake) | Never intercepted | U |
 | TC-BLK-014 | STIR verdict | Verified/failed call on supporting carrier | Card shows "Verified by carrier" / "Possibly spoofed" | D |
 | TC-BLK-015 | Undo block | Tap Undo in snackbar / log | Rule removed, next call rings | I |
+
+Where they run (Phase 3):
+
+- **Unit (JVM), `core/telephony/src/test/.../screening/`:** `ScreeningEngineTest` covers every decision branch of `architecture.md` §4.1 and TC-BLK-001…006, 008, 009, 010 (an injected failure ends in ALLOW, reason `error`), 011 (a 3 s network lookup is abandoned at 1,500 ms of virtual time; a second test proves a *blocking* lookup on real threads can't hold the call either), 012, 013 (emergency numbers are allowed before settings or rules are even read) and 014 at the mapping level. `RuleMatcherTest` / `RuleValidatorTest` cover TC-BLK-004 (catastrophic patterns hit the regex watchdog; the editor rejects them), `ScreeningCoordinatorTest` the answer → log → caller ID sequence and that failures after the answer never affect the call.
+- **Robolectric:** `DeviceScreeningTest` (CallResponse per decision, `Call.Details` mapping incl. STIR, contacts without permission, home region), `RepositoryTest` (`core:data`), `CallerIdTest` (heads-up and after-call notifications, at most three actions, nothing without the notification permission, after-call summary only after the call ends and never for contacts), `BlockingViewModelsTest` (rules editor incl. Undo = TC-BLK-015, Test a number with the real engine, Unblock from the log, settings, reports).
+- **Emulator, `scripts/qa/blocking.sh`** (CI `emulator` job on API 29 and 36, after the onboarding smoke script): TC-BLK-001 (a contact written through the contacts provider rings although a block prefix covers it), 002, 003, 004 (on the device's ICU regex engine), 006, 008, 009, 012 and 015, with `adb emu gsm call`. The debug build's QA receiver sets rules and settings and overrides what the emulator can't fake (SIM country, verified business); every decision is read back from the debug export (`files/qa/screening_events.tsv`, `caller_id.tsv` via `run-as`). Latency gates, over 20 sample calls: the app's own time per decision (the engine's step timings minus the wait for Android's contacts lookup) must have p95 < 50 ms, and the total on the debug screen p95 < 100 ms. The contacts provider alone swings 20–90 ms on the shared CI emulators (the same commit passed and failed the old 50 ms total gate, BUG-0002), so the exit criterion's 50 ms total is checked on a phone (below).
+- **Device only:** TC-BLK-007 (hidden numbers; see §7) and TC-BLK-014 (STIR needs a carrier that signs calls).
+- **Latency on a phone (exit criterion, manual):** install the debug build, give it the call screening role and the contacts permission, take 20+ calls (contacts, blocked and unknown numbers), then open Me → Settings → About (tap the version 7×) and read "Local decisions: … p95". It must be under 50 ms; record the phone model, Android version and the numbers in `docs/phase.md`.
 
 ### Backend (Phase 4)
 
@@ -197,9 +205,14 @@ Format: one row per bug, newest first. Severity: S1 crash/data loss/privacy leak
 
 | ID | Date | Sev | Module | Summary | Repro | Status | Fix / notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| BUG-0002 | 2026-10-16 | S3 | core:telephony | Emulator p95 local decision latency sits at the 50 ms gate (Phase 3 exit criterion) | `scripts/qa/blocking.sh` in CI, 33 calls, debug screen | fixed (CI gate) — phone check open | Tried: (1) `ScreeningWarmUp` loads the home country's numbering metadata at start (removed an 85 ms first call); (2) local lookups started concurrently; this exposed a ~0.5 s stall at the same call on both emulators (526/527 ms, matches opening another SQLCipher connection); (3) database reads chained (stall gone, max 68 ms); (4) 33-call sample and per-step timings (run 38899690568). Result: API 29 p95 46 ms, API 36 p95 50 ms. The step timings show the system contacts lookup (`PhoneLookup`, a call into the contacts provider) at 24–58 ms on the slow decisions; the app's own steps are 0–16 ms. Fix (option a, 2026-10-16): CI gates the app's own time (decision minus the contacts lookup) at p95 < 50 ms and the emulator total at p95 < 100 ms; the 50 ms total is measured on a phone (manual step under "Where they run (Phase 3)"). Same commit had passed and failed the old gate (`d3bf5ea`: push run green, PR run red) |
 | BUG-0001 | | | | _example_ Caller card missing on Android 10 when overlay denied | TC-ONB-007 | open | |
 
 ## 7. Known platform limitations (not bugs)
+
+- A call screening app that is not the default phone app never sees hidden-number calls: Android doesn't pass calls with restricted, unknown, unavailable or payphone presentation to `CallScreeningService` (developer.android.com, `CallScreeningService.onScreenCall`). "Block hidden numbers" therefore works once OpenCaller is the default phone app (Phase 6); the setting says so.
+- `CallResponse.Builder.setSkipCallLog` is ignored for apps other than the system dialer, so blocked calls still appear in the system call log.
+- Android's `java.util.regex` is ICU and doesn't read its input through `CharSequence.charAt`, so a deadline-checking `CharSequence` can't stop a runaway pattern there. Regex rules therefore also run on a watchdog thread with a hard time limit (`TimeLimitedRegex`), and the editor rejects slow patterns before they are saved.
 
 - Native call recording is not available to third-party apps; recording uses the recording line (PRD F-UT-03).
 - Conditional call forwarding codes differ by carrier; some carriers don't support them.

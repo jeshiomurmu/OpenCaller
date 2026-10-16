@@ -8,6 +8,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import io.github.jeshiomurmu.opencaller.core.database.DatabaseAccess
 import io.github.jeshiomurmu.opencaller.core.database.EncryptedDatabaseProvider
 import io.github.jeshiomurmu.opencaller.core.database.crypto.AndroidKeystoreCipher
 import io.github.jeshiomurmu.opencaller.core.database.crypto.DatabasePassphraseStore
@@ -37,4 +38,8 @@ object DatabaseModule {
         @ApplicationContext context: Context,
         passphraseStore: DatabasePassphraseStore,
     ): EncryptedDatabaseProvider = EncryptedDatabaseProvider(context, passphraseStore)
+
+    /** What repositories use: the encrypted database. */
+    @Provides
+    fun databaseAccess(provider: EncryptedDatabaseProvider): DatabaseAccess = provider
 }

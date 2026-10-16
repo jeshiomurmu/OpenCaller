@@ -1,15 +1,28 @@
 package io.github.jeshiomurmu.opencaller.core.model
 
-/** How aggressively spam is blocked. */
-enum class SpamThreshold {
-    /** Block only numbers with very strong spam signals. */
-    LOW,
+private const val LOW_THRESHOLD = 0.4f
+private const val MEDIUM_THRESHOLD = 0.6f
+private const val HIGH_THRESHOLD = 0.85f
 
-    /** Default balance between missed spam and false positives. */
-    MEDIUM,
+/**
+ * The spam score from which a listed number is blocked (docs/prd.md, Phase 3). A *higher* threshold needs a
+ * stronger signal, so it blocks fewer calls: [HIGH] blocks only near-certain spam, [LOW] blocks more and risks
+ * more false positives. Numbers listed below the threshold still show as "Suspicious" on the caller card when
+ * their score is at least [SpamVerdict.SUSPICIOUS_MIN_SCORE].
+ *
+ * @property minimumScore spam score (`0.0..1.0`) at or above which a listed number is blocked.
+ */
+enum class SpamThreshold(
+    val minimumScore: Float,
+) {
+    /** Block at a score of 0.4 or more: the most calls blocked. */
+    LOW(LOW_THRESHOLD),
 
-    /** Block on weaker signals too. */
-    HIGH,
+    /** Block at 0.6 or more: the default balance between missed spam and false positives. */
+    MEDIUM(MEDIUM_THRESHOLD),
+
+    /** Block only at 0.85 or more: near-certain spam. */
+    HIGH(HIGH_THRESHOLD),
 }
 
 /** When the caller's name is announced aloud. */

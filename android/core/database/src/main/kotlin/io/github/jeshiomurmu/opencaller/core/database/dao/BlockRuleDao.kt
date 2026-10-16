@@ -30,4 +30,27 @@ interface BlockRuleDao {
     /** Enabled rules, used by the screening engine. */
     @Query("SELECT * FROM block_rule WHERE enabled = 1")
     suspend fun enabledRules(): List<BlockRuleEntity>
+
+    /** The rule with [id], or `null`. */
+    @Query("SELECT * FROM block_rule WHERE id = :id")
+    suspend fun find(id: Long): BlockRuleEntity?
+
+    /** Exact-number rules for [e164], enabled or not (used by Undo). */
+    @Query("SELECT * FROM block_rule WHERE type = 'EXACT' AND pattern = :e164")
+    suspend fun exactRulesFor(e164: String): List<BlockRuleEntity>
+
+    /** Deletes the rule with [id]; returns the number removed. */
+    @Query("DELETE FROM block_rule WHERE id = :id")
+    suspend fun deleteById(id: Long): Int
+
+    /** Turns the rule with [id] on or off; returns the number changed. */
+    @Query("UPDATE block_rule SET enabled = :enabled WHERE id = :id")
+    suspend fun setEnabled(
+        id: Long,
+        enabled: Boolean,
+    ): Int
+
+    /** Deletes every rule; returns the number removed. */
+    @Query("DELETE FROM block_rule")
+    suspend fun deleteAll(): Int
 }

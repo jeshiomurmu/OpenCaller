@@ -70,6 +70,10 @@ class AccessRequestFactory
                 AccessItem.OVERLAY -> {
                     settingsFor(item)
                 }
+
+                AccessItem.CALL_STATE -> {
+                    permissionRequest(Manifest.permission.READ_PHONE_STATE, roleState)
+                }
             }
 
         /**
@@ -83,7 +87,7 @@ class AccessRequestFactory
                         Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)
                     }
 
-                    AccessItem.CONTACTS -> {
+                    AccessItem.CONTACTS, AccessItem.CALL_STATE -> {
                         Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri())
                     }
 

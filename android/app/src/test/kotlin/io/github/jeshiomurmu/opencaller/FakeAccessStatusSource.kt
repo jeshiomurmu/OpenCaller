@@ -25,7 +25,13 @@ class FakeAccessStatusSource(
         val FRESH_INSTALL =
             AccessStatus(
                 roles = RoleState(RoleStatus.NOT_HELD, RoleStatus.APP_NOT_ELIGIBLE, RoleStatus.APP_NOT_ELIGIBLE),
-                permissions = PermissionState(PermissionStatus.DENIED, PermissionStatus.DENIED, PermissionStatus.DENIED),
+                permissions =
+                    PermissionState(
+                        PermissionStatus.DENIED,
+                        PermissionStatus.DENIED,
+                        PermissionStatus.DENIED,
+                        PermissionStatus.DENIED,
+                    ),
             )
     }
 }

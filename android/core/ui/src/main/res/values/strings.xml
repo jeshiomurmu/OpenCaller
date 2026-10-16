@@ -17,6 +17,40 @@
         <item quantity="other">%d reports</item>
     </plurals>
 
+    <!-- CallerCard (docs/design.md §5, §8). -->
+    <string name="caller_card_hidden">Hidden number</string>
+    <string name="caller_card_unknown">Unknown caller</string>
+    <string name="caller_card_hidden_note">The caller hid their number.</string>
+    <string name="caller_card_no_data">No reports. Not a registered business.</string>
+    <string name="caller_card_call_reason">Reason: %1$s</string>
+    <string name="caller_card_stir_passed">Verified by carrier</string>
+    <string name="caller_card_stir_failed">Possibly spoofed</string>
+
+    <!-- Line types on the caller card. -->
+    <string name="line_fixed">Landline</string>
+    <string name="line_mobile">Mobile</string>
+    <string name="line_fixed_or_mobile">Mobile or landline</string>
+    <string name="line_toll_free">Toll-free</string>
+    <string name="line_premium_rate">Premium rate</string>
+    <string name="line_shared_cost">Shared cost</string>
+    <string name="line_voip">Internet calling</string>
+    <string name="line_personal">Personal number</string>
+    <string name="line_pager">Pager</string>
+    <string name="line_uan">Company number</string>
+    <string name="line_voicemail">Voicemail</string>
+
+    <!-- RuleRow (docs/design.md §5). -->
+    <string name="rule_type_exact">Number</string>
+    <string name="rule_type_prefix">Starts with</string>
+    <string name="rule_type_country">Country</string>
+    <string name="rule_type_regex">Pattern</string>
+    <string name="rule_action_block">Block</string>
+    <string name="rule_action_silence">Silence</string>
+    <string name="rule_action_allow">Always allow</string>
+    <string name="rule_test">Test</string>
+    <string name="rule_delete">Delete</string>
+    <string name="rule_enabled">Rule %1$s on</string>
+
     <!-- VerifiedBadge. -->
     <string name="verified_business">Verified business</string>
     <string name="verified_business_explain">Verified business. Tap to see how it was verified.</string>
@@ -34,6 +68,7 @@
     <string name="access_default_phone_app">Default phone app</string>
     <string name="access_default_sms_app">Default SMS app</string>
     <string name="access_overlay">Caller ID over other apps</string>
+    <string name="access_call_state">Call status</string>
 
     <!-- Explainers: why we ask, what we never do (docs/design.md §7, docs/architecture.md §5 and §10). -->
     <string name="explain_call_screening_title">Let OpenCaller check incoming calls</string>
@@ -54,4 +89,7 @@
     <string name="explain_overlay_title">Show caller ID over other apps</string>
     <string name="explain_overlay_why">This lets OpenCaller show a small caller card on top of your phone app during a call. Without it, caller ID appears as a notification.</string>
     <string name="explain_overlay_never">The card appears only for calls. OpenCaller never reads what is on your screen.</string>
+    <string name="explain_call_state_title">Close the caller card when a call ends</string>
+    <string name="explain_call_state_why">With this, OpenCaller knows when a call ends, so it can close the caller card and show a summary right away.</string>
+    <string name="explain_call_state_never">OpenCaller only checks whether a call is ringing, active or over. It never reads your phone number, your SIM or who you talk to.</string>
 </resources>
