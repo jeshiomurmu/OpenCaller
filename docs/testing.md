@@ -204,6 +204,7 @@ Format: one row per bug, newest first. Severity: S1 crash/data loss/privacy leak
 
 | ID | Date | Sev | Module | Summary | Repro | Status | Fix / notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| BUG-0002 | 2026-10-16 | S3 | core:telephony | Emulator p95 local decision latency sits at the 50 ms gate (Phase 3 exit criterion) | `scripts/qa/blocking.sh` in CI, 33 calls, debug screen | open — needs a decision | Tried: (1) `ScreeningWarmUp` loads the home country's numbering metadata at start (removed an 85 ms first call); (2) local lookups started concurrently; this exposed a ~0.5 s stall at the same call on both emulators (526/527 ms, matches opening another SQLCipher connection); (3) database reads chained (stall gone, max 68 ms); (4) 33-call sample and per-step timings (run 38899690568). Result: API 29 p95 46 ms, API 36 p95 50 ms. The step timings show the system contacts lookup (`PhoneLookup`, a call into the contacts provider) at 24–58 ms on the slow decisions; the app's own steps are 0–16 ms. Options in `docs/phase.md` open issue 36 |
 | BUG-0001 | | | | _example_ Caller card missing on Android 10 when overlay denied | TC-ONB-007 | open | |
 
 ## 7. Known platform limitations (not bugs)

@@ -34,11 +34,11 @@ Copied from `docs/implementation_plan.md` → Phase 3. Tick here as you go; copy
 
 Review and merge the Phase 3 PR (squash; the checklist is already ticked in `docs/implementation_plan.md`), confirm CI is green on `main`, then **run P-04** (backend MVP).
 
-Exit criteria status (CI run 38894580688, `scripts/qa/blocking.sh` on API 29 and API 36):
-- `adb emu gsm call` cases: TC-BLK-002, 003, 006, 008, 009, 012 and 015 pass on both emulators, plus TC-BLK-004 against the device's own regex engine. TC-BLK-001 (contact rings despite a covering block rule) is added to the script in the hand-off commit; until then it is covered by `ScreeningEngineTest`.
+Exit criteria status (CI run 38899690568 on `b2a69da`, `scripts/qa/blocking.sh` on API 29 and API 36):
+- `adb emu gsm call` cases: TC-BLK-001, 002, 003, 006, 008, 009, 012 and 015 pass on both emulators, plus TC-BLK-004 against the device's own regex engine.
 - Unit/Robolectric by nature: TC-BLK-005, 010, 011 and 013. Device only: TC-BLK-007 and TC-BLK-014 (issues 25 and 33).
-- p95 local decision latency on the debug screen: **43 ms on API 36** (p50 12 ms, n = 11) and **20 ms on API 29** (p50 10 ms, n = 11). Target < 50 ms ✅.
-- Fail-open: `ScreeningEngineTest` (an injected exception ends in ALLOW with reason `error`; a 3 s lookup ends in ALLOW at the 1,500 ms budget) and `ScreeningCoordinatorTest` (failures after the answer never affect the call) ✅.
+- p95 local decision latency (debug screen, 33 calls): **API 29: 46 ms** (p50 13 ms) ✅; **API 36: 50 ms** (p50 10 ms) ❌ — the gate is "< 50 ms". The slowest step is Android's own contacts lookup (24–58 ms); see open issue 36 and BUG-0002. **Waiting for a decision.**
+- Fail-open: `ScreeningEngineTest` (an injected exception ends in ALLOW with reason `error`; a 3 s lookup ends in ALLOW at the 1,500 ms budget; a failed lookup only counts when the decision needs it) and `ScreeningCoordinatorTest` ✅.
 
 ## Open issues / blockers
 
@@ -76,8 +76,9 @@ Exit criteria status (CI run 38894580688, `scripts/qa/blocking.sh` on API 29 and
 32. **Emulator memory.** The API 29 image ran `system_server` with a 16 MB heap and died mid-test once (run 38891529407); the CI emulators now get `ram-size: 4096M` and `heap-size: 512M`. Watch for repeats.
 
 33. **STIR/SHAKEN (TC-BLK-014)** is read on API 30+ and mapped to the card ("Verified by carrier" / "Possibly spoofed"). The emulator can't sign calls, so it is tested at the mapping level only (`DeviceScreeningTest`); check on a carrier that signs calls.
-34. **Latency headroom and first calls.** p95 is 43 ms on the API 36 emulator; the slowest decision was the first spam-list hit. libphonenumber loads each country's metadata on first use. `ScreeningWarmUp` loads the home country at app start and on a SIM change, but the first call from a rarely seen country can still take tens of ms (about 70 ms observed for a cold country before the warm-up). That stays far inside the 1,500 ms budget, but it counts toward p95. Re-measure on a low-end phone.
+34. **First calls.** libphonenumber loads each country's metadata on first use. `ScreeningWarmUp` loads the home country at app start and on a SIM change, but the first call from a rarely seen country can still take tens of ms (about 70 ms observed for a cold country before the warm-up). That stays far inside the 1,500 ms budget. Opening another encrypted database connection costs about 0.5 s (SQLCipher derives the key per connection), so the engine reads its lists one after another; a raw 256-bit key would skip the derivation (changes `core:database`, needs a decision).
 35. **Seed spam list is empty.** `assets/spam_list/seed.csv` has only comments; tests use `core/testing/.../fixtures/spam_list_small.csv`. Phase 5 fills `spam_list` from the server.
+36. **Decision latency on CI emulators (BUG-0002).** Debug builds log each decision's step durations and the QA script prints the slowest. The app's own steps take 0–16 ms; Android's contacts lookup (`ContactsContract.PhoneLookup`, a call into the system contacts provider, required before any block because contacts always ring) takes 24–58 ms on the slow decisions, so p95 sits at 46–50 ms against a "< 50 ms" gate. Options: (a) measure the exit criterion on a physical phone and gate CI on the app's own time (decision minus the contacts lookup) < 50 ms plus total p95 < 100 ms to catch regressions — recommended; (b) keep an in-memory index of contact numbers refreshed by a `ContentObserver`, which deviates from the `PhoneLookup` spec and can miss contacts saved without a normalized number or seconds before a call (needs an ADR); (c) keep the strict gate on the emulator and accept failing runs.
 
 ## Verified dependency versions
 
