@@ -1,6 +1,7 @@
 package io.github.jeshiomurmu.opencaller.feature.callerid
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -139,6 +140,8 @@ class CallerIdNotifications
             return action(label, PendingIntent.getBroadcast(context, requestCode, intent, PENDING_FLAGS))
         }
 
+        // OpenCaller's own launch intent: an app always sees its own package.
+        @SuppressLint("QueryPermissionsNeeded")
         private fun openApp(
             number: PhoneNumber,
             report: Boolean,

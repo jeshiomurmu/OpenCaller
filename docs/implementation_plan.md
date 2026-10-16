@@ -55,13 +55,13 @@ Rough effort for one full-time developer working with an AI agent: Phases 0–7 
 
 ## Phase 2 — Onboarding, roles, permissions
 
-- [ ] Welcome + privacy explainer screens (what leaves the phone, what never does)
-- [ ] `RoleManagerHelper`: query/request `ROLE_CALL_SCREENING`, `ROLE_DIALER`, `ROLE_SMS`
-- [ ] Permission explainers + requests per `architecture.md` §5 (only after the matching role)
-- [ ] Overlay permission flow (`SYSTEM_ALERT_WINDOW`)
-- [ ] Notification permission (API 33+)
-- [ ] Onboarding state persisted; re-entry from Settings → Permissions status screen
-- [ ] Handle "role revoked later" (re-check on resume, banner)
+- [x] Welcome + privacy explainer screens (what leaves the phone, what never does)
+- [x] `RoleManagerHelper`: query/request `ROLE_CALL_SCREENING`, `ROLE_DIALER`, `ROLE_SMS`
+- [x] Permission explainers + requests per `architecture.md` §5 (only after the matching role)
+- [x] Overlay permission flow (`SYSTEM_ALERT_WINDOW`)
+- [x] Notification permission (API 33+)
+- [x] Onboarding state persisted; re-entry from Settings → Permissions status screen
+- [x] Handle "role revoked later" (re-check on resume, banner)
 
 **Exit:** on a fresh emulator, onboarding grants call-screening role; denying each permission shows the degraded-mode banner, never a crash (TC-ONB-001…008).
 

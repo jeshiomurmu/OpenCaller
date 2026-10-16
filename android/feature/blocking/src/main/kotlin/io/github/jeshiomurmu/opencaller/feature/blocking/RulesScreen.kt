@@ -127,7 +127,7 @@ private fun DraftEditor(
         modifier = Modifier.padding(horizontal = OpenCallerSpacing.screenPadding),
         verticalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xs),
     ) {
-        ChoiceRow(RuleType.entries, draft.type, { stringResource(it.labelRes()) }) { onEvent(RulesEvent.EditDraft(draft.copy(type = it))) }
+        ChoiceRow(RuleType.entries, draft.type, RuleType::labelRes) { onEvent(RulesEvent.EditDraft(draft.copy(type = it))) }
         OutlinedTextField(
             value = draft.pattern,
             onValueChange = { onEvent(RulesEvent.EditDraft(draft.copy(pattern = it))) },
@@ -152,12 +152,16 @@ private fun DraftEditor(
 private fun <T> ChoiceRow(
     choices: List<T>,
     selected: T,
-    label: @Composable (T) -> String,
+    label: (T) -> Int,
     onSelect: (T) -> Unit,
 ) {
     Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xs)) {
         choices.forEach { choice ->
-            FilterChip(selected = choice == selected, onClick = { onSelect(choice) }, label = { Text(text = label(choice)) })
+            FilterChip(
+                selected = choice == selected,
+                onClick = { onSelect(choice) },
+                label = { Text(text = stringResource(label(choice))) },
+            )
         }
     }
 }

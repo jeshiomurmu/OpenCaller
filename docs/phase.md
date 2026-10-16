@@ -6,26 +6,29 @@
 
 | Field | Value |
 | --- | --- |
-| **Current phase** | **2 — Onboarding, roles, permissions** |
+| **Current phase** | **3 — Call screening + local blocking** |
 | Phase started | 2026-10-16 |
 | Target exit date | — |
-| Branch | `phase/02-onboarding` |
+| Branch | `phase/03-call-screening` |
 | Last green CI run | Phase 2: [run 38879129151](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38879129151) on `f6b7392` (`phase/02-onboarding`, PR #3), 2026-10-16, all 6 jobs green. `main`: [run 38867777494](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38867777494) (`aede43d`) |
 | App version | 0.0.0 |
 
 ## Current phase checklist
 
-Copied from `docs/implementation_plan.md` → Phase 2. Tick here as you go; copy the ticked list back to the plan when the phase exits.
+Copied from `docs/implementation_plan.md` → Phase 3. Tick here as you go; copy the ticked list back to the plan when the phase exits.
 
-- [x] Welcome + privacy explainer screens (what leaves the phone, what never does) — `feature:onboarding`, copy from `prd.md` §5 / `architecture.md` §10; max 5 numbered steps (Welcome, Privacy, Call screening, Permissions, Extras)
-- [x] `RoleManagerHelper`: query/request `ROLE_CALL_SCREENING`, `ROLE_DIALER`, `ROLE_SMS` — availability, held, own-manifest eligibility, request intent, `StateFlow<RoleState>`; dialer and SMS show "coming later" until the app ships their components (open issue 17); Robolectric tests on SDK 29 and 35
-- [x] Permission explainers + requests per `architecture.md` §5 (only after the matching role) — `core:ui` `PermissionExplainer`/`AccessItemExplainer` before every request (TC-ONB-004); `PermissionPolicy` allows call log/phone permissions only with `ROLE_DIALER` and SMS permissions only with `ROLE_SMS` (Robolectric `PermissionPolicyTest`)
-- [x] Overlay permission flow (`SYSTEM_ALERT_WINDOW`) — optional extra; denied → caller ID falls back to a notification (TC-ONB-007, API 29 + 36)
-- [x] Notification permission (API 33+) — skipped below 33; denied → after-call summaries stay in the in-app history (TC-ONB-006, API 36)
-- [x] Onboarding state persisted; re-entry from Settings → Permissions status screen — step in `UserSettings`, open extra in `SavedStateHandle`; rotation + recreation (instrumented) and real process death (`am kill`, smoke script) resume at the same step (TC-ONB-008); Me → Settings → Permissions & roles with Fix (explainer first, settings page once blocked)
-- [x] Handle "role revoked later" (re-check on resume, banner) — `RefreshAccessOnResume`; app-wide degraded-mode banner with Fix; revoking via `cmd role` shows the banner on return (TC-ONB-005, API 29 + 36)
+- [ ] `OpenCallerScreeningService` registered with `BIND_SCREENING_SERVICE`
+- [ ] `ScreeningEngine` with decision order from `architecture.md` §4.1, 1,500 ms budget, fail-open
+- [ ] Contact check via ContactsProvider `PhoneLookup`
+- [ ] Rules: exact, prefix, regex (with safe timeout), country; allow beats block
+- [ ] Toggles: block hidden, foreign (with allowed countries), non-contacts
+- [ ] Bundled seed spam list (empty in repo; dev fixture for tests) and `spam_list` lookup
+- [ ] STIR/SHAKEN verdict read on API 30+
+- [ ] Caller card overlay (`OverlayController`) for screening-only mode; after-call notification
+- [ ] Blocked-calls log screen + rules editor UI (`feature:blocking`)
+- [ ] `screening_event` logging + debug screen
 
-**Exit criteria:** on a fresh emulator, onboarding grants call-screening role; denying each permission shows the degraded-mode banner, never a crash (TC-ONB-001…008).
+**Exit criteria:** with `adb emu gsm call`, every row in `testing.md` TC-BLK-* passes; p95 decision latency < 50 ms for local decisions (measured in debug screen); screening exception test proves fail-open.
 
 ## Next step
 
@@ -58,6 +61,16 @@ Exit criteria status: on fresh API 29 and API 36 emulators onboarding grants the
 21. **Not yet requested:** `WRITE_CONTACTS` (contacts editing, Phase 6) and `READ_PHONE_STATE` / `READ_PHONE_NUMBERS` (SIM info, with the `core:telephony` SIM work). `architecture.md` §5 lists them for onboarding; add them with the screens that need them.
 22. **Test fake duplicated.** `FakeAccessStatusSource` exists in three test source sets (onboarding, settings, app) because `core:testing` is a JVM module and `AccessStatusSource` lives in the Android `core:telephony`. Consider Android test fixtures later.
 23. **Maven Central returned HTTP 403** for the Robolectric/Turbine POMs in one CI run (run 38871676332, 2026-10-16); the next run resolved them. Watch for repeats: the branch's Gradle cache is read-only, so new dependencies are downloaded on every run.
+24. **Spam threshold semantics.** The Phase 3 spec fixes HIGH = 0.85 and MEDIUM = 0.6, so a higher threshold blocks *fewer* calls (the old `SpamThreshold` KDoc said the opposite and was rewritten). LOW = 0.4 is our choice (not in the spec); numbers listed from 0.4 up to the threshold show as Suspicious. Confirm LOW with the product owner.
+25. **Hidden numbers (TC-BLK-007).** Android doesn't pass hidden-number calls to a call screening app that isn't the default phone app, so "Block hidden numbers" only takes effect once OpenCaller can be the default phone app (Phase 6). The setting says so; device-only test.
+26. **Stubs until later phases:** `NetworkLookup` is `NoNetworkLookup` (Phase 5), `VerifiedBusinessLookup` returns false except for numbers the debug QA script marks (Phase 9), spam/not-spam reports stay in `report_outbox` (Phase 5 sends them).
+27. **After-call summary in screening-only mode is best effort.** Without the overlay, nothing keeps the process alive while the phone rings, so Android may kill it before the call ends and no summary is posted. A foreground service would need a `phoneCall` type, which requires the default phone app role (Phase 6).
+28. **Call status permission.** `READ_PHONE_STATE` (Android 12+) is requested from Settings → Permissions & roles ("Call status"), not in onboarding. Without it the card closes when the audio mode returns to normal, or after 90 s for silenced calls.
+29. **Regex rules on Android.** The platform regex engine (ICU) can't be interrupted, so a runaway pattern keeps one of 4 daemon threads busy until it finishes (bounded by the 16-character input); the editor rejects slow patterns and a pattern that times out twice is skipped.
+30. **"Not spam" from the after-call notification** adds an exact allow rule and queues a NOT_SPAM report. Revisit in Phase 5 once community scores exist (an allow rule also overrides the user's own later block rules for that number).
+31. **Screening log retention** is 90 days, with no "clear history" action yet.
+32. **Temporary CI step** "Resolved AndroidX versions for feature:callerid" prints the resolved savedstate version; remove it once recorded.
+
 
 ## Verified dependency versions
 
@@ -105,6 +118,8 @@ Fill as dependencies are added (the source of truth is `libs.versions.toml`; thi
 | Robolectric | 4.17 (tests use SDK 29 and 35; SDK 36 needs Java 21) | Maven Central `org/robolectric/robolectric/maven-metadata.xml`; `DefaultSdkProvider` in the 4.17 jar | 2026-10-16 |
 | AndroidX Test UiAutomator | 2.4.0 | https://developer.android.com/jetpack/androidx/releases/test-uiautomator | 2026-10-16 |
 | AndroidX Test Orchestrator / Test Services | 1.6.1 / 1.6.0 | https://developer.android.com/jetpack/androidx/releases/test | 2026-10-16 |
+| AndroidX SavedState (`savedstate`, caller-card overlay window) | 1.5.0 (released 2026-05-19, before Lifecycle 2.11 / compileSdk 37) | https://developer.android.com/jetpack/androidx/releases/savedstate | 2026-10-16 |
+| AndroidX Lifecycle `lifecycle-runtime` (overlay window's LifecycleRegistry) | 2.10.0 (same release as the other Lifecycle artifacts) | https://developer.android.com/jetpack/androidx/releases/lifecycle | 2026-10-16 |
 
 ## Progress log (newest first)
 
@@ -120,5 +135,6 @@ Fill as dependencies are added (the source of truth is `libs.versions.toml`; thi
 
 | Phase | Started | Exited | Notes |
 | --- | --- | --- | --- |
+| 2 — Onboarding, roles, permissions | 2026-10-16 | 2026-10-16 | PR #3 merged (`4b1ef03`). Main CI run 38882608702: android, backend, compose, license and emulator API 29 green; emulator API 36 failed once in TC-ONB-006 (a deny tap on the notification dialog landed during its open animation and was ignored). Fixed on `phase/03-call-screening` (`tapSystemButton` retries until the button is gone) |
 | 1 — Core foundations | 2026-10-16 | 2026-10-16 | PR #2 merged; CI green on `main` (`aede43d`, run 38867777494); `core:phonenumber` coverage ≥ 90 %; encrypted DB verified on API 29 + 36; 5 tabs walked in light/dark on API 29 + 36 |
 | 0 — Repo, tooling, CI | 2026-10-16 | 2026-10-16 | PR #1 merged; CI green on `main` (`2c21f97`); emulator install/launch API 29 + 36; `/health` 200. Open: repo is public (plan says private until v0.1) |

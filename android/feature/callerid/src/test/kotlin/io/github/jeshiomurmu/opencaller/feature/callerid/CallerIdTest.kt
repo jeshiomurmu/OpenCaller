@@ -4,7 +4,10 @@ import android.Manifest
 import android.app.Application
 import android.app.Notification
 import android.app.NotificationManager
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
@@ -53,8 +56,15 @@ class CallerIdTest {
     private val notifications = CallerIdNotifications(context, formatter)
 
     @Before
-    fun allowNotifications() {
+    fun allowNotificationsAndRegisterTheLauncher() {
         shadowOf(context as Application).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        // Report opens the app through its launch intent, which needs a launcher activity.
+        val launcher = ComponentName(context, "io.github.jeshiomurmu.opencaller.MainActivity")
+        shadowOf(context.packageManager).addActivityIfNotPresent(launcher)
+        shadowOf(context.packageManager).addIntentFilterForActivity(
+            launcher,
+            IntentFilter(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_LAUNCHER) },
+        )
     }
 
     @Test

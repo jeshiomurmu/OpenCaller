@@ -101,7 +101,7 @@ private val explainerCopies: Map<AccessItem, ExplainerCopy> =
             ),
         AccessItem.CALL_STATE to
             ExplainerCopy(
-                OpenCallerIcons.Calls,
+                OpenCallerIcons.Device,
                 R.string.explain_call_state_title,
                 R.string.explain_call_state_why,
                 R.string.explain_call_state_never,

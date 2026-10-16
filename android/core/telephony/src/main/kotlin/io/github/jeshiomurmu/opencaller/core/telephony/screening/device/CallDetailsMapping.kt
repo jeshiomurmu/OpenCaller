@@ -1,5 +1,6 @@
 package io.github.jeshiomurmu.opencaller.core.telephony.screening.device
 
+import android.annotation.SuppressLint
 import android.os.Build
 import android.telecom.Call
 import android.telecom.CallScreeningService.CallResponse
@@ -34,6 +35,8 @@ internal fun screeningCall(
         verification = verificationStatus.toVerification(),
     )
 
+// Connection.VERIFICATION_STATUS_* are compile-time constants (API 30); the values only arrive on API 30+.
+@SuppressLint("InlinedApi")
 private fun Int?.toVerification(): CallerVerification =
     when (this) {
         Connection.VERIFICATION_STATUS_PASSED -> CallerVerification.PASSED

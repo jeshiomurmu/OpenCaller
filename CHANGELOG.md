@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Call screening and local blocking (Phase 3): `ScreeningEngine` decides every incoming call on the device in the
+  documented order (emergency and outgoing calls always allowed; contacts, allow rules, block/silence rules, hidden,
+  foreign and non-contact settings, spam list at the user's threshold, reputation cache, STIR/SHAKEN) within a hard
+  1,500 ms budget and fails open on timeouts and errors. Rules: exact, prefix, country and time-limited regex (slow
+  patterns are rejected in the editor); allow beats block. `OpenCallerScreeningService` answers with reject, silence or
+  allow and logs every decision on the device. Caller card over other apps (or a heads-up notification) that closes
+  when the call ends, after-call summary with Block, Report or Not spam, and Save contact. Protection tab: blocking
+  settings, threshold, allowed countries, rules editor with "Test a number", blocked-calls log with Undo. Debug screen
+  (Settings → About, tap the version 7×) with the last 100 decisions and p50/p95 latency. Settings → Permissions &
+  roles gains "Call status" (Android 12+).
+- CI: `scripts/qa/blocking.sh` runs TC-BLK-002/003/004/006/008/009/012/015 with `adb emu gsm call` on API 29 and 36
+  and checks the p95 decision latency.
+
+### Fixed
+
+- TC-ONB-006 on API 36: a deny tap that lands while the permission dialog animates in is retried.
+
 - Onboarding, roles and permissions (Phase 2): Welcome and privacy screens, then call screening role, contacts and
   notification requests, each behind an explainer, and optional extras (default phone/SMS app, caller ID over other
   apps) in at most five steps; progress survives rotation and process death. Settings → Permissions & roles status

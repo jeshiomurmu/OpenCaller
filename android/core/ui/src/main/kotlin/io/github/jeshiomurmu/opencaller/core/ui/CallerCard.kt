@@ -40,16 +40,17 @@ import java.util.Locale
 /**
  * Who is calling, decided in one glance (docs/design.md §1, §5): avatar, name in `headlineMedium` with its
  * [SourceChip] (a name is never shown without its source), the risk banner, a meta row (country, line type, reports),
- * the carrier's STIR/SHAKEN verdict and [actions]. Risk is always icon + words, never colour alone.
+ * the carrier's STIR/SHAKEN verdict and its actions. Risk is always icon + words, never colour alone.
  *
  * @param formattedNumber the caller's number formatted for display (national format when in the user's country).
+ * @param content the actions row (e.g. Block, Close).
  */
 @Composable
 fun CallerCard(
     caller: CallerInfo,
     formattedNumber: String?,
     modifier: Modifier = Modifier,
-    actions: @Composable RowScope.() -> Unit = {},
+    content: @Composable RowScope.() -> Unit = {},
 ) {
     val state = CallerCardState.of(caller)
     val name = caller.displayName?.takeIf { caller.nameSource != null }
@@ -78,7 +79,7 @@ fun CallerCard(
         }
         caller.spamVerdict?.let { RiskBanner(level = it.level, category = it.category, reportCount = it.reportCount) }
         CallerDetails(caller = caller, state = state)
-        Row(horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xs), content = actions)
+        Row(horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xs), content = content)
     }
 }
 

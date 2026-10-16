@@ -55,7 +55,7 @@ class SpamListSeeder
         /** Seeds the list when it is empty; returns the number of entries added. */
         suspend fun seedIfEmpty(): AppResult<Int> =
             repository.count().flatMap { count ->
-                if (count > 0) AppResult.Success(0) else readSeed().flatMap(::save)
+                if (count > 0) AppResult.Success(0) else readSeed().flatMap { save(it) }
             }
 
         private suspend fun readSeed(): AppResult<List<SpamListHit>> =
