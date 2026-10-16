@@ -122,6 +122,11 @@ Where they run (Phase 3):
 | TC-API-010 | Unlist | Verified unlist removes name within job run; number keeps spam score | U |
 | TC-API-011 | Load | Bucket p95 < 50 ms server time with 1M rows, 200 rps | Load |
 
+Where they run (Phase 4, part 1):
+
+- **`./gradlew check` in `backend/server`** (CI `backend` job; Docker required): Testcontainers PostgreSQL 18 and Redis 8.8 with the real Flyway migration. TC-API-001 (`RateLimitTest`: 4th start → 429 + `Retry-After`, plus the 10/hour/IP limit), TC-API-002 (`OtpAttemptsTest`: 5 wrong codes invalidate the code; single use; expiry; malformed codes don't use an attempt), TC-API-003 (`RefreshRotationTest`: old token rejected after rotation, reuse revokes the device's chain, other devices unaffected, 30-day expiry), TC-API-004 on the auth endpoints (`ValidationTest`; `/v1/reports` comes in part 2). Also: `AuthFlowTest` (tokens, users/devices, codes stored only as HMAC, access-token auth and expiry, failed delivery keeps no code), `ServerSchemaTest` (V1 = `architecture.md` §7; Exposed = database), `ConfigTest` (fail fast, production refuses the log provider), `TwilioOtpProviderTest` (request format against a local stand-in), `JsonLogEncoderTest` (redaction), `OpenApiSpecTest` (every route and problem code documented), `HealthRoutesTest` (metrics on the internal port, each request counted once).
+- **`scripts/smoke.sh`** (CI `compose smoke` job, after `/health`): health, request IDs, invalid number → 400 problem+json, start → verify (code read from the development log) → refresh, reuse → 401 and chain revoked, 4th start → 429 with `Retry-After`, metrics only on the internal port.
+
 ### Sync, lookup, reporting (Phase 5)
 
 | ID | Title | Expected | Type |

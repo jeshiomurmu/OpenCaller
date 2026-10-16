@@ -6,39 +6,39 @@
 
 | Field | Value |
 | --- | --- |
-| **Current phase** | **3 — Call screening + local blocking** |
+| **Current phase** | **4 — Backend MVP** |
 | Phase started | 2026-10-16 |
 | Target exit date | — |
-| Branch | `phase/03-call-screening` |
-| Last green CI run | Phase 3: [run 38903668253](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38903668253) on `39a6822` (PR #4), 2026-10-16, all 6 jobs green, blocking QA on API 29 + 36 with the new latency gates. Phase 2: [run 38879129151](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38879129151) on `f6b7392` (`phase/02-onboarding`, PR #3), 2026-10-16, all 6 jobs green. `main`: [run 38867777494](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38867777494) (`aede43d`) |
+| Branch | `phase/04-backend-mvp` |
+| Last green CI run | Phase 4 part 1: [run 38912528858](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38912528858) on `c31d884` (PR #5), 2026-10-16, all 6 jobs green incl. backend Testcontainers tests and compose `scripts/smoke.sh`; GitGuardian green. `main` after Phase 3: [run 38907608878](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38907608878) on `39b93f0`, all 6 jobs green. Phase 3: [run 38903668253](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38903668253) on `39a6822` (PR #4), 2026-10-16, all 6 jobs green, blocking QA on API 29 + 36 with the new latency gates. Phase 2: [run 38879129151](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38879129151) on `f6b7392` (`phase/02-onboarding`, PR #3), 2026-10-16, all 6 jobs green. `main`: [run 38867777494](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38867777494) (`aede43d`) |
 | App version | 0.0.0 |
 
 ## Current phase checklist
 
-Copied from `docs/implementation_plan.md` → Phase 3. Tick here as you go; copy the ticked list back to the plan when the phase exits.
+Copied from `docs/implementation_plan.md` → Phase 4. Tick here as you go; copy the ticked list back to the plan when the phase exits.
 
-- [x] `OpenCallerScreeningService` registered with `BIND_SCREENING_SERVICE`
-- [x] `ScreeningEngine` with decision order from `architecture.md` §4.1, 1,500 ms budget, fail-open
-- [x] Contact check via ContactsProvider `PhoneLookup`
-- [x] Rules: exact, prefix, regex (with safe timeout), country; allow beats block
-- [x] Toggles: block hidden, foreign (with allowed countries), non-contacts
-- [x] Bundled seed spam list (empty in repo; dev fixture for tests) and `spam_list` lookup
-- [x] STIR/SHAKEN verdict read on API 30+
-- [x] Caller card overlay (`OverlayController`) for screening-only mode; after-call notification
-- [x] Blocked-calls log screen + rules editor UI (`feature:blocking`)
-- [x] `screening_event` logging + debug screen
+- [x] Flyway `V1__init.sql` from `architecture.md` §7 — copied verbatim (a test compares it with §7), Exposed tables mirror it (a test compares columns and nullability with the migrated database)
+- [x] Auth: `/v1/auth/start|verify|refresh`; OTP provider interface with `LogOtpProvider` (dev) and one real provider adapter — Twilio Programmable Messaging (owner's choice), written against Twilio's official OpenAPI definition
+- [x] Rate limiting (Redis) — OTP start 3/hour/number and 10/hour/IP with `Retry-After` (Lettuce, owner's choice); search and report limits come with those endpoints
+- [ ] Reports API; reporter trust defaults
+- [ ] Scoring job (Bayesian, §9) running every 15 min; unit tests with fixtures
+- [ ] List builder: per-country full + delta files to MinIO, `list_versions`, manifest endpoint
+- [ ] Bucket lookup endpoint with ETag
+- [ ] Explicit search endpoint with quota
+- [ ] Disputes + unlist endpoints (unlist works without the app: simple HTML form served by Ktor)
+- [ ] `/v1/sender-ids` and `/v1/otp-sources` (seeded from `backend/server/seed/`)
+- [ ] OpenAPI spec; problem+json errors; Prometheus metrics — in place for every endpoint so far (a test fails if a route or problem code is missing from `openapi.yaml`); stays open until the last Phase 4 endpoint
+- [ ] `scripts/smoke.sh` exercising the whole API against compose — covers health and auth now (runs in the CI compose job)
 
-**Exit criteria:** with `adb emu gsm call`, every row in `testing.md` TC-BLK-* passes; p95 decision latency < 50 ms for local decisions (measured in debug screen); screening exception test proves fail-open.
+**Exit criteria:** `./gradlew check` green incl. Testcontainers; smoke script passes; bucket endpoint p95 < 50 ms server time on 1M seeded numbers (load test with k6 or Gatling documented in testing.md).
 
 ## Next step
 
-Review and merge the Phase 3 PR (squash; the checklist is already ticked in `docs/implementation_plan.md`), confirm CI is green on `main`, then **run P-04** (backend MVP).
+Review and merge the P-04 part 1 PR (schema, phone auth, rate limits). Then P-04 part 2: reports API + reporter trust, scoring job, list builder + manifest, bucket lookup with ETag, explicit search with quota, disputes/unlist, sender-ids/otp-sources, k6 load test.
 
-Exit criteria status (CI run 38903668253 on `39a6822`, `scripts/qa/blocking.sh` on API 29 and API 36):
-- `adb emu gsm call` cases: TC-BLK-001, 002, 003, 006, 008, 009, 012 and 015 pass on both emulators, plus TC-BLK-004 against the device's own regex engine.
-- Unit/Robolectric by nature: TC-BLK-005, 010, 011 and 013. Device only: TC-BLK-007 and TC-BLK-014 (issues 25 and 33).
-- Latency: the old CI gate (total p95 < 50 ms on the emulator) failed at random because Android's contacts lookup alone takes 20–90 ms on the CI emulators; the same commit passed and failed it (BUG-0002, issue 36). CI now gates the app's own time (p95 < 50 ms) and the emulator total (p95 < 100 ms): API 29 own 13 ms / total 28 ms, API 36 own 17 ms / total 40 ms ✅. **Still to do: measure the total p95 < 50 ms on a phone** (manual step in `docs/testing.md`).
-- Fail-open: `ScreeningEngineTest` (an injected exception ends in ALLOW with reason `error`; a 3 s lookup ends in ALLOW at the 1,500 ms budget; a failed lookup only counts when the decision needs it) and `ScreeningCoordinatorTest` ✅.
+Before turning on real SMS: run the Twilio adapter once with Twilio test credentials (issue 45) and add the Android SMS Retriever hash to the message (issue 41).
+
+Phase 3 carry-over: measure the total screening p95 < 50 ms on a physical phone (manual step in `docs/testing.md`, issue 36).
 
 ## Open issues / blockers
 
@@ -79,6 +79,17 @@ Exit criteria status (CI run 38903668253 on `39a6822`, `scripts/qa/blocking.sh` 
 34. **First calls.** libphonenumber loads each country's metadata on first use. `ScreeningWarmUp` loads the home country at app start and on a SIM change, but the first call from a rarely seen country can still take tens of ms (about 70 ms observed for a cold country before the warm-up). That stays far inside the 1,500 ms budget. Opening another encrypted database connection costs about 0.5 s (SQLCipher derives the key per connection), so the engine reads its lists one after another; a raw 256-bit key would skip the derivation (changes `core:database`, needs a decision).
 35. **Seed spam list is empty.** `assets/spam_list/seed.csv` has only comments; tests use `core/testing/.../fixtures/spam_list_small.csv`. Phase 5 fills `spam_list` from the server.
 36. **Decision latency on CI emulators (BUG-0002).** Debug builds log each decision's step durations and the QA script prints the slowest. The app's own steps take 0–16 ms; Android's contacts lookup (`ContactsContract.PhoneLookup`, a call into the system contacts provider, required before any block because contacts always ring) takes 24–58 ms on the slow decisions, so p95 sits at 46–50 ms against a "< 50 ms" gate. Decided 2026-10-16 (owner asked to fix the failing check; option (a) of the three proposed): CI gates the app's own time (decision minus the contacts lookup) at p95 < 50 ms and the emulator total at p95 < 100 ms; the exit criterion's total < 50 ms is measured on a physical phone. Not chosen: an in-memory contact index (deviates from the `PhoneLookup` spec, can miss contacts saved seconds before a call; would need an ADR).
+37. **Client address behind a proxy.** The per-IP OTP limit uses the socket address. Once a reverse proxy or TLS terminator sits in front of the server (Phase 15), configure trusted forwarded headers (Ktor `ForwardedHeaders`/`XForwardedHeaders` plugin, a new dependency to approve), or every client shares the proxy's limit.
+38. **Local compose check used a host-built image.** In the agent sandbox Docker Hub returned 429 and the image build can't reach Maven Central, so the local `scripts/smoke.sh` run used the same runtime stage with a host-built distribution and skipped MinIO (a stale local image; MinIO is unused so far). The CI `compose smoke` job builds the real Dockerfile and runs the full stack and `scripts/smoke.sh`.
+39. **`integrityToken`** is accepted by `/v1/auth/verify` (max 4 KiB) but not verified yet; Play Integrity verification belongs to the play-flavor hardening work.
+40. **Access tokens can't be revoked early.** They are stateless JWTs valid 15 minutes; revoking a device's refresh chain stops new ones. A deny-list would be needed for instant logout (`DELETE /v1/me`, Phase 4 part 2 / Phase 8).
+41. **SMS text** is English only and has no Android SMS Retriever app hash yet (needed for automatic code reading; add when the release signing key exists).
+42. **Rotated refresh tokens** stay in `refresh_tokens` until they expire (needed to detect reuse); a cleanup job should delete expired rows (with the scoring/maintenance jobs).
+43. **Concurrent refreshes** with the same token count as reuse (the row is locked; the second sees it rotated) and revoke the device. The app must serialize refreshes (one in flight at a time) — Phase 5 network layer.
+44. **TC-API-004** is written for `/v1/reports`; until that endpoint exists the same E.164 validation is checked on `/v1/auth/start` and `/verify` (`ValidationTest`). Re-run on reports in part 2.
+45. **Twilio docs.** `twilio.com` is blocked in the agent sandbox; the adapter follows Twilio's official API definition (`twilio-oai/spec/json/twilio_api_v2010.json`, operation `CreateMessage`). Before production, send one message with Twilio test credentials (`AC…` test SID, magic number `+15005550006`) and check the error-body handling.
+46. **One code per number.** A new `/auth/start` replaces the pending code (3 per hour). A user who mistypes 5 times must request a new one, which counts against the same limit.
+
 
 ## Verified dependency versions
 
@@ -128,11 +139,22 @@ Fill as dependencies are added (the source of truth is `libs.versions.toml`; thi
 | AndroidX Test Orchestrator / Test Services | 1.6.1 / 1.6.0 | https://developer.android.com/jetpack/androidx/releases/test | 2026-10-16 |
 | AndroidX SavedState (`savedstate`, caller-card overlay window) | 1.5.0 (released 2026-05-19, before Lifecycle 2.11 / compileSdk 37) | https://developer.android.com/jetpack/androidx/releases/savedstate | 2026-10-16 |
 | AndroidX Lifecycle `lifecycle-runtime` (overlay window's LifecycleRegistry) | 2.10.0 (same release as the other Lifecycle artifacts) | https://developer.android.com/jetpack/androidx/releases/lifecycle | 2026-10-16 |
+| Ktor server plugins (auth, auth-jwt, status-pages, call-id, call-logging, metrics-micrometer) | 3.6.0 (same as ktor-server-core; auth-jwt brings Auth0 java-jwt 4.6.0) | Maven Central `io/ktor/ktor-server-*/maven-metadata.xml` and 3.6.0 POMs | 2026-10-16 |
+| Micrometer Prometheus registry | 1.17.1 (the micrometer-core version ktor-server-metrics-micrometer 3.6.0 is built against) | Maven Central `io/micrometer/micrometer-registry-prometheus/maven-metadata.xml`; ktor-server-metrics-micrometer-jvm 3.6.0 POM | 2026-10-16 |
+| Exposed (core, jdbc, java-time) | 1.5.1 (packages `org.jetbrains.exposed.v1.*`) | Maven Central `org/jetbrains/exposed/exposed-core/maven-metadata.xml` | 2026-10-16 |
+| Flyway (core, database-postgresql) | 13.10.3 | Maven Central `org/flywaydb/flyway-core/maven-metadata.xml` | 2026-10-16 |
+| PostgreSQL JDBC driver | 42.7.14 | Maven Central `org/postgresql/postgresql/maven-metadata.xml` | 2026-10-16 |
+| HikariCP | 7.1.0 | Maven Central `com/zaxxer/HikariCP/maven-metadata.xml` | 2026-10-16 |
+| Lettuce (Redis client; owner's choice over Jedis 8.0.2) | 7.9.0.RELEASE | Maven Central `io/lettuce/lettuce-core/maven-metadata.xml` | 2026-10-16 |
+| libphonenumber (server) | 9.0.41 (same as the app) | Maven Central `com/googlecode/libphonenumber/libphonenumber/maven-metadata.xml` | 2026-10-16 |
+| Testcontainers (core, postgresql) | 2.0.5 (`org.testcontainers.postgresql.PostgreSQLContainer`; Redis via `GenericContainer`) | Maven Central `org/testcontainers/testcontainers/maven-metadata.xml` | 2026-10-16 |
+| Twilio Programmable Messaging API (no SDK; JDK HttpClient) | API `2010-04-01`, operation `CreateMessage` | https://raw.githubusercontent.com/twilio/twilio-oai/main/spec/json/twilio_api_v2010.json (official definition; twilio.com blocked in the sandbox) | 2026-10-16 |
 
 ## Progress log (newest first)
 
 | Date | Phase | What changed | Verified by |
 | --- | --- | --- | --- |
+| 2026-10-16 | 4 | P-04 part 1: `V1__init.sql` (= `architecture.md` §7) + Exposed tables; config from env vars only (HOCON, fail-fast listing every problem; production refuses the log OTP provider); `OtpProvider` with `LogOtpProvider` (dev) and `TwilioOtpProvider`; OTP 6 digits / 5 min / 5 attempts, HMAC-SHA256 with a server pepper in Redis; `/v1/auth/start|verify|refresh`, JWT 15 min, refresh 30 d rotating (SHA-256 in `refresh_tokens`), reuse revokes the device chain; Redis rate limits with `Retry-After`; RFC 9457 problem+json, `X-Request-Id`, JSON logs with number redaction, Prometheus `/metrics` on internal port 9090; `openapi.yaml`; compose env; `scripts/smoke.sh` in CI. Curl: `curl -X POST localhost:8080/v1/auth/start -H 'Content-Type: application/json' -d '{"e164":"+12015550123"}'` → 202 `{"expiresInSeconds":300}`; code from `docker compose -f infra/docker/compose.yml logs server`; `curl -X POST localhost:8080/v1/auth/verify -H 'Content-Type: application/json' -d '{"e164":"+12015550123","code":"<code>","flavor":"foss"}'` → 200 tokens; `curl -X POST localhost:8080/v1/auth/refresh -H 'Content-Type: application/json' -d '{"refreshToken":"<token>"}'` → 200 new tokens (old one → 401 `refresh_token_reused`); 4th start in an hour → 429 `Retry-After: 3599`; `docker compose exec server curl localhost:9090/metrics` | Locally: `./gradlew check` green — Spotless, Detekt, 52 tests with Testcontainers PostgreSQL 18 + Redis 8.8 (TC-API-001…004, schema = §7, config fail-fast, Twilio request format, log redaction, OpenAPI coverage, metrics counted once); `openapi-spec-validator`: valid 3.1; compose (Postgres, Redis, server): `scripts/smoke.sh` 20/20 PASS; container exits 1 listing missing variables and refuses `OTP_PROVIDER=log` with `ENV=production`. CI run 38912528858 green (6 jobs): backend `check` (52 tests, Testcontainers), compose smoke with the real Dockerfile + `scripts/smoke.sh`, android, emulators API 29 + 36, license. GitGuardian flagged three compose variable references (false positive); the server now gets `REDIS_PASSWORD` separately instead of a password in `REDIS_URL` |
 | 2026-10-16 | 3 | Latency and CI hardening (PR #4): engine lookups run concurrently (database reads chained, which removed a ~0.5 s SQLCipher connection stall), per-step debug timings, QA samples 20 extra calls; latency gate split into the app's own time (< 50 ms) and the emulator total (< 100 ms) after the old total gate passed and failed the same commit (BUG-0002); TC-BLK-001 added to the emulator QA; smoke script prints diagnostics on failure and asks once more in TC-ONB-001 | CI run 38903668253 green (6 jobs): all TC-BLK cases on API 29 + 36; app's own time p95 13 / 17 ms, total p95 28 / 40 ms (API 29 / 36); 40 engine unit tests locally |
 | 2026-10-16 | 3 | Phase 3 call screening: `core:model` screening types; `core:data` repositories + spam-list seeder; `core:telephony` `ScreeningEngine` (§4.1 order, 1,500 ms budget, fail-open, time-limited regex), `RuleValidator`, `OpenCallerScreeningService` + `CallResponse` mapping, contacts/region/emergency adapters, STIR mapping, warm-up; `core:ui` `CallerCard` (all states, previews); `feature:callerid` overlay + heads-up + after-call notification; `feature:blocking` settings, rules editor with Test a number, blocked-calls log with Unblock/Undo; `feature:settings` debug screen (About ×7, last 100 events, p50/p95). Debug-only QA receiver + export; `scripts/qa/blocking.sh` in CI | CI run 38894580688 green (6 jobs): android (spotless, detekt, lint, unit + Robolectric ×2 flavors, assemble ×2, `check`); emulator API 29 + 36: onboarding smoke, then blocking QA TC-BLK-002/003/004/006/008/009/012/015 PASS, debug-screen p95 43 ms (API 36) / 20 ms (API 29); backend; compose smoke; license |
 | 2026-10-16 | 2 | Phase 2 onboarding (PR #3): access model types; `core:telephony` (`RoleManagerHelper`, `PermissionStatusReader`, `AccessStatusSource` refreshed on resume, `PermissionPolicy`, `AccessRequestFactory`, pass-through `CallScreeningService`); `core:ui` explainers, `WarningBanner`, request launcher; `feature:onboarding` (5 steps, persisted); `feature:settings` (Permissions & roles with Fix); app: degraded-mode banner, Calls card, Me → Settings. CI: app instrumented tests with the orchestrator; smoke script drives role grant/revoke and process death | CI run 38879129151 green: android (spotless, detekt, lint, unit + Robolectric tests ×2 flavors, assemble ×2, `check`), emulator API 29 + 36 (DB tests; `OnboardingTest` TC-ONB-002/003/006/007/008; smoke TC-ONB-008/001/003/005 + light/dark tab walk), backend, compose smoke, license |
@@ -145,6 +167,7 @@ Fill as dependencies are added (the source of truth is `libs.versions.toml`; thi
 
 | Phase | Started | Exited | Notes |
 | --- | --- | --- | --- |
+| 3 — Call screening + local blocking | 2026-10-16 | 2026-10-16 | PR #4 merged (`39b93f0`). PR CI green (run 38905271260); all TC-BLK emulator cases on API 29 + 36; app's own screening time p95 13 / 17 ms, emulator total 28 / 40 ms. Open: total p95 < 50 ms on a physical phone (issue 36) |
 | 2 — Onboarding, roles, permissions | 2026-10-16 | 2026-10-16 | PR #3 merged (`4b1ef03`). Main CI run 38882608702: android, backend, compose, license and emulator API 29 green; emulator API 36 failed once in TC-ONB-006 (a deny tap on the notification dialog landed during its open animation and was ignored). Fixed on `phase/03-call-screening` (`tapSystemButton` retries until the button is gone) |
 | 1 — Core foundations | 2026-10-16 | 2026-10-16 | PR #2 merged; CI green on `main` (`aede43d`, run 38867777494); `core:phonenumber` coverage ≥ 90 %; encrypted DB verified on API 29 + 36; 5 tabs walked in light/dark on API 29 + 36 |
 | 0 — Repo, tooling, CI | 2026-10-16 | 2026-10-16 | PR #1 merged; CI green on `main` (`2c21f97`); emulator install/launch API 29 + 36; `/health` 200. Open: repo is public (plan says private until v0.1) |

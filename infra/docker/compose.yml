@@ -75,8 +75,30 @@ services:
         GIT_SHA: ${GIT_SHA:-dev}
     image: opencaller/server:dev
     restart: unless-stopped
+    # Configuration is read from these variables only (backend/server/src/main/resources/application.conf);
+    # the server refuses to start and lists what is missing or invalid.
     environment:
+      ENV: ${ENV:-development}
       PORT: "8080"
+      # Prometheus /metrics: internal port, not published (docker compose exec server curl localhost:9090/metrics).
+      METRICS_PORT: "9090"
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?set POSTGRES_DB in infra/docker/.env}
+      DB_USER: ${POSTGRES_USER:?set POSTGRES_USER in infra/docker/.env}
+      # The postgres, redis and minio services above already require these variables.
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_URL: redis://redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in infra/docker/.env}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in infra/docker/.env}
+      OTP_PEPPER: ${OTP_PEPPER:?set OTP_PEPPER in infra/docker/.env}
+      # log = codes are written to the server log (development only); twilio = real SMS (set TWILIO_*).
+      OTP_PROVIDER: ${OTP_PROVIDER:-log}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_FROM: ${TWILIO_FROM:-}
+      TWILIO_MESSAGING_SERVICE_SID: ${TWILIO_MESSAGING_SERVICE_SID:-}
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:

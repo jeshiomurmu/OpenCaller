@@ -65,7 +65,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v6
 
-      - name: Check (format, static analysis, tests)
+      - name: Check (format, static analysis, tests incl. Testcontainers PostgreSQL + Redis)
         run: ./gradlew check
 
       - name: Bucket test vectors match the app's copy
@@ -139,6 +139,8 @@ jobs:
           sed -e "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$(openssl rand -hex 16)/" \
               -e "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=$(openssl rand -hex 16)/" \
               -e "s/^MINIO_ROOT_PASSWORD=.*/MINIO_ROOT_PASSWORD=$(openssl rand -hex 16)/" \
+              -e "s/^JWT_SECRET=.*/JWT_SECRET=$(openssl rand -hex 32)/" \
+              -e "s/^OTP_PEPPER=.*/OTP_PEPPER=$(openssl rand -hex 32)/" \
               .env.example > .env
 
       - name: Build and start the stack
@@ -149,6 +151,9 @@ jobs:
           curl -fsS localhost:8080/health | tee health.json
           echo
           grep -q "\"status\":\"ok\",\"version\":\"${GITHUB_SHA::7}\"" health.json
+
+      - name: API smoke test (scripts/smoke.sh)
+        run: scripts/smoke.sh
 
       - name: Service status and logs
         if: always()
