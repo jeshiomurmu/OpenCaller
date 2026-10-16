@@ -14,8 +14,8 @@ out="${3:?missing screenshot dir}"
 activity="io.github.jeshiomurmu.opencaller.MainActivity"
 here="$(cd "$(dirname "$0")" && pwd)"
 
-# label|text that must show on the tab, in bottom-bar order (app/src/main/res/values/strings.xml), XML-escaped
-# the way uiautomator dumps it.
+# label|text that must show on the tab, in bottom-bar order (app/src/main/res/values/strings.xml), escaped the
+# way uiautomator dumps it (& becomes &amp;; apostrophes stay as they are).
 tabs=(
   "Calls|Your call history will appear here."
   "Messages|Your messages will appear here."
@@ -24,7 +24,7 @@ tabs=(
   "Me|Permissions &amp; roles"
 )
 # docs/design.md §8 "Role lost" (app/src/main/res/values/strings.xml: banner_screening_off).
-banner="OpenCaller can&apos;t screen calls right now. Turn call screening back on."
+banner="OpenCaller can't screen calls right now. Turn call screening back on."
 
 dump() {
   adb shell uiautomator dump /sdcard/window.xml > /dev/null 2>&1 && adb shell cat /sdcard/window.xml
