@@ -60,6 +60,14 @@ Format: ID · Title · Steps · Expected · Type (U = unit, R = Robolectric, I =
 | TC-ONB-007 | Overlay denied | Deny `SYSTEM_ALERT_WINDOW` | Caller ID shown as heads-up notification instead | I |
 | TC-ONB-008 | Rotation & process death | Rotate / kill during onboarding | Resumes at same step | I |
 
+Where they run (Phase 2):
+
+- **TC-ONB-001, 002, 003, 005, 006, 007, 008:** `app/src/androidTest/.../onboarding/OnboardingTest.kt`, CI `emulator` job on API 29 and API 36 (test orchestrator, app data cleared before each test, role reset with `cmd role`). TC-ONB-006 needs Android 13+ and is skipped on API 29.
+- **TC-ONB-008, real process death:** `scripts/ci/emulator-smoke.sh` kills the app process (`am kill`) at step 3 and checks that onboarding resumes at step 3.
+- **TC-ONB-004:** `feature/onboarding/.../OnboardingViewModelTest.everyRequestComesFromAnExplainerContinue` (Robolectric). The settings screen follows the same rule (`PermissionsStatusViewModelTest.fixShowsTheExplainerBeforeAnyRequest`).
+- **Unit-level coverage of the same cases:** `OnboardingViewModelTest`, `PermissionsStatusViewModelTest`, `MainViewModelTest`, `AccessStatusTest`, `PermissionPolicyTest`, `RoleManagerHelperTest`.
+- **TC-ONB-006 and 007 until the after-call card (Phase 3) and caller ID card (Phase 3–6) exist:** the tests check that the fallback is chosen and shown in Settings → Permissions & roles ("Call summaries stay in your call history in the app", "Caller ID appears as a notification"), and that nothing crashes.
+
 ### Phone numbers (Phase 1)
 
 | ID | Title | Expected | Type |

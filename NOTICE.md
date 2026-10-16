@@ -26,7 +26,7 @@ Keep this list in sync with `android/gradle/libs.versions.toml` and `backend/ser
 | Component | Used in | License |
 | --- | --- | --- |
 | Kotlin standard library, kotlinx.coroutines, kotlinx.serialization | app, server | Apache-2.0 |
-| AndroidX Activity, Jetpack Compose (UI, Material 3), Navigation, DataStore, Room, SQLite | app | Apache-2.0 |
+| AndroidX Activity, Lifecycle, Hilt integration, Jetpack Compose (UI, Material 3), Navigation, DataStore, Room, SQLite | app | Apache-2.0 |
 | Dagger / Hilt | app | Apache-2.0 |
 | libphonenumber (Google) | app | Apache-2.0 |
 | Timber (Jake Wharton) | app | Apache-2.0 |

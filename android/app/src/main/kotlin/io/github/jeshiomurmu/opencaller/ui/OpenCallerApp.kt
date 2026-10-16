@@ -49,7 +49,7 @@ fun OpenCallerApp(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
 ) {
-    val openPermissions = { item: AccessItem? -> navController.navigate(PermissionsRoute(explain = item?.name)) }
+    val openPermissions = { item: AccessItem? -> navController.navigate(PermissionsRoute(explain = item?.name)) { launchSingleTop = true } }
     Scaffold(
         modifier = modifier,
         topBar = {
