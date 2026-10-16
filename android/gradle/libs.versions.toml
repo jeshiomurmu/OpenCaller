@@ -36,7 +36,6 @@ robolectric = "4.17"
 spotless = "8.10.4"
 sqlcipher = "4.19.1"
 timber = "5.0.1"
-turbine = "1.2.1"
 
 [libraries]
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidxActivity" }
@@ -79,7 +78,6 @@ protobuf-protoc = { group = "com.google.protobuf", name = "protoc", version.ref 
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 sqlcipher-android = { group = "net.zetetic", name = "sqlcipher-android", version.ref = "sqlcipher" }
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
-turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 
 # Gradle plugin APIs, compileOnly in build-logic
 android-gradlePlugin = { group = "com.android.tools.build", name = "gradle-api", version.ref = "agp" }
