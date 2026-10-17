@@ -12,6 +12,7 @@ import io.github.jeshiomurmu.opencaller.core.model.RuleAction
 import io.github.jeshiomurmu.opencaller.core.model.RuleType
 import io.github.jeshiomurmu.opencaller.core.model.ScreeningReason
 import io.github.jeshiomurmu.opencaller.core.model.SpamThreshold
+import io.github.jeshiomurmu.opencaller.core.model.VerdictSource
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 import io.github.jeshiomurmu.opencaller.core.testing.TestDispatcherProvider
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -245,11 +246,81 @@ class ScreeningEngineTest {
                     delay(3_000)
                     null
                 }
-            val result = engine().incoming(us)
+            // A lookup limit above the decision budget, so the budget itself is what stops the decision.
+            val result = engine(ScreeningConfig(networkBudgetMillis = 5_000)).incoming(us)
             assertEquals(Decision.ALLOW, result.decision)
             assertEquals(ScreeningReason.TIMEOUT, result.reason)
             assertTrue("decided at $currentTime ms", currentTime <= ScreeningConfig.DEFAULT_BUDGET_MILLIS)
             assertEquals(ScreeningConfig.DEFAULT_BUDGET_MILLIS.toInt(), result.latencyMs)
+        }
+
+    // TC-LOOK-001: a server that answers after 2 s is cut off at 800 ms; the call rings with the phone's own info.
+    @Test
+    fun tcLook001SlowLiveLookupStillRingsWithLocalInfo() =
+        runTest {
+            sources.spam(us, 0.5f)
+            sources.network =
+                NetworkLookup {
+                    delay(2_000)
+                    NetworkVerdict(0.99f, "scam", 500, null, null)
+                }
+            val result = engine().incoming(us)
+            assertEquals(Decision.ALLOW, result.decision)
+            assertEquals(ScreeningReason.NO_MATCH, result.reason)
+            assertEquals(ScreeningConfig.DEFAULT_NETWORK_BUDGET_MILLIS, currentTime)
+            assertEquals(RiskLevel.SUSPICIOUS, result.caller.spamVerdict?.level)
+            assertEquals(VerdictSource.SPAM_LIST, result.caller.spamVerdict?.source)
+        }
+
+    @Test
+    fun liveLookupBlocksAtTheUsersThreshold() =
+        runTest {
+            sources.network = NetworkLookup { NetworkVerdict(0.9f, "scam", 40, null, null) }
+            val blocked = engine().incoming(us)
+            assertEquals(Decision.BLOCK, blocked.decision)
+            assertEquals(ScreeningReason.NETWORK, blocked.reason)
+            assertEquals(VerdictSource.LIVE_LOOKUP, blocked.caller.spamVerdict?.source)
+            assertEquals(40, blocked.caller.spamVerdict?.reportCount)
+
+            sources.prefs = sources.prefs.copy(blockTopSpammers = false)
+            assertEquals(Decision.SILENCE, engine().incoming(us).decision)
+
+            // Below the threshold it only shows on the card.
+            sources.network = NetworkLookup { NetworkVerdict(0.5f, "scam", 3, null, null, fromCache = true) }
+            val shown = engine().incoming(us)
+            assertEquals(Decision.ALLOW, shown.decision)
+            assertEquals(RiskLevel.SUSPICIOUS, shown.caller.spamVerdict?.level)
+            assertEquals(VerdictSource.REPUTATION_CACHE, shown.caller.spamVerdict?.source)
+        }
+
+    @Test
+    fun liveLookupNeverBlocksVerifiedBusinessesOrContacts() =
+        runTest {
+            sources.network = NetworkLookup { NetworkVerdict(0.99f, "scam", 900, null, null) }
+            sources.verifiedBusinesses += us
+            assertEquals(Decision.ALLOW, engine().incoming(us).decision)
+            sources.contacts[bd] = "Mum"
+            val contact = engine().incoming(bd)
+            assertEquals(ScreeningReason.CONTACT, contact.reason)
+        }
+
+    @Test
+    fun aFailingLiveLookupIsDecidedLocally() =
+        runTest {
+            sources.network = NetworkLookup { throw IllegalStateException("broken") }
+            val result = engine().incoming(us)
+            assertEquals(Decision.ALLOW, result.decision)
+            assertEquals(ScreeningReason.NO_MATCH, result.reason)
+        }
+
+    @Test
+    fun liveLookupNamesShowWithTheirSource() =
+        runTest {
+            sources.network = NetworkLookup { NetworkVerdict(null, null, 0, "Example Bank", NameSource.VERIFIED_BUSINESS) }
+            val result = engine().incoming(us)
+            assertEquals("Example Bank", result.caller.displayName)
+            assertEquals(NameSource.VERIFIED_BUSINESS, result.caller.nameSource)
+            assertNull(result.caller.spamVerdict)
         }
 
     @Test

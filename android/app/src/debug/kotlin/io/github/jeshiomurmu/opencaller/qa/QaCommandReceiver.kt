@@ -39,6 +39,7 @@ import javax.inject.Inject
  * - `region [--es region BD]`: overrides the SIM country (no value: back to the real one).
  * - `verified --es number E164`: treats a number as a verified business.
  * - `role`: "ok held=true|false" for the call screening role (`cmd role get-role-holders` doesn't exist on API 29).
+ * - Sign-in, reports and the spam-list update for TC-E2E-001: see [QaOnline].
  */
 @AndroidEntryPoint
 class QaCommandReceiver : BroadcastReceiver() {
@@ -59,6 +60,8 @@ class QaCommandReceiver : BroadcastReceiver() {
     @Inject lateinit var warmUp: ScreeningWarmUp
 
     @Inject lateinit var dispatchers: DispatcherProvider
+
+    @Inject lateinit var online: QaOnline
 
     override fun onReceive(
         context: Context,
@@ -107,7 +110,7 @@ class QaCommandReceiver : BroadcastReceiver() {
             }
 
             else -> {
-                "error unknown command $cmd"
+                online.run(cmd, intent) ?: "error unknown command $cmd"
             }
         }
 

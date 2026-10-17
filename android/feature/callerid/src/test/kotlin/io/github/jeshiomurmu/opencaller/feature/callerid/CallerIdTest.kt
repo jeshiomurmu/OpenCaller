@@ -73,7 +73,7 @@ class CallerIdTest {
     fun titlesAndSummariesAreWordsNotColours() {
         val spam = formatter.card(CallerInfo(us, spamVerdict = SpamVerdict(0.9f, RiskLevel.LIKELY_SPAM, "Loan", 214)))
         assertEquals("(201) 555-0123", formatter.title(spam))
-        assertEquals("Likely scam · Loan · 214 reports", formatter.summary(spam))
+        assertEquals("Likely scam · Loan offers · 214 reports", formatter.summary(spam))
         assertEquals("+1 ••• 0123", spam.maskedNumber)
 
         val contact = formatter.card(CallerInfo(us, "Amina", NameSource.CONTACT, verification = CallerVerification.PASSED))

@@ -4,18 +4,15 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -87,32 +84,4 @@ private fun CountryInput(
         )
         OutlinedButton(onClick = submit) { Text(text = stringResource(R.string.blocking_country_add)) }
     }
-}
-
-/** Confirms a spam report from the after-call notification. */
-@Composable
-internal fun ReportDialog(
-    report: PendingReport,
-    onEvent: (BlockingEvent) -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = { onEvent(BlockingEvent.DismissReport) },
-        title = { Text(text = stringResource(R.string.report_title, report.display)) },
-        text = { Text(text = stringResource(R.string.report_body)) },
-        confirmButton = {
-            Column(horizontalAlignment = Alignment.End, modifier = Modifier.fillMaxWidth()) {
-                TextButton(onClick = { onEvent(BlockingEvent.ConfirmReport(alsoBlock = true)) }) {
-                    Text(text = stringResource(R.string.report_and_block))
-                }
-                TextButton(onClick = { onEvent(BlockingEvent.ConfirmReport(alsoBlock = false)) }) {
-                    Text(text = stringResource(R.string.report_confirm))
-                }
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = { onEvent(BlockingEvent.DismissReport) },
-            ) { Text(text = stringResource(R.string.report_cancel)) }
-        },
-    )
 }

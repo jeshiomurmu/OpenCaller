@@ -1,5 +1,6 @@
 package io.github.jeshiomurmu.opencaller.feature.blocking
 
+import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,11 +40,12 @@ import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacin
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
 import io.github.jeshiomurmu.opencaller.core.model.SpamThreshold
 import io.github.jeshiomurmu.opencaller.core.model.UserPreferences
+import io.github.jeshiomurmu.opencaller.core.ui.ReportSheet
 import io.github.jeshiomurmu.opencaller.core.ui.WarningBanner
 import java.util.Locale
 
 /**
- * The Protection tab, wired to its view model. [reportNumber] (E.164) opens the report dialog, e.g. from the
+ * The Protection tab, wired to its view model. [reportNumber] (E.164) opens the report sheet, e.g. from the
  * after-call notification's Report.
  */
 @Composable
@@ -78,7 +81,15 @@ fun BlockingRoute(
         )
         SnackbarHost(hostState = snackbar, modifier = Modifier.align(Alignment.BottomCenter))
     }
-    state.report?.let { ReportDialog(report = it, onEvent = viewModel::onEvent) }
+    state.report?.let { report ->
+        ReportSheet(
+            number = report.display,
+            signedIn = state.signedIn,
+            initialLabel = report.label,
+            onSubmit = { viewModel.onEvent(BlockingEvent.SubmitReport(it)) },
+            onDismiss = { viewModel.onEvent(BlockingEvent.DismissReport) },
+        )
+    }
 }
 
 @Composable
@@ -89,6 +100,10 @@ private fun messageText(message: BlockingMessage): String =
                 if (message.blocked) R.string.report_done_blocked else R.string.report_done,
                 message.masked,
             )
+        }
+
+        BlockingMessage.ListUpdateStarted -> {
+            stringResource(R.string.list_update_started)
         }
 
         BlockingMessage.Failed -> {
@@ -119,6 +134,7 @@ fun BlockingScreen(
         LinkRow(stringResource(R.string.blocking_log), stringResource(R.string.blocking_log_summary), onOpenBlockedLog)
         CallToggles(prefs = state.preferences, homeRegion = state.homeRegion, onEvent = onEvent)
         ThresholdPicker(selected = state.preferences.spamThreshold, onEvent = onEvent)
+        SpamListSection(status = state.spamList, onMobileData = state.preferences.listUpdatesOnMobileData, onEvent = onEvent)
         AllowedCountries(codes = state.preferences.allowedRegionCodes.sorted(), error = state.countryError, onEvent = onEvent)
     }
 }
@@ -179,6 +195,42 @@ private fun ThresholdPicker(
     }
 }
 
+@Composable
+private fun SpamListSection(
+    status: SpamListStatus,
+    onMobileData: Boolean,
+    onEvent: (BlockingEvent) -> Unit,
+) {
+    Section(stringResource(R.string.list_section))
+    if (!status.serverConfigured) {
+        TextPair(
+            title = stringResource(R.string.list_not_connected),
+            summary = stringResource(R.string.list_not_connected_summary),
+            modifier = Modifier.padding(horizontal = OpenCallerSpacing.screenPadding, vertical = OpenCallerSpacing.xs),
+        )
+        return
+    }
+    val checkedAt = status.checkedAt
+    val summary =
+        if (status.version == null || checkedAt == null) {
+            stringResource(R.string.list_never_updated)
+        } else {
+            val ago = DateUtils.getRelativeTimeSpanString(checkedAt)
+            stringResource(R.string.list_status, ago, status.version)
+        }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = OpenCallerSpacing.screenPadding, vertical = OpenCallerSpacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.s),
+    ) {
+        TextPair(title = stringResource(R.string.list_title), summary = summary, modifier = Modifier.weight(1f))
+        TextButton(onClick = { onEvent(BlockingEvent.UpdateListNow) }) { Text(text = stringResource(R.string.list_update_now)) }
+    }
+    ToggleRow(stringResource(R.string.list_mobile_data), stringResource(R.string.list_mobile_data_summary), onMobileData) { on ->
+        onEvent(BlockingEvent.Update { it.copy(listUpdatesOnMobileData = on) })
+    }
+}
+
 private fun SpamThreshold.labels(): Pair<Int, Int> =
     when (this) {
         SpamThreshold.LOW -> R.string.threshold_low to R.string.threshold_low_summary
@@ -198,6 +250,7 @@ private fun BlockingScreenPreview() {
                         preferences = UserPreferences(blockNonContacts = true, allowedRegionCodes = setOf("US", "GB")),
                         contactsMissing = true,
                         homeRegion = "BD",
+                        spamList = SpamListStatus(serverConfigured = true, country = "BD", version = 42, checkedAt = 0),
                     ),
                 onEvent = {},
                 onOpenRules = {},

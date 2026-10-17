@@ -24,6 +24,10 @@
     <string name="onboarding_extras_title">Optional extras</string>
     <string name="onboarding_extras_body">Turn these on now or later in Me → Settings → Permissions &amp; roles.</string>
     <string name="onboarding_set_up">Set up</string>
+    <string name="onboarding_sign_in">Sign in (optional)</string>
+    <string name="onboarding_sign_in_summary">Share your spam reports and search numbers. Blocking works without it.</string>
+    <string name="onboarding_signed_in">Signed in</string>
+    <string name="onboarding_sign_in_action">Sign in</string>
     <string name="onboarding_status_on">On</string>
     <string name="onboarding_status_optional">Optional</string>
     <string name="onboarding_status_coming_later">Coming in a later update</string>

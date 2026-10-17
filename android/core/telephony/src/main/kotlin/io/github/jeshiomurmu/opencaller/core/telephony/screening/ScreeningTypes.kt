@@ -44,10 +44,12 @@ data class ScreeningResult(
  *
  * @property budgetMillis hard limit for one decision; past it the call rings (docs/architecture.md §4.1).
  * @property regexBudgetMillis limit for one regular-expression rule against one number.
+ * @property networkBudgetMillis limit for the live lookup (step 10).
  */
 data class ScreeningConfig(
     val budgetMillis: Long = DEFAULT_BUDGET_MILLIS,
     val regexBudgetMillis: Long = DEFAULT_REGEX_BUDGET_MILLIS,
+    val networkBudgetMillis: Long = DEFAULT_NETWORK_BUDGET_MILLIS,
 ) {
     /** Defaults. */
     companion object {
@@ -56,5 +58,8 @@ data class ScreeningConfig(
 
         /** 100 ms per regular expression; a phone number has at most 16 characters, so real patterns take well under 1 ms. */
         const val DEFAULT_REGEX_BUDGET_MILLIS = 100L
+
+        /** 800 ms (docs/architecture.md §4.1 step 10), well inside [DEFAULT_BUDGET_MILLIS]. */
+        const val DEFAULT_NETWORK_BUDGET_MILLIS = 800L
     }
 }

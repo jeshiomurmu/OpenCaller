@@ -24,4 +24,8 @@ dependencies {
     testImplementation(libs.junit4)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
+    // TC-LOOK-002: a screened call through the real lookup against a local HTTP server.
+    testImplementation(projects.core.database)
+    testImplementation(libs.androidx.room.runtime)
+    testImplementation(libs.okhttp.mockwebserver)
 }

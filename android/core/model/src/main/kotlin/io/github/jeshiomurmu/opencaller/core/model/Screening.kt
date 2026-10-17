@@ -28,6 +28,9 @@ enum class ScreeningReason(
     /** The number is on the on-device spam list at or above the user's threshold (step 8). */
     SPAM_LIST("spam_list"),
 
+    /** The live lookup's community score is at or above the user's threshold (step 10). */
+    NETWORK("network"),
+
     /** Nothing matched; the call rings with whatever caller information was found. */
     NO_MATCH("no_match"),
 

@@ -38,23 +38,28 @@ fun interface ReputationSource {
 /**
  * What a live lookup found (docs/architecture.md §4.1 step 10).
  *
- * @property spamScore spam score in `0.0..1.0`.
+ * @property spamScore community spam score in `0.0..1.0`, `null` when nobody reported the number.
+ * @property fromCache true when the answer came from an earlier lookup cached on the phone.
  */
 data class NetworkVerdict(
-    val spamScore: Float,
+    val spamScore: Float?,
     val category: String?,
     val reportCount: Int,
     val displayName: String?,
     val nameSource: NameSource?,
+    val fromCache: Boolean = false,
 )
 
-/** Live k-anonymous bucket lookup. Arrives in Phase 5; until then [NoNetworkLookup] is used and nothing leaves the phone. */
+/**
+ * Live k-anonymous bucket lookup (docs/architecture.md §4.6): only the country calling code and a 16-bit hash bucket
+ * leave the phone. Production uses [ServerNetworkLookup]; [NoNetworkLookup] sends nothing.
+ */
 fun interface NetworkLookup {
-    /** The server's verdict for [number], or `null` when unknown or offline. */
+    /** The server's verdict for [number], or `null` when unknown, slow or offline. */
     suspend fun lookup(number: PhoneNumber): NetworkVerdict?
 }
 
-/** Phase 3: no network lookups. */
+/** No live lookups: nothing leaves the phone. */
 object NoNetworkLookup : NetworkLookup {
     override suspend fun lookup(number: PhoneNumber): NetworkVerdict? = null
 }

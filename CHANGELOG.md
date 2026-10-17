@@ -7,7 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha] - 2026-10-17
+
+First alpha. Blocking works on the phone without any server; this build has no server configured, so sign-in, reports,
+search and spam-list updates say "Not connected to a server".
+
 ### Added
+
+- App (Phase 5): network layer (`core:network`: Retrofit, OkHttp, kotlinx.serialization) with token refresh, server
+  address from the build (none in release builds unless set), certificate pinning in Play release builds and HTTPS
+  required for release builds.
+- Optional sign-in with your phone number (number → code by SMS → done) on the last onboarding step and in Me →
+  Account. Sign-in tokens are encrypted with their own Android Keystore key.
+- Daily spam-list update (Wi-Fi only unless you allow mobile data, plus "Update now"): only the changes are downloaded
+  when possible; every file is checked (SHA-256 and format) and applied in one database transaction, and the old list
+  stays if anything is wrong.
+- Private live caller ID during a call: only a short code made from the scrambled number is sent (k-anonymous hash
+  bucket), the answer is matched on the phone, kept for 24 hours, and never holds up a call for more than 800 ms. It
+  can block at your spam threshold; contacts and verified businesses are never blocked.
+- Report sheet (spam or not spam, category, comment, "Also block") from the after-call notification and the
+  blocked-calls log; reports wait on the phone until you're online and signed in, and respect the server's limits.
+- Number search with "n of 50 searches left today" and clear offline, limit and server-error messages.
+- "Why am I seeing this?" for caller cards, blocked calls and search results; spam categories in your language.
+- "Wrongly marked as spam?" (asks for a review) and "Unlist my number" (opens the server's web form) in Me → Account.
+- CI: TC-E2E-001 with two emulators and the local server (device A reports, the server's jobs run, device B updates
+  its list and blocks the number, then blocks a second one by live lookup); release workflow that builds the signed
+  foss APK on a version tag and publishes it with its SHA-256.
 
 - Server (Phase 4, part 2): spam reports (`POST /v1/reports`, up to 50 per request, 100 per day); a scoring job every
   15 minutes that turns reports into a Bayesian spam score with time decay (verified businesses are never labelled
@@ -74,3 +99,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (API 29 and 36), compose smoke test and a LICENSE check against gnu.org.
 - `infra/docker/minio/Dockerfile`: Chainguard MinIO image plus a static BusyBox for the compose healthcheck.
 - `LICENSE` (GPL-3.0), `CHANGELOG.md` and `NOTICE.md`.
+
+[Unreleased]: https://github.com/jeshiomurmu/OpenCaller/compare/v0.1.0-alpha...HEAD
+[0.1.0-alpha]: https://github.com/jeshiomurmu/OpenCaller/releases/tag/v0.1.0-alpha

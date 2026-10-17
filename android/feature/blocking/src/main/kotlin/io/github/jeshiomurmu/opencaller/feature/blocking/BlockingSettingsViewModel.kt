@@ -4,19 +4,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jeshiomurmu.opencaller.core.common.AppResult
-import io.github.jeshiomurmu.opencaller.core.common.flatMap
-import io.github.jeshiomurmu.opencaller.core.data.BlockRuleRepository
-import io.github.jeshiomurmu.opencaller.core.data.ReportRepository
+import io.github.jeshiomurmu.opencaller.core.data.sync.SpamListSyncState
+import io.github.jeshiomurmu.opencaller.core.data.sync.SpamListUpdates
 import io.github.jeshiomurmu.opencaller.core.datastore.UserSettingsDataSource
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import io.github.jeshiomurmu.opencaller.core.model.ReportLabel
-import io.github.jeshiomurmu.opencaller.core.model.RuleAction
-import io.github.jeshiomurmu.opencaller.core.model.RuleType
 import io.github.jeshiomurmu.opencaller.core.model.SpamThreshold
 import io.github.jeshiomurmu.opencaller.core.model.UserPreferences
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ContactLookup
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.HomeRegionProvider
+import io.github.jeshiomurmu.opencaller.core.ui.ReportDraft
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,10 +23,25 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** A report the user is about to confirm (from the after-call notification's Report). */
+/** A report the user is about to fill in (from the after-call notification's Report or the blocked-calls log). */
 data class PendingReport(
     val number: PhoneNumber,
     val display: String,
+    val label: ReportLabel = ReportLabel.SPAM,
+)
+
+/**
+ * The spam list on this phone.
+ *
+ * @property serverConfigured false: this build has no server, so the list never updates.
+ * @property version list version on the phone, or `null` before the first update.
+ * @property checkedAt when the server was last asked (epoch millis), or `null`.
+ */
+data class SpamListStatus(
+    val serverConfigured: Boolean = false,
+    val country: String? = null,
+    val version: Long? = null,
+    val checkedAt: Long? = null,
 )
 
 /** Short messages shown once, as a snackbar. */
@@ -38,6 +51,9 @@ sealed interface BlockingMessage {
         val masked: String,
         val blocked: Boolean,
     ) : BlockingMessage
+
+    /** "Update now" was started; it runs as soon as the phone is online. */
+    data object ListUpdateStarted : BlockingMessage
 
     /** Saving failed. */
     data object Failed : BlockingMessage
@@ -57,6 +73,8 @@ data class BlockingUiState(
     val countryError: Boolean = false,
     val report: PendingReport? = null,
     val message: BlockingMessage? = null,
+    val signedIn: Boolean = false,
+    val spamList: SpamListStatus = SpamListStatus(),
 )
 
 /** User actions on the Protection tab. */
@@ -79,19 +97,25 @@ sealed interface BlockingEvent {
     /** The screen came back to the front: re-check the contacts permission. */
     data object Resumed : BlockingEvent
 
-    /** Confirm the pending report; [alsoBlock] adds a block rule too. */
-    data class ConfirmReport(
-        val alsoBlock: Boolean,
+    /** Send the pending report as filled in on the report sheet. */
+    data class SubmitReport(
+        val draft: ReportDraft,
     ) : BlockingEvent
 
-    /** Close the report dialog. */
+    /** Update the spam list now. */
+    data object UpdateListNow : BlockingEvent
+
+    /** Close the report sheet. */
     data object DismissReport : BlockingEvent
 
     /** The snackbar was shown. */
     data object MessageShown : BlockingEvent
 }
 
-/** Blocking settings (toggles, threshold, allowed countries) and reports from the after-call notification. */
+/**
+ * Blocking settings (toggles, threshold, allowed countries), the spam list's status and update settings, and reports
+ * from the after-call notification.
+ */
 @HiltViewModel
 class BlockingSettingsViewModel
     @Inject
@@ -100,20 +124,28 @@ class BlockingSettingsViewModel
         private val contacts: ContactLookup,
         private val homeRegion: HomeRegionProvider,
         private val normalizer: PhoneNumberNormalizer,
-        private val reports: ReportRepository,
-        private val rules: BlockRuleRepository,
+        private val reportNumber: ReportNumber,
+        private val lists: SpamListUpdates,
     ) : ViewModel() {
         private val canReadContacts = MutableStateFlow(contacts.canRead())
         private val local = MutableStateFlow(BlockingUiState())
 
         /** Screen state. */
         val uiState: StateFlow<BlockingUiState> =
-            combine(settings.preferences, canReadContacts, local) { prefs, canRead, state ->
+            combine(
+                settings.preferences,
+                canReadContacts,
+                local,
+                reportNumber.signedIn,
+                lists.state,
+            ) { prefs, canRead, state, signedIn, list ->
                 state.copy(
                     loading = false,
                     preferences = prefs,
                     contactsMissing = prefs.blockNonContacts && !canRead,
                     homeRegion = homeRegion.homeRegion(),
+                    signedIn = signedIn,
+                    spamList = list.toStatus(lists.serverConfigured),
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), BlockingUiState())
 
@@ -131,7 +163,8 @@ class BlockingSettingsViewModel
                 is BlockingEvent.AddCountry -> addCountry(event.code)
                 is BlockingEvent.RemoveCountry -> updateCountries { it - event.code }
                 BlockingEvent.Resumed -> canReadContacts.value = contacts.canRead()
-                is BlockingEvent.ConfirmReport -> confirmReport(event.alsoBlock)
+                is BlockingEvent.SubmitReport -> submitReport(event.draft)
+                BlockingEvent.UpdateListNow -> updateListNow()
                 BlockingEvent.DismissReport -> local.value = local.value.copy(report = null)
                 BlockingEvent.MessageShown -> local.value = local.value.copy(message = null)
             }
@@ -148,22 +181,25 @@ class BlockingSettingsViewModel
             viewModelScope.launch { settings.update { it.copy(allowedRegionCodes = change(it.allowedRegionCodes)) } }
         }
 
-        private fun confirmReport(alsoBlock: Boolean) {
+        private fun submitReport(draft: ReportDraft) {
             val report = local.value.report ?: return
             local.value = local.value.copy(report = null)
             viewModelScope.launch {
-                val saved =
-                    reports.queue(report.number, ReportLabel.SPAM).flatMap {
-                        if (alsoBlock) rules.add(RuleType.EXACT, report.number.e164, RuleAction.BLOCK) else AppResult.Success(0L)
-                    }
                 val message =
-                    when (saved) {
-                        is AppResult.Success -> BlockingMessage.Reported(normalizer.masked(report.number), alsoBlock)
+                    when (val saved = reportNumber(report.number, draft)) {
+                        is AppResult.Success -> BlockingMessage.Reported(normalizer.masked(report.number), saved.value)
                         is AppResult.Failure -> BlockingMessage.Failed
                     }
                 local.value = local.value.copy(message = message)
             }
         }
+
+        private fun updateListNow() {
+            lists.updateNow()
+            local.value = local.value.copy(message = BlockingMessage.ListUpdateStarted)
+        }
+
+        private fun SpamListSyncState.toStatus(serverConfigured: Boolean) = SpamListStatus(serverConfigured, country, version, checkedAt)
 
         /** Threshold choices in the order they are shown: block the most first. */
         companion object {

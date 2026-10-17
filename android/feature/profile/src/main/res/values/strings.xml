@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Sign-in (optional; docs/architecture.md §4.7). -->
+    <string name="sign_in_title">Sign in with your number</string>
+    <string name="sign_in_body">Signing in is optional. It lets you share spam reports with the community and search numbers. Blocking works without it.</string>
+    <string name="sign_in_number">Your phone number</string>
+    <string name="sign_in_number_hint">We\'ll send a 6-digit code by SMS.</string>
+    <string name="sign_in_send_code">Send code</string>
+    <string name="sign_in_not_now">Not now</string>
+    <string name="sign_in_privacy">OpenCaller never uploads your contacts, call history or messages.</string>
+    <string name="sign_in_code_title">Enter the code</string>
+    <string name="sign_in_code_body">We sent a 6-digit code to %1$s.</string>
+    <plurals name="sign_in_code_valid">
+        <item quantity="one">The code works for %d minute.</item>
+        <item quantity="other">The code works for %d minutes.</item>
+    </plurals>
+    <string name="sign_in_code">Code</string>
+    <string name="sign_in_verify">Sign in</string>
+    <string name="sign_in_resend">Send a new code</string>
+    <string name="sign_in_change_number">Change number</string>
+    <string name="sign_in_done_title">You\'re signed in</string>
+    <string name="sign_in_done_body">Your reports now help protect others, and you can search numbers.</string>
+    <string name="sign_in_done">Done</string>
+    <string name="sign_in_back">Back</string>
+    <string name="sign_in_problem_number">That isn\'t a valid phone number. Include the country code, e.g. +1 202 555 0143.</string>
+    <string name="sign_in_problem_wrong_code">That code isn\'t right. Check the SMS and try again.</string>
+    <string name="sign_in_problem_code_format">Enter all 6 digits of the code.</string>
+    <string name="sign_in_problem_expired">This code no longer works. Send a new code.</string>
+    <string name="sign_in_problem_too_many">Too many tries. Please wait a while.</string>
+    <plurals name="sign_in_problem_too_many_wait">
+        <item quantity="one">Too many tries. Try again in %d minute.</item>
+        <item quantity="other">Too many tries. Try again in %d minutes.</item>
+    </plurals>
+
+    <!-- Error states (docs/design.md §8). -->
+    <string name="problem_offline">You\'re offline. Blocking still works with your saved spam list.</string>
+    <string name="problem_server">Something went wrong on our side. Your protection still works offline.</string>
+    <string name="not_connected_title">Not connected to a server</string>
+    <string name="not_connected_body">This version of OpenCaller has no server, so sign-in, reports and search are off. Blocking works with the spam list on this phone.</string>
+
+    <!-- Me tab: account section. -->
+    <string name="account_title">Account</string>
+    <string name="account_sign_in">Sign in (optional)</string>
+    <string name="account_sign_in_summary">Share your reports and search numbers</string>
+    <string name="account_signed_in">Signed in</string>
+    <string name="account_sign_out">Tap to sign out on this phone</string>
+    <string name="account_search">Search a number</string>
+    <string name="account_search_summary">See what the community knows about a number</string>
+    <string name="account_dispute">Wrongly marked as spam?</string>
+    <string name="account_dispute_summary">Ask for a review of a number\'s spam label</string>
+    <string name="account_unlist">Unlist my number</string>
+    <string name="account_unlist_summary">Remove your name from OpenCaller (opens a web page)</string>
+</resources>

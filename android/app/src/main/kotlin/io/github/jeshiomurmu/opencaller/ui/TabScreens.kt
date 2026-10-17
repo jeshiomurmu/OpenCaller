@@ -5,8 +5,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,7 +28,7 @@ import io.github.jeshiomurmu.opencaller.feature.settings.SettingsScreen
 import io.github.jeshiomurmu.opencaller.navigation.TopLevelDestination
 
 /**
- * Calls tab until the call log arrives (Phase 6): offers the default phone app role when OpenCaller doesn't
+ * Calls tab until the call log arrives (Phase 6): number search, the default phone app role when OpenCaller doesn't
  * hold it (TC-ONB-003), then the placeholder.
  */
 @Composable
@@ -33,8 +36,14 @@ internal fun CallsScreen(
     defaultPhoneApp: AccessItemStatus?,
     onSetDefault: () -> Unit,
     modifier: Modifier = Modifier,
+    onSearch: () -> Unit = {},
 ) {
     Column(modifier = modifier.fillMaxSize()) {
+        OutlinedButton(
+            onClick = onSearch,
+            shape = OpenCallerShape.pill,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = OpenCallerSpacing.screenPadding, vertical = OpenCallerSpacing.s),
+        ) { Text(text = stringResource(R.string.calls_search)) }
         if (defaultPhoneApp != null) {
             DefaultPhoneAppCard(
                 canSetNow = defaultPhoneApp == AccessItemStatus.NOT_GRANTED,
@@ -74,20 +83,22 @@ private fun DefaultPhoneAppCard(
     }
 }
 
-/** Me tab until profiles arrive (Phase 8): a profile placeholder line, then settings. */
+/** Me tab until profiles arrive (Phase 8): a profile placeholder line, the [account] section, then settings. */
 @Composable
 internal fun MeScreen(
     onOpenPermissions: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenDebug: () -> Unit = {},
+    account: @Composable () -> Unit = {},
 ) {
-    Column(modifier = modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Text(
             text = stringResource(TopLevelDestination.ME.placeholder),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = OpenCallerSpacing.screenPadding, vertical = OpenCallerSpacing.m),
         )
+        account()
         SettingsScreen(onOpenPermissions = onOpenPermissions, versionName = BuildConfig.VERSION_NAME, onOpenDebug = onOpenDebug)
     }
 }

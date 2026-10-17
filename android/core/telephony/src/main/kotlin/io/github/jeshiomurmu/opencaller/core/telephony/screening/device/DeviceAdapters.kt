@@ -8,6 +8,7 @@ import android.provider.ContactsContract
 import android.telephony.TelephonyManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jeshiomurmu.opencaller.core.common.DispatcherProvider
+import io.github.jeshiomurmu.opencaller.core.data.sync.CountrySource
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ContactLookup
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.EmergencyNumbers
@@ -59,7 +60,10 @@ class DeviceHomeRegionProvider
     constructor(
         @ApplicationContext private val context: Context,
         private val testHooks: Optional<ScreeningTestHooks>,
-    ) : HomeRegionProvider {
+    ) : HomeRegionProvider,
+        CountrySource {
+        override fun country(): String? = homeRegion()
+
         override fun homeRegion(): String? {
             val telephony = context.getSystemService(TelephonyManager::class.java)
             return listOf(
