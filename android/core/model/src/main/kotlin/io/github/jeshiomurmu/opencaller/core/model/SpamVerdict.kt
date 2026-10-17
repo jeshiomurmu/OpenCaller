@@ -22,6 +22,9 @@ enum class VerdictSource {
 
     /** A live k-anonymous lookup during the call (step 10). */
     LIVE_LOOKUP,
+
+    /** A search the user made (the full number was sent, by the user's choice). */
+    SEARCH,
 }
 
 /**

@@ -17,6 +17,7 @@ import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -34,17 +35,25 @@ import io.github.jeshiomurmu.opencaller.core.ui.WarningBanner
 import io.github.jeshiomurmu.opencaller.feature.blocking.BlockedLogRoute
 import io.github.jeshiomurmu.opencaller.feature.blocking.BlockingRoute
 import io.github.jeshiomurmu.opencaller.feature.blocking.RulesRoute
+import io.github.jeshiomurmu.opencaller.feature.profile.AccountRoute
+import io.github.jeshiomurmu.opencaller.feature.profile.SignInRoute
+import io.github.jeshiomurmu.opencaller.feature.search.DisputeRoute
+import io.github.jeshiomurmu.opencaller.feature.search.SearchNavigation
+import io.github.jeshiomurmu.opencaller.feature.search.SearchRoute
 import io.github.jeshiomurmu.opencaller.feature.settings.DebugRoute
 import io.github.jeshiomurmu.opencaller.feature.settings.PermissionsStatusRoute
+import io.github.jeshiomurmu.opencaller.navigation.AccountSignInRoute
 import io.github.jeshiomurmu.opencaller.navigation.BlockedCallsRoute
 import io.github.jeshiomurmu.opencaller.navigation.BlockingRulesRoute
 import io.github.jeshiomurmu.opencaller.navigation.CallsRoute
 import io.github.jeshiomurmu.opencaller.navigation.ContactsRoute
 import io.github.jeshiomurmu.opencaller.navigation.MeRoute
 import io.github.jeshiomurmu.opencaller.navigation.MessagesRoute
+import io.github.jeshiomurmu.opencaller.navigation.NumberSearchRoute
 import io.github.jeshiomurmu.opencaller.navigation.PermissionsRoute
 import io.github.jeshiomurmu.opencaller.navigation.ProtectionRoute
 import io.github.jeshiomurmu.opencaller.navigation.ScreeningDebugRoute
+import io.github.jeshiomurmu.opencaller.navigation.SpamDisputeRoute
 import io.github.jeshiomurmu.opencaller.navigation.TopLevelDestination
 
 /**
@@ -98,31 +107,75 @@ private fun AppNavHost(
 ) {
     NavHost(navController = navController, startDestination = CallsRoute, modifier = modifier) {
         composable<CallsRoute> {
-            CallsScreen(defaultPhoneApp = state.defaultPhoneApp, onSetDefault = { openPermissions(AccessItem.DEFAULT_PHONE_APP) })
+            CallsScreen(
+                defaultPhoneApp = state.defaultPhoneApp,
+                onSetDefault = { openPermissions(AccessItem.DEFAULT_PHONE_APP) },
+                onSearch = { navController.navigate(NumberSearchRoute) { launchSingleTop = true } },
+            )
         }
         composable<MessagesRoute> { PlaceholderScreen(TopLevelDestination.MESSAGES) }
         composable<ContactsRoute> { PlaceholderScreen(TopLevelDestination.CONTACTS) }
-        composable<ProtectionRoute> {
-            BlockingRoute(
-                onOpenRules = { navController.navigate(BlockingRulesRoute) { launchSingleTop = true } },
-                onOpenBlockedLog = { navController.navigate(BlockedCallsRoute) { launchSingleTop = true } },
-                onFixContacts = { openPermissions(AccessItem.CONTACTS) },
-                reportNumber = reportNumber,
-            )
-            LaunchedEffect(reportNumber) { if (reportNumber != null) onReportShown() }
-        }
-        composable<BlockingRulesRoute> { RulesRoute() }
-        composable<BlockedCallsRoute> { BlockedLogRoute() }
+        protectionRoutes(navController, reportNumber, onReportShown, openPermissions)
         composable<MeRoute> {
             MeScreen(
                 onOpenPermissions = { openPermissions(null) },
                 onOpenDebug = { navController.navigate(ScreeningDebugRoute) { launchSingleTop = true } },
+                account = {
+                    AccountRoute(
+                        onSignIn = { navController.navigate(AccountSignInRoute) { launchSingleTop = true } },
+                        onSearch = { navController.navigate(NumberSearchRoute) { launchSingleTop = true } },
+                        onDispute = { navController.navigate(SpamDisputeRoute()) { launchSingleTop = true } },
+                    )
+                },
             )
         }
+        onlineRoutes(navController)
         composable<ScreeningDebugRoute> { DebugRoute() }
         composable<PermissionsRoute> { entry ->
             PermissionsStatusRoute(explain = entry.toRoute<PermissionsRoute>().explain?.let(AccessItem::valueOf))
         }
+    }
+}
+
+// The Protection tab, its rules and the blocked-calls log. The after-call notification's Report opens the report sheet.
+private fun NavGraphBuilder.protectionRoutes(
+    navController: NavHostController,
+    reportNumber: String?,
+    onReportShown: () -> Unit,
+    openPermissions: (AccessItem?) -> Unit,
+) {
+    composable<ProtectionRoute> {
+        BlockingRoute(
+            onOpenRules = { navController.navigate(BlockingRulesRoute) { launchSingleTop = true } },
+            onOpenBlockedLog = { navController.navigate(BlockedCallsRoute) { launchSingleTop = true } },
+            onFixContacts = { openPermissions(AccessItem.CONTACTS) },
+            reportNumber = reportNumber,
+        )
+        LaunchedEffect(reportNumber) { if (reportNumber != null) onReportShown() }
+    }
+    composable<BlockingRulesRoute> { RulesRoute() }
+    composable<BlockedCallsRoute> { BlockedLogRoute() }
+}
+
+// Sign-in, search and disputes (Phase 5).
+private fun NavGraphBuilder.onlineRoutes(navController: NavHostController) {
+    val signIn = { navController.navigate(AccountSignInRoute) { launchSingleTop = true } }
+    composable<AccountSignInRoute> { SignInRoute(onDone = { navController.popBackStack() }) }
+    composable<NumberSearchRoute> {
+        SearchRoute(
+            navigation =
+                SearchNavigation(
+                    onSignIn = signIn,
+                    onDispute = { navController.navigate(SpamDisputeRoute(number = it)) { launchSingleTop = true } },
+                ),
+        )
+    }
+    composable<SpamDisputeRoute> { entry ->
+        DisputeRoute(
+            onSignIn = signIn,
+            onDone = { navController.popBackStack() },
+            initialNumber = entry.toRoute<SpamDisputeRoute>().number,
+        )
     }
 }
 
@@ -154,7 +207,8 @@ internal fun PlaceholderScreen(
     EmptyState(icon = destination.icon, message = stringResource(destination.placeholder), modifier = modifier)
 }
 
-// Permissions & roles and the debug screen live under the Me tab; the rules and the blocked log under Protection.
+// Permissions & roles, the debug screen, sign-in and disputes live under the Me tab; the rules and the blocked log under
+// Protection; search under Calls.
 private fun NavDestination?.isOn(destination: TopLevelDestination): Boolean =
     this?.hierarchy?.any { node ->
         node.hasRoute(destination.route::class) || CHILDREN[destination].orEmpty().any { node.hasRoute(it) }
@@ -162,7 +216,9 @@ private fun NavDestination?.isOn(destination: TopLevelDestination): Boolean =
 
 private val CHILDREN =
     mapOf(
-        TopLevelDestination.ME to listOf(PermissionsRoute::class, ScreeningDebugRoute::class),
+        TopLevelDestination.CALLS to listOf(NumberSearchRoute::class),
+        TopLevelDestination.ME to
+            listOf(PermissionsRoute::class, ScreeningDebugRoute::class, AccountSignInRoute::class, SpamDisputeRoute::class),
         TopLevelDestination.PROTECTION to listOf(BlockingRulesRoute::class, BlockedCallsRoute::class),
     )
 

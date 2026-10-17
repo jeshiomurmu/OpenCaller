@@ -19,29 +19,6 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** What an explicit search found. [spamScore] is `null` when nobody reported the number. */
-data class SearchResult(
-    val number: PhoneNumber,
-    val displayName: String?,
-    val nameSource: NameSource?,
-    val spamScore: Float?,
-    val label: String?,
-    val category: String?,
-    val reportCount: Int,
-    val notSpamCount: Int,
-    val businessName: String?,
-)
-
-/**
- * Searches left today. [remaining] counts this phone's searches of the last 24 h (the server allows 50 a day per
- * user); [blockedUntil] is set (epoch millis) after the server said the quota is used up.
- */
-data class SearchQuota(
-    val limit: Int,
-    val remaining: Int,
-    val blockedUntil: Long?,
-)
-
 /**
  * Explicit number search (docs/prd.md F-ID-03): the user typed the number, so it is sent in full (unlike the live
  * lookup). Needs sign-in; 50 a day.
@@ -53,12 +30,10 @@ class SearchRepository
         private val api: OpenCallerApi,
         private val quotaStore: SearchQuotaStore,
         private val clock: Clock,
-    ) {
-        /** Today's remaining searches. */
-        val quota: Flow<SearchQuota> = quotaStore.quota { clock.nowMillis() }
+    ) : NumberSearch {
+        override val quota: Flow<SearchQuota> = quotaStore.quota { clock.nowMillis() }
 
-        /** Searches for [number]. */
-        suspend fun search(number: PhoneNumber): AppResult<SearchResult> {
+        override suspend fun search(number: PhoneNumber): AppResult<SearchResult> {
             val result = apiCall { api.search(number.e164) }
             val now = clock.nowMillis()
             when (result) {
@@ -77,8 +52,7 @@ class SearchRepository
             }
         }
 
-        /** Disputes the spam label of [number] (for example the user's own number) with [reason]. */
-        suspend fun dispute(
+        override suspend fun dispute(
             number: PhoneNumber,
             reason: String,
         ): AppResult<Long> =

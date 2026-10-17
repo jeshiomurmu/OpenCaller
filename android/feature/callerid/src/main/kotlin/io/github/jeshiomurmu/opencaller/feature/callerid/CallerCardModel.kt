@@ -4,10 +4,12 @@ import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jeshiomurmu.opencaller.core.model.CallerInfo
 import io.github.jeshiomurmu.opencaller.core.model.CallerVerification
+import io.github.jeshiomurmu.opencaller.core.model.ReportCategory
 import io.github.jeshiomurmu.opencaller.core.model.RiskLevel
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.HomeRegionProvider
 import io.github.jeshiomurmu.opencaller.core.ui.CallerCardState
+import io.github.jeshiomurmu.opencaller.core.ui.labelRes
 import javax.inject.Inject
 import io.github.jeshiomurmu.opencaller.core.ui.R as UiR
 
@@ -61,7 +63,10 @@ class CallerCardFormatter
             val caller = card.caller
             val parts = mutableListOf(stateLine(card))
             caller.spamVerdict?.takeIf { it.level != RiskLevel.NONE }?.let { verdict ->
-                verdict.category?.takeIf { it.isNotBlank() }?.let(parts::add)
+                verdict.category
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let(::categoryText)
+                    ?.let(parts::add)
                 if (verdict.reportCount > 0) {
                     parts += context.resources.getQuantityString(UiR.plurals.risk_report_count, verdict.reportCount, verdict.reportCount)
                 }
@@ -79,6 +84,9 @@ class CallerCardFormatter
             }
             return parts.joinToString(context.getString(UiR.string.risk_banner_separator))
         }
+
+        // Known categories in the user's language; anything else as the server sent it.
+        private fun categoryText(code: String): String = ReportCategory.fromCode(code)?.let { context.getString(it.labelRes()) } ?: code
 
         private fun stateLine(card: CallerCardModel): String =
             context.getString(

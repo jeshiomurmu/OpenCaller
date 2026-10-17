@@ -6,11 +6,17 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.common.getOrNull
 import io.github.jeshiomurmu.opencaller.core.data.ScreeningEventRepository
+import io.github.jeshiomurmu.opencaller.core.model.CallerInfo
 import io.github.jeshiomurmu.opencaller.core.model.Decision
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
+import io.github.jeshiomurmu.opencaller.core.model.RiskLevel
 import io.github.jeshiomurmu.opencaller.core.model.ScreeningReason
+import io.github.jeshiomurmu.opencaller.core.model.SpamVerdict
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.HomeRegionProvider
+import io.github.jeshiomurmu.opencaller.core.ui.ReportDraft
+import io.github.jeshiomurmu.opencaller.core.ui.WhyReason
+import io.github.jeshiomurmu.opencaller.core.ui.whyReasons
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +29,7 @@ import javax.inject.Inject
  * One blocked or silenced call in the log.
  *
  * @property number the caller, or `null` for a hidden number (which can't be unblocked one by one).
+ * @property spamScore the spam score the decision used, if any.
  */
 data class BlockedCall(
     val eventId: Long,
@@ -31,7 +38,16 @@ data class BlockedCall(
     val decision: Decision,
     val reason: ScreeningReason,
     val atMillis: Long,
-)
+    val spamScore: Float? = null,
+) {
+    /** "Why am I seeing this?" for this call. */
+    val why: List<WhyReason>
+        get() =
+            whyReasons(
+                CallerInfo(number, spamVerdict = spamScore?.let { SpamVerdict(it.coerceIn(0f, 1f), RiskLevel.LIKELY_SPAM, null, 0) }),
+                reason,
+            )
+}
 
 /** Short messages shown once, as a snackbar. */
 sealed interface BlockedLogMessage {
@@ -40,15 +56,29 @@ sealed interface BlockedLogMessage {
         val masked: String,
     ) : BlockedLogMessage
 
-    /** Unblocking failed. */
+    /** The report was queued (and the number blocked when [blocked]). */
+    data class Reported(
+        val masked: String,
+        val blocked: Boolean,
+    ) : BlockedLogMessage
+
+    /** Saving failed. */
     data object Failed : BlockedLogMessage
 }
 
-/** Blocked-calls log. */
+/**
+ * Blocked-calls log.
+ *
+ * @property reporting the call whose report sheet is open.
+ * @property explaining the call whose "Why?" sheet is open.
+ */
 data class BlockedLogUiState(
     val loading: Boolean = true,
     val calls: List<BlockedCall> = emptyList(),
     val message: BlockedLogMessage? = null,
+    val reporting: BlockedCall? = null,
+    val explaining: BlockedCall? = null,
+    val signedIn: Boolean = false,
 )
 
 /** User actions on the blocked-calls log. */
@@ -58,11 +88,38 @@ sealed interface BlockedLogEvent {
         val call: BlockedCall,
     ) : BlockedLogEvent
 
+    /** Open the report sheet for [call]. */
+    data class Report(
+        val call: BlockedCall,
+    ) : BlockedLogEvent
+
+    /** Send the open report. */
+    data class SubmitReport(
+        val draft: ReportDraft,
+    ) : BlockedLogEvent
+
+    /** Open "Why?" for [call]. */
+    data class Explain(
+        val call: BlockedCall,
+    ) : BlockedLogEvent
+
+    /** Close the open sheet. */
+    data object DismissSheet : BlockedLogEvent
+
     /** The snackbar was shown. */
     data object MessageShown : BlockedLogEvent
 }
 
-/** The blocked-calls log (from the screening log), with Undo per call (docs/design.md §7: blocking is reversible). */
+private data class Sheets(
+    val message: BlockedLogMessage? = null,
+    val reporting: BlockedCall? = null,
+    val explaining: BlockedCall? = null,
+)
+
+/**
+ * The blocked-calls log (from the screening log), with Undo per call (docs/design.md §7: blocking is reversible),
+ * Report and "Why?".
+ */
 @HiltViewModel
 class BlockedLogViewModel
     @Inject
@@ -71,12 +128,13 @@ class BlockedLogViewModel
         private val unblockNumber: UnblockNumber,
         private val normalizer: PhoneNumberNormalizer,
         private val homeRegion: HomeRegionProvider,
+        private val reportNumber: ReportNumber,
     ) : ViewModel() {
-        private val message = MutableStateFlow<BlockedLogMessage?>(null)
+        private val sheets = MutableStateFlow(Sheets())
 
         /** Screen state. */
         val uiState: StateFlow<BlockedLogUiState> =
-            combine(events.observeBlocked(LOG_SIZE), message) { blocked, shown ->
+            combine(events.observeBlocked(LOG_SIZE), sheets, reportNumber.signedIn) { blocked, open, signedIn ->
                 val region = homeRegion.homeRegion()
                 BlockedLogUiState(
                     loading = false,
@@ -89,9 +147,13 @@ class BlockedLogViewModel
                                 event.decision,
                                 event.reason,
                                 event.atMillis,
+                                event.spamScore,
                             )
                         },
-                    message = shown,
+                    message = open.message,
+                    reporting = open.reporting,
+                    explaining = open.explaining,
+                    signedIn = signedIn,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), BlockedLogUiState())
 
@@ -99,18 +161,36 @@ class BlockedLogViewModel
         fun onEvent(event: BlockedLogEvent) {
             when (event) {
                 is BlockedLogEvent.Unblock -> unblockCall(event.call)
-                BlockedLogEvent.MessageShown -> message.value = null
+                is BlockedLogEvent.Report -> sheets.value = Sheets(reporting = event.call.takeIf { it.number != null })
+                is BlockedLogEvent.SubmitReport -> submitReport(event.draft)
+                is BlockedLogEvent.Explain -> sheets.value = Sheets(explaining = event.call)
+                BlockedLogEvent.DismissSheet -> sheets.value = sheets.value.copy(reporting = null, explaining = null)
+                BlockedLogEvent.MessageShown -> sheets.value = sheets.value.copy(message = null)
+            }
+        }
+
+        private fun submitReport(draft: ReportDraft) {
+            val number = sheets.value.reporting?.number ?: return
+            sheets.value = Sheets()
+            viewModelScope.launch {
+                val message =
+                    when (val saved = reportNumber(number, draft)) {
+                        is AppResult.Success -> BlockedLogMessage.Reported(normalizer.masked(number), saved.value)
+                        is AppResult.Failure -> BlockedLogMessage.Failed
+                    }
+                sheets.value = sheets.value.copy(message = message)
             }
         }
 
         private fun unblockCall(call: BlockedCall) {
             val number = call.number ?: return
             viewModelScope.launch {
-                message.value =
+                val message =
                     when (unblockNumber(number)) {
                         is AppResult.Success -> BlockedLogMessage.Unblocked(normalizer.masked(number))
                         is AppResult.Failure -> BlockedLogMessage.Failed
                     }
+                sheets.value = sheets.value.copy(message = message)
             }
         }
 

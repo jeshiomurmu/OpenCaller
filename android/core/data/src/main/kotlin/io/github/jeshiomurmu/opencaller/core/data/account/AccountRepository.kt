@@ -28,19 +28,17 @@ class AccountRepository
         private val server: ServerConfig,
         private val clock: Clock,
         private val work: BackgroundWork,
-    ) {
-        /** True while the user is signed in. */
-        val signedIn: Flow<Boolean> = tokens.signedIn
+    ) : Account {
+        override val signedIn: Flow<Boolean> = tokens.signedIn
 
-        /** True when this build has a server to sign in to. */
-        val serverConfigured: Boolean get() = server.isConfigured
+        override val serverConfigured: Boolean get() = server.isConfigured
 
-        /** Sends a sign-in code to [number]; returns how many seconds the code is valid. */
-        suspend fun sendCode(number: PhoneNumber): AppResult<Long> =
+        override val unlistPageUrl: String? get() = server.unlistPageUrl
+
+        override suspend fun sendCode(number: PhoneNumber): AppResult<Long> =
             apiCall { api.startSignIn(StartRequest(number.e164)) }.map { it.expiresInSeconds }
 
-        /** Checks [code] for [number] and, if right, stores the tokens and sends any queued reports. */
-        suspend fun verify(
+        override suspend fun verify(
             number: PhoneNumber,
             code: String,
         ): AppResult<Unit> =
@@ -49,6 +47,5 @@ class AccountRepository
                 work.uploadReports()
             }
 
-        /** Signs out on this phone (the tokens are deleted; queued reports wait for the next sign-in). */
-        suspend fun signOut() = tokens.clear()
+        override suspend fun signOut() = tokens.clear()
     }

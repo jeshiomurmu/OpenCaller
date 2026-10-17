@@ -20,6 +20,9 @@
     <string name="banner_screening_off">OpenCaller can\'t screen calls right now. Turn call screening back on.</string>
     <string name="banner_fix">Fix</string>
 
+    <!-- Calls tab: number search (Phase 5). -->
+    <string name="calls_search">Search a number</string>
+
     <!-- Calls tab: default phone app card (TC-ONB-003). -->
     <string name="calls_default_app_title">Set as default phone app</string>
     <string name="calls_default_app_body">See caller ID right on the call screen and keep your call history in one place.</string>

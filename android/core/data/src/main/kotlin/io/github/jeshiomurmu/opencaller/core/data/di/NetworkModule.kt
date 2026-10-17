@@ -10,9 +10,16 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.github.jeshiomurmu.opencaller.core.common.Clock
+import io.github.jeshiomurmu.opencaller.core.data.account.Account
+import io.github.jeshiomurmu.opencaller.core.data.account.AccountRepository
+import io.github.jeshiomurmu.opencaller.core.data.account.AccountStatus
 import io.github.jeshiomurmu.opencaller.core.data.account.KeystoreTokenStore
+import io.github.jeshiomurmu.opencaller.core.data.lookup.NumberSearch
 import io.github.jeshiomurmu.opencaller.core.data.lookup.SearchQuotaStore
+import io.github.jeshiomurmu.opencaller.core.data.lookup.SearchRepository
+import io.github.jeshiomurmu.opencaller.core.data.sync.DefaultSpamListUpdates
 import io.github.jeshiomurmu.opencaller.core.data.sync.SpamListSyncStateStore
+import io.github.jeshiomurmu.opencaller.core.data.sync.SpamListUpdates
 import io.github.jeshiomurmu.opencaller.core.data.work.BackgroundWork
 import io.github.jeshiomurmu.opencaller.core.data.work.WorkManagerBackgroundWork
 import io.github.jeshiomurmu.opencaller.core.database.crypto.AndroidKeystoreCipher
@@ -33,6 +40,22 @@ interface NetworkModule {
     /** WorkManager-backed background jobs. */
     @Binds
     fun backgroundWork(impl: WorkManagerBackgroundWork): BackgroundWork
+
+    /** Sign-in. */
+    @Binds
+    fun account(impl: AccountRepository): Account
+
+    /** Sign-in status. */
+    @Binds
+    fun accountStatus(impl: AccountRepository): AccountStatus
+
+    /** Number search and disputes. */
+    @Binds
+    fun numberSearch(impl: SearchRepository): NumberSearch
+
+    /** Spam-list update status and "Update now". */
+    @Binds
+    fun spamListUpdates(impl: DefaultSpamListUpdates): SpamListUpdates
 
     /** The encrypted token store is the API's token store. */
     @Binds

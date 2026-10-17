@@ -35,16 +35,6 @@ fun interface CountrySource {
     fun country(): String?
 }
 
-/**
- * What the phone has: the list of [country] at [version], last checked at [checkedAt] (epoch millis). All `null`
- * before the first successful update.
- */
-data class SpamListSyncState(
-    val country: String? = null,
-    val version: Long? = null,
-    val checkedAt: Long? = null,
-)
-
 /** Result of one update. */
 sealed interface SpamListSyncOutcome {
     /** The phone already had the latest version. */

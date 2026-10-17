@@ -3,6 +3,7 @@ package io.github.jeshiomurmu.opencaller.feature.blocking
 import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,6 +35,8 @@ import io.github.jeshiomurmu.opencaller.core.model.Decision
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import io.github.jeshiomurmu.opencaller.core.model.ScreeningReason
 import io.github.jeshiomurmu.opencaller.core.ui.EmptyState
+import io.github.jeshiomurmu.opencaller.core.ui.ReportSheet
+import io.github.jeshiomurmu.opencaller.core.ui.WhySheet
 import io.github.jeshiomurmu.opencaller.core.ui.R as UiR
 
 /** The blocked-calls log, wired to its view model. */
@@ -44,12 +47,7 @@ fun BlockedLogRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
-    val text =
-        when (val message = state.message) {
-            is BlockedLogMessage.Unblocked -> stringResource(R.string.log_unblocked, message.masked)
-            BlockedLogMessage.Failed -> stringResource(R.string.blocking_failed)
-            null -> null
-        }
+    val text = state.message?.let { messageText(it) }
     LaunchedEffect(text) {
         if (text != null) {
             snackbar.showSnackbar(text)
@@ -57,16 +55,47 @@ fun BlockedLogRoute(
         }
     }
     Box(modifier = modifier.fillMaxSize()) {
-        BlockedLogScreen(state = state, onUnblock = { viewModel.onEvent(BlockedLogEvent.Unblock(it)) })
+        BlockedLogScreen(state = state, onEvent = viewModel::onEvent)
         SnackbarHost(hostState = snackbar, modifier = Modifier.align(Alignment.BottomCenter))
     }
+    state.reporting?.let { call ->
+        ReportSheet(
+            number = call.display.orEmpty(),
+            signedIn = state.signedIn,
+            onSubmit = { viewModel.onEvent(BlockedLogEvent.SubmitReport(it)) },
+            onDismiss = { viewModel.onEvent(BlockedLogEvent.DismissSheet) },
+        )
+    }
+    state.explaining?.let { call -> WhySheet(reasons = call.why, onDismiss = { viewModel.onEvent(BlockedLogEvent.DismissSheet) }) }
 }
 
-/** Blocked and silenced calls, newest first; every call from a known number can be unblocked in one tap. */
+@Composable
+private fun messageText(message: BlockedLogMessage): String =
+    when (message) {
+        is BlockedLogMessage.Unblocked -> {
+            stringResource(R.string.log_unblocked, message.masked)
+        }
+
+        is BlockedLogMessage.Reported -> {
+            stringResource(
+                if (message.blocked) R.string.report_done_blocked else R.string.report_done,
+                message.masked,
+            )
+        }
+
+        BlockedLogMessage.Failed -> {
+            stringResource(R.string.blocking_failed)
+        }
+    }
+
+/**
+ * Blocked and silenced calls, newest first; every call from a known number can be unblocked in one tap or reported,
+ * and every call says why it was blocked.
+ */
 @Composable
 fun BlockedLogScreen(
     state: BlockedLogUiState,
-    onUnblock: (BlockedCall) -> Unit,
+    onEvent: (BlockedLogEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (state.calls.isEmpty() && !state.loading) {
@@ -75,14 +104,14 @@ fun BlockedLogScreen(
     }
     LazyColumn(modifier = modifier.fillMaxSize()) {
         item { Title(stringResource(R.string.log_title)) }
-        items(state.calls, key = BlockedCall::eventId) { call -> BlockedCallRow(call = call, onUnblock = { onUnblock(call) }) }
+        items(state.calls, key = BlockedCall::eventId) { call -> BlockedCallRow(call = call, onEvent = onEvent) }
     }
 }
 
 @Composable
 private fun BlockedCallRow(
     call: BlockedCall,
-    onUnblock: () -> Unit,
+    onEvent: (BlockedLogEvent) -> Unit,
 ) {
     val context = LocalContext.current
     val time =
@@ -94,22 +123,23 @@ private fun BlockedCallRow(
     val what = stringResource(if (call.decision == Decision.SILENCE) R.string.log_silenced else R.string.log_blocked)
     val why = call.reason.logReasonRes()?.let { stringResource(it) }
     val separator = stringResource(UiR.string.risk_banner_separator)
-    Row(
+    Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .heightIn(min = OpenCallerSpacing.minTouchTarget)
                 .padding(horizontal = OpenCallerSpacing.screenPadding, vertical = OpenCallerSpacing.xs),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.s),
     ) {
         TextPair(
             title = call.display ?: stringResource(R.string.log_hidden),
             summary = listOfNotNull(what, why, time).joinToString(separator),
-            modifier = Modifier.weight(1f),
         )
-        if (call.number != null) {
-            TextButton(onClick = onUnblock) { Text(text = stringResource(R.string.log_unblock)) }
+        Row(horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xxs, Alignment.End), modifier = Modifier.fillMaxWidth()) {
+            TextButton(onClick = { onEvent(BlockedLogEvent.Explain(call)) }) { Text(text = stringResource(R.string.log_why)) }
+            if (call.number != null) {
+                TextButton(onClick = { onEvent(BlockedLogEvent.Report(call)) }) { Text(text = stringResource(R.string.log_report)) }
+                TextButton(onClick = { onEvent(BlockedLogEvent.Unblock(call)) }) { Text(text = stringResource(R.string.log_unblock)) }
+            }
         }
     }
 }
@@ -127,9 +157,18 @@ private fun BlockedLogScreenPreview() {
                             listOf(
                                 BlockedCall(1, PhoneNumber("+15551230001"), "+1 555-123-0001", Decision.BLOCK, ScreeningReason.RULE, 0),
                                 BlockedCall(2, null, null, Decision.BLOCK, ScreeningReason.HIDDEN, 0),
+                                BlockedCall(
+                                    eventId = 3,
+                                    number = PhoneNumber("+15551230002"),
+                                    display = "+1 555-123-0002",
+                                    decision = Decision.BLOCK,
+                                    reason = ScreeningReason.NETWORK,
+                                    atMillis = 0,
+                                    spamScore = 0.9f,
+                                ),
                             ),
                     ),
-                onUnblock = {},
+                onEvent = {},
             )
         }
     }

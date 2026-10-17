@@ -8,6 +8,7 @@ import io.github.jeshiomurmu.opencaller.core.data.work.BackgroundWork
 import io.github.jeshiomurmu.opencaller.core.database.DatabaseAccess
 import io.github.jeshiomurmu.opencaller.core.database.entity.ReportOutboxEntity
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
+import io.github.jeshiomurmu.opencaller.core.model.ReportCategory
 import io.github.jeshiomurmu.opencaller.core.model.ReportLabel
 import io.github.jeshiomurmu.opencaller.core.model.SyncState
 import kotlinx.coroutines.flow.Flow
@@ -15,12 +16,8 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Report categories (the server's whitelist, backend `REPORT_CATEGORIES`); apps show translated names. Spam
- * reports only.
- */
-val REPORT_CATEGORIES: List<String> =
-    listOf("scam", "fraud", "telemarketing", "loan", "debt_collector", "robocall", "survey", "political", "charity", "nuisance", "other")
+/** Report category codes (the server's whitelist, [ReportCategory]); spam reports only. */
+val REPORT_CATEGORIES: List<String> = ReportCategory.entries.map(ReportCategory::code)
 
 /** Longest report comment the server accepts. */
 const val MAX_REPORT_COMMENT = 280
