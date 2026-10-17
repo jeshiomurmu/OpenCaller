@@ -1,0 +1,5 @@
+# SMS Retriever app hashes served by GET /v1/otp-sources (which app a one-time-code SMS belongs to). EXAMPLE ROWS
+# ONLY — the packages below don't exist; real data arrives in Phase 9. Columns (no quoting, no commas in values):
+# hash,package_name,app_name,updated_at
+AAAAAAAAAA0,org.example.fakebank,Example Bank (fake),2026-10-16T00:00:00Z
+BBBBBBBBBB1,org.example.fakeshop,Example Shop (fake),2026-10-16T00:00:00Z

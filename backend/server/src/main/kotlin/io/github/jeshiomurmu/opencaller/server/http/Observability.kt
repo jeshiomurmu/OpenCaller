@@ -24,8 +24,8 @@ import java.util.UUID
 
 private const val MAX_REQUEST_ID_LENGTH = 64
 
-/** Largest request body the API accepts (all v1 requests are small JSON objects). */
-const val MAX_BODY_BYTES = 16 * 1024L
+/** Largest request body the API accepts (the biggest is a batch of 50 reports with comments). */
+const val MAX_BODY_BYTES = 64 * 1024L
 
 /**
  * Request IDs: a client's `X-Request-Id` is kept if it is short and plain (letters, digits, `-`, `_`), otherwise

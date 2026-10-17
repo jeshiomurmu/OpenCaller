@@ -22,11 +22,12 @@ sealed interface OtpCheck {
 }
 
 /**
- * One pending code per number in Redis (`otp:<e164>`, a hash of `h` = keyed code hash and `a` = wrong attempts)
- * with the code's lifetime as TTL. Only the hash is stored. Sending a new code replaces the old one.
+ * One pending code per number in Redis (`otp:<e164>`; unlist codes use `otp-unlist:<e164>`), a hash of `h` = keyed
+ * code hash and `a` = wrong attempts, with the code's lifetime as TTL. Only the hash is stored. Sending a new code replaces the old one.
  */
 class OtpStore(
     private val redis: Redis,
+    private val keyPrefix: String = "otp:",
 ) {
     /** Stores [codeHash] for [number] for [ttl], replacing any earlier code. */
     suspend fun put(
@@ -55,7 +56,7 @@ class OtpStore(
     /** Removes the pending code (e.g. when it couldn't be delivered). */
     suspend fun delete(number: E164) = redis.delete(key(number))
 
-    private fun key(number: E164) = "otp:${number.value}"
+    private fun key(number: E164) = "$keyPrefix${number.value}"
 
     private companion object {
         const val STATUS_MISSING = 0L

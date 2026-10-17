@@ -7,7 +7,12 @@ info:
 
     Errors are RFC 9457 problem details (`application/problem+json`) with a stable machine-readable `code`.
     Every response carries `X-Request-Id`; send your own (1–64 letters, digits, `-` or `_`) to correlate logs.
-    Prometheus metrics are served on a separate internal port and are not part of this API.
+    Prometheus metrics (`GET /metrics`) and the admin endpoints (`POST /admin/jobs/{scoring|lists}` with
+    `Authorization: Bearer <ADMIN_TOKEN>`; 409 `job_running` while a run holds the job's lock) are served on a
+    separate internal port and are not part of this API.
+
+    Privacy (docs/architecture.md §10): no endpoint accepts contacts, call logs or SMS bodies. Live caller ID uses
+    k-anonymous buckets, so only explicit search sends a full number.
   license:
     name: GPL-3.0-only
     identifier: GPL-3.0-only
@@ -21,6 +26,16 @@ tags:
   - name: health
   - name: auth
     description: Phone-number sign-in (docs/architecture.md §4.7)
+  - name: reports
+    description: Spam / not-spam reports (docs/architecture.md §4.8)
+  - name: lookup
+    description: Live caller ID buckets (docs/architecture.md §4.6) and explicit search
+  - name: lists
+    description: Per-country spam lists (docs/architecture.md §13)
+  - name: privacy
+    description: Disputes and unlisting (docs/prd.md F-PR-16/17)
+  - name: sync
+    description: Registries apps sync incrementally
 
 paths:
   /health:
@@ -139,6 +154,342 @@ paths:
         "413": { $ref: "#/components/responses/PayloadTooLarge" }
         "415": { $ref: "#/components/responses/UnsupportedMediaType" }
 
+  /v1/reports:
+    post:
+      tags: [reports]
+      summary: Report numbers as spam or not spam
+      description: |
+        A batch of 1–50 reports, stored all or nothing for the scoring job (every 15 minutes). Each number is
+        validated with libphonenumber. Only the reporter's latest report on a number counts. A reporter's first
+        report gives them the default trust 0.5. Limit: 100 reports per user per day (docs/rules.md §7), counted
+        per report; a batch that would exceed it is refused as a whole.
+      operationId: submitReports
+      security: [{ accessToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReportBatch" }
+      responses:
+        "202":
+          description: Stored.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReportBatchResponse" }
+        "400":
+          description: "`invalid_phone_number` (the detail names the item, e.g. `reports[3].e164`) or `invalid_request`."
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /v1/lookup/buckets/{cc}/{bucketId}:
+    get:
+      tags: [lookup]
+      summary: k-anonymous live lookup bucket
+      description: |
+        The app computes h = SHA-256(UTF-8 bytes of the E.164 number) and sends only the country calling code and
+        the first `bits` bits of h (big-endian). The response lists every number in that bucket that the server
+        knows something about, with its full SHA-256 (base64) for local matching, so the server never learns which
+        number was looked up. Names follow the profile's visibility: `everyone` always, `registered_only` only with
+        a valid access token, `nobody` never; unlisted numbers have no name. Cache for 24 hours and revalidate with
+        `If-None-Match`.
+      operationId: getLookupBucket
+      security: [{}, { accessToken: [] }]
+      parameters:
+        - { name: cc, in: path, required: true, description: "Country calling code, e.g. 880.", schema: { type: integer, minimum: 1, maximum: 999 } }
+        - { name: bucketId, in: path, required: true, schema: { type: integer, minimum: 0, maximum: 65535 } }
+        - { name: bits, in: query, required: false, description: "Bucket width (12–16).", schema: { type: integer, minimum: 12, maximum: 16, default: 16 } }
+        - { name: If-None-Match, in: header, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: The bucket. `Cache-Control` is `public, max-age=86400` without a token and `private, max-age=86400` with one.
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+            Cache-Control: { $ref: "#/components/headers/CacheControl" }
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BucketResponse" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400":
+          description: "`invalid_bucket`: unknown calling code, bucket out of range or bits outside 12–16."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/numbers/{e164}:
+    get:
+      tags: [lookup]
+      summary: Explicit search
+      description: |
+        The user typed the number, so the full number is sent. Limit: 50 searches per user per day
+        (docs/rules.md §7); the 51st gets 429 with `Retry-After`. Invalid numbers don't count. If the number
+        belongs to a registered user and the searcher is not incognito, the search is recorded for that user's
+        "who searched me" list (`profile_views`, kind `search`). Not cacheable.
+      operationId: searchNumber
+      security: [{ accessToken: [] }]
+      parameters:
+        - { name: e164, in: path, required: true, description: "E.164 number; `+` may be sent as `%2B`.", schema: { $ref: "#/components/schemas/E164" } }
+      responses:
+        "200":
+          description: What is known about the number (empty info if nothing).
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SearchResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /v1/lists/{countryIso}/manifest:
+    get:
+      tags: [lists]
+      summary: Latest spam list of a country
+      description: |
+        The latest full list and the deltas of the last 14 versions (`baseVersion` → `version`). An app holding
+        version N downloads the deltas from N on, or the full list if it is too far behind; it checks each file's
+        SHA-256 against the manifest. Lists are rebuilt nightly; a country gets a new version only when its list
+        changed.
+      operationId: getListManifest
+      security: [{}, { accessToken: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/CountryIso" }
+      responses:
+        "200":
+          description: "The manifest (`Cache-Control: public, max-age=300`)."
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ListManifest" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/InvalidCountry" }
+        "404": { $ref: "#/components/responses/ListNotFound" }
+
+  /v1/lists/{countryIso}/files/{version}/{kind}:
+    get:
+      tags: [lists]
+      summary: Download a list file
+      description: |
+        A list file in the binary format of docs/architecture.md §13. Files never change once published
+        (`Cache-Control: public, max-age=31536000, immutable`); the ETag is the file's SHA-256.
+      operationId: getListFile
+      parameters:
+        - { $ref: "#/components/parameters/CountryIso" }
+        - { name: version, in: path, required: true, schema: { type: integer, minimum: 1 } }
+        - { name: kind, in: path, required: true, schema: { type: string, enum: [full, delta] } }
+        - { name: If-None-Match, in: header, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: The file.
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+            Cache-Control: { $ref: "#/components/headers/CacheControl" }
+          content:
+            application/octet-stream:
+              schema: { type: string, contentMediaType: application/octet-stream }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/InvalidCountry" }
+        "404": { $ref: "#/components/responses/ListNotFound" }
+
+  /v1/disputes:
+    post:
+      tags: [privacy]
+      summary: Dispute a number's spam label
+      description: Queues the dispute for human review. Limit 10 per user per day.
+      operationId: openDispute
+      security: [{ accessToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DisputeRequest" }
+      responses:
+        "201":
+          description: Queued.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DisputeResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /v1/unlist/start:
+    post:
+      tags: [privacy]
+      summary: Start unlisting a number
+      description: |
+        Sends a one-time code to the number to prove the requester controls it (same limits as sign-in codes,
+        counted separately: 3 per hour per number, 10 per hour per client address). Also available without the
+        app as an HTML form at `/unlist`.
+      operationId: startUnlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StartRequest" }
+      responses:
+        "202":
+          description: The code was sent.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StartResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503":
+          description: "`otp_delivery_failed`."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /v1/unlist/verify:
+    post:
+      tags: [privacy]
+      summary: Confirm unlisting with the code
+      description: |
+        Stores a verified unlist request. The next scoring-job run (within 15 minutes) processes it; from then on
+        lookups and search show no name for the number. Its spam score and reports stay.
+      operationId: verifyUnlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UnlistVerifyRequest" }
+      responses:
+        "202":
+          description: Verified.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UnlistVerifyResponse" }
+        "400":
+          description: "`invalid_phone_number`, `invalid_code_format`, `invalid_code`, `code_invalidated` or `code_expired`."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+
+  /unlist:
+    get:
+      tags: [privacy]
+      summary: Unlist form (HTML)
+      description: Server-rendered page for people without the app; no JavaScript. Step 1 asks for the number.
+      operationId: unlistForm
+      responses:
+        "200":
+          description: The form.
+          content:
+            text/html: { schema: { type: string } }
+    post:
+      tags: [privacy]
+      summary: Unlist form, step 1 submitted (HTML)
+      description: Sends the code (as `/v1/unlist/start`) and shows the code form, or the number form with the error.
+      operationId: unlistFormNumber
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [e164]
+              properties:
+                e164: { type: string, maxLength: 64, description: International format; spaces and dashes allowed. }
+      responses:
+        "200":
+          description: The code form.
+          content:
+            text/html: { schema: { type: string } }
+        "4XX":
+          description: The number form with the error shown.
+          content:
+            text/html: { schema: { type: string } }
+
+  /unlist/verify:
+    post:
+      tags: [privacy]
+      summary: Unlist form, step 2 submitted (HTML)
+      description: Checks the code (as `/v1/unlist/verify`) and shows the confirmation, or the form with the error.
+      operationId: unlistFormVerify
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [e164, code]
+              properties:
+                e164: { type: string, maxLength: 64 }
+                code: { type: string, pattern: '^[0-9]{6}$' }
+      responses:
+        "200":
+          description: Confirmation page.
+          content:
+            text/html: { schema: { type: string } }
+        "4XX":
+          description: The form with the error shown.
+          content:
+            text/html: { schema: { type: string } }
+
+  /v1/sender-ids/{countryIso}:
+    get:
+      tags: [sync]
+      summary: SMS sender-ID registry of a country
+      description: |
+        Rows updated after `since` (epoch milliseconds), oldest first, at most 5,000; pass the returned `syncedAt`
+        as `since` next time. Seeded from `backend/server/seed/sender_ids.csv` (example rows only until Phase 9).
+      operationId: getSenderIds
+      parameters:
+        - { $ref: "#/components/parameters/CountryIso" }
+        - { $ref: "#/components/parameters/Since" }
+      responses:
+        "200":
+          description: "Sender IDs (`Cache-Control: public, max-age=3600`)."
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SenderIdsResponse" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/InvalidCountry" }
+
+  /v1/otp-sources:
+    get:
+      tags: [sync]
+      summary: OTP sources (SMS Retriever app hashes and flash-call ranges)
+      description: |
+        Entries updated after `since` (epoch milliseconds). Seeded from `backend/server/seed/` (example rows only
+        until Phase 9).
+      operationId: getOtpSources
+      parameters:
+        - { $ref: "#/components/parameters/Since" }
+      responses:
+        "200":
+          description: "OTP sources (`Cache-Control: public, max-age=3600`)."
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OtpSourcesResponse" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
 components:
   securitySchemes:
     accessToken:
@@ -146,8 +497,8 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: |
-        Access token from verify/refresh, valid 15 minutes (`sub` = user ID, `did` = device ID). Endpoints that need it
-        arrive in the next steps of Phase 4; without a valid token they answer 401 `unauthorized`.
+        Access token from verify/refresh, valid 15 minutes (`sub` = user ID, `did` = device ID). Endpoints that need
+        it answer 401 `unauthorized` without a valid token. Where it is optional, a token that is sent must be valid.
 
   headers:
     RequestId:
@@ -156,6 +507,26 @@ components:
     RetryAfter:
       description: Seconds until the rate-limit window resets.
       schema: { type: integer, minimum: 1 }
+    ETag:
+      description: Strong validator; send it back in `If-None-Match` to get 304 when nothing changed.
+      schema: { type: string }
+    CacheControl:
+      description: How long the response may be cached.
+      schema: { type: string }
+
+  parameters:
+    CountryIso:
+      name: countryIso
+      in: path
+      required: true
+      description: ISO 3166-1 alpha-2 region code (case-insensitive), e.g. BD.
+      schema: { type: string, pattern: '^[A-Za-z]{2}$' }
+    Since:
+      name: since
+      in: query
+      required: false
+      description: Epoch milliseconds; only entries updated later are returned. Omit for everything.
+      schema: { type: integer, minimum: 0, default: 0 }
 
   responses:
     BadRequest:
@@ -166,12 +537,31 @@ components:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
     PayloadTooLarge:
-      description: "`payload_too_large`: the body is larger than 16 KiB."
+      description: "`payload_too_large`: the body is larger than 64 KiB."
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
     UnsupportedMediaType:
       description: "`unsupported_media_type`: send `application/json`."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    Unauthorized:
+      description: "`unauthorized`: missing, invalid or expired access token."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    NotModified:
+      description: Not modified (the `If-None-Match` ETag is current); no body.
+      headers:
+        ETag: { $ref: "#/components/headers/ETag" }
+    InvalidCountry:
+      description: "`invalid_country`: not an ISO 3166-1 alpha-2 code libphonenumber knows."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    ListNotFound:
+      description: "`list_not_found`: no list published for this country (or no such file)."
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
@@ -239,8 +629,185 @@ components:
         accessToken: { type: string, description: JWT (HS256). }
         accessTokenExpiresIn: { type: integer, description: Seconds (900). }
         refreshToken: { type: string, description: Opaque; store encrypted (Android Keystore). Rotates on every refresh. }
-        refreshTokenExpiresIn: { type: integer, description: Seconds (2,592,000 = 30 days). }
+        refreshTokenExpiresIn: { type: integer, description: "Seconds (2,592,000 = 30 days)." }
         tokenType: { type: string, const: Bearer }
+
+    ReportItem:
+      type: object
+      required: [e164, label]
+      properties:
+        e164: { $ref: "#/components/schemas/E164" }
+        label: { type: string, enum: [spam, not_spam] }
+        category:
+          type: string
+          description: Spam reports only.
+          enum: [scam, fraud, telemarketing, loan, debt_collector, robocall, survey, political, charity, nuisance, other]
+        comment: { type: string, maxLength: 280, description: Plain text; trimmed. }
+
+    ReportBatch:
+      type: object
+      required: [reports]
+      properties:
+        reports:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items: { $ref: "#/components/schemas/ReportItem" }
+
+    ReportBatchResponse:
+      type: object
+      required: [accepted]
+      properties:
+        accepted: { type: integer }
+
+    BusinessInfo:
+      type: object
+      required: [name, verified]
+      properties:
+        name: { type: string }
+        category: { type: [string, "null"] }
+        verified: { type: boolean, const: true }
+        callReason: { type: [string, "null"] }
+
+    NumberInfo:
+      type: object
+      description: |
+        `spamScore` (0–1, three decimals), `label` and `category` are null when the number has no reports.
+        `label` is `likely_spam` from 0.85 and `suspicious` from 0.6 (docs/architecture.md §9).
+      required: [reportCount, notSpamCount]
+      properties:
+        name: { type: [string, "null"] }
+        spamScore: { type: [number, "null"], minimum: 0, maximum: 1 }
+        label: { type: [string, "null"], enum: [likely_spam, suspicious, null] }
+        category: { type: [string, "null"] }
+        reportCount: { type: integer, description: Spam reports (one per reporter). }
+        notSpamCount: { type: integer, description: Not-spam reports (one per reporter). }
+        lineType: { type: [string, "null"] }
+        business:
+          oneOf:
+            - { $ref: "#/components/schemas/BusinessInfo" }
+            - { type: "null" }
+
+    BucketEntry:
+      type: object
+      required: [hash, info]
+      properties:
+        hash: { type: string, contentEncoding: base64, description: Full SHA-256 of the E.164 number (32 bytes). }
+        info: { $ref: "#/components/schemas/NumberInfo" }
+
+    BucketResponse:
+      type: object
+      required: [countryCode, bucket, bits, entries]
+      properties:
+        countryCode: { type: integer }
+        bucket: { type: integer }
+        bits: { type: integer }
+        entries:
+          type: array
+          description: Sorted by hash.
+          items: { $ref: "#/components/schemas/BucketEntry" }
+
+    SearchResponse:
+      type: object
+      required: [e164, info]
+      properties:
+        e164: { $ref: "#/components/schemas/E164" }
+        info: { $ref: "#/components/schemas/NumberInfo" }
+
+    ListFileRef:
+      type: object
+      required: [version, url, sha256, createdAt]
+      properties:
+        version: { type: integer }
+        baseVersion: { type: [integer, "null"], description: "Deltas: the version this delta applies to (version − 1)." }
+        url: { type: string, description: Path on this server. }
+        sha256: { type: string, pattern: '^[0-9a-f]{64}$', description: SHA-256 of the whole file. }
+        createdAt: { type: string, format: date-time }
+
+    ListManifest:
+      type: object
+      required: [countryIso, format, version, full, deltas]
+      properties:
+        countryIso: { type: string }
+        format: { type: integer, const: 1, description: List file format revision (docs/architecture.md §13). }
+        version: { type: integer }
+        full: { $ref: "#/components/schemas/ListFileRef" }
+        deltas:
+          type: array
+          description: Newest first.
+          items: { $ref: "#/components/schemas/ListFileRef" }
+
+    DisputeRequest:
+      type: object
+      required: [e164, reason]
+      properties:
+        e164: { $ref: "#/components/schemas/E164" }
+        reason: { type: string, minLength: 1, maxLength: 1000 }
+
+    DisputeResponse:
+      type: object
+      required: [id, status]
+      properties:
+        id: { type: integer }
+        status: { type: string, const: pending }
+
+    UnlistVerifyRequest:
+      type: object
+      required: [e164, code]
+      properties:
+        e164: { $ref: "#/components/schemas/E164" }
+        code: { type: string, pattern: '^[0-9]{6}$' }
+
+    UnlistVerifyResponse:
+      type: object
+      required: [status, processedWithinMinutes]
+      properties:
+        status: { type: string, const: verified }
+        processedWithinMinutes: { type: integer }
+
+    SenderId:
+      type: object
+      required: [header, brandName, category, source, updatedAt]
+      properties:
+        header: { type: string }
+        brandName: { type: string }
+        category: { type: string }
+        source: { type: string }
+        businessId: { type: [string, "null"], format: uuid }
+        updatedAt: { type: integer, description: Epoch milliseconds. }
+
+    SenderIdsResponse:
+      type: object
+      required: [countryIso, syncedAt, senderIds]
+      properties:
+        countryIso: { type: string }
+        syncedAt: { type: integer, description: Pass as `since` next time. }
+        senderIds: { type: array, items: { $ref: "#/components/schemas/SenderId" } }
+
+    OtpSourcesResponse:
+      type: object
+      required: [syncedAt, appHashes, verificationRanges]
+      properties:
+        syncedAt: { type: integer }
+        appHashes:
+          type: array
+          items:
+            type: object
+            required: [hash, packageName, appName, updatedAt]
+            properties:
+              hash: { type: string, description: 11-character SMS Retriever app hash. }
+              packageName: { type: string }
+              appName: { type: string }
+              updatedAt: { type: integer }
+        verificationRanges:
+          type: array
+          items:
+            type: object
+            required: [prefix, provider, updatedAt]
+            properties:
+              prefix: { type: string, description: E.164 prefix used by a flash-call provider. }
+              provider: { type: string }
+              updatedAt: { type: integer }
 
     Problem:
       type: object
@@ -271,3 +838,7 @@ components:
             - not_found
             - method_not_allowed
             - internal_error
+            - invalid_bucket
+            - invalid_country
+            - list_not_found
+            - job_running

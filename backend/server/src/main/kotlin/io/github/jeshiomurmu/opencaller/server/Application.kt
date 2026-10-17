@@ -1,11 +1,14 @@
 package io.github.jeshiomurmu.opencaller.server
 
 import com.auth0.jwt.interfaces.JWTVerifier
+import io.github.jeshiomurmu.opencaller.server.admin.adminModule
 import io.github.jeshiomurmu.opencaller.server.auth.TokenService
 import io.github.jeshiomurmu.opencaller.server.auth.authRoutes
 import io.github.jeshiomurmu.opencaller.server.config.ConfigException
 import io.github.jeshiomurmu.opencaller.server.config.loadConfig
+import io.github.jeshiomurmu.opencaller.server.disputes.disputeRoutes
 import io.github.jeshiomurmu.opencaller.server.health.configureHealthRoutes
+import io.github.jeshiomurmu.opencaller.server.http.ApiJson
 import io.github.jeshiomurmu.opencaller.server.http.ApiProblem
 import io.github.jeshiomurmu.opencaller.server.http.installBodyLimit
 import io.github.jeshiomurmu.opencaller.server.http.installMetrics
@@ -13,9 +16,15 @@ import io.github.jeshiomurmu.opencaller.server.http.installProblemResponses
 import io.github.jeshiomurmu.opencaller.server.http.installRequestIds
 import io.github.jeshiomurmu.opencaller.server.http.metricsModule
 import io.github.jeshiomurmu.opencaller.server.http.respondProblem
+import io.github.jeshiomurmu.opencaller.server.lists.listRoutes
+import io.github.jeshiomurmu.opencaller.server.lookup.lookupRoutes
+import io.github.jeshiomurmu.opencaller.server.reports.reportRoutes
+import io.github.jeshiomurmu.opencaller.server.sync.syncRoutes
+import io.github.jeshiomurmu.opencaller.server.unlist.unlistRoutes
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationStarted
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.jwt.JWTPrincipal
@@ -24,8 +33,11 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.routing.routing
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.serialization.json.Json
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import kotlin.system.exitProcess
 
@@ -44,10 +56,22 @@ fun main() {
             exitProcess(1)
         }
     val deps = ServerDependencies.create(config, Dispatchers.IO)
-    val metrics = embeddedServer(Netty, port = config.http.metricsPort, host = "0.0.0.0") { metricsModule(deps.meterRegistry) }
-    val api = embeddedServer(Netty, port = config.http.port, host = "0.0.0.0") { module(deps) }
+    runBlocking { deps.sync.seedSenderIds() }
+    val metrics =
+        embeddedServer(Netty, port = config.http.metricsPort, host = "0.0.0.0") {
+            metricsModule(deps.meterRegistry)
+            config.admin.token?.let { adminModule(it, deps.jobRunner, deps.jobs) }
+        }
+    val jobScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    val api =
+        embeddedServer(Netty, port = config.http.port, host = "0.0.0.0") {
+            module(deps)
+            // Jobs register their meters only after the API's metrics plugin has configured the registry.
+            monitor.subscribe(ApplicationStarted) { deps.startJobs(jobScope) }
+        }
     Runtime.getRuntime().addShutdownHook(
         Thread {
+            jobScope.cancel()
             api.stop()
             metrics.stop()
             deps.close()
@@ -71,12 +95,18 @@ fun Application.module(deps: ServerDependencies) {
     installProblemResponses()
     installBodyLimit()
     install(ContentNegotiation) {
-        json(Json { ignoreUnknownKeys = true })
+        json(ApiJson)
     }
     installAccessAuth(deps.tokens.verifier)
     configureHealthRoutes(deps.config.version)
     routing {
         authRoutes(deps.auth)
+        reportRoutes(deps.reports)
+        lookupRoutes(deps.lookup, deps.search, deps.tokens.verifier)
+        listRoutes(deps.lists)
+        disputeRoutes(deps.disputes)
+        unlistRoutes(deps.unlist)
+        syncRoutes(deps.sync)
     }
 }
 

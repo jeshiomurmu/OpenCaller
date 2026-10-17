@@ -1,0 +1,7 @@
+# SMS sender-ID registry served by GET /v1/sender-ids/{countryIso}. EXAMPLE ROWS ONLY — every brand below is
+# fake; the real registry arrives in Phase 9. Columns (no quoting, no commas inside values):
+# country_iso,header,brand_name,category,source,updated_at
+BD,EXMPLBANK,Example Bank (fake),bank,seed-example,2026-10-16T00:00:00Z
+BD,EXMPLTEL,Example Telecom (fake),telecom,seed-example,2026-10-16T00:00:00Z
+IN,AX-EXMPLE,Example Shop (fake),shopping,seed-example,2026-10-16T00:00:00Z
+US,99999,Example Alerts (fake),alerts,seed-example,2026-10-16T00:00:00Z

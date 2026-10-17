@@ -122,10 +122,39 @@ Where they run (Phase 3):
 | TC-API-010 | Unlist | Verified unlist removes name within job run; number keeps spam score | U |
 | TC-API-011 | Load | Bucket p95 < 50 ms server time with 1M rows, 200 rps | Load |
 
-Where they run (Phase 4, part 1):
+Where they run (Phase 4):
 
-- **`./gradlew check` in `backend/server`** (CI `backend` job; Docker required): Testcontainers PostgreSQL 18 and Redis 8.8 with the real Flyway migration. TC-API-001 (`RateLimitTest`: 4th start → 429 + `Retry-After`, plus the 10/hour/IP limit), TC-API-002 (`OtpAttemptsTest`: 5 wrong codes invalidate the code; single use; expiry; malformed codes don't use an attempt), TC-API-003 (`RefreshRotationTest`: old token rejected after rotation, reuse revokes the device's chain, other devices unaffected, 30-day expiry), TC-API-004 on the auth endpoints (`ValidationTest`; `/v1/reports` comes in part 2). Also: `AuthFlowTest` (tokens, users/devices, codes stored only as HMAC, access-token auth and expiry, failed delivery keeps no code), `ServerSchemaTest` (V1 = `architecture.md` §7; Exposed = database), `ConfigTest` (fail fast, production refuses the log provider), `TwilioOtpProviderTest` (request format against a local stand-in), `JsonLogEncoderTest` (redaction), `OpenApiSpecTest` (every route and problem code documented), `HealthRoutesTest` (metrics on the internal port, each request counted once).
-- **`scripts/smoke.sh`** (CI `compose smoke` job, after `/health`): health, request IDs, invalid number → 400 problem+json, start → verify (code read from the development log) → refresh, reuse → 401 and chain revoked, 4th start → 429 with `Retry-After`, metrics only on the internal port.
+- **`./gradlew check` in `backend/server`** (CI `backend` job; Docker required): Testcontainers PostgreSQL 18, Redis 8.8 and MinIO (`cgr.dev/chainguard/minio:latest`, as in compose; `MINIO_TEST_IMAGE` overrides it) with the real Flyway migrations. 111 tests:
+  - TC-API-001 (`RateLimitTest`: 4th start → 429 + `Retry-After`, plus the 10/hour/IP limit), TC-API-002 (`OtpAttemptsTest`), TC-API-003 (`RefreshRotationTest`).
+  - TC-API-004 on `/v1/reports` (`ReportsApiTest.invalidNumbersAreRejected`: six malformed or invalid numbers in a batch → 400 `invalid_phone_number` naming `reports[1].e164`, nothing stored) and on the auth endpoints (`ValidationTest`). `ReportsApiTest` also covers batch size 1–50, labels, the category whitelist, comment length, the default trust row (0.5) and the 100/day limit counted per report.
+  - TC-API-005 (`BayesianScorerTest`): hand-computed posteriors (written out in the test's KDoc) within ±1e-6, configurable priors and half-life, one report per reporter, category choice, §9 labels.
+  - TC-API-006 (`ScoringJobTest.verifiedBusinessesAreCappedAndQueuedForReviewOnce`): 30 spam reports on a verified business number → score 0.39 (no label), one pending dispute with the automatic reason, and no second one on the next run; a business awaiting verification is scored normally. `ScoringJobTest` also covers rescoring from the watermark, time decay, indexing of users missing from the lookup index and unlist processing. `JobRunnerTest`: only one of two instances runs a job (PostgreSQL advisory lock), the lock is released after a failure.
+  - TC-API-007 (`BucketLookupTest`): every 12- and 16-bit row of `fixtures/bucket_vectors.csv` (the app's `BucketHasher` vectors) is found in its bucket under its full hash; only the requested bucket and calling code are returned; ETag → 304, weak and listed validators match, new data → new ETag; invalid buckets → 400.
+  - TC-API-008 (`BucketLookupTest.profileVisibilityIsRespected`): without a token only the `everyone` name; with one also `registered_only`; `nobody` never (with spam reports its number is listed without a name); `private` caching with a token.
+  - TC-API-009 (`SearchApiTest`): 50 searches pass, the 51st → 429 with `Retry-After` ≈ 1 day, invalid numbers don't use the quota, each user has their own; `profile_views` row (kind `search`) unless incognito or searching your own number.
+  - TC-API-010 (`UnlistTest`): unlist start → verify → the name stays until the job runs → gone from bucket and search, spam score and report count unchanged; business names are hidden too; unlist codes are separate from sign-in codes; HTML form with spaces in the number, wrong code, escaping.
+  - Lists (`ListFormatTest`, `ListBuilderTest`): the encoder produces exactly the bytes of `docs/architecture.md` §13 (expected bytes made by a separate Python script written from §13); corrupt files are rejected; build v1 → no change, no new version → changes → v2 full + delta, and v1 + delta = v2; manifest, file downloads with SHA-256, ETag and immutable caching, all against a real MinIO.
+  - Storage (`SigV4SignerTest`, `S3ObjectStoreTest`): AWS Signature V4 equals botocore's on `fixtures/sigv4_vectors.csv`; put/get/overwrite/missing against MinIO (which checks every signature); wrong secret and unreachable store fail.
+  - Also: `DisputesApiTest`, `SyncApiTest` (seed files valid and clearly fake; `since` filtering), `AdminRoutesTest`, `AuthFlowTest` (every documented token field is sent), `ServerSchemaTest` (V1 = §7; Exposed = database after V2), `ConfigTest`, `TwilioOtpProviderTest`, `JsonLogEncoderTest`, `OpenApiSpecTest`, `HealthRoutesTest`.
+- **`scripts/smoke.sh`** (CI `compose smoke` job, after `/health`; curl + jq): health and request IDs; sign-in, refresh rotation and reuse, 4th start → 429; reports (no token → 401, invalid number → 400, valid → 202); scoring run through the admin endpoint; bucket lookup of the reported number by its hash, ETag → 304, public/private caching, invalid bucket; search; list build → manifest → download and SHA-256 check; dispute; unlist through the HTML form (number typed with spaces) and the API, processed by the next job run; sender IDs and OTP sources with `since`; metrics only on the internal port, including the job metrics.
+- **TC-API-011, load (manual, `backend/load/`)**: `backend/load/seed.sh` loads 1,000,000 synthetic +880 numbers (20 % with reports, 100,000 named users with mixed visibility; about 15 numbers per 16-bit bucket), then k6 runs `backend/load/bucket.js` (10 s warm-up at 50 rps, then 200 rps for 60 s on random buckets, a quarter of them with an access token) and `backend/load/server_p95.py` reads the server's own latency histogram from two `/metrics` scrapes.
+
+TC-API-011 results:
+
+| Date | Commit | Setup | Requests | k6 p95 / p99 / max (client) | Server p95 / p99 (histogram) | Errors | Result |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-17 | Phase 4 part 2 branch | Agent sandbox: compose stack (PostgreSQL 18, Redis 8.8, MinIO, server) and k6 2.3.0 on one host, 4 vCPU Xeon 2.8 GHz, 15 GB RAM; 1M seeded numbers | 12,001 measured at 200 rps (60 s) | 3.79 / 5.51 / 41.6 ms | ≤ 3.1 / ≤ 4.2 ms | 0 % | PASS (< 50 ms) |
+
+"Server p95 ≤ x" is the upper bound of the histogram bucket that holds the 95th percentile (Micrometer percentile histogram), over all 12,501 requests including warm-up. Commands:
+
+```bash
+docker compose -f infra/docker/compose.yml up -d --build --wait
+backend/load/seed.sh
+docker compose -f infra/docker/compose.yml exec -T server curl -fsS localhost:9090/metrics > before.txt
+docker run --rm --network host -e ACCESS_TOKEN="$TOKEN" -v "$PWD/backend/load:/load:ro" grafana/k6:2.3.0 run /load/bucket.js
+docker compose -f infra/docker/compose.yml exec -T server curl -fsS localhost:9090/metrics > after.txt
+python3 backend/load/server_p95.py before.txt after.txt
+```
 
 ### Sync, lookup, reporting (Phase 5)
 

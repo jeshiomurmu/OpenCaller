@@ -1,0 +1,6 @@
+# Number prefixes used by flash-call / missed-call verification providers, served by GET /v1/otp-sources.
+# EXAMPLE ROWS ONLY — +1 555 01xx numbers are reserved for fiction; real data arrives in Phase 9.
+# Columns (no quoting, no commas in values):
+# prefix,provider,updated_at
++1555010,Example Flash Call (fake),2026-10-16T00:00:00Z
++1555011,Example Missed Call (fake),2026-10-16T00:00:00Z

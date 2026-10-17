@@ -1,0 +1,7 @@
+# AWS Signature V4 (S3) vectors for SigV4SignerTest, generated with botocore 1.43.114 (AWS's Python SDK, S3SigV4Auth)
+# by gen_sigv4_vectors.py next to this file. Fake credentials: test-access-key / test-secret-key/not+real.
+# method,url,payload_utf8,amz_date,region,signature
+PUT,http://minio:9000/opencaller/lists/BD/3/full.ocsl,hello list,20261016T120000Z,us-east-1,5abad477b65576c1cc34c61f2f3f04cbb09b3871a4279e9b4a8819c0ca90cc18
+GET,http://minio:9000/opencaller/lists/BD/3/full.ocsl,,20261016T120000Z,us-east-1,e5e93ccbd3029fad2c780debcd75ea8731baa5a998126b93dadc5ec23fb0876b
+PUT,http://minio:9000/opencaller,,20261231T235959Z,us-east-1,f08bb8f160d2f4d8bcdc704bfa171a700b2b30a4c177bb9b5fc7b34362a9d647
+GET,https://s3.example.com/my-bucket/a%20b/c%2Bd.txt,,20260101T000000Z,eu-west-1,15b0ebb0482ce39bea07856bdb7ba0da6f9b036e72139a1b10994a809341d4a4

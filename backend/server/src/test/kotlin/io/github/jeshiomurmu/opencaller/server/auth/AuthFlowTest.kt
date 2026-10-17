@@ -21,6 +21,9 @@ import io.ktor.server.auth.principal
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -33,6 +36,20 @@ import kotlin.time.Duration.Companion.minutes
 /** Start → verify → refresh, access tokens, hashed storage and delivery failures. */
 class AuthFlowTest {
     private val number = "+12015550123"
+
+    // openapi.yaml marks tokenType as required: it must be in the JSON even though it has a default value.
+    @Test
+    fun theTokenResponseHasEveryDocumentedField() =
+        apiTest { server ->
+            client.postJson("/v1/auth/start", """{"e164":"$number"}""")
+            val body =
+                client
+                    .postJson("/v1/auth/verify", """{"e164":"$number","code":"${server.otp.lastCodeFor(number)}"}""")
+                    .bodyAsText()
+            val fields = Json.parseToJsonElement(body).jsonObject
+            assertEquals(setOf("accessToken", "accessTokenExpiresIn", "refreshToken", "refreshTokenExpiresIn", "tokenType"), fields.keys)
+            assertEquals("Bearer", fields["tokenType"]!!.jsonPrimitive.content)
+        }
 
     @Test
     fun signInIssuesTokensForANewUserAndDevice() =

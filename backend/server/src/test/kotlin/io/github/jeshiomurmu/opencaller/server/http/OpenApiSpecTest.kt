@@ -3,7 +3,6 @@ package io.github.jeshiomurmu.opencaller.server.http
 import io.github.jeshiomurmu.opencaller.server.testing.apiTest
 import io.ktor.server.application.plugin
 import io.ktor.server.routing.HttpMethodRouteSelector
-import io.ktor.server.routing.RoutingNode
 import io.ktor.server.routing.RoutingRoot
 import io.ktor.server.routing.getAllRoutes
 import java.io.File
@@ -38,7 +37,7 @@ class OpenApiSpecTest {
                 routes =
                     plugin(RoutingRoot).getAllRoutes().mapNotNull { route ->
                         val method = (route.selector as? HttpMethodRouteSelector)?.method ?: return@mapNotNull null
-                        pathOf(route) to method.value
+                        routePath(route) to method.value
                     }
             }
             startApplication()
@@ -68,7 +67,4 @@ class OpenApiSpecTest {
         assertTrue(used.size >= 10, "found only $used")
         used.forEach { code -> assertTrue(code in enum, "problem code $code is missing from openapi.yaml") }
     }
-
-    // Ktor prints a route as its full path plus selectors, e.g. "/v1/auth/start/(method:POST)".
-    private fun pathOf(route: RoutingNode): String = route.toString().substringBefore("/(method:").ifEmpty { "/" }
 }

@@ -23,5 +23,10 @@ value class E164 private constructor(
             val canonical = util.format(number, PhoneNumberUtil.PhoneNumberFormat.E164)
             return if (util.isValidNumber(number) && canonical == raw) E164(canonical) else null
         }
+
+        /** Like [parseOrNull] but ignores spaces, dashes, dots and brackets people type, e.g. `+880 1712-345678`. */
+        fun parseLenient(raw: String?): E164? = parseOrNull(raw?.trim()?.filterNot { it in TYPING_SEPARATORS })
+
+        private const val TYPING_SEPARATORS = " -.()\u00A0"
     }
 }

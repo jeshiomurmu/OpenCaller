@@ -201,7 +201,7 @@ server: returns all entries in bucket: [{ hash: base64(h_full), info: {...} }]  
 client: match full hash locally; cache bucket in Room
 ```
 
-The server learns country code + bucket (thousands of candidate numbers), never the number. Explicit search (F-ID-03) is different: the user typed the number, the server sees it, it is rate-limited and logged for "who searched me" unless incognito.
+The response wraps the entries: `{countryCode, bucket, bits, entries: [{hash, info}]}` (`openapi.yaml`, `BucketResponse`); entries are sorted by hash and only numbers with something to show (spam data, a visible name or a verified business) are included. The server learns country code + bucket (thousands of candidate numbers), never the number. Explicit search (F-ID-03) is different: the user typed the number, the server sees it, it is rate-limited and logged for "who searched me" unless incognito.
 
 ### 4.7 Sign-up
 
@@ -386,6 +386,10 @@ CREATE TABLE list_versions (country_iso CHAR(2), version BIGINT, kind TEXT /* fu
 
 Data retention: raw reports 18 months then aggregated; profile views 90 days; recordings on server ≤ 1 h; deleted accounts purged ≤ 30 days.
 
+Later migrations (V1 stays exactly the SQL above): `V2__jobs_and_lookup_indexes.sql` adds `job_state (name TEXT PRIMARY KEY, watermark TIMESTAMPTZ NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now())` for the scoring job's progress and indexes on `reports (created_at)`, `number_reputation (updated_at)`, `number_reputation (spam_score)`, `unlist_requests (e164)`, `disputes (e164, status)` and `profile_views (viewed_user_id, at)`.
+
+`number_reputation` doubles as the lookup index: every signed-up user and business number gets a row (no reports yet) so bucket lookups can find names; the scoring job adds any that are missing.
+
 ## 8. API (v1, JSON over HTTPS)
 
 | Method & path | Auth | Purpose |
@@ -394,6 +398,7 @@ Data retention: raw reports 18 months then aggregated; profile views 90 days; re
 | `POST /v1/auth/verify` | none | Verify OTP → tokens |
 | `POST /v1/auth/refresh` | refresh | Rotate tokens |
 | `GET /v1/lists/{countryIso}/manifest` | optional | Latest full/delta/extended list versions + URLs + sha256 |
+| `GET /v1/lists/{countryIso}/files/{version}/{full|delta}` | none | List file (§13), immutable |
 | `GET /v1/lookup/buckets/{cc}/{bucketId}` | optional | k-anonymous bucket (§4.6); `ETag` support |
 | `GET /v1/numbers/{e164}` | access | Explicit search; quota; records "searched" unless incognito |
 | `POST /v1/reports` | access | Batch of reports |
@@ -405,6 +410,7 @@ Data retention: raw reports 18 months then aggregated; profile views 90 days; re
 | `POST /v1/contact-requests`, `POST /v1/contact-requests/{id}/{approve|deny}` | access | F-SO-05 |
 | `POST /v1/business/claims`, `GET /v1/business/{id}` | access / none | F-BZ-01/02 |
 | `POST /v1/disputes`, `POST /v1/unlist/start`, `POST /v1/unlist/verify` | access / none | F-PR-16/17 |
+| `GET /unlist`, `POST /unlist`, `POST /unlist/verify` | none | Unlist web form (server-rendered HTML, no app needed) |
 | `POST /v1/billing/verify` | access | Play purchase token verification |
 | `POST /v1/family`, `POST /v1/family/{id}/invite`, `POST /v1/family/alerts` | access | F-PR-14 |
 | `POST /v1/voip/token` | access | LiveKit token |
@@ -422,6 +428,8 @@ P(spam | n) = (α0 + Σ wᵢ·e^(−λ·tᵢ)·sᵢ) / (α0 + β0 + Σ wᵢ·e^(
 ```
 
 `sᵢ` 1 for spam, 0 for not-spam; `wᵢ` reporter trust; `tᵢ` report age; half-life 30 days; priors by number range and line type. Blended with a LightGBM behaviour model (honeypot hits, report bursts, distinct reporters, STIR failure rate reported by clients as aggregate counters). Thresholds: `≥ 0.85` = Likely spam, `0.6–0.85` = Suspicious. Verified businesses are never auto-labelled spam; they go to human review.
+
+Implementation (Phase 4, `scoring/`): the Kotlin job runs every 15 minutes under a PostgreSQL advisory lock (one server instance at a time) and rescores numbers with reports newer than its watermark plus numbers not rescored for a day (so decay shows). Defaults, all configurable by environment variable: α0 = 1, β0 = 2 (prior mean 1/3), half-life 30 days, default reporter trust 0.5. Only each reporter's latest report on a number counts. A verified business number (business `approved`) is capped at 0.39, below every threshold the apps use (the app's lowest is 0.4), and one pending dispute is opened for human review. The same run processes verified unlist requests. Priors by number range and line type wait for line-type data (Phase 9); the LightGBM blend is a later phase.
 
 ## 10. Privacy invariants (tested in CI where possible)
 
@@ -441,3 +449,48 @@ P(spam | n) = (α0 + Σ wᵢ·e^(−λ·tᵢ)·sᵢ) / (α0 + β0 + Σ wᵢ·e^(
 ## 12. Observability
 
 Server: structured JSON logs, Prometheus metrics endpoint (request latency, lookup p95, scoring lag), Grafana dashboards in `infra/docker`. App: local debug screen (Settings → About → tap version 7×) with screening latency histogram and last 100 decisions.
+
+## 13. List file format
+
+Per-country spam lists (`GET /v1/lists/{countryIso}/manifest`) are binary files built nightly by the server (`lists/ListFormat.kt`, `lists/ListBuilder.kt`) and stored in MinIO as `lists/{ISO}/{version}/full.ocsl` and `lists/{ISO}/{version}/delta.ocsl`. A number is listed when its spam score is at least 0.4 (`LIST_MIN_SCORE`) and it has spam reports; its country is libphonenumber's region for it (non-geographic numbers such as +800 are not listed). A country gets a new version only when its list changed.
+
+All integers are big-endian and unsigned.
+
+| Field | Size (bytes) | Meaning |
+| --- | --- | --- |
+| magic | 4 | ASCII `OCSL` |
+| format | 1 | Format revision, `1` |
+| kind | 1 | `1` = full list, `2` = delta |
+| country | 2 | ISO 3166-1 alpha-2, ASCII upper case (e.g. `BD`) |
+| version | 8 | List version, starting at 1 and increasing by 1 per published change |
+| baseVersion | 8 | Delta: the version it applies to (`version − 1`); full: `0` |
+| createdAt | 8 | Build time, seconds since the Unix epoch (UTC) |
+| categoryCount | 1 | Number of category names that follow (0–254) |
+| categories | variable | `categoryCount` × (length u8, 1–255, then UTF-8 bytes), sorted; entries refer to them by index |
+| entryCount | 4 | Number of entries |
+| removalCount | 4 | Number of removals (always 0 in a full list) |
+| entries | 14 × entryCount | Sorted by number, strictly ascending (see below) |
+| removals | 8 × removalCount | Numbers to delete, sorted strictly ascending (delta only) |
+| sha256 | 32 | SHA-256 of every byte before it |
+
+Entry (14 bytes):
+
+| Field | Size | Meaning |
+| --- | --- | --- |
+| number | 8 | The E.164 number without `+`, as an integer (`+8801712345678` → 8801712345678; at most 15 digits) |
+| score | 1 | Spam score in whole percent, 0–100, rounded down (0.849 → 84) |
+| category | 1 | Index into `categories`, or `0xFF` for none |
+| reportCount | 4 | Spam reports (one per reporter) |
+
+Applying a delta: start from version `baseVersion`, insert or replace every entry (by number), delete every removal; the result is exactly the full list of `version`. The manifest lists the latest full file and the deltas of the last 14 versions with each file's SHA-256 (of the whole file, trailer included), so an app checks the download against the manifest and the file against its own trailer. An app more than 14 versions behind, or holding no list, downloads the full file.
+
+Example (full list, BD, version 3, built 2026-10-16T12:00:00Z, entries +12015550123 at 91 % "scam" with 214 reports and +8801712345678 at 62 % with 7 reports; 106 bytes, `ListFormatTest`):
+
+```
+4f43534c 01 01 4244 0000000000000003 0000000000000000 000000006ad211c0
+01 04 7363616d
+00000002 00000000
+00000002cc2ebeab 5b 00 000000d6
+000008014ef0124e 3e ff 00000007
+0447feb7d1a5f7f6e779d9dda92dfea006ae9807cc917f136402a045dba1382d
+```

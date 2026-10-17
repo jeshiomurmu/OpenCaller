@@ -1,10 +1,13 @@
 package io.github.jeshiomurmu.opencaller.server.auth
 
-import io.github.jeshiomurmu.opencaller.server.auth.otp.OtpCheck
 import io.github.jeshiomurmu.opencaller.server.auth.otp.OtpDeliveryException
 import io.github.jeshiomurmu.opencaller.server.auth.otp.OtpService
+import io.github.jeshiomurmu.opencaller.server.auth.otp.invalidCodeFormat
+import io.github.jeshiomurmu.opencaller.server.auth.otp.toProblem
 import io.github.jeshiomurmu.opencaller.server.http.ApiProblem
-import io.github.jeshiomurmu.opencaller.server.redis.RateDecision
+import io.github.jeshiomurmu.opencaller.server.http.enforce
+import io.github.jeshiomurmu.opencaller.server.http.invalidNumber
+import io.github.jeshiomurmu.opencaller.server.http.requireValid
 import io.github.jeshiomurmu.opencaller.server.redis.RateLimit
 import io.github.jeshiomurmu.opencaller.server.redis.RateLimiter
 import io.ktor.http.HttpStatusCode
@@ -61,9 +64,9 @@ class AuthService(
         request: StartRequest,
         clientIp: String,
     ): StartResponse {
-        enforce(rateLimiter.hit(START_PER_IP, clientIp))
+        enforce(rateLimiter.hit(START_PER_IP, clientIp), TOO_MANY_CODES)
         val number = E164.parseOrNull(request.e164) ?: throw invalidNumber()
-        enforce(rateLimiter.hit(START_PER_NUMBER, number.value))
+        enforce(rateLimiter.hit(START_PER_NUMBER, number.value), TOO_MANY_CODES)
         try {
             otp.start(number)
         } catch (e: OtpDeliveryException) {
@@ -82,16 +85,14 @@ class AuthService(
     suspend fun verify(request: VerifyRequest): TokenResponse {
         val number = E164.parseOrNull(request.e164) ?: throw invalidNumber()
         val flavor = request.flavor ?: UNKNOWN_FLAVOR
-        requireValid(OtpService.isWellFormed(request.code)) {
-            ApiProblem(HttpStatusCode.BadRequest, "invalid_code_format", "The code must be 6 digits")
-        }
+        requireValid(OtpService.isWellFormed(request.code), ::invalidCodeFormat)
         requireValid((request.integrityToken?.length ?: 0) <= MAX_INTEGRITY_TOKEN_LENGTH) {
             ApiProblem(HttpStatusCode.BadRequest, "invalid_request", "integrityToken is too long")
         }
         requireValid(flavor in FLAVORS) {
             ApiProblem(HttpStatusCode.BadRequest, "invalid_request", "flavor must be one of ${FLAVORS.joinToString()}")
         }
-        otpProblem(otp.verify(number, request.code))?.let { throw it }
+        otp.verify(number, request.code).toProblem()?.let { throw it }
         val refreshToken = tokens.newRefreshToken()
         val session = repository.signIn(number, flavor, TokenService.hash(refreshToken), tokens.refreshExpiry())
         return issue(session, refreshToken)
@@ -106,35 +107,6 @@ class AuthService(
         return (rotation as? Rotation.Rotated)?.let { issue(it.session, newToken) } ?: throw rotationProblem(rotation)
     }
 
-    private fun otpProblem(check: OtpCheck): ApiProblem? =
-        when (check) {
-            OtpCheck.Valid -> {
-                null
-            }
-
-            is OtpCheck.Wrong -> {
-                ApiProblem(HttpStatusCode.BadRequest, "invalid_code", "Wrong code", "${check.attemptsLeft} attempts left.")
-            }
-
-            OtpCheck.Invalidated -> {
-                ApiProblem(
-                    HttpStatusCode.BadRequest,
-                    "code_invalidated",
-                    "Too many wrong attempts",
-                    "Request a new code.",
-                )
-            }
-
-            OtpCheck.Missing -> {
-                ApiProblem(
-                    HttpStatusCode.BadRequest,
-                    "code_expired",
-                    "No valid code for this number",
-                    "Request a new code.",
-                )
-            }
-        }
-
     private fun rotationProblem(rotation: Rotation): ApiProblem =
         if (rotation is Rotation.Reused) {
             ApiProblem(
@@ -147,13 +119,6 @@ class AuthService(
             invalidRefreshToken()
         }
 
-    private inline fun requireValid(
-        condition: Boolean,
-        problem: () -> ApiProblem,
-    ) {
-        if (!condition) throw problem()
-    }
-
     private fun issue(
         session: Session,
         refreshToken: String,
@@ -161,26 +126,6 @@ class AuthService(
         val access = tokens.accessToken(session.userId, session.deviceId)
         return TokenResponse(access.token, tokens.accessTtl.inWholeSeconds, refreshToken, tokens.refreshTtl.inWholeSeconds)
     }
-
-    private fun enforce(decision: RateDecision) {
-        if (decision is RateDecision.Limited) {
-            throw ApiProblem(
-                HttpStatusCode.TooManyRequests,
-                "rate_limited",
-                "Too many codes requested",
-                "Try again in ${decision.retryAfterSeconds} seconds.",
-                retryAfterSeconds = decision.retryAfterSeconds,
-            )
-        }
-    }
-
-    private fun invalidNumber() =
-        ApiProblem(
-            HttpStatusCode.BadRequest,
-            "invalid_phone_number",
-            "Not a valid phone number",
-            "Send the number in E.164 format, e.g. +14155550123.",
-        )
 
     private fun invalidRefreshToken() =
         ApiProblem(
@@ -201,6 +146,7 @@ class AuthService(
         /** App build flavors a device may register with ([UNKNOWN_FLAVOR] when the app doesn't say). */
         val FLAVORS = setOf("foss", "play", "unknown")
         private const val UNKNOWN_FLAVOR = "unknown"
+        private const val TOO_MANY_CODES = "Too many codes requested"
         private const val MAX_INTEGRITY_TOKEN_LENGTH = 4096
         private const val MAX_REFRESH_TOKEN_LENGTH = 128
         private val log = LoggerFactory.getLogger(AuthService::class.java)
