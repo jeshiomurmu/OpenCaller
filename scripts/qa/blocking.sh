@@ -311,6 +311,13 @@ else
 fi
 open_app
 tap_text "Me"
+# The Me tab scrolls (account section, then settings): bring "About" on screen.
+read -r screen_w screen_h <<< "$(adb shell wm size | tr -d '\r' | grep -oE '[0-9]+x[0-9]+' | tail -1 | tr x ' ')"
+for _ in 1 2 3 4; do
+  if dump | grep -qF 'text="About'; then break; fi
+  adb shell input swipe $((screen_w / 2)) $((screen_h * 3 / 4)) $((screen_w / 2)) $((screen_h / 4)) 300
+  sleep 1
+done
 wait_for_text "About"
 for _ in $(seq 1 7); do
   tap_text "About"

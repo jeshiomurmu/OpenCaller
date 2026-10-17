@@ -25,7 +25,7 @@ internal fun QuotaIndicator(
     Text(
         text =
             if (quota.remaining == 0) {
-                stringResource(R.string.search_quota_used, quota.limit)
+                pluralStringResource(R.plurals.search_quota_used, quota.limit, quota.limit)
             } else {
                 pluralStringResource(R.plurals.search_quota_left, quota.remaining, quota.remaining, quota.limit)
             },

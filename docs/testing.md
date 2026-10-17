@@ -160,12 +160,23 @@ python3 backend/load/server_p95.py before.txt after.txt
 
 | ID | Title | Expected | Type |
 | --- | --- | --- | --- |
-| TC-SYNC-001 | Delta apply | v1 + delta → equals full v2 (row-for-row) | R |
-| TC-SYNC-002 | Corrupt download | Wrong sha256 → rejected, old list kept | R |
-| TC-LOOK-001 | Lookup timeout | Server delay 2 s → call rings with local info | I |
-| TC-LOOK-002 | Privacy | Intercept traffic during incoming call: no full number in any request | I (OkHttp MockWebServer assertion) |
-| TC-REP-001 | Offline report | Report while offline → synced when online | R |
-| TC-E2E-001 | Report → block | Device A reports, job runs, device B syncs and blocks | E2E |
+| TC-SYNC-001 | Delta apply | v1 + delta → equals full v2 (row-for-row) | R — `core:data` `SpamListSyncTest` (v1 → v3 through two deltas equals the full v3 list row for row; the requested paths are checked) |
+| TC-SYNC-002 | Corrupt download | Wrong sha256 → rejected, old list kept | R — `SpamListSyncTest` (wrong SHA-256, altered checksum trailer, wrong version: list and sync state unchanged); `core:network` `SpamListFormatTest` decodes the server's own vectors |
+| TC-LOOK-001 | Lookup timeout | Server delay 2 s → call rings with local info | U + R — `ScreeningEngineTest.tcLook001SlowLiveLookupStillRingsWithLocalInfo` (engine budget) and `LiveLookupTest` (MockWebServer delays 2 s: no answer in under 1.5 s) |
+| TC-LOOK-002 | Privacy | Intercept traffic during incoming call: no full number in any request | R — `core:telephony` `LookupPrivacyTest`: real engine + live lookup against MockWebServer, signed out and signed in; no path, query, header or body contains the E.164 number, its digits or its national form; the only request is `/v1/lookup/buckets/880/<bucket>?bits=16` with no body |
+| TC-REP-001 | Offline report | Report while offline → synced when online | R — `ReportUploadTest` (queued against an unreachable server, sent once online with the expected JSON; waits for sign-in; honours `Retry-After`; batches of 50) |
+| TC-E2E-001 | Report → block | Device A reports, job runs, device B syncs and blocks | E2E — CI job `e2e`: `scripts/e2e/report_to_block.sh` on two API 36 emulators and the compose stack. B rings before any report; A signs in (code from the server log), reports and uploads; scoring and list jobs run; B updates its list and rejects the next call (`spam_list`); a second report is caught by B's live lookup before the next list (`network`) |
+
+Sign-in, search, disputes and the report sheet are covered by view model tests (`SignInViewModelTest`,
+`SearchViewModelTest`, `DisputeViewModelTest`, `BlockingViewModelsTest`) and `WhyReasonsTest`.
+
+Run TC-E2E-001 locally (two emulators booted as `emulator-5554` and `emulator-5556`, stack started like the compose
+smoke test with `OTP_PROVIDER=log` and `ADMIN_TOKEN` set):
+
+```bash
+cd android && ./gradlew assembleFossDebug && cd ..
+scripts/e2e/report_to_block.sh android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug
+```
 
 ### Dialer / in-call / log (Phase 6)
 

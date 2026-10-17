@@ -78,7 +78,7 @@ jobs:
           version="${TAG#v}"
           awk -v v="$version" '
             $0 ~ "^## \\[" v "\\]" { on = 1; next }
-            on && /^## \[/ { exit }
+            on && /^(## )?\[/ { exit }
             on { print }
           ' CHANGELOG.md > dist/notes.md
           {

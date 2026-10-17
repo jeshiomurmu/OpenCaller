@@ -144,7 +144,7 @@ private fun ProblemMessage(
         }
 
         SearchProblem.QuotaUsed -> {
-            Message(stringResource(R.string.search_quota_used, SEARCHES_PER_DAY))
+            Message(pluralStringResource(R.plurals.search_quota_used, SEARCHES_PER_DAY, SEARCHES_PER_DAY))
         }
 
         SearchProblem.SignInNeeded -> {

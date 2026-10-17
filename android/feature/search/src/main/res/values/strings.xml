@@ -8,7 +8,10 @@
         <item quantity="one">%1$d of %2$d searches left today</item>
         <item quantity="other">%1$d of %2$d searches left today</item>
     </plurals>
-    <string name="search_quota_used">You\'ve used today\'s %1$d searches. More tomorrow, or become a supporter.</string>
+    <plurals name="search_quota_used">
+        <item quantity="one">You\'ve used today\'s %1$d search. More tomorrow, or become a supporter.</item>
+        <item quantity="other">You\'ve used today\'s %1$d searches. More tomorrow, or become a supporter.</item>
+    </plurals>
     <string name="search_privacy">The number you type is sent to OpenCaller to look it up. Calls are checked differently: during a call, only a short code is sent.</string>
     <string name="search_offline">You\'re offline. Blocking still works with your saved spam list.</string>
     <string name="search_server_error">Something went wrong on our side. Your protection still works offline.</string>
