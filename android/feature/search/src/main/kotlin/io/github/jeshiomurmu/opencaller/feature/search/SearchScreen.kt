@@ -82,9 +82,17 @@ fun SearchScreen(
                 // Nothing to show until the state is loaded.
             }
 
-            !state.serverConfigured -> Message(stringResource(R.string.search_not_connected))
-            !state.signedIn -> SignInNeeded(navigation.onSignIn)
-            else -> SearchForm(state = state, onSearch = onSearch, navigation = navigation, onWhy = { explaining = true })
+            !state.serverConfigured -> {
+                Message(stringResource(R.string.search_not_connected))
+            }
+
+            !state.signedIn -> {
+                SignInNeeded(navigation.onSignIn)
+            }
+
+            else -> {
+                SearchForm(state = state, onSearch = onSearch, navigation = navigation, onWhy = { explaining = true })
+            }
         }
     }
     val found = state.found

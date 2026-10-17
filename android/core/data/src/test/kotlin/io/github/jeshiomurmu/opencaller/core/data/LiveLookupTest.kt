@@ -58,7 +58,7 @@ class LiveLookupTest {
                         """{"hash":"$hash","info":{"name":"Registered Name","spamScore":0.91,"category":"loan","reportCount":214}}""",
                 ),
             )
-            val result = assertNotNull(repository().lookup(number))
+            val result = checkNotNull(repository().lookup(number))
             assertEquals(0.91f, result.spamScore!!, 1e-6f)
             assertEquals("loan", result.category)
             assertEquals(214, result.reportCount)
@@ -70,7 +70,7 @@ class LiveLookupTest {
             assertNotNull(db.lookupBucketDao().find(880, 25856))
 
             // Within 24 h: from the cache, no request.
-            val cached = assertNotNull(repository().lookup(number))
+            val cached = checkNotNull(repository().lookup(number))
             assertTrue(cached.fromCache)
             assertEquals(1, server.requestCount)
 
@@ -85,7 +85,7 @@ class LiveLookupTest {
     fun aNumberAbsentFromItsBucketIsUnknownAndCachedAsSuch() =
         runBlocking {
             server.enqueue(bucket("""{"hash":"BBBB","info":{"reportCount":3,"spamScore":0.5}}"""))
-            val result = assertNotNull(repository().lookup(number))
+            val result = checkNotNull(repository().lookup(number))
             assertNull(result.spamScore)
             assertNull(result.displayName)
             assertEquals(0, result.reportCount)
@@ -97,7 +97,7 @@ class LiveLookupTest {
     fun verifiedBusinessesComeWithTheirName() =
         runBlocking {
             server.enqueue(bucket("""{"hash":"$hash","info":{"reportCount":0,"business":{"name":"Example Bank","verified":true}}}"""))
-            val result = assertNotNull(repository().lookup(number))
+            val result = checkNotNull(repository().lookup(number))
             assertEquals("Example Bank", result.displayName)
             assertEquals(NameSource.VERIFIED_BUSINESS, result.nameSource)
         }

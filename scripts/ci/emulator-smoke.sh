@@ -25,7 +25,7 @@ tabs=(
   "Messages|Your messages will appear here."
   "Contacts|Your contacts will appear here."
   "Protection|Your rules"
-  "Me|Permissions &amp; roles"
+  "Me|Account"
 )
 # docs/design.md §8 "Role lost" (app/src/main/res/values/strings.xml: banner_screening_off).
 banner="OpenCaller can't screen calls right now. Turn call screening back on."
