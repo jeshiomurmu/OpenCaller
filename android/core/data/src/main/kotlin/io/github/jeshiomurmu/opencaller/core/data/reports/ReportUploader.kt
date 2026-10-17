@@ -33,6 +33,17 @@ sealed interface UploadOutcome {
     ) : UploadOutcome
 }
 
+// What happened to one batch: go on with the next one, or stop uploading for now.
+internal sealed interface BatchResult {
+    data class Continue(
+        val sent: Int,
+    ) : BatchResult
+
+    data class Stop(
+        val outcome: UploadOutcome,
+    ) : BatchResult
+}
+
 /**
  * Sends the report outbox in batches of 50 (docs/architecture.md §4.8). Delivered reports are deleted. A batch the
  * server rejects as invalid is marked failed so it can't block the queue; network and server errors count an
@@ -62,23 +73,40 @@ class ReportUploader
                 val reports = (storage.run { reportOutboxDao().inState(SyncState.PENDING, BATCH) } as? AppResult.Success)?.value
                 outcome =
                     when {
-                        reports == null -> UploadOutcome.RetryLater(null)
-                        reports.isEmpty() -> UploadOutcome.Done(sent)
-                        else -> send(reports).also { if (it == null) sent += reports.size }
+                        reports == null -> {
+                            UploadOutcome.RetryLater(null)
+                        }
+
+                        reports.isEmpty() -> {
+                            UploadOutcome.Done(sent)
+                        }
+
+                        else -> {
+                            when (val batch = send(reports)) {
+                                is BatchResult.Continue -> {
+                                    sent += batch.sent
+                                    null
+                                }
+
+                                is BatchResult.Stop -> {
+                                    batch.outcome
+                                }
+                            }
+                        }
                     }
             }
             return outcome
         }
 
-        // Returns null when the batch is done with (sent or rejected), else why to stop.
-        private suspend fun send(reports: List<ReportOutboxEntity>): UploadOutcome? {
+        // Continue when the batch is done with (sent, or rejected and marked failed), else why to stop.
+        private suspend fun send(reports: List<ReportOutboxEntity>): BatchResult {
             val ids = reports.map { it.id }
             setState(reports, SyncState.IN_FLIGHT)
             val result = apiCall { api.report(ReportBatchDto(reports.map { it.toDto() })) }
             return when (result) {
                 is AppResult.Success -> {
                     storage.run { reportOutboxDao().deleteIds(ids) }
-                    null
+                    BatchResult.Continue(sent = reports.size)
                 }
 
                 is AppResult.Failure -> {
@@ -90,22 +118,22 @@ class ReportUploader
         private suspend fun failed(
             reports: List<ReportOutboxEntity>,
             error: AppError,
-        ): UploadOutcome? =
+        ): BatchResult =
             when (error) {
                 is AppError.Validation -> {
                     Timber.w("Server rejected %d report(s): %s", reports.size, error.message)
                     setState(reports, SyncState.FAILED)
-                    null
+                    BatchResult.Continue(sent = 0)
                 }
 
                 AppError.Auth, AppError.ServerNotConfigured -> {
                     setState(reports, SyncState.PENDING)
-                    UploadOutcome.WaitingForSignIn
+                    BatchResult.Stop(UploadOutcome.WaitingForSignIn)
                 }
 
                 is AppError.RateLimited -> {
                     setState(reports, SyncState.PENDING)
-                    UploadOutcome.RetryLater(error.retryAfterSeconds?.times(MILLIS_PER_SECOND))
+                    BatchResult.Stop(UploadOutcome.RetryLater(error.retryAfterSeconds?.times(MILLIS_PER_SECOND)))
                 }
 
                 else -> {
@@ -125,7 +153,7 @@ class ReportUploader
                             )
                         }
                     }
-                    UploadOutcome.RetryLater(null)
+                    BatchResult.Stop(UploadOutcome.RetryLater(null))
                 }
             }
 
