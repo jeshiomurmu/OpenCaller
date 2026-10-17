@@ -12,8 +12,8 @@
 #   TC-BLK-012  outgoing call to a blocked number proceeds
 #   TC-BLK-015  Unblock in the blocked-calls log, next call rings
 #   LATENCY     the app's own time per decision over the 20 sample calls (everything except waiting for Android's
-#               contacts lookup, from the engine's step timings) has p95 < 50 ms; the total of all 30+ calls on the
-#               debug screen, which includes the contacts provider, has p95 < 100 ms. The contacts provider swings
+#               contacts lookup and the live lookup, from the engine's step timings) has p95 < 50 ms; the total of
+#               all 30+ calls on the debug screen, which includes the contacts provider, has p95 < 100 ms. The contacts provider swings
 #               20-90 ms on CI emulators, so the exit criterion's 50 ms total is measured on a phone (docs/testing.md).
 #
 # Usage: scripts/qa/blocking.sh <debug-apk> <applicationId> <out-dir>
@@ -287,17 +287,27 @@ pct = lambda p: local[max(0, math.ceil(p * len(local)) - 1)]
 print(f"Export: {len(local)} local decisions, p50 {pct(0.5)} ms, p95 {pct(0.95)} ms, max {local[-1]} ms")
 PY
 # The app's own time over the 20 sample calls: each decision minus the time spent in Android's contacts lookup
-# (which runs alongside the database reads, so whatever else the decision waits for is the app's).
+# (which runs alongside the database reads, so whatever else the decision waits for is the app's) and minus the live
+# lookup (step 10, after the local steps; it has its own 800 ms budget, TC-LOOK-001). This job has no server, so the
+# live lookup is a refused connection to 10.0.2.2:8080; its time is printed separately.
 app_p95="$(python3 - "$out/screening_timings.txt" << 'PY'
 import math, re, sys
 own = []
+net = []
 for line in open(sys.argv[1]):
     m = re.search(r"Screening timings: (\w+) in (\d+) ms;(.*)", line)
     if not m or m.group(1) in ("timeout", "error", "emergency", "outgoing"):
         continue
     contacts = re.search(r"contacts=(\d+)", m.group(3))
-    own.append(int(m.group(2)) - (int(contacts.group(1)) if contacts else 0))
+    network = re.search(r"network=(\d+)", m.group(3))
+    if network:
+        net.append(int(network.group(1)))
+    own.append(int(m.group(2)) - (int(contacts.group(1)) if contacts else 0) - (int(network.group(1)) if network else 0))
 own.sort()
+net.sort()
+if net:
+    p95 = net[max(0, math.ceil(0.95 * len(net)) - 1)]
+    print(f"Live lookup (no server): {len(net)} decisions, p95 {p95} ms, max {net[-1]} ms", file=sys.stderr)
 if own:
     pct = lambda p: own[max(0, math.ceil(p * len(own)) - 1)]
     print(pct(0.95))
