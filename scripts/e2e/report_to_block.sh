@@ -71,6 +71,32 @@ latest_code() {
   return 1
 }
 
+# reports_on_server <number>: how many reports the server has stored for <number> (straight from PostgreSQL).
+reports_on_server() {
+  compose exec -T postgres sh -c \
+    "psql -tA -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -c \"select count(*) from reports where e164 = '$1'\"" | tr -d '[:space:]'
+}
+
+# upload_report <number>: sends A's queued reports and checks that the server stored the one for <number>. Queuing a
+# report also starts the app's own upload worker, which may send it before this explicit upload does, so the check is
+# an empty outbox plus the report on the server, not the upload's count.
+upload_report() {
+  local number="$1" uploaded pending=""
+  uploaded="$(qa_ok "$device_a" upload)"
+  for _ in $(seq 1 30); do
+    pending="$(qa_ok "$device_a" pending)"
+    if [[ "$pending" == "ok pending=0" ]]; then break; fi
+    sleep 1
+  done
+  local stored
+  stored="$(reports_on_server "$number")"
+  if [[ "$pending" == "ok pending=0" && "$stored" -ge 1 ]]; then
+    pass "A's report for $number reached the server ($uploaded, $stored stored)"
+  else
+    fail "A's report for $number: upload '$uploaded', outbox '$pending', stored on the server: '${stored:-?}'"
+  fi
+}
+
 # run_job <scoring|lists>: runs a server job now through the admin endpoint.
 run_job() {
   compose exec -T server sh -c \
@@ -169,8 +195,7 @@ qa_ok "$device_a" signin-start --es number "$reporter"
 code="$(latest_code "$reporter")" || die "no development code for $reporter in the server log"
 qa_ok "$device_a" signin-verify --es number "$reporter" --es code "$code"
 qa_ok "$device_a" report --es number "$spammer" --es category loan
-uploaded="$(qa_ok "$device_a" upload)"
-[[ "$uploaded" == "ok Done(sent=1)" ]] && pass "A uploaded the report ($uploaded)" || fail "A's upload: $uploaded"
+upload_report "$spammer"
 
 # --- 3. Server jobs ------------------------------------------------------------------------------------------------
 run_job scoring
@@ -185,8 +210,7 @@ ring "after the list update" "$spammer" BLOCK spam_list
 
 # --- 5. Live lookup before the next list -----------------------------------------------------------------------
 qa_ok "$device_a" report --es number "$second_spammer" --es category scam
-uploaded="$(qa_ok "$device_a" upload)"
-[[ "$uploaded" == "ok Done(sent=1)" ]] || fail "A's second upload: $uploaded"
+upload_report "$second_spammer"
 run_job scoring
 listed="$(qa_ok "$device_b" listed --es number "$second_spammer")"
 [[ "$listed" == "ok none" ]] || fail "the second number should not be on B's list yet: $listed"

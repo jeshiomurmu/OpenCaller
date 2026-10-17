@@ -18,7 +18,8 @@ import javax.inject.Inject
  * - `signin-start --es number E164` / `signin-verify --es number E164 --es code C`: sign-in (the code comes from the
  *   development server's log).
  * - `report --es number E164 [--es label SPAM|NOT_SPAM] [--es category C]`: queues a report like the report sheet.
- * - `upload`: sends queued reports now ("ok Done(sent=1)").
+ * - `upload`: sends queued reports now ("ok Done(sent=1)"; the app's own upload worker may have sent them first).
+ * - `pending`: "ok pending=N", reports still waiting in the outbox.
  * - `sync`: updates the spam list now ("ok Updated(…)").
  * - `listed --es number E164`: "ok score=0.43" when the spam list on the phone has the number, else "ok none".
  */
@@ -41,6 +42,7 @@ class QaOnline
                 "signin-verify" -> number(intent) { describe(account.verify(it, intent.getStringExtra("code").orEmpty())) { "ok" } }
                 "report" -> number(intent) { report(it, intent) }
                 "upload" -> "ok ${uploader.upload()}"
+                "pending" -> describe(reports.pendingCount()) { "ok pending=$it" }
                 "sync" -> describe(sync.sync()) { "ok $it" }
                 "listed" -> number(intent) { listed(it) }
                 else -> null
