@@ -139,26 +139,28 @@ dependencies {
 }
 
 // Release builds: the server must use HTTPS, and play release builds must pin its key plus a backup key.
-val checkReleaseServerConfig by tasks.registering {
-    val url = releaseApiBaseUrl
-    doLast {
-        val base = url.get().trim()
-        if (base.isNotEmpty() && !base.startsWith("https://")) {
-            throw GradleException("opencaller.apiBaseUrl must start with https:// in release builds")
+val checkReleaseServerConfig =
+    tasks.register("checkReleaseServerConfig") {
+        val url = releaseApiBaseUrl
+        doLast {
+            val base = url.get().trim()
+            if (base.isNotEmpty() && !base.startsWith("https://")) {
+                throw GradleException("opencaller.apiBaseUrl must start with https:// in release builds")
+            }
         }
     }
-}
 
-val checkPlayReleasePins by tasks.registering {
-    val url = releaseApiBaseUrl
-    val pins = releaseApiPins
-    doLast {
-        val count = pins.get().split(',').count { it.trim().startsWith("sha256/") }
-        if (url.get().isNotBlank() && count < 2) {
-            throw GradleException("play release builds need opencaller.apiPins with at least two sha256/ pins (server key + backup)")
+val checkPlayReleasePins =
+    tasks.register("checkPlayReleasePins") {
+        val url = releaseApiBaseUrl
+        val pins = releaseApiPins
+        doLast {
+            val count = pins.get().split(',').count { it.trim().startsWith("sha256/") }
+            if (url.get().isNotBlank() && count < 2) {
+                throw GradleException("play release builds need opencaller.apiPins with at least two sha256/ pins (server key + backup)")
+            }
         }
     }
-}
 
 tasks.configureEach {
     when (name) {

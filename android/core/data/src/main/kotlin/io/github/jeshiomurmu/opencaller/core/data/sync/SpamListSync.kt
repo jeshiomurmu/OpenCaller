@@ -160,15 +160,16 @@ class SpamListSyncRepository
                 }
             val file = bytes?.let { decodeChecked(it, ref) }
             val expectedKind = if (ref.baseVersion == null) SpamListKind.FULL else SpamListKind.DELTA
-            val matches =
-                file != null &&
-                    file.countryIso == country &&
-                    file.version == ref.version &&
-                    file.kind == expectedKind &&
-                    (ref.baseVersion == null || file.baseVersion == ref.baseVersion)
+            val matching =
+                file?.takeIf {
+                    it.countryIso == country &&
+                        it.version == ref.version &&
+                        it.kind == expectedKind &&
+                        (ref.baseVersion == null || it.baseVersion == ref.baseVersion)
+                }
             return when {
                 bytes == null -> AppResult.Failure(AppError.Network)
-                matches && file != null -> AppResult.Success(file)
+                matching != null -> AppResult.Success(matching)
                 else -> invalid("file v${ref.version} doesn't match the manifest")
             }
         }
