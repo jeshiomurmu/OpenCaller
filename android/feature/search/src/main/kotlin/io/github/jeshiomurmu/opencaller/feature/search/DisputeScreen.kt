@@ -72,7 +72,7 @@ fun DisputeScreen(
         )
         when {
             state.loading -> {
-                Unit
+                // Nothing to show until the state is loaded.
             }
 
             !state.serverConfigured -> {
