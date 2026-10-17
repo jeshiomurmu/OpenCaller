@@ -45,7 +45,8 @@ class ApiProblem(
     val title: String,
     val detail: String? = null,
     val retryAfterSeconds: Long? = null,
-) : RuntimeException("$code: $title")
+    cause: Throwable? = null,
+) : RuntimeException("$code: $title", cause)
 
 /** `application/problem+json`. */
 val ProblemJson: ContentType = ContentType("application", "problem+json")
@@ -126,15 +127,10 @@ private fun Application.installUnmatchedRouteResponses() {
 private class RouteTable(
     routes: List<RoutingNode>,
 ) {
-    // Ktor prints a route as its path plus selectors, e.g. "/v1/auth/start/(method:POST)".
     private val methodsByPattern: Map<List<String>, List<String>> =
         routes
-            .mapNotNull { route ->
-                (route.selector as? HttpMethodRouteSelector)?.let {
-                    route.toString().substringBefore("/(method:") to
-                        it.method.value
-                }
-            }.groupBy({ segments(it.first) }, { it.second })
+            .mapNotNull { route -> (route.selector as? HttpMethodRouteSelector)?.let { routePath(route) to it.method.value } }
+            .groupBy({ segments(it.first) }, { it.second })
 
     fun methodsFor(path: String): List<String> {
         val requested = segments(path)
@@ -148,5 +144,17 @@ private class RouteTable(
 
     private fun segments(path: String) = path.split('/').filter { it.isNotEmpty() }
 }
+
+/**
+ * The path of [route] as registered, e.g. `/v1/reports`. Ktor prints a route as its path plus selector segments
+ * in brackets, e.g. `/v1/reports/(authenticate "access")/(method:POST)`; those segments are dropped.
+ */
+fun routePath(route: RoutingNode): String =
+    route
+        .toString()
+        .split('/')
+        .filterNot { it.startsWith("(") }
+        .joinToString("/")
+        .ifEmpty { "/" }
 
 private fun unsupportedMediaType() = ApiProblem(HttpStatusCode.UnsupportedMediaType, "unsupported_media_type", "Send application/json")

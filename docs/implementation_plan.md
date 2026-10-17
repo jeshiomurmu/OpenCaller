@@ -82,18 +82,18 @@ Rough effort for one full-time developer working with an AI agent: Phases 0–7 
 
 ## Phase 4 — Backend MVP
 
-- [ ] Flyway `V1__init.sql` from `architecture.md` §7
-- [ ] Auth: `/v1/auth/start|verify|refresh`; OTP provider interface with `LogOtpProvider` (dev) and one real provider adapter
-- [ ] Rate limiting (Redis)
-- [ ] Reports API; reporter trust defaults
-- [ ] Scoring job (Bayesian, §9) running every 15 min; unit tests with fixtures
-- [ ] List builder: per-country full + delta files to MinIO, `list_versions`, manifest endpoint
-- [ ] Bucket lookup endpoint with ETag
-- [ ] Explicit search endpoint with quota
-- [ ] Disputes + unlist endpoints (unlist works without the app: simple HTML form served by Ktor)
-- [ ] `/v1/sender-ids` and `/v1/otp-sources` (seeded from `backend/server/seed/`)
-- [ ] OpenAPI spec; problem+json errors; Prometheus metrics
-- [ ] `scripts/smoke.sh` exercising the whole API against compose
+- [x] Flyway `V1__init.sql` from `architecture.md` §7
+- [x] Auth: `/v1/auth/start|verify|refresh`; OTP provider interface with `LogOtpProvider` (dev) and one real provider adapter
+- [x] Rate limiting (Redis)
+- [x] Reports API; reporter trust defaults
+- [x] Scoring job (Bayesian, §9) running every 15 min; unit tests with fixtures
+- [x] List builder: per-country full + delta files to MinIO, `list_versions`, manifest endpoint
+- [x] Bucket lookup endpoint with ETag
+- [x] Explicit search endpoint with quota
+- [x] Disputes + unlist endpoints (unlist works without the app: simple HTML form served by Ktor)
+- [x] `/v1/sender-ids` and `/v1/otp-sources` (seeded from `backend/server/seed/`)
+- [x] OpenAPI spec; problem+json errors; Prometheus metrics
+- [x] `scripts/smoke.sh` exercising the whole API against compose
 
 **Exit:** `./gradlew check` green incl. Testcontainers; smoke script passes; bucket endpoint p95 < 50 ms server time on 1M seeded numbers (load test with k6 or Gatling documented in testing.md).
 

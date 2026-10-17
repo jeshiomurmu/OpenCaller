@@ -6,7 +6,7 @@ import org.jetbrains.exposed.v1.core.java.javaUUID
 import org.jetbrains.exposed.v1.javatime.CurrentTimestampWithTimeZone
 import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
 
-// Exposed mirrors of the tables in db/migration/V1__init.sql (docs/architecture.md §7). Flyway owns the schema;
+// Exposed mirrors of the tables in db/migration (V1__init.sql = docs/architecture.md §7, then V2). Flyway owns the schema;
 // these objects are only used for queries. ServerSchemaTest compares them with the migrated database.
 
 private const val COUNTRY_ISO_LENGTH = 2
@@ -214,7 +214,15 @@ object ListVersions : Table("list_versions") {
     override val primaryKey = PrimaryKey(countryIso, version, kind)
 }
 
-/** Every table in V1, in creation order. */
+/** `job_state` (V2): a watermark per background job. */
+object JobState : Table("job_state") {
+    val name = text("name")
+    val watermark = timestampWithTimeZone("watermark")
+    val updatedAt = timestampWithTimeZone("updated_at").defaultExpression(CurrentTimestampWithTimeZone)
+    override val primaryKey = PrimaryKey(name)
+}
+
+/** Every table (V1, then V2), in creation order. */
 val allTables: List<Table> =
     listOf(
         Users,
@@ -235,4 +243,5 @@ val allTables: List<Table> =
         FamilyGroups,
         FamilyMembers,
         ListVersions,
+        JobState,
     )

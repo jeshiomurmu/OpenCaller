@@ -29,6 +29,9 @@ data class AppConfig(
     val jwt: JwtConfig,
     val otp: OtpConfig,
     val twilio: TwilioConfig?,
+    val scoring: ScoringConfig = ScoringConfig(),
+    val lists: ListConfig = ListConfig(),
+    val admin: AdminConfig = AdminConfig(null),
 )
 
 /** Public API port and the internal metrics port. */
@@ -55,13 +58,41 @@ data class RedisConfig(
     override fun toString() = "RedisConfig(url=$url, password=${if (password == null) "none" else "***"})"
 }
 
-/** MinIO / S3-compatible object storage (used from the list builder on; validated now so deployments fail early). */
+/** MinIO / S3-compatible object storage for the published spam lists. */
 data class MinioConfig(
     val endpoint: String,
     val accessKey: String,
     val secretKey: String,
+    val bucket: String = "opencaller",
+    val region: String = "us-east-1",
 ) {
-    override fun toString() = "MinioConfig(endpoint=$endpoint, accessKey=***, secretKey=***)"
+    override fun toString() = "MinioConfig(endpoint=$endpoint, accessKey=***, secretKey=***, bucket=$bucket, region=$region)"
+}
+
+/**
+ * Bayesian reputation (docs/architecture.md §9): priors [priorSpam] (α0) and [priorNotSpam] (β0), report weight
+ * halving every [halfLifeDays]. Verified business numbers are capped at [verifiedCap] (below every spam threshold)
+ * and go to the dispute queue instead. The job runs every [intervalMinutes].
+ */
+data class ScoringConfig(
+    val intervalMinutes: Int = 15,
+    val priorSpam: Double = 1.0,
+    val priorNotSpam: Double = 2.0,
+    val halfLifeDays: Double = 30.0,
+    val verifiedCap: Double = 0.39,
+)
+
+/** Spam-list builder: runs nightly at [buildHourUtc]; numbers scoring at least [minScore] are listed. */
+data class ListConfig(
+    val buildHourUtc: Int = 3,
+    val minScore: Double = 0.4,
+)
+
+/** Admin endpoints on the internal port (run a job now). Disabled when [token] is `null`. */
+data class AdminConfig(
+    val token: String?,
+) {
+    override fun toString() = "AdminConfig(token=${if (token == null) "disabled" else "***"})"
 }
 
 /** Access-token signing. */
@@ -113,7 +144,11 @@ fun loadConfig(env: Map<String, String>): AppConfig {
     return ConfigReader(raw).read()
 }
 
-/** Reads typed values and collects problems instead of failing on the first one. */
+/**
+ * Reads typed values and collects problems instead of failing on the first one. One small reader per value type
+ * and section keeps each check next to the variable it names, hence the many functions.
+ */
+@Suppress("TooManyFunctions")
 private class ConfigReader(
     private val config: Config,
 ) {
@@ -141,7 +176,15 @@ private class ConfigReader(
                     ),
                 otp = OtpConfig(secret("otp.pepper", "OTP_PEPPER"), otpProvider ?: OtpProviderKind.LOG),
                 twilio = if (otpProvider == OtpProviderKind.TWILIO) readTwilio() else null,
+                scoring = readScoring(),
+                lists =
+                    ListConfig(
+                        int("lists.buildHourUtc", "LIST_BUILD_HOUR_UTC", 0..LAST_HOUR),
+                        double("lists.minScore", "LIST_MIN_SCORE"),
+                    ),
+                admin = AdminConfig(string("admin.token")?.also { checkSecretLength(it, "ADMIN_TOKEN") }),
             )
+        if (result.scoring.verifiedCap >= result.lists.minScore) problems += "SCORING_VERIFIED_CAP must be below LIST_MIN_SCORE"
         if (result.http.port == result.http.metricsPort) problems += "PORT and METRICS_PORT must differ"
         if (problems.isNotEmpty()) throw ConfigException(problems.toList())
         return result
@@ -155,11 +198,25 @@ private class ConfigReader(
             maxPoolSize = int("database.maxPoolSize", "DB_MAX_POOL_SIZE", 1..MAX_POOL_SIZE),
         )
 
-    private fun readMinio() =
-        MinioConfig(
+    private fun readMinio(): MinioConfig {
+        val bucket = required("minio.bucket", "MINIO_BUCKET")
+        if (bucket.isNotEmpty() && !BUCKET_NAME.matches(bucket)) problems += "MINIO_BUCKET must be a valid S3 bucket name"
+        return MinioConfig(
             endpoint = prefixed("minio.endpoint", "MINIO_ENDPOINT", "http://", "https://"),
             accessKey = required("minio.accessKey", "MINIO_ACCESS_KEY"),
             secretKey = required("minio.secretKey", "MINIO_SECRET_KEY"),
+            bucket = bucket,
+            region = required("minio.region", "MINIO_REGION"),
+        )
+    }
+
+    private fun readScoring() =
+        ScoringConfig(
+            intervalMinutes = int("scoring.intervalMinutes", "SCORING_INTERVAL_MINUTES", 1..MAX_INTERVAL_MINUTES),
+            priorSpam = double("scoring.priorSpam", "SCORING_PRIOR_SPAM", MIN_PRIOR..MAX_PRIOR),
+            priorNotSpam = double("scoring.priorNotSpam", "SCORING_PRIOR_NOT_SPAM", MIN_PRIOR..MAX_PRIOR),
+            halfLifeDays = double("scoring.halfLifeDays", "SCORING_HALF_LIFE_DAYS", 1.0..MAX_HALF_LIFE_DAYS),
+            verifiedCap = double("scoring.verifiedCap", "SCORING_VERIFIED_CAP"),
         )
 
     private fun readTwilio(): TwilioConfig {
@@ -188,9 +245,25 @@ private class ConfigReader(
     private fun secret(
         path: String,
         envVar: String,
-    ): String {
-        val value = required(path, envVar)
-        if (value.isNotEmpty() && value.length < MIN_SECRET_LENGTH) problems += "$envVar must be at least $MIN_SECRET_LENGTH characters"
+    ): String = required(path, envVar).also { if (it.isNotEmpty()) checkSecretLength(it, envVar) }
+
+    private fun checkSecretLength(
+        value: String,
+        envVar: String,
+    ) {
+        if (value.length < MIN_SECRET_LENGTH) problems += "$envVar must be at least $MIN_SECRET_LENGTH characters"
+    }
+
+    private fun double(
+        path: String,
+        envVar: String,
+        range: ClosedFloatingPointRange<Double> = 0.0..1.0,
+    ): Double {
+        val value = string(path)?.toDoubleOrNull()
+        if (value == null || value !in range) {
+            problems += "$envVar must be a number in ${range.start}..${range.endInclusive}"
+            return range.start
+        }
         return value
     }
 
@@ -236,5 +309,13 @@ private class ConfigReader(
         const val MIN_SECRET_LENGTH = 32
         const val MAX_PORT = 65_535
         const val MAX_POOL_SIZE = 200
+        const val LAST_HOUR = 23
+        const val MAX_INTERVAL_MINUTES = 1440
+        const val MIN_PRIOR = 0.01
+        const val MAX_PRIOR = 1000.0
+        const val MAX_HALF_LIFE_DAYS = 3650.0
+
+        // S3 bucket naming rules: 3–63 lowercase letters, digits, dots and hyphens, starting and ending alphanumeric.
+        val BUCKET_NAME = Regex("[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]")
     }
 }

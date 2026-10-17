@@ -58,6 +58,14 @@ dependencies {
     testImplementation(libs.testcontainers.postgresql)
 }
 
+// backend/server/seed/*.csv is packaged as classpath resources under seed/ (sync/SeedData.kt).
+tasks.processResources {
+    from("seed") {
+        include("*.csv")
+        into("seed")
+    }
+}
+
 tasks.test {
     // Integration tests start PostgreSQL and Redis with Testcontainers (Docker required).
     maxHeapSize = "1g"

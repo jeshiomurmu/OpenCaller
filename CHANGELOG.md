@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Server (Phase 4, part 2): spam reports (`POST /v1/reports`, up to 50 per request, 100 per day); a scoring job every
+  15 minutes that turns reports into a Bayesian spam score with time decay (verified businesses are never labelled
+  spam; they go to human review instead); nightly per-country spam lists with deltas in a compact binary format,
+  stored in MinIO and served with checksums (`/v1/lists/{country}/manifest`); private live caller ID by hash bucket
+  (`/v1/lookup/buckets/{cc}/{bucket}`) that respects who may see a name; explicit search with 50 searches a day,
+  recorded for "who searched me" unless incognito; disputes; unlisting a number through the API or a plain web form at
+  `/unlist`; sender-ID and OTP-source registries (example data only); admin endpoints to run jobs now.
+- `scripts/smoke.sh` covers the whole API with curl and jq; `backend/load/` has the k6 load test for the bucket lookup
+  (200 requests per second on 1M numbers: p95 under 5 ms).
 - Server (Phase 4, part 1): PostgreSQL schema v1 (Flyway, as in `docs/architecture.md` §7) with Exposed tables;
   configuration from environment variables only, refusing to start with a list of every missing or invalid value;
   phone sign-in `POST /v1/auth/start|verify|refresh` — 6-digit codes valid 5 minutes with 5 attempts, stored only as a
@@ -32,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Token responses now include `tokenType` (documented as required; the JSON encoder dropped fields with default values).
 - TC-ONB-006 on API 36: a deny tap that lands while the permission dialog animates in is retried.
 
 - Onboarding, roles and permissions (Phase 2): Welcome and privacy screens, then call screening role, contacts and

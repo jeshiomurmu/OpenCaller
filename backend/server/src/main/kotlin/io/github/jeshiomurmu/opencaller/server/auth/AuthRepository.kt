@@ -4,6 +4,7 @@ import io.github.jeshiomurmu.opencaller.server.db.Devices
 import io.github.jeshiomurmu.opencaller.server.db.RefreshTokens
 import io.github.jeshiomurmu.opencaller.server.db.ServerDatabase
 import io.github.jeshiomurmu.opencaller.server.db.Users
+import io.github.jeshiomurmu.opencaller.server.lookup.ensureIndexed
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
@@ -87,6 +88,8 @@ class AuthRepository(
                 it[lastSeen] = now
             }
             insertRefreshToken(refreshTokenHash, deviceId, refreshExpiresAt)
+            // The number joins the bucket index now, so its profile can appear in live caller ID right away.
+            ensureIndexed(listOf(number.value))
             Session(userId, deviceId)
         }
 

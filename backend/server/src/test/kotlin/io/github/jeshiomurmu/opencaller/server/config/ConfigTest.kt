@@ -35,6 +35,10 @@ class ConfigTest {
         assertEquals("opencaller", config.jwt.issuer)
         assertEquals(OtpProviderKind.LOG, config.otp.provider)
         assertNull(config.twilio)
+        assertEquals(MinioConfig("http://localhost:9000", "opencaller", "secret-secret", "opencaller", "us-east-1"), config.minio)
+        assertEquals(ScoringConfig(15, 1.0, 2.0, 30.0, 0.39), config.scoring)
+        assertEquals(ListConfig(3, 0.4), config.lists)
+        assertNull(config.admin.token)
         // Secrets never show up in toString (e.g. in a log line).
         assertTrue(!config.toString().contains("secret-secret") && !config.toString().contains("j".repeat(32)))
     }
@@ -97,6 +101,55 @@ class ConfigTest {
             "PORT must be",
             "METRICS_PORT must be",
         ).forEach { prefix -> assertTrue(error.problems.any { it.startsWith(prefix) }, "$prefix not in ${error.problems}") }
+    }
+
+    @Test
+    fun scoringListsAndAdminSettingsAreReadAndChecked() {
+        val config =
+            loadConfig(
+                valid +
+                    mapOf(
+                        "MINIO_BUCKET" to "spam-lists",
+                        "MINIO_REGION" to "eu-west-1",
+                        "SCORING_INTERVAL_MINUTES" to "5",
+                        "SCORING_PRIOR_SPAM" to "2",
+                        "SCORING_PRIOR_NOT_SPAM" to "8.5",
+                        "SCORING_HALF_LIFE_DAYS" to "14",
+                        "SCORING_VERIFIED_CAP" to "0.3",
+                        "LIST_BUILD_HOUR_UTC" to "0",
+                        "LIST_MIN_SCORE" to "0.5",
+                        "ADMIN_TOKEN" to "a".repeat(32),
+                    ),
+            )
+        assertEquals("spam-lists", config.minio.bucket)
+        assertEquals("eu-west-1", config.minio.region)
+        assertEquals(ScoringConfig(5, 2.0, 8.5, 14.0, 0.3), config.scoring)
+        assertEquals(ListConfig(0, 0.5), config.lists)
+        assertEquals("a".repeat(32), config.admin.token)
+        assertTrue(!config.toString().contains("a".repeat(32)))
+
+        val error =
+            assertFailsWith<ConfigException> {
+                loadConfig(
+                    valid +
+                        mapOf(
+                            "MINIO_BUCKET" to "Bad_Bucket",
+                            "SCORING_PRIOR_SPAM" to "0",
+                            "SCORING_HALF_LIFE_DAYS" to "abc",
+                            "LIST_BUILD_HOUR_UTC" to "24",
+                            "ADMIN_TOKEN" to "short",
+                        ),
+                )
+            }
+        listOf(
+            "MINIO_BUCKET must be a valid",
+            "SCORING_PRIOR_SPAM must be",
+            "SCORING_HALF_LIFE_DAYS must be",
+            "LIST_BUILD_HOUR_UTC must be",
+            "ADMIN_TOKEN must be at least 32",
+        ).forEach { prefix -> assertTrue(error.problems.any { it.startsWith(prefix) }, "$prefix not in ${error.problems}") }
+        val cap = assertFailsWith<ConfigException> { loadConfig(valid + ("SCORING_VERIFIED_CAP" to "0.5")) }
+        assertEquals(listOf("SCORING_VERIFIED_CAP must be below LIST_MIN_SCORE"), cap.problems)
     }
 
     @Test

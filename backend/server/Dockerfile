@@ -10,6 +10,8 @@ COPY gradle ./gradle
 RUN ./gradlew --no-daemon --quiet dependencies > /dev/null
 
 COPY src ./src
+# Seed CSVs are packaged as resources (build.gradle.kts → processResources).
+COPY seed ./seed
 RUN ./gradlew --no-daemon installDist
 
 # ---- Runtime stage: JRE only, non-root user ----

@@ -99,6 +99,10 @@ services:
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
       TWILIO_FROM: ${TWILIO_FROM:-}
       TWILIO_MESSAGING_SERVICE_SID: ${TWILIO_MESSAGING_SERVICE_SID:-}
+      # Spam lists are uploaded to this MinIO bucket (created on first upload).
+      MINIO_BUCKET: ${MINIO_BUCKET:-opencaller}
+      # Bearer token for POST /admin/jobs/{scoring|lists} on the internal port 9090; unset = admin endpoints off.
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:

@@ -5,6 +5,7 @@ import io.github.jeshiomurmu.opencaller.server.http.ProblemDetails
 import io.github.jeshiomurmu.opencaller.server.http.ProblemJson
 import io.github.jeshiomurmu.opencaller.server.module
 import io.ktor.client.HttpClient
+import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -45,6 +46,20 @@ suspend fun HttpClient.postJson(
         headers.forEach { (name, value) -> header(name, value) }
         setBody(json)
     }
+
+/** GETs [path] with a bearer [token] (if given) and extra [headers]. */
+suspend fun HttpClient.getWith(
+    path: String,
+    token: String? = null,
+    headers: Map<String, String> = emptyMap(),
+): HttpResponse =
+    get(path) {
+        token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+        headers.forEach { (name, value) -> header(name, value) }
+    }
+
+/** `Authorization` header map for [token]. */
+fun bearer(token: String) = mapOf(HttpHeaders.Authorization to "Bearer $token")
 
 /** Asserts a problem+json response with [status] and [code] and returns it. */
 suspend fun HttpResponse.assertProblem(
