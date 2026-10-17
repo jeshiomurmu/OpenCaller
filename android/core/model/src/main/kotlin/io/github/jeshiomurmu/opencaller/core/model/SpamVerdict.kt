@@ -12,6 +12,18 @@ enum class RiskLevel {
     LIKELY_SPAM,
 }
 
+/** Where a spam verdict came from, for the caller card's "Why am I seeing this?". */
+enum class VerdictSource {
+    /** The spam list downloaded to the phone (docs/architecture.md §4.1 step 8). */
+    SPAM_LIST,
+
+    /** Information cached from an earlier live lookup (step 9). */
+    REPUTATION_CACHE,
+
+    /** A live k-anonymous lookup during the call (step 10). */
+    LIVE_LOOKUP,
+}
+
 /**
  * Spam assessment for a number.
  *
@@ -19,12 +31,14 @@ enum class RiskLevel {
  * @property level user-facing risk level derived from [score] and the user's threshold.
  * @property category community category such as "Loan" or "Telemarketing", if known.
  * @property reportCount number of community reports.
+ * @property source where the verdict came from, if known.
  */
 data class SpamVerdict(
     val score: Float,
     val level: RiskLevel,
     val category: String?,
     val reportCount: Int,
+    val source: VerdictSource? = null,
 ) {
     init {
         require(score in 0f..1f) { "score must be in 0..1" }

@@ -32,8 +32,14 @@ class UserSettingsMappingTest {
                 blockTopSpammers = false,
                 allowedRegionCodes = setOf("IN", "BD"),
                 overlayEnabled = false,
+                listUpdatesOnMobileData = true,
             ),
         )
+    }
+
+    @Test
+    fun listUpdatesUseUnmeteredNetworksByDefault() {
+        assertEquals(false, UserSettings.getDefaultInstance().toDomain().listUpdatesOnMobileData)
     }
 
     @Test

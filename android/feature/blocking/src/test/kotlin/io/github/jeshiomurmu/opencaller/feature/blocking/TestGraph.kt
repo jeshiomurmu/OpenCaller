@@ -8,6 +8,7 @@ import io.github.jeshiomurmu.opencaller.core.data.BlockRuleRepository
 import io.github.jeshiomurmu.opencaller.core.data.ReportRepository
 import io.github.jeshiomurmu.opencaller.core.data.ScreeningEventRepository
 import io.github.jeshiomurmu.opencaller.core.data.SpamListRepository
+import io.github.jeshiomurmu.opencaller.core.data.work.BackgroundWork
 import io.github.jeshiomurmu.opencaller.core.database.DatabaseAccess
 import io.github.jeshiomurmu.opencaller.core.database.OpenCallerDatabase
 import io.github.jeshiomurmu.opencaller.core.datastore.UserSettingsDataSource
@@ -56,7 +57,19 @@ class TestGraph {
     val rules = BlockRuleRepository(access, dispatchers, clock)
     val events = ScreeningEventRepository(access, dispatchers, clock)
     val spam = SpamListRepository(access, dispatchers)
-    val reports = ReportRepository(access, dispatchers, clock)
+    val reports =
+        ReportRepository(
+            access,
+            dispatchers,
+            clock,
+            object : BackgroundWork {
+                override fun uploadReports(delayMillis: Long) = Unit
+
+                override fun scheduleListSync(allowMobileData: Boolean) = Unit
+
+                override fun syncListNow() = Unit
+            },
+        )
     val contactLookup =
         object : ContactLookup {
             override fun canRead(): Boolean = canReadContacts

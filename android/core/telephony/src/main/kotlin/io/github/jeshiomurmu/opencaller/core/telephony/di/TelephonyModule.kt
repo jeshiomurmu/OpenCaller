@@ -13,16 +13,17 @@ import io.github.jeshiomurmu.opencaller.core.data.BlockRuleRepository
 import io.github.jeshiomurmu.opencaller.core.data.ReputationRepository
 import io.github.jeshiomurmu.opencaller.core.data.ScreeningEventRepository
 import io.github.jeshiomurmu.opencaller.core.data.SpamListRepository
+import io.github.jeshiomurmu.opencaller.core.data.sync.CountrySource
 import io.github.jeshiomurmu.opencaller.core.datastore.UserSettingsDataSource
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 import io.github.jeshiomurmu.opencaller.core.telephony.AccessStatusSource
 import io.github.jeshiomurmu.opencaller.core.telephony.DeviceAccessStatusSource
+import io.github.jeshiomurmu.opencaller.core.telephony.lookup.ServerNetworkLookup
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.CallerIdListener
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ContactLookup
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.DeviceSources
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.HomeRegionProvider
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ListSources
-import io.github.jeshiomurmu.opencaller.core.telephony.screening.NoNetworkLookup
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.RuleValidator
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ScreeningConfig
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ScreeningEngine
@@ -61,6 +62,10 @@ internal interface TelephonyModule {
     @Binds
     fun homeRegionProvider(impl: DeviceHomeRegionProvider): HomeRegionProvider
 
+    /** The spam list is the one of the user's country (SIM, then network, then locale). */
+    @Binds
+    fun countrySource(impl: DeviceHomeRegionProvider): CountrySource
+
     @Binds
     fun contactLookup(impl: AndroidContactLookup): ContactLookup
 
@@ -92,13 +97,14 @@ internal interface TelephonyModule {
             verified: LocalVerifiedBusinessLookup,
             spamList: SpamListRepository,
             reputation: ReputationRepository,
+            network: ServerNetworkLookup,
         ): ListSources =
             ListSources(
                 rules = { rules.enabledCallRules().orThrow() },
                 verifiedBusinesses = verified,
                 spamList = { spamList.find(it).orThrow() },
                 reputation = { reputation.findFresh(it).orThrow() },
-                network = NoNetworkLookup,
+                network = network,
             )
 
         @Provides

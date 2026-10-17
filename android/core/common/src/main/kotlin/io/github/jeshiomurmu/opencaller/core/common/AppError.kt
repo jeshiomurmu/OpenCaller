@@ -24,6 +24,9 @@ sealed interface AppError {
         val message: String,
     ) : AppError
 
+    /** This build has no server address (e.g. the alpha release), so online features are unavailable. */
+    data object ServerNotConfigured : AppError
+
     /** Local storage (database, DataStore, files) failed. */
     data object Storage : AppError
 
