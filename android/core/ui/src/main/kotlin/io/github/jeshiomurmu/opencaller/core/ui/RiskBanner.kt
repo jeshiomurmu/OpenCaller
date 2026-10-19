@@ -40,7 +40,7 @@ fun RiskBanner(
     val parts =
         buildList {
             add(stringResource(if (isSpam) R.string.risk_likely_scam else R.string.risk_suspicious))
-            category?.takeIf { it.isNotBlank() }?.let(::add)
+            categoryLabel(category)?.let(::add)
             if (reportCount > 0) add(pluralStringResource(R.plurals.risk_report_count, reportCount, reportCount))
         }
     Surface(

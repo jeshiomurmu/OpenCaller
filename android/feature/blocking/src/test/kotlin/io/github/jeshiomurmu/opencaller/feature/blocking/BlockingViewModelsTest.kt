@@ -1,24 +1,31 @@
 package io.github.jeshiomurmu.opencaller.feature.blocking
 
 import android.os.Build
+import io.github.jeshiomurmu.opencaller.core.data.sync.SpamListSyncState
 import io.github.jeshiomurmu.opencaller.core.model.CallerVerification
 import io.github.jeshiomurmu.opencaller.core.model.Decision
 import io.github.jeshiomurmu.opencaller.core.model.Direction
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
+import io.github.jeshiomurmu.opencaller.core.model.ReportCategory
 import io.github.jeshiomurmu.opencaller.core.model.ReportLabel
 import io.github.jeshiomurmu.opencaller.core.model.RuleAction
 import io.github.jeshiomurmu.opencaller.core.model.RuleType
 import io.github.jeshiomurmu.opencaller.core.model.ScreeningEvent
 import io.github.jeshiomurmu.opencaller.core.model.ScreeningReason
 import io.github.jeshiomurmu.opencaller.core.model.SpamThreshold
+import io.github.jeshiomurmu.opencaller.core.model.SyncState
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.RuleProblem
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ScreeningCall
 import io.github.jeshiomurmu.opencaller.core.testing.MainDispatcherRule
+import io.github.jeshiomurmu.opencaller.core.ui.ReportDraft
+import io.github.jeshiomurmu.opencaller.core.ui.WhyReason
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -112,7 +119,7 @@ class BlockingViewModelsTest {
         runTest {
             graph.rules.add(RuleType.EXACT, number.e164, RuleAction.BLOCK)
             graph.events.record(event(number, ScreeningReason.RULE))
-            val vm = BlockedLogViewModel(graph.events, UnblockNumber(graph.rules, graph.engine), graph.normalizer) { "US" }
+            val vm = graph.blockedLogViewModel()
             val call = awaitValue(vm.uiState) { it.calls.isNotEmpty() }.calls.single()
             assertEquals("(201) 555-0123", call.display)
 
@@ -142,7 +149,7 @@ class BlockingViewModelsTest {
     fun settingsTogglesCountriesAndTheContactsBanner() =
         runTest {
             graph.canReadContacts = false
-            val vm = BlockingSettingsViewModel(graph.settings, graph.contactLookup, { "BD" }, graph.normalizer, graph.reports, graph.rules)
+            val vm = graph.settingsViewModel(region = "BD")
             vm.onEvent(BlockingEvent.Update { it.copy(blockNonContacts = true, spamThreshold = SpamThreshold.HIGH) })
             val state = awaitValue(vm.uiState) { it.preferences.blockNonContacts }
             assertTrue(state.contactsMissing)
@@ -172,17 +179,113 @@ class BlockingViewModelsTest {
     @Test
     fun reportFromTheAfterCallNotificationQueuesItAndCanBlock() =
         runTest {
-            val vm = BlockingSettingsViewModel(graph.settings, graph.contactLookup, { "US" }, graph.normalizer, graph.reports, graph.rules)
+            val vm = graph.settingsViewModel()
             vm.showReport(number.e164)
-            assertEquals("(201) 555-0123", awaitValue(vm.uiState) { it.report != null }.report?.display)
-            vm.onEvent(BlockingEvent.ConfirmReport(alsoBlock = true))
+            val shown = awaitValue(vm.uiState) { it.report != null }
+            assertEquals("(201) 555-0123", shown.report?.display)
+            assertFalse(shown.signedIn)
+            vm.onEvent(BlockingEvent.SubmitReport(ReportDraft(ReportLabel.SPAM, ReportCategory.LOAN, " offers loans ", alsoBlock = true)))
             assertEquals(BlockingMessage.Reported("+1 ••• 0123", blocked = true), awaitValue(vm.uiState) { it.message != null }.message)
-            assertEquals(listOf(number to ReportLabel.SPAM), graph.reports.pending(10).orFail())
+            val queued =
+                graph.db
+                    .reportOutboxDao()
+                    .inState(SyncState.PENDING, 10)
+                    .single()
+            assertEquals(number.e164, queued.e164)
+            assertEquals(ReportLabel.SPAM, queued.label)
+            assertEquals("loan", queued.category)
+            assertEquals("offers loans", queued.comment)
             assertEquals(Decision.BLOCK, ring(number).decision)
         }
 
+    @Test
+    fun notSpamReportsNeverBlockOrCarryACategory() =
+        runTest {
+            graph.signedIn.value = true
+            val vm = graph.settingsViewModel()
+            vm.showReport(number.e164)
+            assertTrue(awaitValue(vm.uiState) { it.report != null && it.signedIn }.signedIn)
+            vm.onEvent(BlockingEvent.SubmitReport(ReportDraft(ReportLabel.NOT_SPAM, ReportCategory.SCAM, "", alsoBlock = true)))
+            assertEquals(BlockingMessage.Reported("+1 ••• 0123", blocked = false), awaitValue(vm.uiState) { it.message != null }.message)
+            val queued =
+                graph.db
+                    .reportOutboxDao()
+                    .inState(SyncState.PENDING, 10)
+                    .single()
+            assertEquals(ReportLabel.NOT_SPAM, queued.label)
+            assertNull(queued.category)
+            assertNull(queued.comment)
+            assertTrue(
+                graph.rules
+                    .enabledCallRules()
+                    .orFail()
+                    .isEmpty(),
+            )
+        }
+
+    @Test
+    fun spamListStatusAndUpdateNow() =
+        runTest {
+            val vm = graph.settingsViewModel()
+            assertEquals(SpamListStatus(serverConfigured = true), awaitValue(vm.uiState) { !it.loading }.spamList)
+            graph.listState.value = SpamListSyncState("US", 7, 1_000)
+            assertEquals(SpamListStatus(true, "US", 7, 1_000), awaitValue(vm.uiState) { it.spamList.version == 7L }.spamList)
+
+            vm.onEvent(BlockingEvent.UpdateListNow)
+            assertEquals(BlockingMessage.ListUpdateStarted, awaitValue(vm.uiState) { it.message != null }.message)
+            assertEquals(1, graph.listUpdatesRequested)
+
+            vm.onEvent(BlockingEvent.Update { it.copy(listUpdatesOnMobileData = true) })
+            assertTrue(awaitValue(vm.uiState) { it.preferences.listUpdatesOnMobileData }.preferences.listUpdatesOnMobileData)
+        }
+
+    @Test
+    fun withoutAServerTheListSaysSo() =
+        runTest {
+            graph.serverConfigured = false
+            val vm = graph.settingsViewModel()
+            assertFalse(awaitValue(vm.uiState) { !it.loading }.spamList.serverConfigured)
+        }
+
+    @Test
+    fun blockedLogReportsAndExplains() =
+        runTest {
+            graph.events.record(event(number, ScreeningReason.NETWORK, spamScore = 0.9f))
+            graph.events.record(event(null, ScreeningReason.HIDDEN))
+            val vm = graph.blockedLogViewModel()
+            val calls = awaitValue(vm.uiState) { it.calls.size == 2 }.calls
+            val network = calls.single { it.number == number }
+            val hidden = calls.single { it.number == null }
+            assertEquals(listOf(WhyReason.LiveLookup), network.why)
+            assertEquals(listOf(WhyReason.HiddenSetting), hidden.why)
+
+            vm.onEvent(BlockedLogEvent.Explain(network))
+            assertEquals(network, awaitValue(vm.uiState) { it.explaining != null }.explaining)
+            vm.onEvent(BlockedLogEvent.DismissSheet)
+            awaitValue(vm.uiState) { it.explaining == null }
+
+            vm.onEvent(BlockedLogEvent.Report(hidden))
+            assertNull(vm.uiState.value.reporting)
+            vm.onEvent(BlockedLogEvent.Report(network))
+            awaitValue(vm.uiState) { it.reporting != null }
+            vm.onEvent(BlockedLogEvent.SubmitReport(ReportDraft(ReportLabel.SPAM, null, "", alsoBlock = false)))
+            assertEquals(BlockedLogMessage.Reported("+1 ••• 0123", blocked = false), awaitValue(vm.uiState) { it.message != null }.message)
+            assertEquals(listOf(number to ReportLabel.SPAM), graph.reports.pending(10).orFail())
+        }
+
     private fun event(
-        number: PhoneNumber,
+        number: PhoneNumber?,
         reason: ScreeningReason,
-    ) = ScreeningEvent(0, number, Direction.INCOMING, Decision.BLOCK, reason, null, CallerVerification.UNKNOWN, 3, graph.clock.nowMillis())
+        spamScore: Float? = null,
+    ) = ScreeningEvent(
+        0,
+        number,
+        Direction.INCOMING,
+        Decision.BLOCK,
+        reason,
+        spamScore,
+        CallerVerification.UNKNOWN,
+        3,
+        graph.clock.nowMillis(),
+    )
 }

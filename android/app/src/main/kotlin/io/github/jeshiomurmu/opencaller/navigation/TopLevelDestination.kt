@@ -47,6 +47,20 @@ data object BlockedCallsRoute
 @Serializable
 data object ScreeningDebugRoute
 
+/** Optional sign-in (from the Me tab, a search or a dispute). */
+@Serializable
+data object AccountSignInRoute
+
+/** Calls → Search a number (also Me → Search a number). */
+@Serializable
+data object NumberSearchRoute
+
+/** Me → Wrongly marked as spam? [number] (E.164) fills the form, e.g. from a search result. */
+@Serializable
+data class SpamDisputeRoute(
+    val number: String? = null,
+)
+
 /** The five bottom-bar tabs (docs/design.md §6), in display order. */
 enum class TopLevelDestination(
     val route: Any,

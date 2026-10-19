@@ -11,6 +11,7 @@ import io.github.jeshiomurmu.opencaller.core.model.RiskLevel
 import io.github.jeshiomurmu.opencaller.core.model.RuleAction
 import io.github.jeshiomurmu.opencaller.core.model.ScreeningReason
 import io.github.jeshiomurmu.opencaller.core.model.UserPreferences
+import io.github.jeshiomurmu.opencaller.core.model.VerdictSource
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -29,8 +30,9 @@ import kotlin.time.TimeSource
  * Decides what happens to a call, on the device (docs/architecture.md §4.1). Steps, in order:
  * emergency numbers and outgoing calls are always allowed; then 1 read the number (none ⇒ hidden), 2 contacts ring,
  * 3 allow rules, 4 block/silence rules, 5 hidden numbers, 6 foreign numbers, 7 non-contacts (verified businesses
- * still ring), 8 the spam list at the user's threshold, 9 the reputation cache, 10 the network lookup (a no-op until
- * Phase 5) and 11 the carrier's STIR/SHAKEN verdict, which only annotate the caller card.
+ * still ring), 8 the spam list at the user's threshold, 9 the reputation cache, 10 the k-anonymous live lookup
+ * (which also blocks at the user's threshold, except verified businesses) and 11 the carrier's STIR/SHAKEN verdict;
+ * 9 and 11 only annotate the caller card.
  *
  * Every decision finishes within [ScreeningConfig.budgetMillis]: the work runs in the engine's own scope and is
  * abandoned at the deadline, so even a lookup stuck in blocking I/O can't delay the call. A timeout or any failure
@@ -47,7 +49,7 @@ class ScreeningEngine(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + dispatchers.io)
     private val matcher = RuleMatcher(normalizer::countryOf, TimeLimitedRegex(config.regexBudgetMillis, regexClock))
-    private val describer = CallerDescriber(lists, normalizer)
+    private val describer = CallerDescriber(normalizer)
 
     /** Screens [call]. Never throws except to propagate the caller's own cancellation. */
     suspend fun screen(call: ScreeningCall): ScreeningResult {
@@ -172,7 +174,7 @@ class ScreeningEngine(
             }
         }
 
-    // Step 8, then what the caller card shows for a call that rings.
+    // Step 8, then step 10 (which may also block at the user's threshold), then what the caller card shows.
     private suspend fun decideBySpamList(
         number: PhoneNumber,
         prefs: UserPreferences,
@@ -180,15 +182,36 @@ class ScreeningEngine(
         call: ScreeningCall,
         caller: CallerInfo,
     ): ScreeningResult {
-        val verdict = lookups.spamHit.await()?.let { describer.verdict(it.score, it.category.ifBlank { null }, it.reportCount, prefs) }
-        return if (verdict?.level == RiskLevel.LIKELY_SPAM) {
-            val decision = if (prefs.blockTopSpammers) Decision.BLOCK else Decision.SILENCE
-            ScreeningResult(decision, ScreeningReason.SPAM_LIST, call.direction, caller.copy(spamVerdict = verdict))
+        val listVerdict =
+            lookups.spamHit.await()?.let {
+                describer.verdict(it.score, it.category.ifBlank { null }, it.reportCount, prefs, VerdictSource.SPAM_LIST)
+            }
+        if (listVerdict?.level == RiskLevel.LIKELY_SPAM) {
+            return ScreeningResult(prefs.spamDecision(), ScreeningReason.SPAM_LIST, call.direction, caller.copy(spamVerdict = listVerdict))
+        }
+        val known = KnownCaller(verified = lookups.verified.await(), cached = lookups.reputation.await())
+        val network = lookups.steps.measure("network") { lookUp(number) }
+        val networkVerdict = describer.networkVerdict(network, prefs)
+        val enriched = describer.enrich(caller, listVerdict ?: networkVerdict, network, prefs, known)
+        return if (networkVerdict?.level == RiskLevel.LIKELY_SPAM && !known.verified) {
+            ScreeningResult(prefs.spamDecision(), ScreeningReason.NETWORK, call.direction, enriched.copy(spamVerdict = networkVerdict))
         } else {
-            val known = KnownCaller(verified = lookups.verified.await(), cached = lookups.reputation.await())
-            allow(ScreeningReason.NO_MATCH, call, describer.enrich(number, caller, verdict, prefs, known))
+            allow(ScreeningReason.NO_MATCH, call, enriched)
         }
     }
+
+    // Step 10. The lookup has its own 800 ms limit; this one also covers a lookup that ignores it. A failed lookup only
+    // loses its answer: the call is still decided on the device's own information.
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun lookUp(number: PhoneNumber): NetworkVerdict? =
+        try {
+            withTimeoutOrNull(config.networkBudgetMillis) { lists.network.lookup(number) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Live lookup failed; deciding without it")
+            null
+        }
 
     // On-device answers for one number, fetched concurrently (see decideNumber). The rules, the spam list and the
     // reputation cache live in one encrypted database and are read one after another: concurrent readers make the
@@ -197,7 +220,7 @@ class ScreeningEngine(
     private inner class LocalLookups(
         scope: CoroutineScope,
         number: PhoneNumber,
-        steps: StepTimes,
+        val steps: StepTimes,
     ) {
         val prefs = scope.async { steps.measure("settings") { device.settings.current() } }
         val contactName = scope.async { steps.measure("contacts") { device.contacts.displayName(number) } }
@@ -215,17 +238,6 @@ class ScreeningEngine(
             }
     }
 
-    private fun ruleResult(
-        rule: BlockRule,
-        call: ScreeningCall,
-        caller: CallerInfo,
-    ): ScreeningResult =
-        when (rule.action) {
-            RuleAction.ALLOW -> ScreeningResult(Decision.ALLOW, ScreeningReason.ALLOW_RULE, call.direction, caller, rule)
-            RuleAction.BLOCK -> ScreeningResult(Decision.BLOCK, ScreeningReason.RULE, call.direction, caller, rule)
-            RuleAction.SILENCE -> ScreeningResult(Decision.SILENCE, ScreeningReason.RULE, call.direction, caller, rule)
-        }
-
     private fun allow(
         reason: ScreeningReason,
         call: ScreeningCall,
@@ -236,6 +248,21 @@ class ScreeningEngine(
         const val UNKNOWN_REGION = "ZZ"
     }
 }
+
+// Step 3 / 4: what a matching user rule does.
+private fun ruleResult(
+    rule: BlockRule,
+    call: ScreeningCall,
+    caller: CallerInfo,
+): ScreeningResult =
+    when (rule.action) {
+        RuleAction.ALLOW -> ScreeningResult(Decision.ALLOW, ScreeningReason.ALLOW_RULE, call.direction, caller, rule)
+        RuleAction.BLOCK -> ScreeningResult(Decision.BLOCK, ScreeningReason.RULE, call.direction, caller, rule)
+        RuleAction.SILENCE -> ScreeningResult(Decision.SILENCE, ScreeningReason.RULE, call.direction, caller, rule)
+    }
+
+// Step 8 / 10 answer for a likely spammer: block, or only silence it when the user chose so.
+private fun UserPreferences.spamDecision(): Decision = if (blockTopSpammers) Decision.BLOCK else Decision.SILENCE
 
 /** How long each step of one decision took, for the debug log. Lookups run concurrently, so they can overlap. */
 private class StepTimes(

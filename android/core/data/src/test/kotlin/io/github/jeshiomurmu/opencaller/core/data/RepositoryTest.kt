@@ -159,7 +159,7 @@ class RepositoryTest {
     @Test
     fun reportsGoToTheOutboxOnly() =
         runTest {
-            val reports = ReportRepository(access, dispatchers, clock)
+            val reports = ReportRepository(access, dispatchers, clock, RecordingBackgroundWork())
             reports.queue(number, ReportLabel.NOT_SPAM)
             assertEquals(listOf(number to ReportLabel.NOT_SPAM), reports.pending(10).getOrNull())
         }

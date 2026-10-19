@@ -92,4 +92,50 @@
     <string name="explain_call_state_title">Close the caller card when a call ends</string>
     <string name="explain_call_state_why">With this, OpenCaller knows when a call ends, so it can close the caller card and show a summary right away.</string>
     <string name="explain_call_state_never">OpenCaller only checks whether a call is ringing, active or over. It never reads your phone number, your SIM or who you talk to.</string>
+    <!-- Report categories (the server's list, docs/architecture.md §4.8). -->
+    <string name="category_scam">Scam</string>
+    <string name="category_fraud">Fraud</string>
+    <string name="category_telemarketing">Telemarketing</string>
+    <string name="category_loan">Loan offers</string>
+    <string name="category_debt_collector">Debt collector</string>
+    <string name="category_robocall">Robocall</string>
+    <string name="category_survey">Survey</string>
+    <string name="category_political">Political</string>
+    <string name="category_charity">Charity</string>
+    <string name="category_nuisance">Nuisance</string>
+    <string name="category_other">Other</string>
+
+    <!-- Report sheet. -->
+    <string name="report_sheet_title">Report %1$s</string>
+    <string name="report_label_spam">Spam</string>
+    <string name="report_label_not_spam">Not spam</string>
+    <string name="report_category">What kind of call was it? (optional)</string>
+    <string name="report_also_block">Also block this number</string>
+    <string name="report_comment">Comment (optional)</string>
+    <string name="report_comment_hint">Don\'t include names, numbers or other personal details.</string>
+    <string name="report_privacy">Only this number, your answer and your comment are sent. Your contacts and call history stay on this phone.</string>
+    <string name="report_waits_for_sign_in">You\'re not signed in. The report is saved on this phone and sent after you sign in.</string>
+    <string name="report_send">Send report</string>
+    <string name="report_cancel">Cancel</string>
+
+    <!-- "Why am I seeing this?" -->
+    <string name="why_title">Why am I seeing this?</string>
+    <string name="why_rule">It matches one of your blocking rules.</string>
+    <string name="why_hidden">You chose to block hidden numbers.</string>
+    <string name="why_foreign">You chose to block calls from other countries.</string>
+    <string name="why_non_contact">You chose to block numbers that aren\'t in your contacts.</string>
+    <string name="why_contact">The name is the one you saved in your contacts.</string>
+    <string name="why_self_registered">The owner of this number registered this name and confirmed the number with a code.</string>
+    <string name="why_verified_business">OpenCaller verified this business.</string>
+    <string name="why_spam_list">This number is on the spam list saved on your phone.</string>
+    <string name="why_earlier_lookup">OpenCaller looked this number up earlier and kept the answer for 24 hours.</string>
+    <string name="why_live_lookup">OpenCaller checked this number privately during the call. Only a short code made from the scrambled number was sent, never the number itself.</string>
+    <string name="why_searched">You searched for this number, so OpenCaller sent it to the server to look it up.</string>
+    <plurals name="why_reports">
+        <item quantity="one">%d person reported this number.</item>
+        <item quantity="other">%d people reported this number.</item>
+    </plurals>
+    <string name="why_stir_passed">Your carrier verified the caller\'s number.</string>
+    <string name="why_stir_failed">Your carrier couldn\'t verify the caller\'s number. It may be spoofed.</string>
+    <string name="why_privacy">OpenCaller never uploads your contacts or call history.</string>
 </resources>

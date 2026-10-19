@@ -8,6 +8,10 @@ import io.github.jeshiomurmu.opencaller.core.data.BlockRuleRepository
 import io.github.jeshiomurmu.opencaller.core.data.ReportRepository
 import io.github.jeshiomurmu.opencaller.core.data.ScreeningEventRepository
 import io.github.jeshiomurmu.opencaller.core.data.SpamListRepository
+import io.github.jeshiomurmu.opencaller.core.data.account.AccountStatus
+import io.github.jeshiomurmu.opencaller.core.data.sync.SpamListSyncState
+import io.github.jeshiomurmu.opencaller.core.data.sync.SpamListUpdates
+import io.github.jeshiomurmu.opencaller.core.data.work.BackgroundWork
 import io.github.jeshiomurmu.opencaller.core.database.DatabaseAccess
 import io.github.jeshiomurmu.opencaller.core.database.OpenCallerDatabase
 import io.github.jeshiomurmu.opencaller.core.datastore.UserSettingsDataSource
@@ -27,6 +31,7 @@ import io.github.jeshiomurmu.opencaller.core.testing.TestDispatcherProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.withContext
@@ -56,7 +61,19 @@ class TestGraph {
     val rules = BlockRuleRepository(access, dispatchers, clock)
     val events = ScreeningEventRepository(access, dispatchers, clock)
     val spam = SpamListRepository(access, dispatchers)
-    val reports = ReportRepository(access, dispatchers, clock)
+    val reports =
+        ReportRepository(
+            access,
+            dispatchers,
+            clock,
+            object : BackgroundWork {
+                override fun uploadReports(delayMillis: Long) = Unit
+
+                override fun scheduleListSync(allowMobileData: Boolean) = Unit
+
+                override fun syncListNow() = Unit
+            },
+        )
     val contactLookup =
         object : ContactLookup {
             override fun canRead(): Boolean = canReadContacts
@@ -79,6 +96,31 @@ class TestGraph {
             ScreeningConfig(),
         )
     val validator = RuleValidator(normalizer, TimeLimitedRegex(ScreeningConfig.DEFAULT_REGEX_BUDGET_MILLIS))
+    val signedIn = MutableStateFlow(false)
+    val account =
+        object : AccountStatus {
+            override val signedIn: Flow<Boolean> = this@TestGraph.signedIn
+            override val serverConfigured: Boolean = true
+            override val unlistPageUrl: String? = null
+        }
+    val reportNumber = ReportNumber(reports, rules, account)
+    val listState = MutableStateFlow(SpamListSyncState())
+    var serverConfigured = true
+    var listUpdatesRequested = 0
+    val lists =
+        object : SpamListUpdates {
+            override val state: Flow<SpamListSyncState> = listState
+            override val serverConfigured: Boolean get() = this@TestGraph.serverConfigured
+
+            override fun updateNow() {
+                listUpdatesRequested++
+            }
+        }
+
+    fun settingsViewModel(region: String = "US") =
+        BlockingSettingsViewModel(settings, contactLookup, { region }, normalizer, reportNumber, lists)
+
+    fun blockedLogViewModel() = BlockedLogViewModel(events, UnblockNumber(rules, engine), normalizer, { "US" }, reportNumber)
 
     fun close() {
         db.close()

@@ -159,7 +159,8 @@ class OnboardingTest {
 
     private fun openPermissionsStatus() {
         tap(string(AppR.string.tab_me))
-        tap(string(SettingsR.string.settings_permissions))
+        // The Me tab scrolls: the account section comes before the settings rows.
+        Ui.scrollToAndTap(string(SettingsR.string.settings_permissions))
         waitFor(string(SettingsR.string.permissions_title))
     }
 

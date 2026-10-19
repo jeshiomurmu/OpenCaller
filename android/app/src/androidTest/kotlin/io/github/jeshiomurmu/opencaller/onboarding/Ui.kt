@@ -64,6 +64,24 @@ object Ui {
     }
 
     /**
+     * Scrolls to [text] and taps it. Rows above it can still grow while the screen loads and push it out of view, so
+     * it is looked up again after the screen settles, right before the tap.
+     */
+    fun scrollToAndTap(text: String) {
+        val deadline = System.currentTimeMillis() + TIMEOUT_MILLIS
+        while (System.currentTimeMillis() < deadline) {
+            scrollTo(text)
+            device.waitForIdle()
+            val row = device.findObject(By.text(text))
+            if (row != null) {
+                row.click()
+                return
+            }
+        }
+        throw AssertionError("'$text' is not on screen")
+    }
+
+    /**
      * Taps the first of [selectors] to appear (system dialogs differ between Android versions) and waits until it is
      * gone. A tap that lands while the dialog is still animating in is ignored by the system (seen on API 36), so the
      * tap is repeated until the button disappears.

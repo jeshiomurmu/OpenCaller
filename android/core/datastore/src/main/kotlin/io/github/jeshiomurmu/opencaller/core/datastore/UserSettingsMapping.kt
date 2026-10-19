@@ -58,6 +58,7 @@ internal fun UserSettings.toDomain(): UserPreferences =
         announceCallerMode = announceModes.domainOf(announceCallerMode, defaults.announceCallerMode),
         themeMode = themeModes.domainOf(themeMode, defaults.themeMode),
         onboardingStep = onboardingSteps.domainOf(onboardingStep, defaults.onboardingStep),
+        listUpdatesOnMobileData = listUpdatesOnMobileData,
     )
 
 /** Maps the domain model to its stored form. Region codes are stored sorted so equal sets serialize equally. */
@@ -74,4 +75,5 @@ internal fun UserPreferences.toProto(): UserSettings =
         .setAnnounceCallerMode(announceModes.getValue(announceCallerMode))
         .setThemeMode(themeModes.getValue(themeMode))
         .setOnboardingStep(onboardingSteps.getValue(onboardingStep))
+        .setListUpdatesOnMobileData(listUpdatesOnMobileData)
         .build()
