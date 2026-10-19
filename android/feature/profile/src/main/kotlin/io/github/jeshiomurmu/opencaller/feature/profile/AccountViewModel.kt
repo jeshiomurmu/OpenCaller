@@ -30,17 +30,21 @@ class AccountViewModel
     constructor(
         private val account: Account,
     ) : ViewModel() {
-        /** Section state. */
+        /**
+         * Section state. Whether there is a server is known at once (it comes from the build), so the first frame
+         * already shows the right rows: no "Not connected" flash and no jump when the sign-in state arrives.
+         */
         val uiState: StateFlow<AccountUiState> =
             account.signedIn
-                .map { signedIn ->
-                    AccountUiState(
-                        loading = false,
-                        serverConfigured = account.serverConfigured,
-                        signedIn = signedIn,
-                        unlistPageUrl = account.unlistPageUrl,
-                    )
-                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), AccountUiState())
+                .map { signedIn -> initialState().copy(loading = false, signedIn = signedIn) }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), initialState())
+
+        private fun initialState() =
+            AccountUiState(
+                loading = true,
+                serverConfigured = account.serverConfigured,
+                unlistPageUrl = account.unlistPageUrl,
+            )
 
         /** Signs out on this phone. */
         fun signOut() {

@@ -138,6 +138,14 @@ class SignInViewModelTest {
     }
 
     @Test
+    fun accountSectionKnowsAboutTheServerBeforeSignInStateArrives() {
+        val section = AccountViewModel(account)
+        assertEquals(AccountUiState(true, true, false, "http://10.0.2.2:8080/unlist"), section.uiState.value)
+        val offline = AccountViewModel(FakeAccount(serverConfigured = false))
+        assertEquals(AccountUiState(loading = true, serverConfigured = false), offline.uiState.value)
+    }
+
+    @Test
     fun accountSectionFollowsSignIn() =
         runTest {
             val section = AccountViewModel(account)
