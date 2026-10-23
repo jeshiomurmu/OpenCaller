@@ -6,8 +6,8 @@
 #                  on and shows OpenCaller's in-call screen over the lock screen, with the caller card from screening
 #                  ("Suspicious" for a number on the spam list below the threshold); Answer connects the call without
 #                  unlocking; Hang up ends it
-#   TC-DIAL-001    (in-call side) an outgoing call placed through Telecom (ACTION_CALL) shows the in-call screen;
-#                  Hang up ends it
+#   TC-DIAL-001    a number opened in the dial pad (ACTION_DIAL with tel:) and Call place the call through Telecom
+#                  (placeCall) and show the in-call screen; Hang up ends it
 #
 # The call state is read from the telephony registry (0 idle, 1 ringing, 2 off-hook). Screenshots go to <out-dir>.
 # Run it last: it leaves the dialer role removed and the lock screen cleared, but the app's settings reset.
@@ -119,6 +119,8 @@ diagnostics() {
   echo "--- resumed: $(resumed_activity)"
   echo "--- call state: $(call_state)"
   dump | grep -oE 'text="[^"]+"' | head -40 || true
+  adb shell dumpsys telecom | tr -d '\r' | grep -iE 'state|call ' | head -40 || true
+  adb logcat -d > "$out/logcat-$1.txt" 2>&1 || true
   adb shell dumpsys notification --noredact | tr -d '\r' | grep -E 'pkg=|fullscreenIntent|android.title' | grep -A2 "$app_id" | head -20 || true
 }
 
@@ -137,6 +139,7 @@ done
 echo "API $sdk: $app_id is the default phone app"
 
 if [[ "$sdk" -ge 33 ]]; then adb shell pm grant "$app_id" android.permission.POST_NOTIFICATIONS; fi
+adb shell pm grant "$app_id" android.permission.CALL_PHONE
 # Android 14+: full-screen intents can be off for sideloaded apps; OpenCaller's Permissions screen offers Fix.
 if [[ "$sdk" -ge 34 ]]; then
   echo "USE_FULL_SCREEN_INTENT before: $(adb shell appops get "$app_id" USE_FULL_SCREEN_INTENT | tr -d '\r')"
@@ -179,29 +182,38 @@ if wait_for_in_call_screen && wait_for_text "Answer"; then
   if wait_for_state 0; then pass TC-INCALL-001 "Hang up ended the call"; else fail TC-INCALL-001 "call still up"; fi
 else
   screenshot incoming-locked-missing
-  diagnostics
+  diagnostics incoming
   fail TC-INCALL-001 "no in-call screen for the incoming call"
 fi
 adb emu gsm cancel "$caller" > /dev/null 2>&1 || true
 wait_for_state 0 || true
 
-# Unlock for the next case.
+# Unlock for the next case and let Telecom finish with the first call (disconnect tone, unbinding).
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell locksettings clear --old "$pin" > /dev/null
 adb shell wm dismiss-keyguard > /dev/null 2>&1 || true
-sleep 2
+wait_for_state 0 || true
+sleep 5
 
-# --- TC-DIAL-001 (in-call side): an outgoing call shows the in-call screen ------------------------------------------
-adb shell am start -a android.intent.action.CALL -d "tel:+12015550198" > /dev/null
-if wait_for_in_call_screen && wait_for_text "Hang up"; then
-  screenshot outgoing
-  pass TC-DIAL-001 "outgoing call shows OpenCaller's in-call screen"
-  tap_text "Hang up" || true
-  if wait_for_state 0; then pass TC-DIAL-001 "Hang up ended the call"; else fail TC-DIAL-001 "call still up"; fi
+# --- TC-DIAL-001: the dial pad places a call and the in-call screen shows it --------------------------------------
+adb shell am start -a android.intent.action.DIAL -d "tel:+12015550198" > /dev/null
+if wait_for_text "+12015550198" && on_screen "Call"; then
+  screenshot dial-pad
+  tap_text "Call"
+  if wait_for_in_call_screen && wait_for_text "Hang up"; then
+    screenshot outgoing
+    pass TC-DIAL-001 "the dial pad placed the call and the in-call screen shows it"
+    tap_text "Hang up" || true
+    if wait_for_state 0; then pass TC-DIAL-001 "Hang up ended the call"; else fail TC-DIAL-001 "call still up"; fi
+  else
+    screenshot outgoing-missing
+    diagnostics outgoing
+    fail TC-DIAL-001 "no in-call screen for the call placed from the dial pad"
+  fi
 else
-  screenshot outgoing-missing
-  diagnostics
-  fail TC-DIAL-001 "no in-call screen for the outgoing call"
+  screenshot dial-pad-missing
+  diagnostics dial-pad
+  fail TC-DIAL-001 "the dial pad didn't open with the number"
 fi
 adb emu gsm cancel "+12015550198" > /dev/null 2>&1 || true
 
