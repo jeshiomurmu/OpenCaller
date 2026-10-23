@@ -46,12 +46,19 @@ qa_ok() {
 
 dump() { adb shell uiautomator dump /sdcard/window.xml > /dev/null 2>&1 && adb shell cat /sdcard/window.xml; }
 
-on_screen() { dump | grep -qF "text=\"$1\""; }
+# Checks read a command's whole output first: with pipefail, `cmd | grep -q` fails when grep stops reading early.
+on_screen() {
+  local window
+  window="$(dump)" || true
+  grep -qF "text=\"$1\"" <<< "$window"
+}
 
 # Waits until some on-screen text starts with $1 (the risk banner reads e.g. "Suspicious · Loan offers · 1 report").
 wait_for_text_starting() {
   for _ in $(seq 1 20); do
-    if dump | grep -qF "text=\"$1"; then return 0; fi
+    local window
+    window="$(dump)" || true
+    if grep -qF "text=\"$1" <<< "$window"; then return 0; fi
     sleep 1
   done
   return 1
@@ -67,13 +74,19 @@ wait_for_text() {
 
 tap_text() {
   local bounds x1 y1 x2 y2
-  bounds="$(dump | grep -oE "text=\"$1\"[^>]*bounds=\"\[[0-9]+,[0-9]+\]\[[0-9]+,[0-9]+\]\"" | head -1 | grep -oE '\[[0-9]+,[0-9]+\]\[[0-9]+,[0-9]+\]' || true)"
+  local window
+  window="$(dump)" || true
+  bounds="$(grep -oE "text=\"$1\"[^>]*bounds=\"\[[0-9]+,[0-9]+\]\[[0-9]+,[0-9]+\]\"" <<< "$window" | sed -n 1p | grep -oE '\[[0-9]+,[0-9]+\]\[[0-9]+,[0-9]+\]' || true)"
   [[ -n "$bounds" ]] || { echo "no on-screen node with text '$1'"; return 1; }
   read -r x1 y1 x2 y2 <<< "$(sed -E 's/\[([0-9]+),([0-9]+)\]\[([0-9]+),([0-9]+)\]/\1 \2 \3 \4/' <<< "$bounds")"
   adb shell input tap $(((x1 + x2) / 2)) $(((y1 + y2) / 2))
 }
 
-call_state() { adb shell dumpsys telephony.registry | tr -d '\r' | grep -oE 'mCallState=[0-9]' | head -1 | cut -d= -f2; }
+call_state() {
+  local registry
+  registry="$(adb shell dumpsys telephony.registry | tr -d '\r')"
+  grep -oE 'mCallState=[0-9]' <<< "$registry" | sed -n 1p | cut -d= -f2
+}
 
 wait_for_state() {
   for _ in $(seq 1 40); do
@@ -85,12 +98,14 @@ wait_for_state() {
 
 # The activity in front (the resumed one), from the activity manager.
 resumed_activity() {
-  adb shell dumpsys activity activities | tr -d '\r' | grep -E 'mResumedActivity|topResumedActivity|ResumedActivity:' | head -1
+  local activities
+  activities="$(adb shell dumpsys activity activities | tr -d '\r')"
+  grep -E 'mResumedActivity|topResumedActivity|ResumedActivity:' <<< "$activities" | sed -n 1p || true
 }
 
 wait_for_in_call_screen() {
   for _ in $(seq 1 30); do
-    if resumed_activity | grep -q "$in_call"; then return 0; fi
+    if [[ "$(resumed_activity)" == *"$in_call"* ]]; then return 0; fi
     sleep 1
   done
   return 1
@@ -101,7 +116,9 @@ wait_for_in_call_screen() {
 keyguard_dump() { { adb shell dumpsys window policy; adb shell dumpsys activity activities; } | tr -d '\r'; }
 
 keyguard_locked() {
-  keyguard_dump | grep -qE '^\s*showing=true|mKeyguardShowing=true|isKeyguardShowing=true|mIsShowing=true|isStatusBarKeyguard=true|KeyguardShowing: true'
+  local state
+  state="$(keyguard_dump)" || true
+  grep -qE '^\s*showing=true|mKeyguardShowing=true|isKeyguardShowing=true|mIsShowing=true|isStatusBarKeyguard=true|KeyguardShowing: true' <<< "$state"
 }
 
 # Unlocks the way a person does (the PIN on the bouncer), then removes the PIN.
@@ -122,7 +139,7 @@ unlock() {
   sleep 1
   if keyguard_locked; then
     echo "::error::the phone is still locked"
-    keyguard_dump | grep -iE 'showing|keyguard' | head -20
+    keyguard_dump | grep -iE 'showing|keyguard' | head -20 || true
     return 1
   fi
 }
