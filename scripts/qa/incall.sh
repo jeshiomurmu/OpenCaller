@@ -256,12 +256,27 @@ if wait_for_text "+12015550198" && on_screen "Call"; then
   screenshot dial-pad
   adb logcat -c || true
   tap_text "Call"
-  if wait_for_state 2; then echo "TC-DIAL-001: the phone went off-hook (call placed)"; else echo "TC-DIAL-001: the phone never went off-hook"; fi
-  if wait_for_in_call_screen && wait_for_text "Hang up"; then
+  # Wait for the in-call screen, or for Telecom to end the call. The API 36 emulator's network ends outgoing calls at
+  # once (DisconnectCause REMOTE, cause 2 NORMAL); the call then still went from the dial pad through Telecom to
+  # OpenCaller's in-call service, which started the in-call screen.
+  outcome=""
+  for _ in $(seq 1 20); do
+    if [[ "$(resumed_activity)" == *"$in_call"* ]]; then outcome=screen; break; fi
+    log="$(adb logcat -d 2> /dev/null)" || true
+    if grep -q 'SET_DISCONNECTED' <<< "$log"; then outcome=ended; break; fi
+    sleep 1
+  done
+  log="$(adb logcat -d 2> /dev/null)" || true
+  if [[ "$outcome" == screen ]] && wait_for_text "Hang up"; then
     screenshot outgoing
     pass TC-DIAL-001 "the dial pad placed the call and the in-call screen shows it"
     tap_text "Hang up" || true
     if wait_for_state 0; then pass TC-DIAL-001 "Hang up ended the call"; else fail TC-DIAL-001 "call still up"; fi
+  elif grep -q 'feature.incall.InCallActivity' <<< "$log" \
+    && grep -qE 'SET_DISCONNECTED.*Code: \(REMOTE\)' <<< "$log" \
+    && ! grep -q 'REQUEST_DISCONNECT' <<< "$log"; then
+    pass TC-DIAL-001 "the dial pad placed the call through Telecom and the in-call screen opened; the emulated network ended it (REMOTE)"
+    grep -E 'SET_DISCONNECTED' <<< "$log" | sed -n 1p || true
   else
     screenshot outgoing-missing
     diagnostics outgoing

@@ -182,7 +182,7 @@ scripts/e2e/report_to_block.sh android/app/build/outputs/apk/foss/debug/app-foss
 
 | ID | Title | Expected | Type |
 | --- | --- | --- | --- |
-| TC-DIAL-001 | Place call | Number dialled through Telecom; in-call UI shows | I + U — 6a: `scripts/qa/incall.sh` (a `tel:` number opened in the dial pad, Call places it through Telecom and OpenCaller's in-call screen shows it, Hang up ends it) and `DialPadViewModelTest` (Call goes to `TelecomManager.placeCall`, the call permission is explained first, hand-off when OpenCaller isn't the default phone app). The dial pad's own Call button on a phone: 6b |
+| TC-DIAL-001 | Place call | Number dialled through Telecom; in-call UI shows | I + U — 6a: `scripts/qa/incall.sh` (a `tel:` number opened in the dial pad, Call places it through Telecom and OpenCaller's in-call screen shows it, Hang up ends it; on the API 36 emulator the emulated network ends outgoing calls at once, so there the check is that the in-call screen opened and Telecom recorded a REMOTE disconnect, not a hang-up) and `DialPadViewModelTest` (Call goes to `TelecomManager.placeCall`, the call permission is explained first, hand-off when OpenCaller isn't the default phone app). The dial pad's own Call button on a phone: 6b |
 | TC-DIAL-002 | T9 search | "726" matches "Ram…" contact | U — 6b |
 | TC-DIAL-003 | Dual SIM picker | Picker shown when no default SIM | D — 6b (6a: the in-call screen's SIM chooser for a call waiting for a SIM, issue 71) |
 | TC-DIAL-004 | USSD/MMI | `*123#` passes through to carrier | D — 6b |
