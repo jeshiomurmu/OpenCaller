@@ -1,5 +1,6 @@
 package io.github.jeshiomurmu.opencaller.feature.incall.calls
 
+import android.annotation.SuppressLint
 import android.os.Build
 import android.os.Bundle
 import android.telecom.Call
@@ -157,7 +158,11 @@ private fun stateOf(call: Call): Int =
         call.state
     }
 
-/** [Call] state constants to [CallStatus]. */
+/**
+ * [Call] state constants to [CallStatus]. Only compares the state: Android 10 never reports `STATE_SIMULATED_RINGING`
+ * (API 30), so its inlined value is safe there.
+ */
+@SuppressLint("InlinedApi")
 internal fun statusOf(state: Int): CallStatus =
     when (state) {
         Call.STATE_NEW, Call.STATE_CONNECTING, Call.STATE_PULLING_CALL -> CallStatus.CONNECTING

@@ -96,13 +96,17 @@ wait_for_in_call_screen() {
   return 1
 }
 
+# The dump format differs between versions: the activity manager's KeyguardController and the window manager's policy
+# both say whether the keyguard is showing.
 keyguard_locked() {
-  adb shell dumpsys window | tr -d '\r' | grep -qE 'mKeyguardShowing=true|isKeyguardShowing=true|mShowingLockscreen=true|KeyguardShowing: true|keyguardShowing=true'
+  { adb shell dumpsys activity activities; adb shell dumpsys window; adb shell dumpsys window policy; } | tr -d '\r' \
+    | grep -qE 'mKeyguardShowing=true|isKeyguardShowing=true|mShowingLockscreen=true|KeyguardShowing: true|keyguardShowing=true'
 }
 
 screenshot() { adb exec-out screencap -p > "$out/$1.png" || true; }
 
 cleanup() {
+  adb shell settings put secure lock_screen_lock_after_timeout "${lock_after:-5000}" > /dev/null 2>&1 || true
   adb emu gsm cancel "$caller" > /dev/null 2>&1 || true
   adb shell input keyevent KEYCODE_WAKEUP || true
   adb shell locksettings clear --old "$pin" > /dev/null 2>&1 || true
@@ -144,8 +148,15 @@ qa_ok spam --es number "$caller" --es score 0.7 --es category Loan
 
 # --- TC-INCALL-001: answer from the lock screen ---------------------------------------------------------------------
 adb shell locksettings set-pin "$pin" > /dev/null
+# A PIN locks 5 s after the screen goes off by default; lock at once instead.
+lock_after="$(adb shell settings get secure lock_screen_lock_after_timeout | tr -d '\r')"
+[[ "$lock_after" =~ ^[0-9]+$ ]] || lock_after=5000
+adb shell settings put secure lock_screen_lock_after_timeout 0
 adb shell input keyevent KEYCODE_SLEEP
-sleep 3
+for _ in $(seq 1 10); do
+  if keyguard_locked; then break; fi
+  sleep 1
+done
 if keyguard_locked; then echo "Locked with a PIN, screen off"; else echo "warning: keyguard state not reported as showing"; fi
 
 adb emu gsm call "$caller"

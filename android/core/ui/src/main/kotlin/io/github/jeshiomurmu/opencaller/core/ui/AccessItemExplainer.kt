@@ -109,7 +109,7 @@ private val explainerCopies: Map<AccessItem, ExplainerCopy> =
             ),
         AccessItem.FULL_SCREEN_CALLS to
             ExplainerCopy(
-                OpenCallerIcons.Calls,
+                OpenCallerIcons.Privacy,
                 R.string.explain_full_screen_calls_title,
                 R.string.explain_full_screen_calls_why,
                 R.string.explain_full_screen_calls_never,

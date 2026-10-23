@@ -86,14 +86,14 @@ internal class InCallAudio(
     }
 
     private companion object {
-        // CallAudioState routes (before Android 14), in the order the route picker lists them.
+        // CallAudioState routes (before Android 14), in the order the route picker lists them. ROUTE_STREAMING is
+        // API 34, where CallEndpoint is used instead, so it never shows up here.
         val LEGACY_ROUTES =
             linkedMapOf(
                 CallAudioState.ROUTE_EARPIECE to AudioRouteType.EARPIECE,
                 CallAudioState.ROUTE_SPEAKER to AudioRouteType.SPEAKER,
                 CallAudioState.ROUTE_WIRED_HEADSET to AudioRouteType.WIRED_HEADSET,
                 CallAudioState.ROUTE_BLUETOOTH to AudioRouteType.BLUETOOTH,
-                CallAudioState.ROUTE_STREAMING to AudioRouteType.STREAMING,
             )
     }
 }

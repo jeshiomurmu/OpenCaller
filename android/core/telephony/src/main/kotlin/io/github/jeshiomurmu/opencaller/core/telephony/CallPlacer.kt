@@ -1,6 +1,7 @@
 package io.github.jeshiomurmu.opencaller.core.telephony
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -49,6 +50,8 @@ class DeviceCallPlacer
             }
         }
 
+        // place() checks CALL_PHONE just before; a permission revoked in between throws SecurityException, caught here.
+        @SuppressLint("MissingPermission")
         private fun placeWith(
             telecom: TelecomManager,
             number: String,
