@@ -96,11 +96,35 @@ wait_for_in_call_screen() {
   return 1
 }
 
-# The dump format differs between versions: the activity manager's KeyguardController and the window manager's policy
-# both say whether the keyguard is showing.
+# The dump format differs between versions; the window policy's KeyguardServiceDelegate prints "showing=true" while the
+# keyguard is up (also while an activity shows over it), and the activity manager's KeyguardController has its own line.
+keyguard_dump() { { adb shell dumpsys window policy; adb shell dumpsys activity activities; } | tr -d '\r'; }
+
 keyguard_locked() {
-  { adb shell dumpsys activity activities; adb shell dumpsys window; adb shell dumpsys window policy; } | tr -d '\r' \
-    | grep -qE 'mKeyguardShowing=true|isKeyguardShowing=true|mShowingLockscreen=true|KeyguardShowing: true|keyguardShowing=true'
+  keyguard_dump | grep -qE '^\s*showing=true|mKeyguardShowing=true|isKeyguardShowing=true|mIsShowing=true|isStatusBarKeyguard=true|KeyguardShowing: true'
+}
+
+# Unlocks the way a person does (the PIN on the bouncer), then removes the PIN.
+unlock() {
+  for _ in $(seq 1 5); do
+    adb shell input keyevent KEYCODE_WAKEUP
+    adb shell input keyevent KEYCODE_MENU
+    # On a secure keyguard this brings up the PIN bouncer.
+    adb shell wm dismiss-keyguard > /dev/null 2>&1 || true
+    sleep 1
+    adb shell input text "$pin"
+    adb shell input keyevent KEYCODE_ENTER
+    sleep 2
+    if ! keyguard_locked; then break; fi
+  done
+  adb shell locksettings clear --old "$pin" > /dev/null || echo "warning: could not clear the PIN"
+  adb shell wm dismiss-keyguard > /dev/null 2>&1 || true
+  sleep 1
+  if keyguard_locked; then
+    echo "::error::the phone is still locked"
+    keyguard_dump | grep -iE 'showing|keyguard' | head -20
+    return 1
+  fi
 }
 
 screenshot() { adb exec-out screencap -p > "$out/$1.png" || true; }
@@ -160,7 +184,12 @@ for _ in $(seq 1 10); do
   if keyguard_locked; then break; fi
   sleep 1
 done
-if keyguard_locked; then echo "Locked with a PIN, screen off"; else echo "warning: keyguard state not reported as showing"; fi
+if keyguard_locked; then
+  echo "Locked with a PIN, screen off"
+else
+  echo "warning: keyguard state not reported as showing:"
+  keyguard_dump | grep -iE 'showing|keyguard' | head -20 || true
+fi
 
 adb emu gsm call "$caller"
 if wait_for_in_call_screen && wait_for_text "Answer"; then
@@ -189,10 +218,8 @@ adb emu gsm cancel "$caller" > /dev/null 2>&1 || true
 wait_for_state 0 || true
 
 # Unlock for the next case and let Telecom finish with the first call (disconnect tone, unbinding).
-adb shell input keyevent KEYCODE_WAKEUP
-adb shell locksettings clear --old "$pin" > /dev/null
-adb shell wm dismiss-keyguard > /dev/null 2>&1 || true
 wait_for_state 0 || true
+unlock || fail TC-INCALL-001 "could not unlock after the call"
 sleep 5
 
 # --- TC-DIAL-001: the dial pad places a call and the in-call screen shows it --------------------------------------
