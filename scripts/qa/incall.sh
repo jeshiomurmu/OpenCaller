@@ -160,8 +160,19 @@ diagnostics() {
   echo "--- resumed: $(resumed_activity)"
   echo "--- call state: $(call_state)"
   dump | grep -oE 'text="[^"]+"' | head -40 || true
-  adb shell dumpsys telecom | tr -d '\r' | grep -iE 'state|call ' | head -40 || true
+  # Telecom's history of the last call: who placed and who ended it (REQUEST_DISCONNECT is an in-call app's hang-up,
+  # SET_DISCONNECTED carries the network's DisconnectCause).
+  local telecom
+  telecom="$(adb shell dumpsys telecom | tr -d '\r')" || true
+  printf '%s\n' "$telecom" > "$out/telecom-$1.txt"
+  echo "--- last call in Telecom:"
+  awk '/^ *Call TC@[0-9]+: \{/ { block = "" } { block = block $0 "\n" } END { printf "%s", block }' <<< "$telecom" \
+    | grep -vE 'AUDIO_ROUTE|BT_|CALL_AUDIO|_AUDIO_' | sed -n 1,60p || true
+  echo "--- Telecom and app log since the call was placed:"
   adb logcat -d > "$out/logcat-$1.txt" 2>&1 || true
+  grep -E 'Telecom|opencaller|InCall|TelephonyConnection|GsmCdma|RILJ' "$out/logcat-$1.txt" \
+    | grep -E 'TC@|isconnect|DISCONNECT|placeCall|Outgoing|setCallState|onCallAdded|Exception|hangup|HANGUP|DIAL' \
+    | grep -vE 'AudioRoute|AUDIO_ROUTE|Bluetooth' | tail -n 60 || true
   adb shell dumpsys notification --noredact | tr -d '\r' | grep -E 'pkg=|fullscreenIntent|android.title' | grep -A2 "$app_id" | head -20 || true
 }
 
@@ -243,7 +254,9 @@ sleep 5
 adb shell am start -a android.intent.action.DIAL -d "tel:+12015550198" > /dev/null
 if wait_for_text "+12015550198" && on_screen "Call"; then
   screenshot dial-pad
+  adb logcat -c || true
   tap_text "Call"
+  if wait_for_state 2; then echo "TC-DIAL-001: the phone went off-hook (call placed)"; else echo "TC-DIAL-001: the phone never went off-hook"; fi
   if wait_for_in_call_screen && wait_for_text "Hang up"; then
     screenshot outgoing
     pass TC-DIAL-001 "the dial pad placed the call and the in-call screen shows it"
