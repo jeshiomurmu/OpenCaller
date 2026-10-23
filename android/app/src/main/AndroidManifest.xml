@@ -31,6 +31,19 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!--
+                The dial pad. The default phone app must handle ACTION_DIAL with and without tel: data
+                (developer.android.com/reference/android/telecom/InCallService, "Becoming the Default Phone App").
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.DIAL" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.DIAL" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="tel" />
+            </intent-filter>
         </activity>
 
         <!-- WorkManager starts on demand with Hilt's worker factory (OpenCallerApplication). -->

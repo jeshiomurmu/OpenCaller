@@ -17,9 +17,12 @@ import io.github.jeshiomurmu.opencaller.core.data.sync.CountrySource
 import io.github.jeshiomurmu.opencaller.core.datastore.UserSettingsDataSource
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 import io.github.jeshiomurmu.opencaller.core.telephony.AccessStatusSource
+import io.github.jeshiomurmu.opencaller.core.telephony.CallPlacer
 import io.github.jeshiomurmu.opencaller.core.telephony.DeviceAccessStatusSource
+import io.github.jeshiomurmu.opencaller.core.telephony.DeviceCallPlacer
 import io.github.jeshiomurmu.opencaller.core.telephony.lookup.ServerNetworkLookup
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.CallerIdListener
+import io.github.jeshiomurmu.opencaller.core.telephony.screening.CallerLookup
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ContactLookup
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.DeviceSources
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.HomeRegionProvider
@@ -69,6 +72,9 @@ internal interface TelephonyModule {
     @Binds
     fun contactLookup(impl: AndroidContactLookup): ContactLookup
 
+    @Binds
+    fun callPlacer(impl: DeviceCallPlacer): CallPlacer
+
     companion object {
         @Provides
         @Singleton
@@ -116,6 +122,15 @@ internal interface TelephonyModule {
             dispatchers: DispatcherProvider,
             config: ScreeningConfig,
         ): ScreeningEngine = ScreeningEngine(device, lists, normalizer, dispatchers, TimeSource.Monotonic, config)
+
+        @Provides
+        fun callerLookup(
+            device: DeviceSources,
+            lists: ListSources,
+            normalizer: PhoneNumberNormalizer,
+            dispatchers: DispatcherProvider,
+            config: ScreeningConfig,
+        ): CallerLookup = CallerLookup(device, lists, normalizer, dispatchers, config)
 
         @Provides
         fun screeningLog(events: ScreeningEventRepository): ScreeningLog = ScreeningLog { events.record(it) }

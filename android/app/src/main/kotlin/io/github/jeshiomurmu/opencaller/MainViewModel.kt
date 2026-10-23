@@ -28,6 +28,12 @@ data class AppUiState(
     val showOnboarding: Boolean = false,
     val degraded: Boolean = false,
     val defaultPhoneApp: AccessItemStatus? = null,
+    val isDefaultPhoneApp: Boolean = false,
+)
+
+/** The app was opened to dial [number] (`ACTION_DIAL`; `null` opens an empty dial pad). */
+data class DialRequest(
+    val number: String?,
 )
 
 /** Decides between onboarding and the app shell, and what the shell warns about. */
@@ -49,6 +55,7 @@ class MainViewModel
                         status
                             .statusOf(AccessItem.DEFAULT_PHONE_APP)
                             .takeIf { it == AccessItemStatus.NOT_GRANTED || it == AccessItemStatus.COMING_LATER },
+                    isDefaultPhoneApp = status.statusOf(AccessItem.DEFAULT_PHONE_APP) == AccessItemStatus.GRANTED,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), AppUiState())
 
@@ -65,6 +72,21 @@ class MainViewModel
         /** The report dialog is showing. */
         fun reportShown() {
             report.value = null
+        }
+
+        private val dial = MutableStateFlow<DialRequest?>(null)
+
+        /** A dial request (`ACTION_DIAL`) until the dial pad shows. */
+        val pendingDial: StateFlow<DialRequest?> = dial.asStateFlow()
+
+        /** The app was opened by `ACTION_DIAL`, with the number of a `tel:` link if any. */
+        fun requestDial(number: String?) {
+            dial.value = DialRequest(number?.takeIf(String::isNotBlank))
+        }
+
+        /** The dial pad is showing. */
+        fun dialShown() {
+            dial.value = null
         }
 
         private companion object {

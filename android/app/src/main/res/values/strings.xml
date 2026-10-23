@@ -22,6 +22,7 @@
 
     <!-- Calls tab: number search (Phase 5). -->
     <string name="calls_search">Search a number</string>
+    <string name="calls_dial_pad">Dial pad</string>
 
     <!-- Calls tab: default phone app card (TC-ONB-003). -->
     <string name="calls_default_app_title">Set as default phone app</string>

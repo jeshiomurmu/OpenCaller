@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        Default phone app (docs/architecture.md §5). Full-screen incoming calls over the lock screen (Android 14+ lets
+        the user turn this off; NotificationManager.canUseFullScreenIntent); the screen turns off near the ear; SIM
+        names in the SIM chooser (asked for on that screen, Android 12+).
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />
+
+    <application>
+        <!--
+            Telecom binds this service for every call while OpenCaller is the default phone app; only Telecom may bind
+            it (BIND_INCALL_SERVICE), it must stay exported, and IN_CALL_SERVICE_UI marks it as the replacement in-call
+            screen. Declaration as in developer.android.com/reference/android/telecom/InCallService. Telecom keeps
+            playing the ringtone (no IN_CALL_SERVICE_RINGING).
+        -->
+        <service
+            android:name=".OpenCallerInCallService"
+            android:exported="true"
+            android:permission="android.permission.BIND_INCALL_SERVICE">
+            <meta-data
+                android:name="android.telecom.IN_CALL_SERVICE_UI"
+                android:value="true" />
+            <intent-filter>
+                <action android:name="android.telecom.InCallService" />
+            </intent-filter>
+        </service>
+
+        <!-- Shown over the lock screen for incoming calls; its own task, out of the recent apps. -->
+        <activity
+            android:name=".InCallActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:showWhenLocked="true"
+            android:theme="@style/Theme.OpenCaller.InCall"
+            android:turnScreenOn="true" />
+
+        <!-- Decline and Hang up on the call notifications; only OpenCaller's own PendingIntents reach it. -->
+        <receiver
+            android:name=".CallActionReceiver"
+            android:exported="false" />
+    </application>
+
+</manifest>

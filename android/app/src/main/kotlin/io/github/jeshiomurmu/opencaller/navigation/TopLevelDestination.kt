@@ -51,6 +51,12 @@ data object ScreeningDebugRoute
 @Serializable
 data object AccountSignInRoute
 
+/** Calls → Dial pad, also opened by `ACTION_DIAL` (a tapped `tel:` link, Add call). [number] fills it. */
+@Serializable
+data class DialerRoute(
+    val number: String? = null,
+)
+
 /** Calls → Search a number (also Me → Search a number). */
 @Serializable
 data object NumberSearchRoute

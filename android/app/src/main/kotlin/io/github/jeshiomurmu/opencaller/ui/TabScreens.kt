@@ -37,6 +37,7 @@ internal fun CallsScreen(
     onSetDefault: () -> Unit,
     modifier: Modifier = Modifier,
     onSearch: () -> Unit = {},
+    onDialPad: (() -> Unit)? = null,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         OutlinedButton(
@@ -44,6 +45,14 @@ internal fun CallsScreen(
             shape = OpenCallerShape.pill,
             modifier = Modifier.fillMaxWidth().padding(horizontal = OpenCallerSpacing.screenPadding, vertical = OpenCallerSpacing.s),
         ) { Text(text = stringResource(R.string.calls_search)) }
+        // The dial pad, as the default phone app (the call log and its dial pad button arrive in Phase 6b).
+        onDialPad?.let { open ->
+            Button(
+                onClick = open,
+                shape = OpenCallerShape.pill,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = OpenCallerSpacing.screenPadding),
+            ) { Text(text = stringResource(R.string.calls_dial_pad)) }
+        }
         if (defaultPhoneApp != null) {
             DefaultPhoneAppCard(
                 canSetNow = defaultPhoneApp == AccessItemStatus.NOT_GRANTED,

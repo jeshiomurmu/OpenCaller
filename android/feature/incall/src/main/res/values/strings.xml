@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Notification channels. -->
+    <string name="channel_incoming_calls">Incoming calls</string>
+    <string name="channel_incoming_calls_description">Shows who is calling, over the lock screen. The ringtone follows your sound settings.</string>
+    <string name="channel_ongoing_calls">Ongoing calls</string>
+    <string name="channel_ongoing_calls_description">The call in progress, with Hang up.</string>
+
+    <!-- Call states. -->
+    <string name="incall_incoming">Incoming call</string>
+    <string name="incall_calling">Calling…</string>
+    <string name="incall_ongoing">Ongoing call</string>
+    <string name="incall_on_hold">On hold</string>
+    <string name="incall_choose_sim">Choose a SIM</string>
+    <string name="incall_ended">Call ended</string>
+    <string name="incall_conference">Conference call</string>
+    <plurals name="incall_conference_count">
+        <item quantity="one">%1$d person</item>
+        <item quantity="other">%1$d people</item>
+    </plurals>
+
+    <!-- Incoming call. -->
+    <string name="incall_answer">Answer</string>
+    <string name="incall_decline">Decline</string>
+    <string name="incall_message">Message</string>
+    <string name="incall_reply_title">Decline with a message</string>
+    <string name="incall_reply_custom">Write your own…</string>
+    <string name="incall_reply_custom_label">Your message</string>
+    <string name="incall_reply_send">Decline and send</string>
+
+    <!-- Controls. -->
+    <string name="incall_hang_up">Hang up</string>
+    <string name="incall_mute">Mute</string>
+    <string name="incall_keypad">Keypad</string>
+    <string name="incall_speaker">Speaker</string>
+    <string name="incall_audio">Audio</string>
+    <string name="incall_hold">Hold</string>
+    <string name="incall_add_call">Add call</string>
+    <string name="incall_merge">Merge</string>
+    <string name="incall_swap">Swap</string>
+    <string name="incall_hide_keypad">Hide keypad</string>
+    <string name="incall_held_call">On hold: %1$s</string>
+
+    <!-- Audio routes. -->
+    <string name="incall_audio_title">Play call audio on</string>
+    <string name="incall_route_earpiece">Phone</string>
+    <string name="incall_route_speaker">Speaker</string>
+    <string name="incall_route_bluetooth">Bluetooth</string>
+    <string name="incall_route_wired">Wired headset</string>
+    <string name="incall_route_streaming">Other device</string>
+    <string name="incall_route_unknown">Other</string>
+
+    <!-- SIM chooser (a call placed without a default SIM). -->
+    <string name="incall_sim_title">Call with which SIM?</string>
+    <string name="incall_sim_names_needed">To show your SIM names, OpenCaller needs to read your phone numbers. They stay on this phone.</string>
+    <string name="incall_sim_show_names">Show SIM names</string>
+    <string name="incall_cancel_call">Cancel call</string>
+</resources>

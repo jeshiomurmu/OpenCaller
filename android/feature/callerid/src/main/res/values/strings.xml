@@ -18,4 +18,9 @@
     <string name="after_call_blocked">Blocked %1$s</string>
     <string name="after_call_marked_not_spam">%1$s won\'t be flagged as spam on this phone</string>
     <string name="after_call_failed">Something went wrong. Please try again.</string>
+    <string name="after_call_screen_ended">Call ended</string>
+    <string name="after_call_screen_missed">Missed call</string>
+    <string name="after_call_call_back">Call back</string>
+    <string name="after_call_message">Message</string>
+    <string name="after_call_close">Close</string>
 </resources>

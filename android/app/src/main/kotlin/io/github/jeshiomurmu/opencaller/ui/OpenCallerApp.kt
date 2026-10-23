@@ -25,6 +25,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import io.github.jeshiomurmu.opencaller.AppUiState
+import io.github.jeshiomurmu.opencaller.DialRequest
 import io.github.jeshiomurmu.opencaller.R
 import io.github.jeshiomurmu.opencaller.core.designsystem.preview.OpenCallerPreviews
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
@@ -35,6 +36,7 @@ import io.github.jeshiomurmu.opencaller.core.ui.WarningBanner
 import io.github.jeshiomurmu.opencaller.feature.blocking.BlockedLogRoute
 import io.github.jeshiomurmu.opencaller.feature.blocking.BlockingRoute
 import io.github.jeshiomurmu.opencaller.feature.blocking.RulesRoute
+import io.github.jeshiomurmu.opencaller.feature.dialer.DialPadRoute
 import io.github.jeshiomurmu.opencaller.feature.profile.AccountRoute
 import io.github.jeshiomurmu.opencaller.feature.profile.SignInRoute
 import io.github.jeshiomurmu.opencaller.feature.search.DisputeRoute
@@ -47,6 +49,7 @@ import io.github.jeshiomurmu.opencaller.navigation.BlockedCallsRoute
 import io.github.jeshiomurmu.opencaller.navigation.BlockingRulesRoute
 import io.github.jeshiomurmu.opencaller.navigation.CallsRoute
 import io.github.jeshiomurmu.opencaller.navigation.ContactsRoute
+import io.github.jeshiomurmu.opencaller.navigation.DialerRoute
 import io.github.jeshiomurmu.opencaller.navigation.MeRoute
 import io.github.jeshiomurmu.opencaller.navigation.MessagesRoute
 import io.github.jeshiomurmu.opencaller.navigation.NumberSearchRoute
@@ -66,11 +69,20 @@ fun OpenCallerApp(
     modifier: Modifier = Modifier,
     reportNumber: String? = null,
     onReportShown: () -> Unit = {},
+    dialRequest: DialRequest? = null,
+    onDialShown: () -> Unit = {},
     navController: NavHostController = rememberNavController(),
 ) {
     val openPermissions = { item: AccessItem? -> navController.navigate(PermissionsRoute(explain = item?.name)) { launchSingleTop = true } }
     // The after-call notification's Report opens the Protection tab, which shows the report dialog.
     LaunchedEffect(reportNumber) { if (reportNumber != null) navController.navigateToTab(TopLevelDestination.PROTECTION) }
+    // ACTION_DIAL (a tel: link, Add call during a call) opens the dial pad.
+    LaunchedEffect(dialRequest) {
+        if (dialRequest != null) {
+            navController.navigate(DialerRoute(dialRequest.number)) { launchSingleTop = true }
+            onDialShown()
+        }
+    }
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -111,8 +123,10 @@ private fun AppNavHost(
                 defaultPhoneApp = state.defaultPhoneApp,
                 onSetDefault = { openPermissions(AccessItem.DEFAULT_PHONE_APP) },
                 onSearch = { navController.navigate(NumberSearchRoute) { launchSingleTop = true } },
+                onDialPad = { navController.navigate(DialerRoute()) { launchSingleTop = true } }.takeIf { state.isDefaultPhoneApp },
             )
         }
+        composable<DialerRoute> { entry -> DialPadRoute(initialNumber = entry.toRoute<DialerRoute>().number) }
         composable<MessagesRoute> { PlaceholderScreen(TopLevelDestination.MESSAGES) }
         composable<ContactsRoute> { PlaceholderScreen(TopLevelDestination.CONTACTS) }
         protectionRoutes(navController, reportNumber, onReportShown, openPermissions)
@@ -216,7 +230,7 @@ private fun NavDestination?.isOn(destination: TopLevelDestination): Boolean =
 
 private val CHILDREN =
     mapOf(
-        TopLevelDestination.CALLS to listOf(NumberSearchRoute::class),
+        TopLevelDestination.CALLS to listOf(NumberSearchRoute::class, DialerRoute::class),
         TopLevelDestination.ME to
             listOf(PermissionsRoute::class, ScreeningDebugRoute::class, AccountSignInRoute::class, SpamDisputeRoute::class),
         TopLevelDestination.PROTECTION to listOf(BlockingRulesRoute::class, BlockedCallsRoute::class),
