@@ -37,6 +37,18 @@ class AccessStatusTest {
     }
 
     @Test
+    fun fullScreenCallsMatterOnlyToTheDefaultPhoneApp() {
+        val denied = nothingGranted.copy(permissions = nothingGranted.permissions.copy(fullScreenCalls = PermissionStatus.DENIED))
+        assertEquals(AccessItemStatus.NOT_APPLICABLE, denied.statusOf(AccessItem.FULL_SCREEN_CALLS))
+        val dialer = denied.copy(roles = denied.roles.copy(dialer = RoleStatus.HELD))
+        assertEquals(AccessItemStatus.NOT_GRANTED, dialer.statusOf(AccessItem.FULL_SCREEN_CALLS))
+        assertFalse(dialer.isSettled(AccessItem.FULL_SCREEN_CALLS))
+        // Before Android 14 full-screen intents can't be turned off.
+        val oldAndroid = dialer.copy(permissions = dialer.permissions.copy(fullScreenCalls = PermissionStatus.NOT_REQUIRED))
+        assertTrue(oldAndroid.isSettled(AccessItem.FULL_SCREEN_CALLS))
+    }
+
+    @Test
     fun callerIdFallsBackToNotificationWithoutOverlay() {
         // TC-ONB-007: overlay denied -> heads-up notification.
         assertEquals(CallerIdSurface.NOTIFICATION, nothingGranted.callerIdSurface(overlayEnabled = true))

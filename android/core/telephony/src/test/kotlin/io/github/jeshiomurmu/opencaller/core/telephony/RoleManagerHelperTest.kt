@@ -34,8 +34,9 @@ class RoleManagerHelperTest {
     }
 
     @Test
-    fun onlyCallScreeningIsEligibleInThisBuild() {
-        // The module's manifest declares the CallScreeningService; dialer and SMS components arrive in Phases 6–7.
+    fun onlyCallScreeningIsEligibleInThisModule() {
+        // This module's manifest declares only the CallScreeningService; the app adds the dialer components
+        // (feature:incall, the app's ACTION_DIAL activity; DialerEligibilityTest) and Phase 7 the SMS ones.
         val helper = RoleManagerHelper(context)
         assertTrue(helper.isAppEligible(AppRole.CALL_SCREENING))
         assertFalse(helper.isAppEligible(AppRole.DIALER))

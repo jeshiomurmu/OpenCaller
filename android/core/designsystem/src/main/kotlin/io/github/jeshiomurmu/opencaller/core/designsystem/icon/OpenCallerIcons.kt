@@ -52,4 +52,46 @@ object OpenCallerIcons {
 
     /** Caller ID drawn over other apps. */
     @get:DrawableRes val Overlay: Int = R.drawable.ic_layers
+
+    /** Hang up or decline (answering uses [Calls]). */
+    @get:DrawableRes val CallEnd: Int = R.drawable.ic_call_end
+
+    /** Microphone muted. */
+    @get:DrawableRes val MicOff: Int = R.drawable.ic_mic_off
+
+    /** Loudspeaker. */
+    @get:DrawableRes val Speaker: Int = R.drawable.ic_volume_up
+
+    /** Bluetooth audio. */
+    @get:DrawableRes val Bluetooth: Int = R.drawable.ic_bluetooth
+
+    /** Wired headset. */
+    @get:DrawableRes val Headset: Int = R.drawable.ic_headphones
+
+    /** Phone earpiece. */
+    @get:DrawableRes val Earpiece: Int = R.drawable.ic_phone_in_talk
+
+    /** Keypad. */
+    @get:DrawableRes val Dialpad: Int = R.drawable.ic_dialpad
+
+    /** Hold. */
+    @get:DrawableRes val Hold: Int = R.drawable.ic_pause
+
+    /** Add a call. */
+    @get:DrawableRes val AddCall: Int = R.drawable.ic_add_call
+
+    /** Merge calls. */
+    @get:DrawableRes val Merge: Int = R.drawable.ic_call_merge
+
+    /** Swap calls. */
+    @get:DrawableRes val Swap: Int = R.drawable.ic_swap_calls
+
+    /** Delete the last digit. */
+    @get:DrawableRes val Backspace: Int = R.drawable.ic_backspace
+
+    /** Reply with a message. */
+    @get:DrawableRes val Message: Int = R.drawable.ic_sms
+
+    /** SIM card. */
+    @get:DrawableRes val SimCard: Int = R.drawable.ic_sim_card
 }

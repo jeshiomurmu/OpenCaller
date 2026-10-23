@@ -182,14 +182,32 @@ scripts/e2e/report_to_block.sh android/app/build/outputs/apk/foss/debug/app-foss
 
 | ID | Title | Expected | Type |
 | --- | --- | --- | --- |
-| TC-DIAL-001 | Place call | Number dialled through Telecom; in-call UI shows | I |
-| TC-DIAL-002 | T9 search | "726" matches "Ram…" contact | U |
-| TC-DIAL-003 | Dual SIM picker | Picker shown when no default SIM | D |
-| TC-DIAL-004 | USSD/MMI | `*123#` passes through to carrier | D |
-| TC-INCALL-001 | Answer from lock screen | Full-screen incoming UI; answer works | I |
-| TC-INCALL-002 | Hold/merge/swap | Two calls, merge into conference | D |
-| TC-INCALL-003 | Bluetooth routing | Audio switches to headset | D |
-| TC-LOG-001 | Filters | Missed / blocked / spam filters correct | R |
+| TC-DIAL-001 | Place call | Number dialled through Telecom; in-call UI shows | I + U — 6a: `scripts/qa/incall.sh` (an `ACTION_CALL` through Telecom shows OpenCaller's in-call screen, Hang up ends it) and `DialPadViewModelTest` (Call goes to `TelecomManager.placeCall`, the call permission is explained first, hand-off when OpenCaller isn't the default phone app). The dial pad's own Call button on a phone: 6b |
+| TC-DIAL-002 | T9 search | "726" matches "Ram…" contact | U — 6b |
+| TC-DIAL-003 | Dual SIM picker | Picker shown when no default SIM | D — 6b (6a: the in-call screen's SIM chooser for a call waiting for a SIM, issue 71) |
+| TC-DIAL-004 | USSD/MMI | `*123#` passes through to carrier | D — 6b |
+| TC-INCALL-001 | Answer from lock screen | Full-screen incoming UI; answer works | I + R — `scripts/qa/incall.sh` on API 29 + 36: PIN lock, screen off, `adb emu gsm call` → the in-call screen shows over the lock screen with the caller card from screening ("Suspicious"), Answer connects without unlocking, Hang up ends the call. `CallNotificationsTest` (full-screen intent, CALL category, `CallStyle` on Android 12+, Decline/Answer actions before, silent HIGH channel), `RoleEligibilityTest`, `DialerEligibilityTest` |
+| TC-INCALL-002 | Hold/merge/swap | Two calls, merge into conference | D + U — logic: `InCallStateTest` (which call is in front, merge/swap decisions), `CallRegistryTest` (commands reach the right `Call`), `InCallViewModelTest`; device steps below |
+| TC-INCALL-003 | Bluetooth routing | Audio switches to headset | D + U — `CallRegistryTest` (routes only to offered endpoints), `InCallViewModelTest`; device steps below |
+| TC-LOG-001 | Filters | Missed / blocked / spam filters correct | R — 6b |
+
+Also covered in 6a: the after-call screen (`AfterCallTest`: a screen while the in-call screen is in front and the
+phone is unlocked, otherwise the notification; Block / Not spam), the in-call caller card (`InCallCallersTest`,
+`InCallDescriptionTest`: the screening answer for incoming calls, contacts / spam list / cache for outgoing ones, never
+the network), Telecom constants (`TelecomMappingTest`).
+
+Where they run (Phase 6a): unit and Robolectric tests in the `android` CI job; `scripts/qa/incall.sh` at the end of the
+emulator job on API 29 and 36 (after `scripts/qa/blocking.sh`; it gives the debug build the default phone app role and
+takes it away again). Device steps (a phone with a SIM; OpenCaller set as the default phone app):
+
+- **TC-INCALL-002:** call the phone from a second phone, answer; tap Add call and call a third number; check the first
+  call shows "On hold"; tap Swap (the calls change places), then Merge (one "Conference call · 2 people" row); hang up.
+  Repeat on the second SIM of a dual-SIM phone.
+- **TC-INCALL-003:** pair a Bluetooth headset; during a call tap Audio, pick the headset (Android 14+: by its name;
+  before: "Bluetooth"); the audio moves to the headset and the picker marks it; switch back to Phone and Speaker.
+- **Lock screen on a phone (TC-INCALL-001 again):** with the phone locked and asleep, an incoming call shows the
+  in-call screen full screen; on Android 14+ check Settings → Permissions & roles shows "Full-screen incoming calls"
+  as on (Fix opens the system page when it is off).
 
 ### SMS and OTP (Phase 7)
 

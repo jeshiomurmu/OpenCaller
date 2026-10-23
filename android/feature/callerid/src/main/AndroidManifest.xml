@@ -15,6 +15,17 @@
         <receiver
             android:name=".AfterCallActionReceiver"
             android:exported="false" />
+
+        <!--
+            The after-call card as a screen (default phone app, phone unlocked): its own task, out of the recent apps, so
+            closing it returns to what the user was doing.
+        -->
+        <activity
+            android:name=".AfterCallActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:theme="@style/Theme.OpenCaller.AfterCall" />
     </application>
 
 </manifest>

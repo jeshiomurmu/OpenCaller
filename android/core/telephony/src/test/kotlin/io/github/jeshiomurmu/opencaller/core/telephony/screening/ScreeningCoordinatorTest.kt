@@ -10,6 +10,7 @@ import io.github.jeshiomurmu.opencaller.core.model.RuleType
 import io.github.jeshiomurmu.opencaller.core.model.ScreeningEvent
 import io.github.jeshiomurmu.opencaller.core.model.ScreeningReason
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
+import io.github.jeshiomurmu.opencaller.core.telephony.incall.ScreenedCalls
 import io.github.jeshiomurmu.opencaller.core.testing.FakeClock
 import io.github.jeshiomurmu.opencaller.core.testing.TestDispatcherProvider
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -31,6 +32,7 @@ class ScreeningCoordinatorTest {
     private val presented = mutableListOf<ScreeningResult>()
     private var logResult: AppResult<Long> = AppResult.Success(42)
     private val us = PhoneNumber("+12015550123")
+    private val screened = ScreenedCalls(clock)
 
     private fun TestScope.coordinator(presenter: CallerIdPresenter = CallerIdPresenter { presented += it }): ScreeningCoordinator {
         val dispatchers = TestDispatcherProvider(StandardTestDispatcher(testScheduler))
@@ -45,12 +47,16 @@ class ScreeningCoordinatorTest {
             )
         return ScreeningCoordinator(
             engine = engine,
-            log = {
-                logged += it
-                logResult
-            },
-            presenter = presenter,
-            listeners = setOf(ScreeningEventListener { event, _ -> heard += event }),
+            followUps =
+                ScreeningFollowUps(
+                    screened = screened,
+                    log = {
+                        logged += it
+                        logResult
+                    },
+                    listeners = setOf(ScreeningEventListener { event, _ -> heard += event }),
+                    presenter = presenter,
+                ),
             clock = clock,
             dispatchers = dispatchers,
         )
@@ -82,6 +88,8 @@ class ScreeningCoordinatorTest {
             advanceUntilIdle()
             assertEquals(listOf(Decision.ALLOW), answers)
             assertEquals(us, presented.single().caller.number)
+            // The default phone app's in-call screen shows the same card.
+            assertEquals(presented.single(), screened.latest(us))
         }
 
     @Test
@@ -92,6 +100,16 @@ class ScreeningCoordinatorTest {
             assertEquals(ScreeningReason.EMERGENCY, logged.single().reason)
             assertNull(logged.single().number)
             assertTrue(presented.isEmpty())
+        }
+
+    @Test
+    fun blockedAndOutgoingCallsAreNotKeptForTheInCallScreen() =
+        runTest {
+            sources.rule(RuleType.EXACT, us.e164)
+            coordinator().screen(ScreeningCall(us.e164, Direction.INCOMING)) {}
+            coordinator().screen(ScreeningCall(us.e164, Direction.OUTGOING)) {}
+            advanceUntilIdle()
+            assertNull(screened.latest(us))
         }
 
     @Test

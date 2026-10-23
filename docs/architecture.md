@@ -81,7 +81,7 @@ android/
 ├── build.gradle.kts
 ├── gradle/libs.versions.toml
 ├── build-logic/convention/            # plugins: opencaller.android.application, .library, .feature, .compose, .hilt, .room, .jvm.library
-├── app/                               # MainActivity, InCallActivity, navigation graph, Application, flavors
+├── app/                               # MainActivity (also the ACTION_DIAL target), navigation graph, Application, flavors
 │   └── src/{main,foss,play}/
 ├── core/
 │   ├── common/        # DispatcherProvider, AppResult<T>, RedactingTree, Clock
@@ -105,7 +105,7 @@ android/
     ├── dialer/        # keypad, T9, SIM picker
     ├── calllog/       # call history
     ├── contacts/      # contacts list/detail/edit
-    ├── incall/        # InCallService + InCallActivity UI
+    ├── incall/        # InCallService, call notifications, InCallActivity (its own window theme) + UI
     ├── messages/      # conversations, thread, compose, smart inbox, spam folder, scheduled SMS
     ├── otp/           # OTP card, safety guard UI, OTP-burst alerts
     ├── business/      # business profile view, claim flow
@@ -241,7 +241,8 @@ Networking (`core:network`, a JVM module): Retrofit + OkHttp + kotlinx.serializa
 | SMS permissions | SMS app | Only after holding `ROLE_SMS` (Play policy) |
 | `SYSTEM_ALERT_WINDOW` | Caller card overlay in screening-only mode | When user enables overlay |
 | `POST_NOTIFICATIONS` | After-call card, OTP, alerts | Onboarding |
-| `USE_FULL_SCREEN_INTENT` | Ghost Call, OTP guard | When feature enabled (dialer apps qualify) |
+| `USE_FULL_SCREEN_INTENT` | Incoming calls over the lock screen (default phone app); later Ghost Call, OTP guard | Install-time; Android 14+ lets the user turn it off: Permissions & roles shows "Full-screen incoming calls" with Fix while OpenCaller is the default phone app |
+| `WAKE_LOCK` | Screen off near the ear during a call (proximity) | Install-time |
 | Notification listener access | WhatsApp/Telegram caller ID | When feature enabled |
 | `RECORD_AUDIO`, `BLUETOOTH_CONNECT` | VoIP | When first VoIP call |
 | `INTERNET`, `ACCESS_NETWORK_STATE` | Sync | Install-time |
