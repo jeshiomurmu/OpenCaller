@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
@@ -77,7 +78,7 @@ internal fun statusLine(
     return if (call.isConference) {
         listOf(
             stringResource(R.string.incall_conference),
-            stringResource(R.string.incall_conference_count, call.childIds.size),
+            pluralStringResource(R.plurals.incall_conference_count, call.childIds.size, call.childIds.size),
             state,
         ).joinToString(stringResource(UiR.string.risk_banner_separator))
     } else {

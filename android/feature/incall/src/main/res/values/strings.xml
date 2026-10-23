@@ -14,7 +14,10 @@
     <string name="incall_choose_sim">Choose a SIM</string>
     <string name="incall_ended">Call ended</string>
     <string name="incall_conference">Conference call</string>
-    <string name="incall_conference_count">%1$d people</string>
+    <plurals name="incall_conference_count">
+        <item quantity="one">%1$d person</item>
+        <item quantity="other">%1$d people</item>
+    </plurals>
 
     <!-- Incoming call. -->
     <string name="incall_answer">Answer</string>
