@@ -85,7 +85,7 @@ fun CallLogRoute(
     Box(modifier = modifier.fillMaxSize()) {
         when (state.access) {
             CallLogAccess.CHECKING -> {
-                Unit
+                // Nothing shows until the access check is done.
             }
 
             CallLogAccess.NEEDS_PERMISSION -> {
