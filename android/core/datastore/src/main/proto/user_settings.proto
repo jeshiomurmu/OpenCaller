@@ -21,6 +21,8 @@ message UserSettings {
   OnboardingStepProto onboarding_step = 10;
   // The daily spam-list update may use mobile data (default: unmetered networks only).
   bool list_updates_on_mobile_data = 11;
+  // The user's own quick replies (decline with a message, after-call Message), in order; empty = Android's replies.
+  repeated string quick_replies = 12;
 }
 
 enum SpamThresholdProto {

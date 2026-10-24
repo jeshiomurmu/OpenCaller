@@ -43,6 +43,12 @@ class UserSettingsMappingTest {
     }
 
     @Test
+    fun quickRepliesKeepTheirOrder() {
+        assertRoundTrip(UserPreferences(quickReplies = listOf("Can't talk now", "Call you back in 5", "Can't talk now")))
+        assertEquals(emptyList<String>(), UserSettings.getDefaultInstance().toDomain().quickReplies)
+    }
+
+    @Test
     fun unrecognizedEnumFallsBackToDefault() {
         val stored = UserSettings.newBuilder().setThemeModeValue(UNKNOWN_ENUM_NUMBER).build()
         assertEquals(ThemeMode.SYSTEM, stored.toDomain().themeMode)

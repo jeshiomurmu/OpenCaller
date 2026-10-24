@@ -11,6 +11,7 @@ dependencies {
     api(projects.core.designsystem)
     api(projects.core.model)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.timber)
 
     testImplementation(libs.junit4)
 }

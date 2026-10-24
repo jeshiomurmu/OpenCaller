@@ -16,6 +16,7 @@ import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import io.github.jeshiomurmu.opencaller.core.telephony.CallPlacer
+import io.github.jeshiomurmu.opencaller.core.ui.PhoneLinks
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -41,7 +42,7 @@ class AfterCallActivity : ComponentActivity() {
         val links =
             AfterCallLinks(
                 onCallBack = { callBack(number) },
-                onMessage = { open(Intent(Intent.ACTION_SENDTO, Uri.fromParts("smsto", number.e164, null))) },
+                onMessage = { body -> PhoneLinks.message(this, number.e164, body) },
                 onSaveContact = { open(saveContact(number)) },
                 onReport = { report(number) },
                 onClose = ::finish,

@@ -30,6 +30,9 @@ sealed interface AppError {
     /** Local storage (database, DataStore, files) failed. */
     data object Storage : AppError
 
+    /** A permission or role the operation needs isn't granted (`SecurityException` from a provider or service). */
+    data object PermissionDenied : AppError
+
     /** Anything not covered above. Logged with the redacting logger; never shown as a stack trace. */
     data class Unexpected(
         val cause: Throwable,

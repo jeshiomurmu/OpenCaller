@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        Creating and editing contacts and favourites (docs/prd.md F-CM-04), asked for on the edit screen after an
+        explainer. READ_CONTACTS is declared by the app (onboarding). Contacts stay in Android's provider.
+    -->
+    <uses-permission android:name="android.permission.WRITE_CONTACTS" />
+
+</manifest>

@@ -67,6 +67,26 @@ data class SpamDisputeRoute(
     val number: String? = null,
 )
 
+/** Contacts → a contact. */
+@Serializable
+data class ContactRoute(
+    val contactId: Long,
+)
+
+/** Contacts → New contact or Edit contact ([contactId] [NEW_CONTACT] for a new one, [number] filled in when given). */
+@Serializable
+data class ContactEditorRoute(
+    val contactId: Long = NEW_CONTACT,
+    val number: String? = null,
+)
+
+/** [ContactEditorRoute.contactId] of a contact that doesn't exist yet (provider ids start at 1). */
+const val NEW_CONTACT: Long = -1L
+
+/** Me → Settings → Quick replies. */
+@Serializable
+data object QuickRepliesSettingsRoute
+
 /** The five bottom-bar tabs (docs/design.md §6), in display order. */
 enum class TopLevelDestination(
     val route: Any,

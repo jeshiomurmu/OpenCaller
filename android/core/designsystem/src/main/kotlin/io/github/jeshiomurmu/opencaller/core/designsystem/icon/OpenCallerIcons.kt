@@ -94,4 +94,40 @@ object OpenCallerIcons {
 
     /** SIM card. */
     @get:DrawableRes val SimCard: Int = R.drawable.ic_sim_card
+
+    /** Incoming call in the call log. */
+    @get:DrawableRes val CallReceived: Int = R.drawable.ic_call_received
+
+    /** Outgoing call in the call log. */
+    @get:DrawableRes val CallMade: Int = R.drawable.ic_call_made
+
+    /** Missed call in the call log. */
+    @get:DrawableRes val CallMissed: Int = R.drawable.ic_call_missed
+
+    /** Blocked call, Block action. */
+    @get:DrawableRes val Block: Int = R.drawable.ic_block
+
+    /** Voicemail. */
+    @get:DrawableRes val Voicemail: Int = R.drawable.ic_voicemail
+
+    /** Delete. */
+    @get:DrawableRes val Delete: Int = R.drawable.ic_delete
+
+    /** Not a favourite (tap to add). */
+    @get:DrawableRes val Star: Int = R.drawable.ic_star
+
+    /** A favourite. */
+    @get:DrawableRes val StarFilled: Int = R.drawable.ic_star_filled
+
+    /** Edit. */
+    @get:DrawableRes val Edit: Int = R.drawable.ic_edit
+
+    /** Move up. */
+    @get:DrawableRes val MoveUp: Int = R.drawable.ic_arrow_upward
+
+    /** New contact, save to contacts. */
+    @get:DrawableRes val PersonAdd: Int = R.drawable.ic_person_add
+
+    /** Search. */
+    @get:DrawableRes val Search: Int = R.drawable.ic_search
 }

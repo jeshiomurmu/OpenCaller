@@ -4,8 +4,8 @@ package io.github.jeshiomurmu.opencaller.feature.callerid
 class AfterCallLinks(
     /** Call the number back. */
     val onCallBack: () -> Unit,
-    /** Write a text message to the number. */
-    val onMessage: () -> Unit,
+    /** Write a text message to the number, starting with this quick reply when given. */
+    val onMessage: (String?) -> Unit,
     /** Add the number to the contacts. */
     val onSaveContact: () -> Unit,
     /** Report the number (the app's report sheet). */
