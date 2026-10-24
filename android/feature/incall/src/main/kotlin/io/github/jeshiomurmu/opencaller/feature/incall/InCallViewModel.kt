@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jeshiomurmu.opencaller.core.common.Clock
 import io.github.jeshiomurmu.opencaller.core.model.CallerInfo
+import io.github.jeshiomurmu.opencaller.core.telephony.QuickReplyTemplates
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.AudioRouteType
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallAudio
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallCapability
@@ -46,6 +47,7 @@ data class CallView(
  * @property held another call on hold.
  * @property merge what Merge does, or `null` to hide it.
  * @property swap what Swap does, or `null` to hide it.
+ * @property userReplies the user's own quick replies; empty means the system's (see [repliesFor]).
  */
 data class InCallUiState(
     val loaded: Boolean = false,
@@ -56,7 +58,11 @@ data class InCallUiState(
     val canAddCall: Boolean = false,
     val merge: ConferenceAction? = null,
     val swap: ConferenceAction? = null,
+    val userReplies: List<String> = emptyList(),
 ) {
+    /** The quick replies offered when declining [call] with a message: the user's own, else the system's. */
+    fun repliesFor(call: TrackedCall): List<String> = userReplies.ifEmpty { call.cannedReplies }
+
     /** True once every call has ended: the screen says so and closes. */
     val isOver: Boolean get() = loaded && ringing == null && primary == null && held == null
 
@@ -137,11 +143,16 @@ class InCallViewModel
         callers: CallerDirectory,
         private val numbers: CallNumbers,
         private val controller: CallController,
+        templates: QuickReplyTemplates,
         clock: Clock,
     ) : ViewModel() {
         /** Screen state. */
         val uiState: StateFlow<InCallUiState> =
-            combine(calls.state, callers.callers, ::toUi)
+            combine(
+                calls.state,
+                callers.callers,
+                templates.replies(),
+            ) { calls, callers, replies -> toUi(calls, callers).copy(userReplies = replies) }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), InCallUiState())
 
         /** The time, once a second while the screen shows, for the call timer (Telecom's connect time is wall clock). */

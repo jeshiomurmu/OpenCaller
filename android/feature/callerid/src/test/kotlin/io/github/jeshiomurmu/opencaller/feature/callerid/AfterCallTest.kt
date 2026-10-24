@@ -26,6 +26,7 @@ import io.github.jeshiomurmu.opencaller.core.telephony.incall.EndedCall
 import io.github.jeshiomurmu.opencaller.core.testing.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -145,11 +146,17 @@ class AfterCallTest {
         assertFalse(vm.uiState.value.flagged)
     }
 
+    @Test
+    fun messageOffersTheUsersQuickReplies() {
+        assertEquals(listOf("Sorry, I missed your call"), viewModel().uiState.value.quickReplies)
+    }
+
     private fun viewModel() =
         AfterCallViewModel(
             savedState = SavedStateHandle(mapOf(AfterCallActivity.EXTRA_NUMBER to us.e164, AfterCallActivity.EXTRA_ANSWERED to false)),
             ended = ended,
             formatter = formatter,
             actions = actions,
+            templates = { flowOf(listOf("Sorry, I missed your call")) },
         )
 }

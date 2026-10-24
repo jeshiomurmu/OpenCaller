@@ -24,12 +24,14 @@ import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerShape
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacing
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
 import io.github.jeshiomurmu.opencaller.core.model.AccessItemStatus
+import io.github.jeshiomurmu.opencaller.feature.calllog.CallLogNavigation
+import io.github.jeshiomurmu.opencaller.feature.calllog.CallLogRoute
 import io.github.jeshiomurmu.opencaller.feature.settings.SettingsScreen
 import io.github.jeshiomurmu.opencaller.navigation.TopLevelDestination
 
 /**
- * Calls tab until the call log arrives (Phase 6): number search, the default phone app role when OpenCaller doesn't
- * hold it (TC-ONB-003), then the placeholder.
+ * Calls tab while OpenCaller isn't the default phone app: number search, the default phone app role (TC-ONB-003),
+ * then the placeholder. The call log needs the role (Play policy for call log access).
  */
 @Composable
 internal fun CallsScreen(
@@ -37,22 +39,9 @@ internal fun CallsScreen(
     onSetDefault: () -> Unit,
     modifier: Modifier = Modifier,
     onSearch: () -> Unit = {},
-    onDialPad: (() -> Unit)? = null,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
-        OutlinedButton(
-            onClick = onSearch,
-            shape = OpenCallerShape.pill,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = OpenCallerSpacing.screenPadding, vertical = OpenCallerSpacing.s),
-        ) { Text(text = stringResource(R.string.calls_search)) }
-        // The dial pad, as the default phone app (the call log and its dial pad button arrive in Phase 6b).
-        onDialPad?.let { open ->
-            Button(
-                onClick = open,
-                shape = OpenCallerShape.pill,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = OpenCallerSpacing.screenPadding),
-            ) { Text(text = stringResource(R.string.calls_dial_pad)) }
-        }
+        SearchButton(onSearch)
         if (defaultPhoneApp != null) {
             DefaultPhoneAppCard(
                 canSetNow = defaultPhoneApp == AccessItemStatus.NOT_GRANTED,
@@ -62,6 +51,28 @@ internal fun CallsScreen(
         }
         PlaceholderScreen(TopLevelDestination.CALLS, modifier = Modifier.weight(1f))
     }
+}
+
+/** Calls tab of the default phone app: number search above the call log (with its dial pad button). */
+@Composable
+internal fun CallHistoryTab(
+    onSearch: () -> Unit,
+    navigation: CallLogNavigation,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxSize()) {
+        SearchButton(onSearch)
+        CallLogRoute(navigation = navigation, modifier = Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun SearchButton(onSearch: () -> Unit) {
+    OutlinedButton(
+        onClick = onSearch,
+        shape = OpenCallerShape.pill,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = OpenCallerSpacing.screenPadding, vertical = OpenCallerSpacing.s),
+    ) { Text(text = stringResource(R.string.calls_search)) }
 }
 
 @Composable
@@ -98,6 +109,7 @@ internal fun MeScreen(
     onOpenPermissions: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenDebug: () -> Unit = {},
+    onOpenQuickReplies: () -> Unit = {},
     account: @Composable () -> Unit = {},
 ) {
     Column(modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -108,7 +120,12 @@ internal fun MeScreen(
             modifier = Modifier.padding(horizontal = OpenCallerSpacing.screenPadding, vertical = OpenCallerSpacing.m),
         )
         account()
-        SettingsScreen(onOpenPermissions = onOpenPermissions, versionName = BuildConfig.VERSION_NAME, onOpenDebug = onOpenDebug)
+        SettingsScreen(
+            onOpenPermissions = onOpenPermissions,
+            versionName = BuildConfig.VERSION_NAME,
+            onOpenDebug = onOpenDebug,
+            onOpenQuickReplies = onOpenQuickReplies,
+        )
     }
 }
 

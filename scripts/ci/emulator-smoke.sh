@@ -18,12 +18,13 @@ out="${3:?missing screenshot dir}"
 activity="io.github.jeshiomurmu.opencaller.MainActivity"
 here="$(cd "$(dirname "$0")" && pwd)"
 
-# label|text that must show on the tab, in bottom-bar order (app/src/main/res/values/strings.xml), escaped the
-# way uiautomator dumps it (& becomes &amp;; apostrophes stay as they are).
+# label|text that must show on the tab[|another text that may show instead], in bottom-bar order (strings.xml of the
+# app and the features), escaped the way uiautomator dumps it (& becomes &amp;; apostrophes stay as they are). The
+# Contacts tab shows its permission explainer, or the list (search field) when an earlier test granted the permission.
 tabs=(
   "Calls|Your call history will appear here."
   "Messages|Your messages will appear here."
-  "Contacts|Your contacts will appear here."
+  "Contacts|Show your contacts|Search contacts|No contacts yet."
   "Protection|Your rules"
   "Me|Account"
 )
@@ -33,6 +34,21 @@ role="android.app.role.CALL_SCREENING"
 
 dump() {
   adb shell uiautomator dump /sdcard/window.xml > /dev/null 2>&1 && adb shell cat /sdcard/window.xml
+}
+
+# Waits until one of the |-separated texts shows.
+wait_for_any() {
+  local choice window choices
+  IFS='|' read -r -a choices <<< "$1"
+  for _ in $(seq 1 30); do
+    window="$(dump)"
+    for choice in "${choices[@]}"; do
+      if grep -qF "text=\"$choice\"" <<< "$window"; then return 0; fi
+    done
+    sleep 1
+  done
+  echo "::error::none of \"$1\" appeared"
+  exit 1
 }
 
 wait_for_text() {
@@ -251,9 +267,9 @@ for mode in no yes; do
   wait_for_text "Calls"
   for tab in "${tabs[@]}"; do
     label="${tab%%|*}"
-    placeholder="${tab#*|}"
+    texts="${tab#*|}"
     tap_text "$label"
-    wait_for_text "$placeholder"
+    wait_for_any "$texts"
     shot="$out/$theme-$label.png"
     adb exec-out screencap -p > "$shot"
     luma="$(python3 "$here/png_luma.py" "$shot")"

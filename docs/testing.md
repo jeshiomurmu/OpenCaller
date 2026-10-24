@@ -94,7 +94,7 @@ Where they run (Phase 2):
 | TC-BLK-010 | Fail open | Inject exception in engine | Call rings; event reason=error | R |
 | TC-BLK-011 | Budget exceeded | Fake network delay 3 s | Decision returns allow ≤ 1,500 ms | U |
 | TC-BLK-012 | Outgoing never blocked | Dial a blocked number | Call proceeds | I |
-| TC-BLK-013 | Emergency | Dial local emergency number in test mode (do not place real call; verify routing code path with fake) | Never intercepted | U |
+| TC-BLK-013 | Emergency | Dial local emergency number in test mode (do not place real call; verify routing code path with fake) | Never intercepted | U — `ScreeningEngineTest` (never intercepted, incoming or outgoing; decided before any settings, contacts, list or network lookup, with no time passing even when every lookup is slow), `DialPadViewModelTest` (the dial pad places it at once through `placeCall`: no call-permission explainer, SIM picker or hand-off in the way). Device check in Phase 6 exit QA: dial pad shows the number, Call hands it to the platform (do not complete a real call) |
 | TC-BLK-014 | STIR verdict | Verified/failed call on supporting carrier | Card shows "Verified by carrier" / "Possibly spoofed" | D |
 | TC-BLK-015 | Undo block | Tap Undo in snackbar / log | Rule removed, next call rings | I |
 
@@ -182,21 +182,21 @@ scripts/e2e/report_to_block.sh android/app/build/outputs/apk/foss/debug/app-foss
 
 | ID | Title | Expected | Type |
 | --- | --- | --- | --- |
-| TC-DIAL-001 | Place call | Number dialled through Telecom; in-call UI shows | I + U — 6a: `scripts/qa/incall.sh` (a `tel:` number opened in the dial pad, Call places it through Telecom and OpenCaller's in-call screen shows it, Hang up ends it; on the API 36 emulator the emulated network ends outgoing calls at once, so there the check is that the in-call screen opened and Telecom recorded a REMOTE disconnect, not a hang-up) and `DialPadViewModelTest` (Call goes to `TelecomManager.placeCall`, the call permission is explained first, hand-off when OpenCaller isn't the default phone app). The dial pad's own Call button on a phone: 6b |
-| TC-DIAL-002 | T9 search | "726" matches "Ram…" contact | U — 6b |
-| TC-DIAL-003 | Dual SIM picker | Picker shown when no default SIM | D — 6b (6a: the in-call screen's SIM chooser for a call waiting for a SIM, issue 71) |
-| TC-DIAL-004 | USSD/MMI | `*123#` passes through to carrier | D — 6b |
+| TC-DIAL-001 | Place call | Number dialled through Telecom; in-call UI shows | I + U — 6a: `scripts/qa/incall.sh` (a `tel:` number opened in the dial pad, Call places it through Telecom and OpenCaller's in-call screen shows it, Hang up ends it; on the API 36 emulator the emulated network ends outgoing calls at once, so there the check is that the in-call screen opened and Telecom recorded a REMOTE disconnect, not a hang-up) and `DialPadViewModelTest` (Call goes to `TelecomManager.placeCall`, the call permission is explained first, hand-off when OpenCaller isn't the default phone app). The CI check now waits for the number formatted as typed (`+1 201-555-0198`) |
+| TC-DIAL-002 | T9 search | "726" matches "Ram…" contact | U — `T9MatcherTest` (name start, later words, initials, accents and punctuation, number digits, ranking, one row per number) and `DialPadViewModelTest` (suggestions from contacts and the call log, none for codes) |
+| TC-DIAL-003 | Dual SIM picker | Picker shown when no default SIM | D + U — `DialPadViewModelTest` (two SIMs and no default: the picker, and the call goes out on the chosen SIM; closing the picker calls nobody); device steps below |
+| TC-DIAL-004 | USSD/MMI | `*123#` passes through to carrier | D + U — `DialStringsTest` and `DialPadViewModelTest` (codes go to `placeCall` unchanged, `*#*#n#*#*` to `sendDialerSpecialCode`); device steps below |
 | TC-INCALL-001 | Answer from lock screen | Full-screen incoming UI; answer works | I + R — `scripts/qa/incall.sh` on API 29 + 36: PIN lock, screen off, `adb emu gsm call` → the in-call screen shows over the lock screen with the caller card from screening ("Suspicious"), Answer connects without unlocking, Hang up ends the call. `CallNotificationsTest` (full-screen intent, CALL category, `CallStyle` on Android 12+, Decline/Answer actions before, silent HIGH channel), `RoleEligibilityTest`, `DialerEligibilityTest` |
 | TC-INCALL-002 | Hold/merge/swap | Two calls, merge into conference | D + U — logic: `InCallStateTest` (which call is in front, merge/swap decisions), `CallRegistryTest` (commands reach the right `Call`), `InCallViewModelTest`; device steps below |
 | TC-INCALL-003 | Bluetooth routing | Audio switches to headset | D + U — `CallRegistryTest` (routes only to offered endpoints), `InCallViewModelTest`; device steps below |
-| TC-LOG-001 | Filters | Missed / blocked / spam filters correct | R — 6b |
+| TC-LOG-001 | Filters | Missed / blocked / spam filters correct | U + R — `CallHistoryTest` (screening log joined within ±2 min, blocked = blocked call type or block/silence decision, spam = spam list/network reason or score ≥ 0.4, missed excludes blocked, groups per number and day, search), `CallLogViewModelTest` (filters, search, block + Undo, delete, permission gate), `DeviceCallLogTest` (Robolectric: provider mapping, hidden numbers, read only as the default phone app) |
 
 Also covered in 6a: the after-call screen (`AfterCallTest`: a screen while the in-call screen is in front and the
 phone is unlocked, otherwise the notification; Block / Not spam), the in-call caller card (`InCallCallersTest`,
 `InCallDescriptionTest`: the screening answer for incoming calls, contacts / spam list / cache for outgoing ones, never
 the network), Telecom constants (`TelecomMappingTest`).
 
-Where they run (Phase 6a): unit and Robolectric tests in the `android` CI job; `scripts/qa/incall.sh` at the end of the
+Where they run (Phase 6a; 6b added the dialer, call log, contacts and quick-reply tests to the same jobs): unit and Robolectric tests in the `android` CI job; `scripts/qa/incall.sh` at the end of the
 emulator job on API 29 and 36 (after `scripts/qa/blocking.sh`; it gives the debug build the default phone app role and
 takes it away again). Device steps (a phone with a SIM; OpenCaller set as the default phone app):
 
@@ -205,6 +205,13 @@ takes it away again). Device steps (a phone with a SIM; OpenCaller set as the de
   Repeat on the second SIM of a dual-SIM phone.
 - **TC-INCALL-003:** pair a Bluetooth headset; during a call tap Audio, pick the headset (Android 14+: by its name;
   before: "Bluetooth"); the audio moves to the headset and the picker marks it; switch back to Phone and Speaker.
+- **TC-DIAL-003:** on a dual-SIM phone set Settings → SIM → Calls to "Ask every time"; type a number on the dial pad,
+  tap Call: the "Call with" sheet lists both SIMs by name; pick the second: the call goes out on it (check the SIM shown
+  in the in-call screen or the system call log). Set a default SIM: Call places at once with no sheet. Without the
+  phone-numbers permission (Android 12+) no sheet shows and the in-call screen's SIM chooser asks instead.
+- **TC-DIAL-004:** type the carrier's balance code (e.g. `*123#` or `*556#`) and tap Call: the carrier's reply shows as
+  a system dialog; `*#06#` shows the IMEI; `*#*#4636#*#*` opens the testing menu where the device has one. Long-press 1
+  calls voicemail; long-press 0 types `+`.
 - **Lock screen on a phone (TC-INCALL-001 again):** with the phone locked and asleep, an incoming call shows the
   in-call screen full screen; on Android 14+ check Settings → Permissions & roles shows "Full-screen incoming calls"
   as on (Fix opens the system page when it is off).

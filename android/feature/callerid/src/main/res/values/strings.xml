@@ -22,5 +22,6 @@
     <string name="after_call_screen_missed">Missed call</string>
     <string name="after_call_call_back">Call back</string>
     <string name="after_call_message">Message</string>
+    <string name="after_call_message_own">Write a message</string>
     <string name="after_call_close">Close</string>
 </resources>

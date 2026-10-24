@@ -15,16 +15,27 @@ import io.github.jeshiomurmu.opencaller.core.data.ScreeningEventRepository
 import io.github.jeshiomurmu.opencaller.core.data.SpamListRepository
 import io.github.jeshiomurmu.opencaller.core.data.sync.CountrySource
 import io.github.jeshiomurmu.opencaller.core.datastore.UserSettingsDataSource
+import io.github.jeshiomurmu.opencaller.core.model.AppRole
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 import io.github.jeshiomurmu.opencaller.core.telephony.AccessStatusSource
 import io.github.jeshiomurmu.opencaller.core.telephony.CallPlacer
 import io.github.jeshiomurmu.opencaller.core.telephony.DeviceAccessStatusSource
 import io.github.jeshiomurmu.opencaller.core.telephony.DeviceCallPlacer
+import io.github.jeshiomurmu.opencaller.core.telephony.DeviceSimAccounts
+import io.github.jeshiomurmu.opencaller.core.telephony.QuickReplyTemplates
+import io.github.jeshiomurmu.opencaller.core.telephony.RoleManagerHelper
+import io.github.jeshiomurmu.opencaller.core.telephony.SimAccounts
 import io.github.jeshiomurmu.opencaller.core.telephony.lookup.ServerNetworkLookup
+import io.github.jeshiomurmu.opencaller.core.telephony.providers.CallLogSource
+import io.github.jeshiomurmu.opencaller.core.telephony.providers.ContactsSource
+import io.github.jeshiomurmu.opencaller.core.telephony.providers.DefaultPhoneAppRole
+import io.github.jeshiomurmu.opencaller.core.telephony.providers.DeviceCallLog
+import io.github.jeshiomurmu.opencaller.core.telephony.providers.DeviceContacts
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.CallerIdListener
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.CallerLookup
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ContactLookup
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.DeviceSources
+import io.github.jeshiomurmu.opencaller.core.telephony.screening.EmergencyNumbers
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.HomeRegionProvider
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ListSources
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.RuleValidator
@@ -39,11 +50,14 @@ import io.github.jeshiomurmu.opencaller.core.telephony.screening.device.AndroidC
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.device.DeviceHomeRegionProvider
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.device.LocalVerifiedBusinessLookup
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.device.TelephonyEmergencyNumbers
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import javax.inject.Singleton
 import kotlin.time.TimeSource
 
 /** Binds the telephony interfaces to their device implementations. */
+@Suppress("TooManyFunctions") // One binding per telephony interface, as Hilt wants them.
 @Module
 @InstallIn(SingletonComponent::class)
 internal interface TelephonyModule {
@@ -75,6 +89,19 @@ internal interface TelephonyModule {
     @Binds
     fun callPlacer(impl: DeviceCallPlacer): CallPlacer
 
+    @Binds
+    fun simAccounts(impl: DeviceSimAccounts): SimAccounts
+
+    @Binds
+    fun callLog(impl: DeviceCallLog): CallLogSource
+
+    @Binds
+    fun contacts(impl: DeviceContacts): ContactsSource
+
+    @Binds
+    fun emergencyNumbers(impl: TelephonyEmergencyNumbers): EmergencyNumbers
+
+    @Suppress("TooManyFunctions") // One provider per object Hilt can't construct itself.
     companion object {
         @Provides
         @Singleton
@@ -82,6 +109,13 @@ internal interface TelephonyModule {
 
         @Provides
         fun screeningConfig(): ScreeningConfig = ScreeningConfig()
+
+        @Provides
+        fun quickReplyTemplates(settings: UserSettingsDataSource): QuickReplyTemplates =
+            QuickReplyTemplates { settings.preferences.map { it.quickReplies }.distinctUntilChanged() }
+
+        @Provides
+        fun defaultPhoneAppRole(roles: RoleManagerHelper): DefaultPhoneAppRole = DefaultPhoneAppRole { roles.isRoleHeld(AppRole.DIALER) }
 
         @Provides
         fun ruleValidator(

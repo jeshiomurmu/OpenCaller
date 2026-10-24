@@ -375,6 +375,22 @@ class ScreeningEngineTest {
         }
 
     @Test
+    fun tcBlk013EmergencyCallsAreNotDelayedBySlowLookups() =
+        runTest {
+            sources.lookupDelayMillis = 5_000
+            sources.network =
+                NetworkLookup {
+                    delay(5_000)
+                    null
+                }
+            val result = engine().screen(ScreeningCall("911", Direction.INCOMING))
+            assertEquals(ScreeningReason.EMERGENCY, result.reason)
+            // Decided before any settings, contacts, list or network lookup: no virtual time passed.
+            assertEquals(0L, testScheduler.currentTime)
+            assertEquals(0, sources.settingsRead)
+        }
+
+    @Test
     fun unreadableHandleRings() =
         runTest {
             sources.prefs = sources.prefs.copy(blockNonContacts = true)

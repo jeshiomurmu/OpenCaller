@@ -112,13 +112,13 @@ Rough effort for one full-time developer working with an AI agent: Phases 0–7 
 
 ## Phase 6 — Dialer, in-call, call log, contacts
 
-- [ ] Default dialer role handling; `InCallService` (`BIND_INCALL_SERVICE`, `android.telecom.IN_CALL_SERVICE_UI` meta-data)
-- [ ] In-call UI: answer/decline (incl. lock screen via full-screen intent), mute, speaker, Bluetooth, keypad (DTMF), hold, add/merge/swap, caller card
-- [ ] Dialer: keypad, T9 search, dual-SIM picker, voicemail shortcut, `tel:` intent handling, MMI/USSD codes passthrough
-- [ ] Call log: grouped list, filters (missed, blocked, spam), delete, search
-- [ ] Contacts: list, detail, create/edit, favourites (ContactsProvider; consider forking Fossify Phone UI patterns, keeping GPL notices)
-- [ ] After-call card as full activity when default dialer; quick-reply templates
-- [ ] Emergency-number handling verified (never intercepted)
+- [x] Default dialer role handling; `InCallService` (`BIND_INCALL_SERVICE`, `android.telecom.IN_CALL_SERVICE_UI` meta-data)
+- [x] In-call UI: answer/decline (incl. lock screen via full-screen intent), mute, speaker, Bluetooth, keypad (DTMF), hold, add/merge/swap, caller card
+- [x] Dialer: keypad, T9 search, dual-SIM picker, voicemail shortcut, `tel:` intent handling, MMI/USSD codes passthrough
+- [x] Call log: grouped list, filters (missed, blocked, spam), delete, search
+- [x] Contacts: list, detail, create/edit, favourites (ContactsProvider; consider forking Fossify Phone UI patterns, keeping GPL notices)
+- [x] After-call card as full activity when default dialer; quick-reply templates
+- [x] Emergency-number handling verified (never intercepted)
 
 **Exit:** TC-DIAL-*, TC-INCALL-*, TC-LOG-* pass on emulator and one physical dual-SIM phone.
 

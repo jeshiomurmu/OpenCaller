@@ -61,6 +61,16 @@ class InCallDescriptionTest {
         }
 
     @Test
+    fun aContactsOwnNumberCanBeCheckedAgainstTheSpamList() =
+        runTest {
+            sources.contacts[us] = "Alex"
+            sources.spam(us, 0.9f)
+            val caller = engine().describe(us.e164, includeContacts = false)
+            assertNull(caller.nameSource)
+            assertEquals(RiskLevel.LIKELY_SPAM, caller.spamVerdict?.level)
+        }
+
+    @Test
     fun emergencyAndHiddenCallsHaveNoNumber() =
         runTest {
             assertNull(engine().describe("911").number)

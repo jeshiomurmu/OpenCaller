@@ -107,6 +107,7 @@ class InCallViewModelTest {
     private val calls = MutableStateFlow(InCallState())
     private val callers = MutableStateFlow<Map<String, CallerInfo>>(emptyMap())
     private val controller = FakeCallController()
+    private val userReplies = MutableStateFlow<List<String>>(emptyList())
     private val vm by lazy {
         InCallViewModel(
             calls =
@@ -119,6 +120,7 @@ class InCallViewModelTest {
                 },
             numbers = CallNumbers(PhoneNumberNormalizer()) { "US" },
             controller = controller,
+            templates = { userReplies },
             clock = FakeClock(),
         )
     }
@@ -245,5 +247,17 @@ class InCallViewModelTest {
             vm.onEvent(InCallEvent.SelectSim("2", "0"))
             vm.onEvent(InCallEvent.Refresh)
             assertEquals(listOf("sim 2 0", "refresh"), controller.commands)
+        }
+
+    @Test
+    fun theUsersOwnQuickRepliesReplaceTheSystemOnes() =
+        runTest {
+            observe()
+            val ringing = call("1", CallStatus.RINGING).copy(cannedReplies = listOf("Can't talk now"))
+            calls.value = InCallState(listOf(ringing))
+            assertEquals(listOf("Can't talk now"), vm.uiState.value.repliesFor(ringing))
+
+            userReplies.value = listOf("Driving, call you later", "In a meeting")
+            assertEquals(listOf("Driving, call you later", "In a meeting"), vm.uiState.value.repliesFor(ringing))
         }
 }
