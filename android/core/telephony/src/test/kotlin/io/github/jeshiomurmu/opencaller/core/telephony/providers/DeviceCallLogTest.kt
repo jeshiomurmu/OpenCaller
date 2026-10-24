@@ -19,6 +19,7 @@ import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 import io.github.jeshiomurmu.opencaller.core.testing.TestDispatcherProvider
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -56,7 +57,7 @@ class DeviceCallLogTest {
             )
     }
 
-    private fun callLog(dispatcher: UnconfinedTestDispatcher) =
+    private fun callLog(dispatcher: TestDispatcher) =
         DeviceCallLog(app, { defaultPhoneApp }, PhoneNumberNormalizer(), { "US" }, TestDispatcherProvider(dispatcher))
 
     @Test

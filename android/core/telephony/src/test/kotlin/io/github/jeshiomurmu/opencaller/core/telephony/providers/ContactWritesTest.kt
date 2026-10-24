@@ -41,12 +41,12 @@ class ContactWritesTest {
         val raw = operations[0]
         assertTrue(raw.isInsert)
         assertEquals(RawContacts.CONTENT_URI, raw.uri)
-        val rawValues = raw.resolveValueBackReferences(emptyArray(), 0)
+        val rawValues = checkNotNull(raw.resolveValueBackReferences(emptyArray(), 0))
         assertTrue(rawValues.containsKey(RawContacts.ACCOUNT_TYPE) && rawValues.getAsString(RawContacts.ACCOUNT_TYPE) == null)
 
         // Every data row points at the new raw contact (back reference to operation 0).
         val created = arrayOf(ContentProviderResult(ContentUris.withAppendedId(RawContacts.CONTENT_URI, 42)))
-        val rows = operations.drop(1).map { it.resolveValueBackReferences(created, 1) }
+        val rows = operations.drop(1).map { checkNotNull(it.resolveValueBackReferences(created, 1)) }
         rows.forEach { assertEquals(42L, it.getAsLong(Data.RAW_CONTACT_ID)) }
         assertEquals(
             listOf(
@@ -72,7 +72,7 @@ class ContactWritesTest {
         assertEquals(4, operations.size)
         assertTrue(operations[0].isDelete)
         assertEquals(Data.CONTENT_URI, operations[0].uri)
-        val rows = operations.drop(1).map { it.resolveValueBackReferences(emptyArray(), 0) }
+        val rows = operations.drop(1).map { checkNotNull(it.resolveValueBackReferences(emptyArray(), 0)) }
         rows.forEach { assertEquals(7L, it.getAsLong(Data.RAW_CONTACT_ID)) }
         assertEquals(
             listOf(StructuredName.CONTENT_ITEM_TYPE, Phone.CONTENT_ITEM_TYPE, Phone.CONTENT_ITEM_TYPE),
