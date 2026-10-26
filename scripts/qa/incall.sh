@@ -252,7 +252,8 @@ sleep 5
 
 # --- TC-DIAL-001: the dial pad places a call and the in-call screen shows it --------------------------------------
 adb shell am start -a android.intent.action.DIAL -d "tel:+12015550198" > /dev/null
-if wait_for_text "+12015550198" && on_screen "Call"; then
+# The dial pad formats the number as it is typed (libphonenumber's AsYouTypeFormatter).
+if wait_for_text "+1 201-555-0198" && on_screen "Call"; then
   screenshot dial-pad
   adb logcat -c || true
   tap_text "Call"

@@ -19,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - After a call from a number that isn't in your contacts: a full after-call screen (call back, message, save contact,
   block, report or not spam) when the phone is unlocked, otherwise the after-call notification.
 - Settings → Permissions & roles: "Full-screen incoming calls" (Android 14+) with Fix.
+- Dialer (Phase 6b): numbers formatted as you type (also when pasted), suggestions from your contacts and recent calls
+  by name letters (T9) or digits, a "Call with" SIM picker on dual-SIM phones without a default SIM, long-press 1 for
+  voicemail and 0 for `+`, carrier codes such as `*123#` and the phone's own `*#*#…#*#*` codes.
+- Call log (as the default phone app): calls grouped by number and day, Missed / Blocked / Spam filters using
+  OpenCaller's screening history, search, call back, message, open or add the contact, block with Undo, delete.
+- Contacts: list with favourites and an A–Z scroller, contact details with what the device knows about each number
+  (spam list, verified business), create and edit (name, numbers with labels, e-mail), favourites. Contacts stay in
+  your phone's contacts; nothing is uploaded.
+- Settings → Quick replies: your own replies for declining a call with a message and for Message after a call.
 
 ## [0.1.0-alpha] - 2026-10-17
 

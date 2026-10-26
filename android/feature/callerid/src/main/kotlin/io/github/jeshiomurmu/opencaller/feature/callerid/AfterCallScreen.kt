@@ -1,6 +1,7 @@
 package io.github.jeshiomurmu.opencaller.feature.callerid
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,6 +11,8 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -17,6 +20,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -95,7 +101,7 @@ private fun AfterCallButtons(
     val wide = Modifier.fillMaxWidth().heightIn(min = OpenCallerSpacing.minTouchTarget)
     val decided = state.done == AfterCallDone.BLOCKED || state.done == AfterCallDone.MARKED_NOT_SPAM
     Button(onClick = links.onCallBack, modifier = wide) { Text(stringResource(R.string.after_call_call_back)) }
-    OutlinedButton(onClick = links.onMessage, modifier = wide) { Text(stringResource(R.string.after_call_message)) }
+    MessageButton(replies = state.quickReplies, onMessage = links.onMessage, modifier = wide)
     OutlinedButton(onClick = links.onSaveContact, modifier = wide) { Text(stringResource(R.string.after_call_save_contact)) }
     OutlinedButton(onClick = { onEvent(AfterCallEvent.Block) }, enabled = !state.working && !decided, modifier = wide) {
         Text(stringResource(R.string.after_call_block))
@@ -109,6 +115,32 @@ private fun AfterCallButtons(
     }
     TextButton(onClick = links.onClose, modifier = Modifier.heightIn(min = OpenCallerSpacing.minTouchTarget)) {
         Text(stringResource(R.string.after_call_close))
+    }
+}
+
+// Message: straight to the SMS app, or first a menu of the user's quick replies and "Write a message".
+@Composable
+private fun MessageButton(
+    replies: List<String>,
+    onMessage: (String?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    Box {
+        OutlinedButton(onClick = { if (replies.isEmpty()) onMessage(null) else open = true }, modifier = modifier) {
+            Text(stringResource(R.string.after_call_message))
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            (replies + listOf<String?>(null)).forEach { reply ->
+                DropdownMenuItem(
+                    text = { Text(reply ?: stringResource(R.string.after_call_message_own)) },
+                    onClick = {
+                        open = false
+                        onMessage(reply)
+                    },
+                )
+            }
+        }
     }
 }
 

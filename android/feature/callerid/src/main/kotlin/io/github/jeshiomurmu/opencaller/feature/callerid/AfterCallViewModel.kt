@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.model.CallerInfo
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
+import io.github.jeshiomurmu.opencaller.core.telephony.QuickReplyTemplates
 import io.github.jeshiomurmu.opencaller.core.ui.CallerCardState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,12 +34,14 @@ enum class AfterCallDone {
  * @property answered false for a missed or declined call.
  * @property flagged the caller was likely spam or suspicious: Not spam is offered instead of Report.
  * @property done the result of Block or Not spam, while it shows.
+ * @property quickReplies the user's own quick replies, offered by Message (empty: Message opens an empty text).
  */
 data class AfterCallUiState(
     val card: CallerCardModel? = null,
     val answered: Boolean = true,
     val done: AfterCallDone? = null,
     val working: Boolean = false,
+    val quickReplies: List<String> = emptyList(),
 ) {
     /** True for a caller flagged as spam or suspicious. */
     val flagged: Boolean get() = card?.state == CallerCardState.SPAM || card?.state == CallerCardState.SUSPICIOUS
@@ -65,6 +68,7 @@ class AfterCallViewModel
         ended: EndedCalls,
         formatter: CallerCardFormatter,
         private val actions: AfterCallActions,
+        templates: QuickReplyTemplates,
     ) : ViewModel() {
         private val number: PhoneNumber? =
             savedState
@@ -82,6 +86,10 @@ class AfterCallViewModel
 
         /** Screen state. */
         val uiState: StateFlow<AfterCallUiState> = state.asStateFlow()
+
+        init {
+            viewModelScope.launch { templates.replies().collect { replies -> state.update { it.copy(quickReplies = replies) } } }
+        }
 
         /** Handles [event]. */
         fun onEvent(event: AfterCallEvent) {

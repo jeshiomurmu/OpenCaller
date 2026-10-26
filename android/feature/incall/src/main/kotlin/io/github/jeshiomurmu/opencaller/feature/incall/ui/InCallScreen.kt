@@ -169,7 +169,7 @@ private fun InCallSheets(
     val ringing = state.ringing
     if (replying && ringing != null) {
         QuickReplySheet(
-            replies = ringing.call.cannedReplies,
+            replies = state.repliesFor(ringing.call),
             onSend = { message ->
                 onClose()
                 onEvent(InCallEvent.DeclineWithMessage(ringing.call.id, message))

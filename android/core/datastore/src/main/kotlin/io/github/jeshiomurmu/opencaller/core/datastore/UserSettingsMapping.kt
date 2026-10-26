@@ -59,6 +59,7 @@ internal fun UserSettings.toDomain(): UserPreferences =
         themeMode = themeModes.domainOf(themeMode, defaults.themeMode),
         onboardingStep = onboardingSteps.domainOf(onboardingStep, defaults.onboardingStep),
         listUpdatesOnMobileData = listUpdatesOnMobileData,
+        quickReplies = quickRepliesList.toList(),
     )
 
 /** Maps the domain model to its stored form. Region codes are stored sorted so equal sets serialize equally. */
@@ -76,4 +77,5 @@ internal fun UserPreferences.toProto(): UserSettings =
         .setThemeMode(themeModes.getValue(themeMode))
         .setOnboardingStep(onboardingSteps.getValue(onboardingStep))
         .setListUpdatesOnMobileData(listUpdatesOnMobileData)
+        .addAllQuickReplies(quickReplies)
         .build()

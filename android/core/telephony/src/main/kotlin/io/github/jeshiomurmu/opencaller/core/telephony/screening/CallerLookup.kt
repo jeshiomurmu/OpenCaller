@@ -30,14 +30,19 @@ class CallerLookup(
     /**
      * The caller card for [handle] (the number part of a call's `tel:` address). Bounded by
      * [ScreeningConfig.budgetMillis]; after a timeout or a failure only the number, its country and line type are
-     * known. Never throws except to propagate the caller's own cancellation.
+     * known. With [includeContacts] false the contacts are skipped: the contact detail screen shows what the spam
+     * list and verified businesses say about a contact's own numbers. Never throws except to propagate the caller's
+     * own cancellation.
      */
     @Suppress("TooGenericExceptionCaught")
-    suspend fun describe(handle: String?): CallerInfo {
+    suspend fun describe(
+        handle: String?,
+        includeContacts: Boolean = true,
+    ): CallerInfo {
         val basic = basicCaller(handle?.trim().orEmpty())
         val number = basic.number ?: return basic
         return try {
-            withTimeoutOrNull(config.budgetMillis) { withContext(dispatchers.io) { known(number, basic) } } ?: basic
+            withTimeoutOrNull(config.budgetMillis) { withContext(dispatchers.io) { known(number, basic, includeContacts) } } ?: basic
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -64,8 +69,9 @@ class CallerLookup(
     private suspend fun known(
         number: PhoneNumber,
         caller: CallerInfo,
+        includeContacts: Boolean,
     ): CallerInfo {
-        val contact = device.contacts.displayName(number)
+        val contact = if (includeContacts) device.contacts.displayName(number) else null
         if (contact != null) return caller.copy(displayName = contact, nameSource = NameSource.CONTACT)
         val prefs = device.settings.current()
         val listVerdict =

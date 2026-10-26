@@ -8,20 +8,44 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import android.telecom.PhoneAccount
 import android.telecom.TelecomManager
+import android.telephony.TelephonyManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jeshiomurmu.opencaller.core.common.AppError
 import io.github.jeshiomurmu.opencaller.core.common.AppResult
+import io.github.jeshiomurmu.opencaller.core.telephony.screening.EmergencyNumbers
 import timber.log.Timber
 import javax.inject.Inject
 
-/** Places calls from OpenCaller's dial pad. */
+/** Places calls from OpenCaller's dial pad, call log and contacts. */
 interface CallPlacer {
     /** True when OpenCaller may place calls itself (the call permission, asked only of the default phone app). */
     fun canPlaceCalls(): Boolean
 
-    /** Places a call to [number] through Telecom (emergency numbers included, as the default phone app). */
-    fun place(number: String): AppResult<Unit>
+    /** True when [number] is an emergency number on this device (place it with [placeEmergency], at once). */
+    fun isEmergencyNumber(number: String): Boolean
+
+    /**
+     * Places a call to [number] through Telecom (emergency numbers and carrier codes such as `*123#` included, as the
+     * default phone app), on the SIM [simId] from [SimAccounts], or the default SIM when `null`.
+     */
+    fun place(
+        number: String,
+        simId: String? = null,
+    ): AppResult<Unit>
+
+    /**
+     * Places an emergency call to [number] at once, without the call permission: `TelecomManager.placeCall` allows
+     * emergency calls from the default phone app (developer.android.com), and nothing may delay them (TC-BLK-013).
+     */
+    fun placeEmergency(number: String): AppResult<Unit>
+
+    /** Calls voicemail through Telecom (`voicemail:`), on [simId] or the default SIM. */
+    fun placeVoicemail(simId: String? = null): AppResult<Unit>
+
+    /** Hands a secret code `*#*#digits#*#*` to Android (`TelephonyManager.sendDialerSpecialCode`); it is never dialled. */
+    fun sendSecretCode(digits: String): AppResult<Unit>
 
     /** Opens the system phone app's dial pad with [number] (OpenCaller isn't the default phone app). */
     fun handOff(number: String): AppResult<Unit>
@@ -35,29 +59,69 @@ class DeviceCallPlacer
     @Inject
     constructor(
         @ApplicationContext private val context: Context,
+        private val sims: DeviceSimAccounts,
+        private val emergency: EmergencyNumbers,
     ) : CallPlacer {
         private val telecom: TelecomManager? = context.getSystemService(TelecomManager::class.java)
 
         override fun canPlaceCalls(): Boolean =
             context.checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED
 
-        override fun place(number: String): AppResult<Unit> {
+        override fun isEmergencyNumber(number: String): Boolean = emergency.isEmergency(number)
+
+        override fun place(
+            number: String,
+            simId: String?,
+        ): AppResult<Unit> = placeAddress(Uri.fromParts(PhoneAccount.SCHEME_TEL, number, null), simId)
+
+        override fun placeEmergency(number: String): AppResult<Unit> {
+            val telecom = telecom ?: return AppResult.Failure(AppError.Validation(NO_TELEPHONY))
+            return placeWith(telecom, Uri.fromParts(PhoneAccount.SCHEME_TEL, number, null), simId = null)
+        }
+
+        override fun placeVoicemail(simId: String?): AppResult<Unit> =
+            placeAddress(Uri.fromParts(PhoneAccount.SCHEME_VOICEMAIL, "", null), simId)
+
+        override fun sendSecretCode(digits: String): AppResult<Unit> {
+            val telephony =
+                context.getSystemService(TelephonyManager::class.java) ?: return AppResult.Failure(AppError.Validation(NO_TELEPHONY))
+            return try {
+                telephony.sendDialerSpecialCode(digits)
+                AppResult.Success(Unit)
+            } catch (e: SecurityException) {
+                // Only the default phone app may send them.
+                Timber.w(e, "Secret code refused")
+                AppResult.Failure(AppError.PermissionDenied)
+            } catch (e: UnsupportedOperationException) {
+                Timber.w(e, "Secret codes unsupported")
+                AppResult.Failure(AppError.Validation(NO_TELEPHONY))
+            }
+        }
+
+        private fun placeAddress(
+            address: Uri,
+            simId: String?,
+        ): AppResult<Unit> {
             val telecom = telecom
             return when {
                 telecom == null -> AppResult.Failure(AppError.Validation(NO_TELEPHONY))
                 !canPlaceCalls() -> AppResult.Failure(AppError.Validation(NO_PERMISSION))
-                else -> placeWith(telecom, number)
+                else -> placeWith(telecom, address, simId)
             }
         }
 
-        // place() checks CALL_PHONE just before; a permission revoked in between throws SecurityException, caught here.
+        // placeAddress() checks CALL_PHONE just before (placeEmergency needs none as the default phone app); a refusal
+        // throws SecurityException, caught here.
         @SuppressLint("MissingPermission")
         private fun placeWith(
             telecom: TelecomManager,
-            number: String,
+            address: Uri,
+            simId: String?,
         ): AppResult<Unit> =
             try {
-                telecom.placeCall(Uri.fromParts(TEL, number, null), Bundle())
+                val extras = Bundle()
+                simId?.let(sims::handleOf)?.let { extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, it) }
+                telecom.placeCall(address, extras)
                 AppResult.Success(Unit)
             } catch (e: SecurityException) {
                 Timber.w(e, "Placing a call was refused")
@@ -67,7 +131,7 @@ class DeviceCallPlacer
         override fun handOff(number: String): AppResult<Unit> {
             val dialer = telecom?.systemDialerPackage ?: return AppResult.Failure(AppError.Validation(NO_TELEPHONY))
             val dial =
-                Intent(Intent.ACTION_DIAL, Uri.fromParts(TEL, number, null))
+                Intent(Intent.ACTION_DIAL, Uri.fromParts(PhoneAccount.SCHEME_TEL, number, null))
                     .setPackage(dialer)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             return try {
@@ -86,7 +150,5 @@ class DeviceCallPlacer
 
             /** The call permission is missing. */
             const val NO_PERMISSION = "no_call_permission"
-
-            private const val TEL = "tel"
         }
     }
