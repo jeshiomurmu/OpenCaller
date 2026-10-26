@@ -9,6 +9,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Default phone app (Phase 6a): OpenCaller can now be your phone app. Incoming calls show full screen over the lock
+  screen with the caller card from caller ID (answer without unlocking), or as a call notification with Answer and
+  Decline while you use the phone. During a call: mute, keypad tones, speaker or Bluetooth/headset, hold, add a call,
+  merge, swap, hang up; decline with a quick text reply; choose a SIM when no default SIM is set; the screen turns off
+  near your ear.
+- Dial pad: opens for `tel:` links and Add call, places calls through the phone's calling service (asks for the call
+  permission first, with an explanation); without the default phone app role it hands the number to your phone app.
+- After a call from a number that isn't in your contacts: a full after-call screen (call back, message, save contact,
+  block, report or not spam) when the phone is unlocked, otherwise the after-call notification.
+- Settings → Permissions & roles: "Full-screen incoming calls" (Android 14+) with Fix.
+- Dialer (Phase 6b): numbers formatted as you type (also when pasted), suggestions from your contacts and recent calls
+  by name letters (T9) or digits, a "Call with" SIM picker on dual-SIM phones without a default SIM, long-press 1 for
+  voicemail and 0 for `+`, carrier codes such as `*123#` and the phone's own `*#*#…#*#*` codes.
+- Call log (as the default phone app): calls grouped by number and day, Missed / Blocked / Spam filters using
+  OpenCaller's screening history, search, call back, message, open or add the contact, block with Undo, delete.
+- Contacts: list with favourites and an A–Z scroller, contact details with what the device knows about each number
+  (spam list, verified business), create and edit (name, numbers with labels, e-mail), favourites. Contacts stay in
+  your phone's contacts; nothing is uploaded.
+- Settings → Quick replies: your own replies for declining a call with a message and for Message after a call.
+
+## [0.1.0-alpha] - 2026-10-17
+
+First alpha. Blocking works on the phone without any server; this build has no server configured, so sign-in, reports,
+search and spam-list updates say "Not connected to a server".
+
+### Added
+
+- App (Phase 5): network layer (`core:network`: Retrofit, OkHttp, kotlinx.serialization) with token refresh, server
+  address from the build (none in release builds unless set), certificate pinning in Play release builds and HTTPS
+  required for release builds.
+- Optional sign-in with your phone number (number → code by SMS → done) on the last onboarding step and in Me →
+  Account. Sign-in tokens are encrypted with their own Android Keystore key.
+- Daily spam-list update (Wi-Fi only unless you allow mobile data, plus "Update now"): only the changes are downloaded
+  when possible; every file is checked (SHA-256 and format) and applied in one database transaction, and the old list
+  stays if anything is wrong.
+- Private live caller ID during a call: only a short code made from the scrambled number is sent (k-anonymous hash
+  bucket), the answer is matched on the phone, kept for 24 hours, and never holds up a call for more than 800 ms. It
+  can block at your spam threshold; contacts and verified businesses are never blocked.
+- Report sheet (spam or not spam, category, comment, "Also block") from the after-call notification and the
+  blocked-calls log; reports wait on the phone until you're online and signed in, and respect the server's limits.
+- Number search with "n of 50 searches left today" and clear offline, limit and server-error messages.
+- "Why am I seeing this?" for caller cards, blocked calls and search results; spam categories in your language.
+- "Wrongly marked as spam?" (asks for a review) and "Unlist my number" (opens the server's web form) in Me → Account.
+- CI: TC-E2E-001 with two emulators and the local server (device A reports, the server's jobs run, device B updates
+  its list and blocks the number, then blocks a second one by live lookup); release workflow that builds the signed
+  foss APK on a version tag and publishes it with its SHA-256.
+
 - Server (Phase 4, part 2): spam reports (`POST /v1/reports`, up to 50 per request, 100 per day); a scoring job every
   15 minutes that turns reports into a Bayesian spam score with time decay (verified businesses are never labelled
   spam; they go to human review instead); nightly per-country spam lists with deltas in a compact binary format,
@@ -74,3 +121,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (API 29 and 36), compose smoke test and a LICENSE check against gnu.org.
 - `infra/docker/minio/Dockerfile`: Chainguard MinIO image plus a static BusyBox for the compose healthcheck.
 - `LICENSE` (GPL-3.0), `CHANGELOG.md` and `NOTICE.md`.
+
+[Unreleased]: https://github.com/jeshiomurmu/OpenCaller/compare/v0.1.0-alpha...HEAD
+[0.1.0-alpha]: https://github.com/jeshiomurmu/OpenCaller/releases/tag/v0.1.0-alpha

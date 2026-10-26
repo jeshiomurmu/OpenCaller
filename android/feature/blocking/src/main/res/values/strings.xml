@@ -23,6 +23,16 @@
     <string name="threshold_high">Block only certain spam</string>
     <string name="threshold_high_summary" formatted="false">Blocks only near-certain spam (score 85% and up). Others ring, marked Suspicious.</string>
 
+    <string name="list_section">Spam list</string>
+    <string name="list_title">Spam list on this phone</string>
+    <string name="list_never_updated">Not updated yet. It updates once a day.</string>
+    <string name="list_status">Checked %1$s · version %2$d</string>
+    <string name="list_update_now">Update now</string>
+    <string name="list_mobile_data">Update on mobile data</string>
+    <string name="list_mobile_data_summary">The daily update uses Wi-Fi only unless you allow mobile data.</string>
+    <string name="list_not_connected">Not connected to a server</string>
+    <string name="list_not_connected_summary">Blocking works with the spam list saved on this phone. This version doesn\'t download updates.</string>
+
     <string name="blocking_section_countries">Allowed countries</string>
     <string name="blocking_countries_none">No countries allowed yet.</string>
     <string name="blocking_country_input">Country code, e.g. US</string>
@@ -35,13 +45,9 @@
     <string name="blocking_log">Blocked calls</string>
     <string name="blocking_log_summary">See blocked calls and undo a block</string>
 
-    <string name="report_title">Report %1$s as spam?</string>
-    <string name="report_body">Your report stays on this phone for now and is shared when community reports start. Only the number and the label are sent, never your contacts or call history.</string>
-    <string name="report_confirm">Report</string>
-    <string name="report_and_block">Report and block</string>
-    <string name="report_cancel">Cancel</string>
     <string name="report_done">Reported %1$s</string>
     <string name="report_done_blocked">Reported and blocked %1$s</string>
+    <string name="list_update_started">The spam list updates as soon as you\'re online.</string>
     <string name="blocking_failed">Something went wrong. Please try again.</string>
 
     <!-- Rules editor. -->
@@ -76,6 +82,8 @@
     <string name="test_non_contact">%1$s is blocked: it isn\'t in your contacts.</string>
     <string name="test_spam_blocked">%1$s is blocked: it\'s on the spam list.</string>
     <string name="test_spam_silenced">%1$s rings silently: it\'s on the spam list.</string>
+    <string name="test_network_blocked">%1$s is blocked: community reports mark it as spam.</string>
+    <string name="test_network_silenced">%1$s rings silently: community reports mark it as spam.</string>
     <string name="test_suspicious">%1$s rings, marked Suspicious.</string>
     <string name="test_rings">%1$s rings. No rule or setting stops it.</string>
     <string name="test_emergency">Emergency numbers always ring.</string>
@@ -92,6 +100,9 @@
     <string name="log_reason_foreign">another country</string>
     <string name="log_reason_non_contact">not in contacts</string>
     <string name="log_reason_spam">spam list</string>
+    <string name="log_reason_network">community reports</string>
+    <string name="log_report">Report</string>
+    <string name="log_why">Why?</string>
     <string name="log_unblock">Unblock</string>
     <string name="log_unblocked">%1$s will ring next time</string>
 </resources>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Number search (docs/prd.md F-ID-03; errors: docs/design.md §8). -->
+    <string name="search_title">Search a number</string>
+    <string name="search_number">Phone number</string>
+    <string name="search_button">Search</string>
+    <plurals name="search_quota_left">
+        <item quantity="one">%1$d of %2$d searches left today</item>
+        <item quantity="other">%1$d of %2$d searches left today</item>
+    </plurals>
+    <plurals name="search_quota_used">
+        <item quantity="one">You\'ve used today\'s %1$d search. More tomorrow, or become a supporter.</item>
+        <item quantity="other">You\'ve used today\'s %1$d searches. More tomorrow, or become a supporter.</item>
+    </plurals>
+    <string name="search_privacy">The number you type is sent to OpenCaller to look it up. Calls are checked differently: during a call, only a short code is sent.</string>
+    <string name="search_offline">You\'re offline. Blocking still works with your saved spam list.</string>
+    <string name="search_server_error">Something went wrong on our side. Your protection still works offline.</string>
+    <string name="search_retry">Retry</string>
+    <string name="search_invalid_number">That isn\'t a valid phone number. Include the country code if it\'s from another country.</string>
+    <string name="search_not_connected">Not connected to a server. This version of OpenCaller can\'t search numbers; blocking works with the spam list on this phone.</string>
+    <string name="search_needs_sign_in">Sign in to search numbers. Signing in is optional and only takes your phone number.</string>
+    <string name="search_sign_in_again">Please sign in again.</string>
+    <string name="search_sign_in">Sign in</string>
+    <plurals name="search_not_spam_count">
+        <item quantity="one">%d person said it\'s not spam.</item>
+        <item quantity="other">%d people said it\'s not spam.</item>
+    </plurals>
+    <string name="search_dispute">Is this your number? Ask for a review</string>
+
+    <!-- Disputes. -->
+    <string name="dispute_title">Wrongly marked as spam?</string>
+    <string name="dispute_body">Tell us why the spam label is wrong, for example because it\'s your number or your business. A person reviews every request.</string>
+    <string name="dispute_reason">Why is the label wrong?</string>
+    <string name="dispute_reason_hint">Up to 1,000 characters.</string>
+    <string name="dispute_send">Ask for a review</string>
+    <string name="dispute_sent">Thanks. We\'ll review the label.</string>
+    <string name="dispute_done">Done</string>
+    <string name="dispute_needs_sign_in">Sign in to ask for a review. It shows that a real person is asking.</string>
+    <string name="dispute_invalid_reason">Please say in a few words why the label is wrong.</string>
+    <string name="dispute_too_many">You\'ve sent many requests today. Please try again tomorrow.</string>
+</resources>

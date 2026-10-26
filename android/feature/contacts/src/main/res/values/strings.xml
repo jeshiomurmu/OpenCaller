@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="contacts_search_hint">Search contacts</string>
+    <string name="contacts_favourites">Favourites</string>
+    <string name="contacts_favourite">Favourite</string>
+    <string name="contacts_go_to">Go to %1$s</string>
+    <string name="contacts_create">New contact</string>
+    <string name="contacts_edit">Edit contact</string>
+    <string name="contacts_empty">No contacts yet.</string>
+    <string name="contacts_no_match">No contacts match.</string>
+    <string name="contacts_failed">Couldn\'t read your contacts.</string>
+    <string name="contacts_permission_title">Show your contacts</string>
+    <string name="contacts_permission_why">So OpenCaller, your phone app, can list your contacts, show their names on calls and let you call or message them.</string>
+    <string name="contacts_permission_never">Your contacts stay on this phone. OpenCaller never uploads them.</string>
+    <string name="contacts_permission_needed">Your contacts show here once OpenCaller may read them.</string>
+    <string name="contacts_allow">Allow</string>
+    <string name="contacts_write_title">Change your contacts</string>
+    <string name="contacts_write_why">So OpenCaller can save the contacts you create or edit, and your favourites, in your phone\'s contacts.</string>
+    <string name="contacts_make_favourite">Add to favourites</string>
+    <string name="contacts_unfavourite">Remove from favourites</string>
+    <string name="contacts_call">Call %1$s</string>
+    <string name="contacts_message">Message %1$s</string>
+    <string name="contacts_action_failed">That didn\'t work. Try again.</string>
+    <string name="contacts_ok">OK</string>
+    <string name="contacts_label_mobile">Mobile</string>
+    <string name="contacts_label_home">Home</string>
+    <string name="contacts_label_work">Work</string>
+    <string name="contacts_label_main">Main</string>
+    <string name="contacts_label_other">Other</string>
+    <string name="contacts_name">Name</string>
+    <string name="contacts_phone">Phone</string>
+    <string name="contacts_email">E-mail</string>
+    <string name="contacts_add_phone">Add number</string>
+    <string name="contacts_remove_phone">Remove number</string>
+    <string name="contacts_cancel">Cancel</string>
+    <string name="contacts_save">Save</string>
+    <string name="contacts_problem_empty">Enter a name or a number.</string>
+    <string name="contacts_problem_failed">Couldn\'t save the contact. It may belong to an account that can\'t be changed here.</string>
+    <string name="contacts_problem_permission">OpenCaller needs permission to change your contacts to save this.</string>
+</resources>

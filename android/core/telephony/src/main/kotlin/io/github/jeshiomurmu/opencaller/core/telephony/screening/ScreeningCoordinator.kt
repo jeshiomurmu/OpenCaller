@@ -7,6 +7,7 @@ import io.github.jeshiomurmu.opencaller.core.model.CallerIdSurface
 import io.github.jeshiomurmu.opencaller.core.model.Decision
 import io.github.jeshiomurmu.opencaller.core.model.ScreeningEvent
 import io.github.jeshiomurmu.opencaller.core.model.ScreeningReason
+import io.github.jeshiomurmu.opencaller.core.telephony.incall.ScreenedCalls
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -46,6 +47,19 @@ fun interface ScreeningEventListener {
 }
 
 /**
+ * What happens with a screening answer besides the answer itself: the in-memory copy for the default phone app's
+ * in-call screen ([screened]), the log, the listeners and caller ID.
+ */
+class ScreeningFollowUps
+    @Inject
+    constructor(
+        val screened: ScreenedCalls,
+        val log: ScreeningLog,
+        val listeners: Set<@JvmSuppressWildcards ScreeningEventListener>,
+        val presenter: CallerIdPresenter,
+    )
+
+/**
  * Runs one screening from [OpenCallerScreeningService]: decides with [ScreeningEngine], answers Android at once,
  * then (off the critical path) logs the decision and shows caller ID. Logging and the card outlive the service,
  * which Android unbinds as soon as it has the answer.
@@ -55,9 +69,7 @@ class ScreeningCoordinator
     @Inject
     constructor(
         private val engine: ScreeningEngine,
-        private val log: ScreeningLog,
-        private val presenter: CallerIdPresenter,
-        private val listeners: Set<@JvmSuppressWildcards ScreeningEventListener>,
+        private val followUps: ScreeningFollowUps,
         private val clock: Clock,
         private val dispatchers: DispatcherProvider,
     ) {
@@ -77,6 +89,8 @@ class ScreeningCoordinator
         ) {
             scope.launch {
                 val result = engine.screen(call)
+                // In memory only, for the in-call screen of the default phone app (Telecom adds the call next).
+                if (result.showsCallerId) followUps.screened.remember(result)
                 respondSafely(respond, result.decision)
                 record(result)
                 if (result.showsCallerId) present(result)
@@ -98,8 +112,8 @@ class ScreeningCoordinator
 
         private suspend fun record(result: ScreeningResult) {
             val event = result.toEvent(clock.nowMillis())
-            when (val saved = log.record(event)) {
-                is AppResult.Success -> listeners.forEach { it.onScreened(event.copy(id = saved.value), result) }
+            when (val saved = followUps.log.record(event)) {
+                is AppResult.Success -> followUps.listeners.forEach { it.onScreened(event.copy(id = saved.value), result) }
                 is AppResult.Failure -> Timber.w("Screening event not saved: %s", saved.error)
             }
         }
@@ -108,7 +122,7 @@ class ScreeningCoordinator
         @Suppress("TooGenericExceptionCaught")
         private fun present(result: ScreeningResult) {
             try {
-                presenter.present(result)
+                followUps.presenter.present(result)
             } catch (e: RuntimeException) {
                 Timber.w(e, "Caller ID could not be shown")
             }

@@ -93,6 +93,24 @@ class PhoneNumberNormalizer(
         return util.format(parsed, if (home == parsed.countryCode) PhoneNumberFormat.NATIONAL else PhoneNumberFormat.INTERNATIONAL)
     }
 
+    /**
+     * Dial pad input formatted as it is typed (libphonenumber's `AsYouTypeFormatter`), e.g. `2025550143` →
+     * `(202) 555-0143` with [regionCode] `US` and `+442071838750` → `+44 20 7183 8750`. Input with anything but
+     * digits and a leading `+` (the keypad's `*` and `#`, pauses) is returned as typed: those are codes for the
+     * carrier or dial strings, not numbers to format.
+     */
+    fun formatAsYouType(
+        input: String,
+        regionCode: String,
+    ): String {
+        val plain = input.isNotEmpty() && input.withIndex().all { (index, c) -> c in '0'..'9' || (c == '+' && index == 0) }
+        if (!plain || input.length > MAX_INPUT_LENGTH) return input
+        val formatter = util.getAsYouTypeFormatter(regionCode.uppercase())
+        var formatted = input
+        input.forEach { formatted = formatter.inputDigit(it) }
+        return formatted
+    }
+
     /** [number] with its middle hidden, e.g. `+880 ••• 1234`, for confirmations such as "Blocked … · Undo". */
     fun masked(number: PhoneNumber): String = "+${countryCallingCode(number)} ••• ${number.e164.takeLast(MASKED_VISIBLE_DIGITS)}"
 

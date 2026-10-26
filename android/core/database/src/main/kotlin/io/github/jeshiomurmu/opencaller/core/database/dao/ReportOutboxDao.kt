@@ -28,6 +28,25 @@ interface ReportOutboxDao {
         attempts: Int,
     )
 
+    /** Removes the reports with [ids]; returns the number removed. */
+    @Query("DELETE FROM report_outbox WHERE id IN (:ids)")
+    suspend fun deleteIds(ids: List<Long>): Int
+
+    /** Observes the number of reports in [state]. */
+    @Query("SELECT COUNT(*) FROM report_outbox WHERE state = :state")
+    fun observeCount(state: SyncState): kotlinx.coroutines.flow.Flow<Int>
+
+    /** Number of reports in [state]. */
+    @Query("SELECT COUNT(*) FROM report_outbox WHERE state = :state")
+    suspend fun countInState(state: SyncState): Int
+
+    /** Puts reports left in [from] (e.g. a send interrupted by process death) back into [to]. */
+    @Query("UPDATE report_outbox SET state = :to WHERE state = :from")
+    suspend fun moveState(
+        from: SyncState,
+        to: SyncState,
+    ): Int
+
     /** Removes reports in [state] (e.g. delivered ones); returns the number removed. */
     @Query("DELETE FROM report_outbox WHERE state = :state")
     suspend fun deleteInState(state: SyncState): Int

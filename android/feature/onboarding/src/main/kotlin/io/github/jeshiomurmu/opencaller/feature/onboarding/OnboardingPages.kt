@@ -92,6 +92,17 @@ internal fun PrivacyPage(
     }
 }
 
+/**
+ * Optional sign-in on the Extras step (the app fills it in: feature modules don't depend on each other).
+ *
+ * @property signedIn the user is already signed in.
+ * @property onSignIn opens the sign-in flow.
+ */
+data class SignInExtra(
+    val signedIn: Boolean,
+    val onSignIn: () -> Unit,
+)
+
 @Composable
 internal fun ExtrasPage(
     options: List<ExtraOption>,
@@ -99,11 +110,46 @@ internal fun ExtrasPage(
     onOpen: (AccessItem) -> Unit,
     onFinish: () -> Unit,
     modifier: Modifier = Modifier,
+    signIn: SignInExtra? = null,
 ) {
     PageScaffold(progress = progress, buttonLabel = stringResource(R.string.onboarding_finish), onButton = onFinish, modifier = modifier) {
         Title(R.string.onboarding_extras_title)
         Text(text = stringResource(R.string.onboarding_extras_body), style = MaterialTheme.typography.bodyLarge)
         options.forEach { ExtraRow(option = it, onOpen = { onOpen(it.item) }) }
+        signIn?.let { SignInRow(it) }
+    }
+}
+
+@Composable
+private fun SignInRow(
+    signIn: SignInExtra,
+    modifier: Modifier = Modifier,
+) {
+    Surface(modifier = modifier.fillMaxWidth(), shape = OpenCallerShape.card, color = MaterialTheme.colorScheme.surfaceVariant) {
+        Row(
+            modifier = Modifier.padding(OpenCallerSpacing.m),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.s),
+        ) {
+            Icon(painter = painterResource(OpenCallerIcons.Me), contentDescription = null)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = stringResource(R.string.onboarding_sign_in), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = stringResource(if (signIn.signedIn) R.string.onboarding_signed_in else R.string.onboarding_sign_in_summary),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (signIn.signedIn) {
+                Icon(
+                    painter = painterResource(OpenCallerIcons.Granted),
+                    contentDescription = stringResource(R.string.onboarding_signed_in),
+                    tint = OpenCallerTheme.semanticColors.safe,
+                )
+            } else {
+                OutlinedButton(onClick = signIn.onSignIn) { Text(text = stringResource(R.string.onboarding_sign_in_action)) }
+            }
+        }
     }
 }
 

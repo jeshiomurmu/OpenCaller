@@ -47,6 +47,46 @@ data object BlockedCallsRoute
 @Serializable
 data object ScreeningDebugRoute
 
+/** Optional sign-in (from the Me tab, a search or a dispute). */
+@Serializable
+data object AccountSignInRoute
+
+/** Calls → Dial pad, also opened by `ACTION_DIAL` (a tapped `tel:` link, Add call). [number] fills it. */
+@Serializable
+data class DialerRoute(
+    val number: String? = null,
+)
+
+/** Calls → Search a number (also Me → Search a number). */
+@Serializable
+data object NumberSearchRoute
+
+/** Me → Wrongly marked as spam? [number] (E.164) fills the form, e.g. from a search result. */
+@Serializable
+data class SpamDisputeRoute(
+    val number: String? = null,
+)
+
+/** Contacts → a contact. */
+@Serializable
+data class ContactRoute(
+    val contactId: Long,
+)
+
+/** Contacts → New contact or Edit contact ([contactId] [NEW_CONTACT] for a new one, [number] filled in when given). */
+@Serializable
+data class ContactEditorRoute(
+    val contactId: Long = NEW_CONTACT,
+    val number: String? = null,
+)
+
+/** [ContactEditorRoute.contactId] of a contact that doesn't exist yet (provider ids start at 1). */
+const val NEW_CONTACT: Long = -1L
+
+/** Me → Settings → Quick replies. */
+@Serializable
+data object QuickRepliesSettingsRoute
+
 /** The five bottom-bar tabs (docs/design.md §6), in display order. */
 enum class TopLevelDestination(
     val route: Any,

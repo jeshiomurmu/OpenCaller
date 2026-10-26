@@ -154,6 +154,23 @@ class PhoneNumberNormalizerTest {
         assertFalse(normalizer.isSupportedRegion("USA"))
     }
 
+    @Test
+    fun dialPadInputIsFormattedAsTyped() {
+        assertEquals("(202) 555-0143", normalizer.formatAsYouType("2025550143", "US"))
+        assertEquals("202-5", normalizer.formatAsYouType("2025", "us"))
+        assertEquals("+44 20 7183 8750", normalizer.formatAsYouType("+442071838750", "US"))
+        assertEquals("+1 201-555-0198", normalizer.formatAsYouType("+12015550198", "GB"))
+        assertEquals("01712-345678", normalizer.formatAsYouType("01712345678", "BD"))
+        assertEquals("", normalizer.formatAsYouType("", "US"))
+    }
+
+    @Test
+    fun codesAndPausesAreLeftAsTyped() {
+        listOf("*123#", "*#06#", "2025550143,1234", "2025550143;", "1+2").forEach { input ->
+            assertEquals(input, normalizer.formatAsYouType(input, "US"))
+        }
+    }
+
     /** One row of `fixtures/numbers.csv`. */
     private class NumberFixture(
         row: List<String>,

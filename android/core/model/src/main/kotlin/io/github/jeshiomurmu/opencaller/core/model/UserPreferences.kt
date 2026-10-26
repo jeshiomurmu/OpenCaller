@@ -80,6 +80,10 @@ enum class OnboardingStep {
  * The user's settings (stored by `core:datastore`).
  *
  * @property allowedRegionCodes ISO 3166-1 alpha-2 regions that are never treated as foreign.
+ * @property listUpdatesOnMobileData whether the daily spam-list update may use mobile data (default: Wi-Fi or other
+ *   unmetered networks only).
+ * @property quickReplies the user's own quick replies for declining a call with a message and for the after-call
+ *   card's Message, in display order; empty means Android's built-in replies (Settings → Quick replies).
  */
 data class UserPreferences(
     val blockHiddenNumbers: Boolean = false,
@@ -92,4 +96,15 @@ data class UserPreferences(
     val announceCallerMode: AnnounceCallerMode = AnnounceCallerMode.OFF,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val onboardingStep: OnboardingStep = OnboardingStep.WELCOME,
-)
+    val listUpdatesOnMobileData: Boolean = false,
+    val quickReplies: List<String> = emptyList(),
+) {
+    /** Limits for [quickReplies]. */
+    companion object {
+        /** At most this many quick replies. */
+        const val MAX_QUICK_REPLIES: Int = 10
+
+        /** A quick reply's maximum length, one SMS of plain text. */
+        const val MAX_QUICK_REPLY_LENGTH: Int = 160
+    }
+}

@@ -32,8 +32,20 @@ class UserSettingsMappingTest {
                 blockTopSpammers = false,
                 allowedRegionCodes = setOf("IN", "BD"),
                 overlayEnabled = false,
+                listUpdatesOnMobileData = true,
             ),
         )
+    }
+
+    @Test
+    fun listUpdatesUseUnmeteredNetworksByDefault() {
+        assertEquals(false, UserSettings.getDefaultInstance().toDomain().listUpdatesOnMobileData)
+    }
+
+    @Test
+    fun quickRepliesKeepTheirOrder() {
+        assertRoundTrip(UserPreferences(quickReplies = listOf("Can't talk now", "Call you back in 5", "Can't talk now")))
+        assertEquals(emptyList<String>(), UserSettings.getDefaultInstance().toDomain().quickReplies)
     }
 
     @Test

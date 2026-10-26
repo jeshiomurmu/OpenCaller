@@ -49,8 +49,8 @@ private fun TestOutcome.Result.messageRes(): Int =
             R.string.test_non_contact
         }
 
-        ScreeningReason.SPAM_LIST -> {
-            if (decision == Decision.SILENCE) R.string.test_spam_silenced else R.string.test_spam_blocked
+        ScreeningReason.SPAM_LIST, ScreeningReason.NETWORK -> {
+            spamMessageRes()
         }
 
         ScreeningReason.EMERGENCY -> {
@@ -66,6 +66,16 @@ private fun TestOutcome.Result.messageRes(): Int =
         }
     }
 
+private fun TestOutcome.Result.spamMessageRes(): Int {
+    val silenced = decision == Decision.SILENCE
+    return when {
+        reason == ScreeningReason.NETWORK && silenced -> R.string.test_network_silenced
+        reason == ScreeningReason.NETWORK -> R.string.test_network_blocked
+        silenced -> R.string.test_spam_silenced
+        else -> R.string.test_spam_blocked
+    }
+}
+
 /** Why a call is in the blocked log, in a few words. */
 internal fun ScreeningReason.logReasonRes(): Int? =
     when (this) {
@@ -74,5 +84,6 @@ internal fun ScreeningReason.logReasonRes(): Int? =
         ScreeningReason.FOREIGN -> R.string.log_reason_foreign
         ScreeningReason.NON_CONTACT -> R.string.log_reason_non_contact
         ScreeningReason.SPAM_LIST -> R.string.log_reason_spam
+        ScreeningReason.NETWORK -> R.string.log_reason_network
         else -> null
     }

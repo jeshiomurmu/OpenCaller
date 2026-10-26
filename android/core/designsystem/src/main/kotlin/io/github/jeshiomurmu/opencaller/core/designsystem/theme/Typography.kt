@@ -53,11 +53,14 @@ internal val OpenCallerTypography =
 data class OpenCallerExtendedTypography(
     /** OTP codes: 32/40 sp Noto Sans Mono SemiBold. */
     val otpCode: TextStyle,
+    /** The number being dialled: 36/44 sp Noto Sans Mono (`displaySmall` size, tabular digits). */
+    val dialerNumber: TextStyle,
 )
 
 internal val OpenCallerExtendedTypographyValues =
     OpenCallerExtendedTypography(
         otpCode = TextStyle(fontFamily = NotoSansMono, fontWeight = FontWeight.SemiBold, fontSize = 32.sp, lineHeight = 40.sp),
+        dialerNumber = TextStyle(fontFamily = NotoSansMono, fontWeight = FontWeight.Normal, fontSize = 36.sp, lineHeight = 44.sp),
     )
 
 /** Extended text styles of the current theme; read through `OpenCallerTheme.extendedTypography`. */

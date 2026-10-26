@@ -9,10 +9,15 @@ import android.view.Display
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.stringResource
@@ -28,6 +33,9 @@ import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacin
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
 import io.github.jeshiomurmu.opencaller.core.ui.CallerCard
 import io.github.jeshiomurmu.opencaller.core.ui.CallerCardSurface
+import io.github.jeshiomurmu.opencaller.core.ui.WhyButton
+import io.github.jeshiomurmu.opencaller.core.ui.WhyExplanation
+import io.github.jeshiomurmu.opencaller.core.ui.whyReasons
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -118,15 +126,27 @@ class CallerCardOverlay
         }
     }
 
+// "Why am I seeing this?" opens inline: the overlay window can't host a bottom sheet.
 @Composable
 private fun CardContent(
     card: CallerCardModel,
     onClose: () -> Unit,
 ) {
+    var explaining by remember { mutableStateOf(false) }
     OpenCallerTheme {
         CallerCardSurface(modifier = Modifier.padding(OpenCallerSpacing.xs)) {
-            CallerCard(caller = card.caller, formattedNumber = card.formattedNumber) {
-                TextButton(onClick = onClose) { Text(text = stringResource(R.string.callerid_close)) }
+            Column {
+                CallerCard(caller = card.caller, formattedNumber = card.formattedNumber) {
+                    WhyButton(onClick = { explaining = !explaining })
+                    TextButton(onClick = onClose) { Text(text = stringResource(R.string.callerid_close)) }
+                }
+                if (explaining) {
+                    WhyExplanation(
+                        reasons = whyReasons(card.caller),
+                        showTitle = false,
+                        modifier = Modifier.padding(bottom = OpenCallerSpacing.m),
+                    )
+                }
             }
         }
     }

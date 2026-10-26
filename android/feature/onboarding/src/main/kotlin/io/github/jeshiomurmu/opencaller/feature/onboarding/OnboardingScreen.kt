@@ -21,10 +21,15 @@ import io.github.jeshiomurmu.opencaller.core.telephony.AccessRequest
 import io.github.jeshiomurmu.opencaller.core.ui.AccessItemExplainer
 import io.github.jeshiomurmu.opencaller.core.ui.rememberAccessRequestLauncher
 
-/** Onboarding, wired to its [OnboardingViewModel]. The app shows its home screen once the step is DONE. */
+/**
+ * Onboarding, wired to its [OnboardingViewModel]. The app shows its home screen once the step is DONE.
+ *
+ * @param signIn optional sign-in offered on the Extras step (`null` when the build has no server).
+ */
 @Composable
 fun OnboardingRoute(
     modifier: Modifier = Modifier,
+    signIn: SignInExtra? = null,
     viewModel: OnboardingViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -37,7 +42,7 @@ fun OnboardingRoute(
         }
         viewModel.onEvent(OnboardingEvent.RequestLaunched)
     }
-    OnboardingScreen(state = state, onEvent = viewModel::onEvent, modifier = modifier)
+    OnboardingScreen(state = state, onEvent = viewModel::onEvent, modifier = modifier, signIn = signIn)
 }
 
 /** Stateless onboarding screen. */
@@ -46,6 +51,7 @@ fun OnboardingScreen(
     state: OnboardingUiState,
     onEvent: (OnboardingEvent) -> Unit,
     modifier: Modifier = Modifier,
+    signIn: SignInExtra? = null,
 ) {
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Box(modifier = Modifier.safeDrawingPadding()) {
@@ -79,6 +85,7 @@ fun OnboardingScreen(
                         progress = progress,
                         onOpen = { onEvent(OnboardingEvent.OpenExtra(it)) },
                         onFinish = { onEvent(OnboardingEvent.Finish) },
+                        signIn = signIn,
                     )
                 }
             }
@@ -120,6 +127,7 @@ private fun OnboardingExtrasPreview() {
                         ),
                 ),
             onEvent = {},
+            signIn = SignInExtra(signedIn = false, onSignIn = {}),
         )
     }
 }

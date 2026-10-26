@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        Placing calls from the dial pad (TelecomManager.placeCall). Asked for only while OpenCaller is the default phone
+        app, after an explainer (docs/architecture.md §5); otherwise Call opens the system phone app.
+    -->
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+    <!--
+        The SIM picker for a phone with two SIMs and no default (TelecomManager.getCallCapablePhoneAccounts needs the
+        phone state, SIM names need the phone numbers permission on Android 12+). Without them Telecom asks instead.
+    -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />
+
+</manifest>

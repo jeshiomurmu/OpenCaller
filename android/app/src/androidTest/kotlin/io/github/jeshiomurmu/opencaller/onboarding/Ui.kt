@@ -17,6 +17,7 @@ import org.junit.runner.Description
 import org.junit.runners.model.Statement
 import java.io.ByteArrayOutputStream
 import java.util.regex.Pattern
+import kotlin.math.abs
 
 /** UiAutomator helpers for driving OpenCaller and the system's role and permission dialogs. */
 object Ui {
@@ -61,6 +62,40 @@ object Ui {
                     .wait(Until.findObject(By.scrollable(true)), TIMEOUT_MILLIS)
                     ?.scrollUntil(Direction.DOWN, Until.findObject(By.text(text)))
         return found ?: waitFor(text)
+    }
+
+    /**
+     * Taps the [button] on the same row as [label] (several rows can have a button with the same text, e.g. "Set up"
+     * on the onboarding Extras step).
+     */
+    fun tapInRowOf(
+        label: String,
+        button: String,
+    ) {
+        val row = scrollTo(label).visibleBounds
+        val candidates = device.findObjects(By.text(button))
+        val target =
+            candidates.minByOrNull { abs(it.visibleBounds.centerY() - row.centerY()) }
+                ?: throw AssertionError("'$button' is not on screen")
+        target.click()
+    }
+
+    /**
+     * Scrolls to [text] and taps it. Rows above it can still grow while the screen loads and push it out of view, so
+     * it is looked up again after the screen settles, right before the tap.
+     */
+    fun scrollToAndTap(text: String) {
+        val deadline = System.currentTimeMillis() + TIMEOUT_MILLIS
+        while (System.currentTimeMillis() < deadline) {
+            scrollTo(text)
+            device.waitForIdle()
+            val row = device.findObject(By.text(text))
+            if (row != null) {
+                row.click()
+                return
+            }
+        }
+        throw AssertionError("'$text' is not on screen")
     }
 
     /**

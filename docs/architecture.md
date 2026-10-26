@@ -81,7 +81,7 @@ android/
 ├── build.gradle.kts
 ├── gradle/libs.versions.toml
 ├── build-logic/convention/            # plugins: opencaller.android.application, .library, .feature, .compose, .hilt, .room, .jvm.library
-├── app/                               # MainActivity, InCallActivity, navigation graph, Application, flavors
+├── app/                               # MainActivity (also the ACTION_DIAL target), navigation graph, Application, flavors
 │   └── src/{main,foss,play}/
 ├── core/
 │   ├── common/        # DispatcherProvider, AppResult<T>, RedactingTree, Clock
@@ -105,7 +105,7 @@ android/
     ├── dialer/        # keypad, T9, SIM picker
     ├── calllog/       # call history
     ├── contacts/      # contacts list/detail/edit
-    ├── incall/        # InCallService + InCallActivity UI
+    ├── incall/        # InCallService, call notifications, InCallActivity (its own window theme) + UI
     ├── messages/      # conversations, thread, compose, smart inbox, spam folder, scheduled SMS
     ├── otp/           # OTP card, safety guard UI, OTP-burst alerts
     ├── business/      # business profile view, claim flow
@@ -203,6 +203,8 @@ client: match full hash locally; cache bucket in Room
 
 The response wraps the entries: `{countryCode, bucket, bits, entries: [{hash, info}]}` (`openapi.yaml`, `BucketResponse`); entries are sorted by hash and only numbers with something to show (spam data, a visible name or a verified business) are included. The server learns country code + bucket (thousands of candidate numbers), never the number. Explicit search (F-ID-03) is different: the user typed the number, the server sees it, it is rate-limited and logged for "who searched me" unless incognito.
 
+App side (Phase 5): `LiveLookupRepository` keeps one row per number in `number_info` for 24 h, including "not found", and records the fetch in `lookup_bucket`; the bucket's other entries are not stored. The request uses its own OkHttp client with an 800 ms call timeout, and the engine gives step 10 its own 800 ms budget inside the 1,500 ms total, so a slow server never makes a call ring late. A network verdict at or above the user's threshold blocks (reason `network`) unless the caller is a contact or a verified business; anything else only adds information to the card. The verdict's source (spam list, earlier lookup, live lookup) is shown in "Why am I seeing this?". `LookupPrivacyTest` (TC-LOOK-002) checks that no request carries the number.
+
 ### 4.7 Sign-up
 
 `POST /v1/auth/start {e164}` → server sends OTP (SMS/flash call via provider) → `POST /v1/auth/verify {e164, code, integrityToken?}` → `{accessToken (15 min), refreshToken (30 d, rotating)}`. Tokens are encrypted with an Android Keystore AES-GCM key and stored in DataStore (not the deprecated `security-crypto` library).
@@ -214,6 +216,10 @@ Names shown in live caller ID: `everyone` profiles appear in bucket results; `re
 ### 4.8 Reporting
 
 Report saved to `report_outbox` → `ReportUploadWorker` (network constraint, exponential backoff) → `POST /v1/reports` → server stores raw report, scoring job updates `number_reputation`, nightly list builder publishes new per-country list + delta.
+
+App side (Phase 5): reports wait in the outbox until the user is signed in; the worker sends batches of 50, re-schedules itself after a 429's `Retry-After` instead of splitting batches, marks a report the server rejects as `FAILED` and gives up after 10 attempts. Categories are the server's whitelist (`ReportCategory`), shown translated. The spam list comes back through `SpamListSyncWorker` (daily; unmetered networks unless the user allows mobile data; "Update now"): manifest → delta chain or full file → SHA-256 and format checks (§13) → one Room transaction, so a failed update leaves the old list.
+
+Networking (`core:network`, a JVM module): Retrofit + OkHttp + kotlinx.serialization. Requests mark whether they need a token with an `OC-Auth` header that `AuthInterceptor` replaces with the bearer token; `TokenAuthenticator` refreshes on 401 (one refresh at a time; a refused refresh deletes the tokens). The server address comes from BuildConfig (Gradle property `opencaller.apiBaseUrl` for release builds, `http://10.0.2.2:8080/` for debug); without one every request fails at once with `AppError.ServerNotConfigured`. Play release builds pin the server key plus a backup (`opencaller.apiPins`, checked at build time). Failures are logged through `NetworkLog` (the app points it at the redacting logger).
 
 ### 4.9 VoIP, recording line, AI assistant, voice scanner
 
@@ -235,7 +241,8 @@ Report saved to `report_outbox` → `ReportUploadWorker` (network constraint, ex
 | SMS permissions | SMS app | Only after holding `ROLE_SMS` (Play policy) |
 | `SYSTEM_ALERT_WINDOW` | Caller card overlay in screening-only mode | When user enables overlay |
 | `POST_NOTIFICATIONS` | After-call card, OTP, alerts | Onboarding |
-| `USE_FULL_SCREEN_INTENT` | Ghost Call, OTP guard | When feature enabled (dialer apps qualify) |
+| `USE_FULL_SCREEN_INTENT` | Incoming calls over the lock screen (default phone app); later Ghost Call, OTP guard | Install-time; Android 14+ lets the user turn it off: Permissions & roles shows "Full-screen incoming calls" with Fix while OpenCaller is the default phone app |
+| `WAKE_LOCK` | Screen off near the ear during a call (proximity) | Install-time |
 | Notification listener access | WhatsApp/Telegram caller ID | When feature enabled |
 | `RECORD_AUDIO`, `BLUETOOTH_CONNECT` | VoIP | When first VoIP call |
 | `INTERNET`, `ACCESS_NETWORK_STATE` | Sync | Install-time |
@@ -441,7 +448,7 @@ Implementation (Phase 4, `scoring/`): the Kotlin job runs every 15 minutes under
 
 ## 11. Error handling
 
-- Domain errors as `sealed interface AppError` (Network, Auth, RateLimited, NotFound, Validation, Storage, Unexpected) wrapped in `AppResult<T>`.
+- Domain errors as `sealed interface AppError` (Network, Auth, RateLimited, NotFound, Validation, ServerNotConfigured, Storage, Unexpected) wrapped in `AppResult<T>`.
 - Telephony paths fail open: any exception in screening → allow the call, log `ScreeningEvent(reason="error")`.
 - Workers retry with exponential backoff; give up after 10 attempts and surface in Settings → Sync status.
 - UI shows actionable messages (design.md §8). Never show stack traces.

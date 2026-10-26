@@ -8,14 +8,7 @@ import android.widget.Toast
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.common.DispatcherProvider
-import io.github.jeshiomurmu.opencaller.core.common.flatMap
-import io.github.jeshiomurmu.opencaller.core.common.map
-import io.github.jeshiomurmu.opencaller.core.data.BlockRuleRepository
-import io.github.jeshiomurmu.opencaller.core.data.ReportRepository
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
-import io.github.jeshiomurmu.opencaller.core.model.ReportLabel
-import io.github.jeshiomurmu.opencaller.core.model.RuleAction
-import io.github.jeshiomurmu.opencaller.core.model.RuleType
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -23,17 +16,13 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /**
- * Block and Not spam on the after-call notification. Block adds an exact block rule; Not spam adds an exact allow
- * rule (so the number is never blocked here again) and queues a not-spam report, which stays on the phone until
- * reporting arrives in Phase 5. Not exported: only OpenCaller's own PendingIntents reach it.
+ * Block and Not spam on the after-call notification ([AfterCallActions]). Not exported: only OpenCaller's own
+ * PendingIntents reach it.
  */
 @AndroidEntryPoint
 class AfterCallActionReceiver : BroadcastReceiver() {
     @Inject
-    lateinit var rules: BlockRuleRepository
-
-    @Inject
-    lateinit var reports: ReportRepository
+    lateinit var actions: AfterCallActions
 
     @Inject
     lateinit var normalizer: PhoneNumberNormalizer
@@ -51,7 +40,7 @@ class AfterCallActionReceiver : BroadcastReceiver() {
         val pending = goAsync()
         CoroutineScope(dispatchers.io).launch {
             try {
-                val done = if (action == ACTION_BLOCK) block(number) else notSpam(number)
+                val done: AppResult<Unit> = if (action == ACTION_BLOCK) actions.block(number) else actions.notSpam(number)
                 val message =
                     when {
                         done is AppResult.Failure -> context.getString(R.string.after_call_failed)
@@ -64,15 +53,6 @@ class AfterCallActionReceiver : BroadcastReceiver() {
             }
         }
     }
-
-    private suspend fun block(number: PhoneNumber): AppResult<Unit> = rules.add(RuleType.EXACT, number.e164, RuleAction.BLOCK).map {}
-
-    private suspend fun notSpam(number: PhoneNumber): AppResult<Unit> =
-        rules
-            .deleteExactRules(number, setOf(RuleAction.BLOCK, RuleAction.SILENCE))
-            .flatMap { rules.add(RuleType.EXACT, number.e164, RuleAction.ALLOW) }
-            .flatMap { reports.queue(number, ReportLabel.NOT_SPAM) }
-            .map {}
 
     /** Actions and extras. */
     companion object {

@@ -62,7 +62,8 @@ class PermissionsStatusViewModelTest {
         runTest {
             subscribe()
             val state = vm.uiState.value
-            assertEquals(AccessItem.entries, state.rows.map { it.item })
+            // Full-screen calls only matter to the default phone app.
+            assertEquals(AccessItem.entries - AccessItem.FULL_SCREEN_CALLS, state.rows.map { it.item })
             assertEquals(AccessItemStatus.NOT_GRANTED, state.rows.first().status)
             assertEquals(AccessItemStatus.COMING_LATER, state.rows.single { it.item == AccessItem.DEFAULT_PHONE_APP }.status)
             // TC-ONB-006 and TC-ONB-007: without notifications and overlay, the fallbacks are shown.

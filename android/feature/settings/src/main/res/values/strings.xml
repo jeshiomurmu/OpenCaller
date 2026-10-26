@@ -3,6 +3,28 @@
     <string name="settings_title">Settings</string>
     <string name="settings_permissions">Permissions &amp; roles</string>
     <string name="settings_permissions_summary">Caller ID, contacts, notifications and default apps</string>
+    <string name="settings_quick_replies">Quick replies</string>
+    <string name="settings_quick_replies_summary">Messages for declining a call or texting after one</string>
+
+    <string name="quick_replies_title">Quick replies</string>
+    <string name="quick_replies_none">You haven\'t written any yet, so Android\'s built-in replies are offered. Your own replace them.</string>
+    <string name="quick_replies_summary">Offered when you decline a call with a message and after a call. They stay on this phone.</string>
+    <string name="quick_replies_new">New reply</string>
+    <string name="quick_replies_change">Change reply</string>
+    <string name="quick_replies_length">%1$d / %2$d</string>
+    <string name="quick_replies_add">Add</string>
+    <string name="quick_replies_save">Save</string>
+    <string name="quick_replies_cancel">Cancel</string>
+    <string name="quick_replies_edit">Edit \"%1$s\"</string>
+    <string name="quick_replies_move_up">Move \"%1$s\" up</string>
+    <string name="quick_replies_delete">Delete \"%1$s\"</string>
+    <string name="quick_replies_problem_empty">Write a reply first.</string>
+    <string name="quick_replies_problem_duplicate">That reply is already in the list.</string>
+    <string name="quick_replies_problem_full">The list is full. Delete a reply to add another.</string>
+    <plurals name="quick_replies_full">
+        <item quantity="one">You have the maximum of %1$d reply.</item>
+        <item quantity="other">You have the maximum of %1$d replies.</item>
+    </plurals>
 
     <string name="permissions_title">Permissions &amp; roles</string>
     <string name="permissions_fix">Fix</string>

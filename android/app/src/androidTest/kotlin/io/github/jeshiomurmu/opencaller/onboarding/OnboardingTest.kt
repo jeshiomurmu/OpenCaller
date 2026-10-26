@@ -103,7 +103,8 @@ class OnboardingTest {
     fun tcOnb007_denyingTheOverlayFallsBackToANotification() {
         launchAndPassIntro()
         skipTo(string(OnboardingR.string.onboarding_extras_title))
-        tap(string(OnboardingR.string.onboarding_set_up))
+        // The default phone app row also offers Set up since Phase 6.
+        Ui.tapInRowOf(string(UiR.string.access_overlay), string(OnboardingR.string.onboarding_set_up))
         waitFor(string(UiR.string.explain_overlay_title))
         tap(string(UiR.string.explainer_open_settings))
         // System overlay settings: wait until it is in front, then leave without allowing.
@@ -159,7 +160,8 @@ class OnboardingTest {
 
     private fun openPermissionsStatus() {
         tap(string(AppR.string.tab_me))
-        tap(string(SettingsR.string.settings_permissions))
+        // The Me tab scrolls: the account section comes before the settings rows.
+        Ui.scrollToAndTap(string(SettingsR.string.settings_permissions))
         waitFor(string(SettingsR.string.permissions_title))
     }
 
