@@ -74,6 +74,10 @@ class AccessRequestFactory
                 AccessItem.CALL_STATE -> {
                     permissionRequest(Manifest.permission.READ_PHONE_STATE, roleState)
                 }
+
+                AccessItem.FULL_SCREEN_CALLS -> {
+                    settingsFor(item).takeIf { Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE }
+                }
             }
 
         /**
@@ -99,6 +103,10 @@ class AccessRequestFactory
                     AccessItem.OVERLAY -> {
                         Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, packageUri())
                     }
+
+                    AccessItem.FULL_SCREEN_CALLS -> {
+                        fullScreenSettings()
+                    }
                 },
             )
 
@@ -117,6 +125,14 @@ class AccessRequestFactory
         ): AccessRequest? =
             AccessRequest.RuntimePermission(permission).takeIf {
                 PermissionPolicy.decide(permission, roleState) == PermissionDecision.Allowed
+            }
+
+        // Android 14+: the app's own full-screen intent page (its data URI must name the package).
+        private fun fullScreenSettings(): Intent =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, packageUri())
+            } else {
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri())
             }
 
         private fun packageUri(): Uri = Uri.fromParts("package", context.packageName, null)

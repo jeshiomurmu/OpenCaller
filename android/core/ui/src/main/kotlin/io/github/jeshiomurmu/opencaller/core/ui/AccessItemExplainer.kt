@@ -52,6 +52,7 @@ fun AccessItem.labelRes(): Int =
         AccessItem.DEFAULT_SMS_APP -> R.string.access_default_sms_app
         AccessItem.OVERLAY -> R.string.access_overlay
         AccessItem.CALL_STATE -> R.string.access_call_state
+        AccessItem.FULL_SCREEN_CALLS -> R.string.access_full_screen_calls
     }
 
 /** Icon of [AccessItem]. */
@@ -105,6 +106,13 @@ private val explainerCopies: Map<AccessItem, ExplainerCopy> =
                 R.string.explain_call_state_title,
                 R.string.explain_call_state_why,
                 R.string.explain_call_state_never,
+            ),
+        AccessItem.FULL_SCREEN_CALLS to
+            ExplainerCopy(
+                OpenCallerIcons.Privacy,
+                R.string.explain_full_screen_calls_title,
+                R.string.explain_full_screen_calls_why,
+                R.string.explain_full_screen_calls_never,
             ),
     )
 

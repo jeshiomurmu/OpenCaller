@@ -38,7 +38,8 @@ import javax.inject.Inject
  * - `spam --es number E164 --es score 0.9 [--es category C]`: adds a spam list entry.
  * - `region [--es region BD]`: overrides the SIM country (no value: back to the real one).
  * - `verified --es number E164`: treats a number as a verified business.
- * - `role`: "ok held=true|false" for the call screening role (`cmd role get-role-holders` doesn't exist on API 29).
+ * - `role [--es role DIALER]`: "ok held=true|false" for the call screening role, or the default phone app role
+ *   (`cmd role get-role-holders` doesn't exist on API 29).
  * - Sign-in, reports and the spam-list update for TC-E2E-001: see [QaOnline].
  */
 @AndroidEntryPoint
@@ -74,7 +75,9 @@ class QaCommandReceiver : BroadcastReceiver() {
                 if (intent.getStringExtra(EXTRA_CMD) ==
                     "role"
                 ) {
-                    "ok held=${roles.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)}"
+                    "ok held=${roles.isRoleHeld(
+                        if (intent.getStringExtra("role") == "DIALER") RoleManager.ROLE_DIALER else RoleManager.ROLE_CALL_SCREENING,
+                    )}"
                 } else {
                     run(intent)
                 }

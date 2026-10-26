@@ -24,7 +24,20 @@ class PermissionStatusReader
                 notifications = notifications(),
                 overlay = if (Settings.canDrawOverlays(context)) PermissionStatus.GRANTED else PermissionStatus.DENIED,
                 callState = callState(),
+                fullScreenCalls = fullScreenCalls(),
             )
+
+        // Android 14+ lets the user (and Google Play) turn off full-screen intents; before that they are always allowed.
+        private fun fullScreenCalls(): PermissionStatus =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                if (context.getSystemService(NotificationManager::class.java)?.canUseFullScreenIntent() == true) {
+                    PermissionStatus.GRANTED
+                } else {
+                    PermissionStatus.DENIED
+                }
+            } else {
+                PermissionStatus.NOT_REQUIRED
+            }
 
         // TelephonyCallback.CallStateListener needs READ_PHONE_STATE from Android 12; before that the call state is free.
         private fun callState(): PermissionStatus =

@@ -39,6 +39,8 @@ android {
 
     testOptions {
         execution = "ANDROIDX_TEST_ORCHESTRATOR"
+        // Robolectric tests read the merged manifest (DialerEligibilityTest).
+        unitTests.isIncludeAndroidResources = true
     }
 
     buildFeatures {
@@ -129,6 +131,9 @@ dependencies {
 
     testImplementation(libs.junit4)
     testImplementation(projects.core.testing)
+    // DialerEligibilityTest reads the merged manifest.
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
 
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.test.ext.junit)

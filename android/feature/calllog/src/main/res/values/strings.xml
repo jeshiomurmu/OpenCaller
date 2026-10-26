@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calllog_search_hint">Search calls</string>
+    <string name="calllog_filter_all">All</string>
+    <string name="calllog_filter_missed">Missed</string>
+    <string name="calllog_filter_blocked">Blocked</string>
+    <string name="calllog_filter_spam">Spam</string>
+    <string name="calllog_today">Today</string>
+    <string name="calllog_yesterday">Yesterday</string>
+    <string name="calllog_hidden">Hidden number</string>
+    <string name="calllog_type_incoming">Incoming</string>
+    <string name="calllog_type_outgoing">Outgoing</string>
+    <string name="calllog_type_missed">Missed</string>
+    <string name="calllog_type_rejected">Declined</string>
+    <string name="calllog_type_blocked">Blocked</string>
+    <string name="calllog_type_voicemail">Voicemail</string>
+    <string name="calllog_type_elsewhere">Answered on another device</string>
+    <string name="calllog_type_unknown">Call</string>
+    <plurals name="calllog_count">
+        <item quantity="one">%1$d call</item>
+        <item quantity="other">%1$d calls</item>
+    </plurals>
+    <string name="calllog_spam">Spam</string>
+    <string name="calllog_suspicious">Suspicious</string>
+    <string name="calllog_blocked_label">Blocked</string>
+    <string name="calllog_call_back">Call %1$s</string>
+    <string name="calllog_more_actions">More actions</string>
+    <string name="calllog_action_call">Call</string>
+    <string name="calllog_action_message">Message</string>
+    <string name="calllog_action_open_contact">Open contact</string>
+    <string name="calllog_action_add_contact">Save as contact</string>
+    <string name="calllog_action_block">Block</string>
+    <string name="calllog_action_delete">Delete from history</string>
+    <string name="calllog_delete_title">Delete from your call history?</string>
+    <plurals name="calllog_delete_body">
+        <item quantity="one">%1$s: %2$d call. This can\'t be undone.</item>
+        <item quantity="other">%1$s: %2$d calls. This can\'t be undone.</item>
+    </plurals>
+    <string name="calllog_delete_confirm">Delete</string>
+    <string name="calllog_cancel">Cancel</string>
+    <string name="calllog_blocked">Blocked %1$s</string>
+    <string name="calllog_undo">Undo</string>
+    <string name="calllog_failed">Something went wrong. Try again.</string>
+    <string name="calllog_empty">No calls yet.</string>
+    <string name="calllog_empty_filtered">No calls match.</string>
+    <string name="calllog_dial_pad">Dial pad</string>
+    <string name="calllog_permission_title">Show your call history</string>
+    <string name="calllog_permission_why">So OpenCaller, your phone app, can list your calls, mark the blocked and spam ones, and let you call back or delete them.</string>
+    <string name="calllog_permission_never">Your call history stays on this phone. OpenCaller never uploads it.</string>
+    <string name="calllog_permission_needed">Your call history shows here once OpenCaller may read it.</string>
+    <string name="calllog_allow">Allow</string>
+</resources>

@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Default phone app (Phase 6a): OpenCaller can now be your phone app. Incoming calls show full screen over the lock
+  screen with the caller card from caller ID (answer without unlocking), or as a call notification with Answer and
+  Decline while you use the phone. During a call: mute, keypad tones, speaker or Bluetooth/headset, hold, add a call,
+  merge, swap, hang up; decline with a quick text reply; choose a SIM when no default SIM is set; the screen turns off
+  near your ear.
+- Dial pad: opens for `tel:` links and Add call, places calls through the phone's calling service (asks for the call
+  permission first, with an explanation); without the default phone app role it hands the number to your phone app.
+- After a call from a number that isn't in your contacts: a full after-call screen (call back, message, save contact,
+  block, report or not spam) when the phone is unlocked, otherwise the after-call notification.
+- Settings → Permissions & roles: "Full-screen incoming calls" (Android 14+) with Fix.
+- Dialer (Phase 6b): numbers formatted as you type (also when pasted), suggestions from your contacts and recent calls
+  by name letters (T9) or digits, a "Call with" SIM picker on dual-SIM phones without a default SIM, long-press 1 for
+  voicemail and 0 for `+`, carrier codes such as `*123#` and the phone's own `*#*#…#*#*` codes.
+- Call log (as the default phone app): calls grouped by number and day, Missed / Blocked / Spam filters using
+  OpenCaller's screening history, search, call back, message, open or add the contact, block with Undo, delete.
+- Contacts: list with favourites and an A–Z scroller, contact details with what the device knows about each number
+  (spam list, verified business), create and edit (name, numbers with labels, e-mail), favourites. Contacts stay in
+  your phone's contacts; nothing is uploaded.
+- Settings → Quick replies: your own replies for declining a call with a message and for Message after a call.
+
 ## [0.1.0-alpha] - 2026-10-17
 
 First alpha. Blocking works on the phone without any server; this build has no server configured, so sign-in, reports,

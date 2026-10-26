@@ -44,15 +44,33 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         // Roles and permissions can change in system settings while the app is away (TC-ONB-005).
         lifecycle.addObserver(refreshAccessOnResume)
-        if (savedInstanceState == null) viewModel.requestReport(intent?.getStringExtra(CallerIdIntents.EXTRA_REPORT_NUMBER))
+        if (savedInstanceState == null) {
+            viewModel.requestReport(intent?.getStringExtra(CallerIdIntents.EXTRA_REPORT_NUMBER))
+            requestDialIfAsked(intent)
+        }
         setContent {
             OpenCallerTheme {
                 val state by viewModel.uiState.collectAsStateWithLifecycle()
                 val report by viewModel.pendingReport.collectAsStateWithLifecycle()
+                val dial by viewModel.pendingDial.collectAsStateWithLifecycle()
                 when {
-                    state.loading -> Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {}
-                    state.showOnboarding -> Onboarding(account)
-                    else -> OpenCallerApp(state = state, reportNumber = report, onReportShown = viewModel::reportShown)
+                    state.loading -> {
+                        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {}
+                    }
+
+                    state.showOnboarding -> {
+                        Onboarding(account)
+                    }
+
+                    else -> {
+                        OpenCallerApp(
+                            state = state,
+                            reportNumber = report,
+                            onReportShown = viewModel::reportShown,
+                            dialRequest = dial,
+                            onDialShown = viewModel::dialShown,
+                        )
+                    }
                 }
             }
         }
@@ -73,9 +91,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // The after-call notification's Report reuses the running activity.
+    // The after-call notification's Report and Add call (ACTION_DIAL) reuse the running activity.
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         viewModel.requestReport(intent.getStringExtra(CallerIdIntents.EXTRA_REPORT_NUMBER))
+        requestDialIfAsked(intent)
+    }
+
+    // ACTION_DIAL, with or without a tel: number: the dial pad (OpenCaller as the default phone app must handle both).
+    private fun requestDialIfAsked(intent: Intent?) {
+        if (intent?.action != Intent.ACTION_DIAL) return
+        viewModel.requestDial(intent.data?.takeIf { it.scheme == "tel" }?.schemeSpecificPart)
     }
 }

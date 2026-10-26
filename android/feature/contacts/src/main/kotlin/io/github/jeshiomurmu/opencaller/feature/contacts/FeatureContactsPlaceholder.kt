@@ -1,4 +1,0 @@
-package io.github.jeshiomurmu.opencaller.feature.contacts
-
-/** Keeps `:feature:contacts` compiling while it is empty. Delete it when the module gets its first real class. */
-internal object FeatureContactsPlaceholder

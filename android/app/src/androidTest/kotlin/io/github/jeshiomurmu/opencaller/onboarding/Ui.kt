@@ -17,6 +17,7 @@ import org.junit.runner.Description
 import org.junit.runners.model.Statement
 import java.io.ByteArrayOutputStream
 import java.util.regex.Pattern
+import kotlin.math.abs
 
 /** UiAutomator helpers for driving OpenCaller and the system's role and permission dialogs. */
 object Ui {
@@ -61,6 +62,22 @@ object Ui {
                     .wait(Until.findObject(By.scrollable(true)), TIMEOUT_MILLIS)
                     ?.scrollUntil(Direction.DOWN, Until.findObject(By.text(text)))
         return found ?: waitFor(text)
+    }
+
+    /**
+     * Taps the [button] on the same row as [label] (several rows can have a button with the same text, e.g. "Set up"
+     * on the onboarding Extras step).
+     */
+    fun tapInRowOf(
+        label: String,
+        button: String,
+    ) {
+        val row = scrollTo(label).visibleBounds
+        val candidates = device.findObjects(By.text(button))
+        val target =
+            candidates.minByOrNull { abs(it.visibleBounds.centerY() - row.centerY()) }
+                ?: throw AssertionError("'$button' is not on screen")
+        target.click()
     }
 
     /**

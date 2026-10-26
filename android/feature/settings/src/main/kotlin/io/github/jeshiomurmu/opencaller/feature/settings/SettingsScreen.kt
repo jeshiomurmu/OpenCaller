@@ -1,5 +1,6 @@
 package io.github.jeshiomurmu.opencaller.feature.settings
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     versionName: String = "",
     onOpenDebug: () -> Unit = {},
+    onOpenQuickReplies: () -> Unit = {},
 ) {
     Column(modifier = modifier.fillMaxSize().padding(vertical = OpenCallerSpacing.m)) {
         Text(
@@ -51,6 +53,12 @@ fun SettingsScreen(
             title = stringResource(R.string.settings_permissions),
             summary = stringResource(R.string.settings_permissions_summary),
             onClick = onOpenPermissions,
+        )
+        SettingsRow(
+            title = stringResource(R.string.settings_quick_replies),
+            summary = stringResource(R.string.settings_quick_replies_summary),
+            onClick = onOpenQuickReplies,
+            icon = OpenCallerIcons.Message,
         )
         AboutRow(versionName = versionName, onOpenDebug = onOpenDebug)
     }
@@ -86,6 +94,7 @@ private fun SettingsRow(
     summary: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    @DrawableRes icon: Int = OpenCallerIcons.Protection,
 ) {
     Row(
         modifier =
@@ -97,7 +106,7 @@ private fun SettingsRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.m),
     ) {
-        Icon(painter = painterResource(OpenCallerIcons.Protection), contentDescription = null)
+        Icon(painter = painterResource(icon), contentDescription = null)
         Column(modifier = Modifier.weight(1f)) {
             Text(text = title, style = MaterialTheme.typography.titleMedium)
             Text(text = summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

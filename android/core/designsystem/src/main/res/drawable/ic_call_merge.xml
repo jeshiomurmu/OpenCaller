@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Material Symbols Outlined "call_merge" (Apache-2.0), github.com/google/material-design-icons. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+  <!-- The symbol's viewBox starts at y = -960. -->
+  <group android:translateY="960">
+    <path
+        tools:ignore="VectorPath"
+        android:fillColor="@android:color/white"
+        android:pathData="m296-160-56-56 200-200v-269L337-582l-57-57 200-200 201 201-57 57-104-104v301L296-160Zm368 1L536-286l57-57 127 128-56 56Z"/>
+  </group>
+</vector>

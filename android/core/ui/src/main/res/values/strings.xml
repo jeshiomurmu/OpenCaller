@@ -69,6 +69,7 @@
     <string name="access_default_sms_app">Default SMS app</string>
     <string name="access_overlay">Caller ID over other apps</string>
     <string name="access_call_state">Call status</string>
+    <string name="access_full_screen_calls">Full-screen incoming calls</string>
 
     <!-- Explainers: why we ask, what we never do (docs/design.md §7, docs/architecture.md §5 and §10). -->
     <string name="explain_call_screening_title">Let OpenCaller check incoming calls</string>
@@ -92,6 +93,9 @@
     <string name="explain_call_state_title">Close the caller card when a call ends</string>
     <string name="explain_call_state_why">With this, OpenCaller knows when a call ends, so it can close the caller card and show a summary right away.</string>
     <string name="explain_call_state_never">OpenCaller only checks whether a call is ringing, active or over. It never reads your phone number, your SIM or who you talk to.</string>
+    <string name="explain_full_screen_calls_title">Show incoming calls full screen</string>
+    <string name="explain_full_screen_calls_why">When your phone is locked or asleep, OpenCaller shows who is calling over the whole screen, with Answer and Decline. Without it, calls show only as a notification.</string>
+    <string name="explain_full_screen_calls_never">OpenCaller uses full screen only for incoming calls, never for ads or other alerts.</string>
     <!-- Report categories (the server's list, docs/architecture.md §4.8). -->
     <string name="category_scam">Scam</string>
     <string name="category_fraud">Fraud</string>

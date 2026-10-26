@@ -62,12 +62,15 @@ enum class PermissionStatus {
  *
  * @property callState phone state, used on Android 12+ to hide the caller card when the call ends
  *   ([PermissionStatus.NOT_REQUIRED] below Android 12, where the call state needs no permission).
+ * @property fullScreenCalls full-screen incoming calls over the lock screen, which the user can turn off on Android
+ *   14+ ([PermissionStatus.NOT_REQUIRED] before that).
  */
 data class PermissionState(
     val contacts: PermissionStatus,
     val notifications: PermissionStatus,
     val overlay: PermissionStatus,
     val callState: PermissionStatus = PermissionStatus.NOT_REQUIRED,
+    val fullScreenCalls: PermissionStatus = PermissionStatus.NOT_REQUIRED,
 )
 
 /** Something the user can grant from onboarding or Settings → Permissions & roles. */
@@ -92,6 +95,9 @@ enum class AccessItem {
 
     /** Read the call state (Android 12+), so the caller card closes when the call ends. */
     CALL_STATE,
+
+    /** Show incoming calls full screen over the lock screen (Android 14+, only as the default phone app). */
+    FULL_SCREEN_CALLS,
 }
 
 /** What the user sees for an [AccessItem]. */
@@ -159,13 +165,37 @@ data class AccessStatus(
     /** Status of [item] as shown in onboarding and on the status screen. */
     fun statusOf(item: AccessItem): AccessItemStatus =
         when (item) {
-            AccessItem.CALL_SCREENING -> roles.callScreening.toItemStatus()
-            AccessItem.DEFAULT_PHONE_APP -> roles.dialer.toItemStatus()
-            AccessItem.DEFAULT_SMS_APP -> roles.sms.toItemStatus()
-            AccessItem.CONTACTS -> permissions.contacts.toItemStatus()
-            AccessItem.NOTIFICATIONS -> permissions.notifications.toItemStatus()
-            AccessItem.OVERLAY -> permissions.overlay.toItemStatus()
-            AccessItem.CALL_STATE -> permissions.callState.toItemStatus()
+            AccessItem.CALL_SCREENING -> {
+                roles.callScreening.toItemStatus()
+            }
+
+            AccessItem.DEFAULT_PHONE_APP -> {
+                roles.dialer.toItemStatus()
+            }
+
+            AccessItem.DEFAULT_SMS_APP -> {
+                roles.sms.toItemStatus()
+            }
+
+            AccessItem.CONTACTS -> {
+                permissions.contacts.toItemStatus()
+            }
+
+            AccessItem.NOTIFICATIONS -> {
+                permissions.notifications.toItemStatus()
+            }
+
+            AccessItem.OVERLAY -> {
+                permissions.overlay.toItemStatus()
+            }
+
+            AccessItem.CALL_STATE -> {
+                permissions.callState.toItemStatus()
+            }
+
+            AccessItem.FULL_SCREEN_CALLS -> {
+                if (roles.isHeld(AppRole.DIALER)) permissions.fullScreenCalls.toItemStatus() else AccessItemStatus.NOT_APPLICABLE
+            }
         }
 
     /** True when [item] is granted, or doesn't apply, so there is nothing left to ask for. */

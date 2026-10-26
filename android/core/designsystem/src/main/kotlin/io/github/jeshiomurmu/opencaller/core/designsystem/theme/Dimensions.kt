@@ -44,6 +44,12 @@ object OpenCallerSpacing {
 
     /** Caller avatars and business logos: a 40 dp circle (docs/design.md §10). */
     val avatar: Dp = 40.dp
+
+    /** Answer, decline and hang-up buttons of the in-call screen: a 64 dp circle. */
+    val callAction: Dp = 64.dp
+
+    /** Keys of the dial pad and the in-call keypad. */
+    val dialKey: Dp = 64.dp
 }
 
 /** Elevation from docs/design.md §4: tonal surfaces everywhere, except the caller-card overlay. */

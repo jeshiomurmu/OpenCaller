@@ -25,6 +25,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import io.github.jeshiomurmu.opencaller.AppUiState
+import io.github.jeshiomurmu.opencaller.DialRequest
 import io.github.jeshiomurmu.opencaller.R
 import io.github.jeshiomurmu.opencaller.core.designsystem.preview.OpenCallerPreviews
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
@@ -35,6 +36,12 @@ import io.github.jeshiomurmu.opencaller.core.ui.WarningBanner
 import io.github.jeshiomurmu.opencaller.feature.blocking.BlockedLogRoute
 import io.github.jeshiomurmu.opencaller.feature.blocking.BlockingRoute
 import io.github.jeshiomurmu.opencaller.feature.blocking.RulesRoute
+import io.github.jeshiomurmu.opencaller.feature.calllog.CallLogNavigation
+import io.github.jeshiomurmu.opencaller.feature.contacts.ContactDetailNavigation
+import io.github.jeshiomurmu.opencaller.feature.contacts.ContactDetailRoute
+import io.github.jeshiomurmu.opencaller.feature.contacts.ContactEditRoute
+import io.github.jeshiomurmu.opencaller.feature.contacts.ContactsListRoute
+import io.github.jeshiomurmu.opencaller.feature.dialer.DialPadRoute
 import io.github.jeshiomurmu.opencaller.feature.profile.AccountRoute
 import io.github.jeshiomurmu.opencaller.feature.profile.SignInRoute
 import io.github.jeshiomurmu.opencaller.feature.search.DisputeRoute
@@ -42,16 +49,22 @@ import io.github.jeshiomurmu.opencaller.feature.search.SearchNavigation
 import io.github.jeshiomurmu.opencaller.feature.search.SearchRoute
 import io.github.jeshiomurmu.opencaller.feature.settings.DebugRoute
 import io.github.jeshiomurmu.opencaller.feature.settings.PermissionsStatusRoute
+import io.github.jeshiomurmu.opencaller.feature.settings.QuickRepliesRoute
 import io.github.jeshiomurmu.opencaller.navigation.AccountSignInRoute
 import io.github.jeshiomurmu.opencaller.navigation.BlockedCallsRoute
 import io.github.jeshiomurmu.opencaller.navigation.BlockingRulesRoute
 import io.github.jeshiomurmu.opencaller.navigation.CallsRoute
+import io.github.jeshiomurmu.opencaller.navigation.ContactEditorRoute
+import io.github.jeshiomurmu.opencaller.navigation.ContactRoute
 import io.github.jeshiomurmu.opencaller.navigation.ContactsRoute
+import io.github.jeshiomurmu.opencaller.navigation.DialerRoute
 import io.github.jeshiomurmu.opencaller.navigation.MeRoute
 import io.github.jeshiomurmu.opencaller.navigation.MessagesRoute
+import io.github.jeshiomurmu.opencaller.navigation.NEW_CONTACT
 import io.github.jeshiomurmu.opencaller.navigation.NumberSearchRoute
 import io.github.jeshiomurmu.opencaller.navigation.PermissionsRoute
 import io.github.jeshiomurmu.opencaller.navigation.ProtectionRoute
+import io.github.jeshiomurmu.opencaller.navigation.QuickRepliesSettingsRoute
 import io.github.jeshiomurmu.opencaller.navigation.ScreeningDebugRoute
 import io.github.jeshiomurmu.opencaller.navigation.SpamDisputeRoute
 import io.github.jeshiomurmu.opencaller.navigation.TopLevelDestination
@@ -66,11 +79,20 @@ fun OpenCallerApp(
     modifier: Modifier = Modifier,
     reportNumber: String? = null,
     onReportShown: () -> Unit = {},
+    dialRequest: DialRequest? = null,
+    onDialShown: () -> Unit = {},
     navController: NavHostController = rememberNavController(),
 ) {
     val openPermissions = { item: AccessItem? -> navController.navigate(PermissionsRoute(explain = item?.name)) { launchSingleTop = true } }
     // The after-call notification's Report opens the Protection tab, which shows the report dialog.
     LaunchedEffect(reportNumber) { if (reportNumber != null) navController.navigateToTab(TopLevelDestination.PROTECTION) }
+    // ACTION_DIAL (a tel: link, Add call during a call) opens the dial pad.
+    LaunchedEffect(dialRequest) {
+        if (dialRequest != null) {
+            navController.navigate(DialerRoute(dialRequest.number)) { launchSingleTop = true }
+            onDialShown()
+        }
+    }
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -106,20 +128,14 @@ private fun AppNavHost(
     modifier: Modifier = Modifier,
 ) {
     NavHost(navController = navController, startDestination = CallsRoute, modifier = modifier) {
-        composable<CallsRoute> {
-            CallsScreen(
-                defaultPhoneApp = state.defaultPhoneApp,
-                onSetDefault = { openPermissions(AccessItem.DEFAULT_PHONE_APP) },
-                onSearch = { navController.navigate(NumberSearchRoute) { launchSingleTop = true } },
-            )
-        }
+        phoneRoutes(state, navController, openPermissions)
         composable<MessagesRoute> { PlaceholderScreen(TopLevelDestination.MESSAGES) }
-        composable<ContactsRoute> { PlaceholderScreen(TopLevelDestination.CONTACTS) }
         protectionRoutes(navController, reportNumber, onReportShown, openPermissions)
         composable<MeRoute> {
             MeScreen(
                 onOpenPermissions = { openPermissions(null) },
                 onOpenDebug = { navController.navigate(ScreeningDebugRoute) { launchSingleTop = true } },
+                onOpenQuickReplies = { navController.navigate(QuickRepliesSettingsRoute) { launchSingleTop = true } },
                 account = {
                     AccountRoute(
                         onSignIn = { navController.navigate(AccountSignInRoute) { launchSingleTop = true } },
@@ -131,6 +147,7 @@ private fun AppNavHost(
         }
         onlineRoutes(navController)
         composable<ScreeningDebugRoute> { DebugRoute() }
+        composable<QuickRepliesSettingsRoute> { QuickRepliesRoute() }
         composable<PermissionsRoute> { entry ->
             PermissionsStatusRoute(explain = entry.toRoute<PermissionsRoute>().explain?.let(AccessItem::valueOf))
         }
@@ -207,8 +224,8 @@ internal fun PlaceholderScreen(
     EmptyState(icon = destination.icon, message = stringResource(destination.placeholder), modifier = modifier)
 }
 
-// Permissions & roles, the debug screen, sign-in and disputes live under the Me tab; the rules and the blocked log under
-// Protection; search under Calls.
+// Permissions & roles, the debug screen, sign-in, disputes and quick replies live under the Me tab; the rules and the
+// blocked log under Protection; search and the dial pad under Calls; a contact and its editor under Contacts.
 private fun NavDestination?.isOn(destination: TopLevelDestination): Boolean =
     this?.hierarchy?.any { node ->
         node.hasRoute(destination.route::class) || CHILDREN[destination].orEmpty().any { node.hasRoute(it) }
@@ -216,9 +233,16 @@ private fun NavDestination?.isOn(destination: TopLevelDestination): Boolean =
 
 private val CHILDREN =
     mapOf(
-        TopLevelDestination.CALLS to listOf(NumberSearchRoute::class),
+        TopLevelDestination.CALLS to listOf(NumberSearchRoute::class, DialerRoute::class),
+        TopLevelDestination.CONTACTS to listOf(ContactRoute::class, ContactEditorRoute::class),
         TopLevelDestination.ME to
-            listOf(PermissionsRoute::class, ScreeningDebugRoute::class, AccountSignInRoute::class, SpamDisputeRoute::class),
+            listOf(
+                PermissionsRoute::class,
+                ScreeningDebugRoute::class,
+                AccountSignInRoute::class,
+                SpamDisputeRoute::class,
+                QuickRepliesSettingsRoute::class,
+            ),
         TopLevelDestination.PROTECTION to listOf(BlockingRulesRoute::class, BlockedCallsRoute::class),
     )
 

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dialpad_hint">Enter a number</string>
+    <string name="dialpad_call">Call</string>
+    <string name="dialpad_delete">Delete</string>
+    <string name="dialpad_clear">Clear the number</string>
+    <string name="dialpad_paste">Paste</string>
+    <string name="dialpad_voicemail">Call voicemail</string>
+    <string name="dialpad_plus">Type +</string>
+    <string name="dialpad_call_suggestion">Call %1$s</string>
+    <string name="dialpad_sim_title">Call with</string>
+    <string name="dialpad_hand_off_note">OpenCaller isn\'t your phone app yet, so Call opens your phone app with this number.</string>
+    <string name="dialpad_permission_title">Let OpenCaller place calls</string>
+    <string name="dialpad_permission_why">So the dial pad can call the numbers you enter, through your phone\'s own calling service.</string>
+    <string name="dialpad_permission_never">OpenCaller never places a call on its own. It calls only when you tap Call.</string>
+    <string name="dialpad_permission_denied">Calls can\'t be placed without the call permission. You can allow it in your phone\'s settings: Apps → OpenCaller → Permissions.</string>
+    <string name="dialpad_cant_call">This phone can\'t place calls.</string>
+    <string name="dialpad_code_refused">Android didn\'t accept this code.</string>
+</resources>
