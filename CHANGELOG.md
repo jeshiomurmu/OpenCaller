@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (spam list, verified business), create and edit (name, numbers with labels, e-mail), favourites. Contacts stay in
   your phone's contacts; nothing is uploaded.
 - Settings → Quick replies: your own replies for declining a call with a message and for Message after a call.
+- Messages (Phase 7a): OpenCaller can now be your SMS app. Conversations with unread counts, threads with sent and
+  delivered states, long texts, pictures (MMS, downloaded automatically or with Download), group messages, a SIM choice
+  on dual-SIM phones, links from other apps (`sms:`, `smsto:`, `mms:`, `mmsto:`), and quick replies when you decline a
+  call. One notification per conversation with Reply and Mark as read; on the lock screen it only says "New message".
+  Messages stay in your phone's message store; OpenCaller keeps only their category and the sender's name.
 
 ## [0.1.0-alpha] - 2026-10-17
 

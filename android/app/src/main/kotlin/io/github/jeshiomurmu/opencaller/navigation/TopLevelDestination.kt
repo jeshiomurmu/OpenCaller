@@ -14,6 +14,17 @@ data object CallsRoute
 @Serializable
 data object MessagesRoute
 
+/** Messages → a conversation, with [draft] in the composer (a `sms_body` from another app). */
+@Serializable
+data class ConversationRoute(
+    val threadId: Long,
+    val draft: String? = null,
+)
+
+/** Messages → New message. */
+@Serializable
+data object ComposeMessageRoute
+
 /** Type-safe route of the Contacts tab. */
 @Serializable
 data object ContactsRoute

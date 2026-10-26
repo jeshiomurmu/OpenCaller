@@ -28,4 +28,7 @@
     <string name="calls_default_app_body">See caller ID right on the call screen and keep your call history in one place.</string>
     <string name="calls_default_app_later">OpenCaller\'s own phone app arrives in a later update. Caller ID already works with the phone app you use now.</string>
     <string name="calls_default_app_action">Set as default</string>
+    <string name="messages_default_app_title">Set as default messages app</string>
+    <string name="messages_default_app_body">Read and send texts and picture messages in OpenCaller. Your messages stay on this phone.</string>
+    <string name="messages_default_app_later">OpenCaller\'s messages app can\'t be chosen on this phone yet.</string>
 </resources>

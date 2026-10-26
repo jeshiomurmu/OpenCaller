@@ -25,4 +25,8 @@ interface MessageMetaDao {
     /** Removes metadata for a deleted message. */
     @Query("DELETE FROM message_meta WHERE providerId = :providerId")
     suspend fun delete(providerId: Long)
+
+    /** Removes the metadata of every message in thread [threadId] (the conversation was deleted). */
+    @Query("DELETE FROM message_meta WHERE threadId = :threadId")
+    suspend fun deleteThread(threadId: Long): Int
 }

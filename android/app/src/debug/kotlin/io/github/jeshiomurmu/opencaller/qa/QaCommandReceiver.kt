@@ -38,9 +38,10 @@ import javax.inject.Inject
  * - `spam --es number E164 --es score 0.9 [--es category C]`: adds a spam list entry.
  * - `region [--es region BD]`: overrides the SIM country (no value: back to the real one).
  * - `verified --es number E164`: treats a number as a verified business.
- * - `role [--es role DIALER]`: "ok held=true|false" for the call screening role, or the default phone app role
- *   (`cmd role get-role-holders` doesn't exist on API 29).
- * - Sign-in, reports and the spam-list update for TC-E2E-001: see [QaOnline].
+ * - `role [--es role DIALER|SMS]`: "ok held=true|false" for the call screening role, or the default phone or SMS app
+ *   role (`cmd role get-role-holders` doesn't exist on API 29).
+ * - Sign-in, reports and the spam-list update for TC-E2E-001: see [QaOnline]. Messages for TC-SMS-001/002: see
+ *   [QaMessages].
  */
 @AndroidEntryPoint
 class QaCommandReceiver : BroadcastReceiver() {
@@ -64,6 +65,8 @@ class QaCommandReceiver : BroadcastReceiver() {
 
     @Inject lateinit var online: QaOnline
 
+    @Inject lateinit var messages: QaMessages
+
     override fun onReceive(
         context: Context,
         intent: Intent,
@@ -75,9 +78,7 @@ class QaCommandReceiver : BroadcastReceiver() {
                 if (intent.getStringExtra(EXTRA_CMD) ==
                     "role"
                 ) {
-                    "ok held=${roles.isRoleHeld(
-                        if (intent.getStringExtra("role") == "DIALER") RoleManager.ROLE_DIALER else RoleManager.ROLE_CALL_SCREENING,
-                    )}"
+                    "ok held=${roles.isRoleHeld(roleOf(intent.getStringExtra("role")))}"
                 } else {
                     run(intent)
                 }
@@ -113,7 +114,7 @@ class QaCommandReceiver : BroadcastReceiver() {
             }
 
             else -> {
-                online.run(cmd, intent) ?: "error unknown command $cmd"
+                online.run(cmd, intent) ?: messages.run(cmd, intent) ?: "error unknown command $cmd"
             }
         }
 
@@ -188,3 +189,10 @@ class QaCommandReceiver : BroadcastReceiver() {
         const val QA_LIST_VERSION = 1_000L
     }
 }
+
+private fun roleOf(name: String?): String =
+    when (name) {
+        "DIALER" -> RoleManager.ROLE_DIALER
+        "SMS" -> RoleManager.ROLE_SMS
+        else -> RoleManager.ROLE_CALL_SCREENING
+    }

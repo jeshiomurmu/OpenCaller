@@ -186,7 +186,7 @@ scripts/e2e/report_to_block.sh android/app/build/outputs/apk/foss/debug/app-foss
 | TC-DIAL-002 | T9 search | "726" matches "Ram…" contact | U — `T9MatcherTest` (name start, later words, initials, accents and punctuation, number digits, ranking, one row per number) and `DialPadViewModelTest` (suggestions from contacts and the call log, none for codes) |
 | TC-DIAL-003 | Dual SIM picker | Picker shown when no default SIM | D + U — `DialPadViewModelTest` (two SIMs and no default: the picker, and the call goes out on the chosen SIM; closing the picker calls nobody); device steps below |
 | TC-DIAL-004 | USSD/MMI | `*123#` passes through to carrier | D + U — `DialStringsTest` and `DialPadViewModelTest` (codes go to `placeCall` unchanged, `*#*#n#*#*` to `sendDialerSpecialCode`); device steps below |
-| TC-INCALL-001 | Answer from lock screen | Full-screen incoming UI; answer works | I + R — `scripts/qa/incall.sh` on API 29 + 36: PIN lock, screen off, `adb emu gsm call` → the in-call screen shows over the lock screen with the caller card from screening ("Suspicious"), Answer connects without unlocking, Hang up ends the call. `CallNotificationsTest` (full-screen intent, CALL category, `CallStyle` on Android 12+, Decline/Answer actions before, silent HIGH channel), `RoleEligibilityTest`, `DialerEligibilityTest` |
+| TC-INCALL-001 | Answer from lock screen | Full-screen incoming UI; answer works | I + R — `scripts/qa/incall.sh` on API 29 + 36: PIN lock, screen off, `adb emu gsm call` → the in-call screen shows over the lock screen with the caller card from screening ("Suspicious"), Answer connects without unlocking, Hang up ends the call. `CallNotificationsTest` (full-screen intent, CALL category, `CallStyle` on Android 12+, Decline/Answer actions before, silent HIGH channel), `RoleEligibilityTest`, `DefaultAppEligibilityTest` |
 | TC-INCALL-002 | Hold/merge/swap | Two calls, merge into conference | D + U — logic: `InCallStateTest` (which call is in front, merge/swap decisions), `CallRegistryTest` (commands reach the right `Call`), `InCallViewModelTest`; device steps below |
 | TC-INCALL-003 | Bluetooth routing | Audio switches to headset | D + U — `CallRegistryTest` (routes only to offered endpoints), `InCallViewModelTest`; device steps below |
 | TC-LOG-001 | Filters | Missed / blocked / spam filters correct | U + R — `CallHistoryTest` (screening log joined within ±2 min, blocked = blocked call type or block/silence decision, spam = spam list/network reason or score ≥ 0.4, missed excludes blocked, groups per number and day, search), `CallLogViewModelTest` (filters, search, block + Undo, delete, permission gate), `DeviceCallLogTest` (Robolectric: provider mapping, hidden numbers, read only as the default phone app) |
@@ -220,9 +220,9 @@ takes it away again). Device steps (a phone with a SIM; OpenCaller set as the de
 
 | ID | Title | Expected | Type |
 | --- | --- | --- | --- |
-| TC-SMS-001 | Receive SMS as default app | Stored in provider, shown in thread, notification posted | I |
-| TC-SMS-002 | Send SMS / long SMS | Multipart sent; delivery report handled | I |
-| TC-SMS-003 | MMS image | Received and displayed | D |
+| TC-SMS-001 | Receive SMS as default app | Stored in provider, shown in thread, notification posted | I + U + R — 7a: `scripts/qa/sms.sh` on API 29 + 36: `adb emu sms send` → the SMS is in the inbox of Android's message store, its `MessageMeta` row says Personal (no text), a conversation notification is posted, the thread shows it and then counts as read. `MessagePipelineTest` (stored → meta → notification; a refused write tried once more, a slow one not; the text shown in a notification when the store refuses it; lookups that fail or hang leave the message Personal within the 10 s), `MessagingDeviceTest` (a real SMS-DELIVER PDU read from the broadcast; one MessagingStyle notification with Reply and Mark as read, private on the lock screen; none for the open conversation), `DefaultAppEligibilityTest` (the four role components, protected), `MessagesViewModelsTest` |
+| TC-SMS-002 | Send SMS / long SMS | Multipart sent; delivery report handled | I + U — 7a: `scripts/qa/sms.sh`: `ACTION_SENDTO smsto:` with a long `sms_body` opens the thread with the text, Send hands it to `sendMultipartTextMessage` in 3 parts, the message moves to the sent box and comes back whole to the emulator's own number (the emulator's delivery report state is printed). `MessagePipelineTest` (delivery report status in both formats; a multipart message is delivered with its last part and fails with any part), `MessagesViewModelsTest` (statuses, send to everyone in the thread, a failed send keeps the draft, the SIM is asked for with two SIMs and no default) |
+| TC-SMS-003 | MMS image | Received and displayed | D + U — 7a: `MmsPduTest` (a download notice; a downloaded message with a UTF-8 subject, two recipients, a text part and a base64 picture; a composed message read back with its SMIL layout; send confirmations, delivery reports, the download answers byte for byte; broken PDUs refused), `MessageAddressesTest` (group members without the user), `MessagesViewModelsTest` (pictures and the Download button in the thread); device steps below |
 | TC-SMS-004 | Spam classification | Corpus test split macro-F1 recorded; spam to Spam tab | U |
 | TC-SMS-005 | Phishing link | Lookalike domain flagged with warning banner | U |
 | TC-OTP-001 | Extract code | Precision ≥ 98%, recall ≥ 95% on held-out corpus | U |
@@ -234,6 +234,24 @@ takes it away again). Device steps (a phone with a SIM; OpenCaller set as the de
 | TC-OTP-007 | Flash call | Missed call < 3 s from verification range during unknown call → guard | D |
 | TC-OTP-008 | Lock screen | OTP code hidden on lock screen notification | I |
 | TC-OTP-009 | OTP burst | 3 OTPs, 2 brands, 10 min → alert | R |
+
+Where they run (Phase 7a): unit and Robolectric tests in the `android` CI job; `scripts/qa/sms.sh` at the end of the
+emulator job on API 29 and 36 (after `scripts/qa/incall.sh`; it gives the debug build the default SMS app role and takes
+it away again). The emulator has no MMS centre, so MMS is checked on a phone. Device steps (a phone with a SIM and
+mobile data; OpenCaller set as the default SMS app in Settings → Apps → Default apps → SMS app):
+
+- **TC-SMS-003:** from a second phone send a picture message with a caption; the conversation shows "Downloading…",
+  then the picture and the caption, and a notification "Picture message"; tap the picture message's thread from the
+  notification. Turn mobile data off, have another picture sent: the thread shows "Picture message (size) · Download";
+  turn data on and tap Download. Reply with a picture from the photo picker: it arrives on the other phone.
+- **Group MMS:** from a second phone send a message to this phone and a third one; it lands in one conversation with
+  both people; a reply from OpenCaller reaches both. When the SIM doesn't store its own number, this phone's number can
+  show up in the group too (docs/phase.md, Open issues).
+- **Dual SIM:** with "Ask every time" for SMS, the first Send asks "Send with"; the SIM button next to the text field
+  switches the SIM; the message goes out on the chosen SIM (check on the receiving phone).
+- **Delivery report:** with delivery reports supported by the carrier, a sent message shows "Delivered".
+- **Quick reply:** decline an incoming call with a quick reply (OpenCaller's in-call screen or another phone app): the
+  reply is sent by OpenCaller's quick-reply service and shows in the conversation.
 
 ### Social, business, utilities, VoIP, family, lines (Phases 8–13)
 
