@@ -170,6 +170,7 @@ class ThreadViewModel
         dispatchers: DispatcherProvider,
     ) : ViewModel() {
         private val threadId = MutableStateFlow<Long?>(null)
+        private var inFront = false
         private val header = MutableStateFlow(Header("", emptyList(), isGroup = false))
         private val composer = MutableStateFlow(ThreadUiState(loading = false))
 
@@ -218,6 +219,7 @@ class ThreadViewModel
             val id = event.threadId
             if (threadId.value == id) return
             threadId.value = id
+            if (inFront) visible(true)
             val sims = sending.sims()
             composer.update {
                 it.copy(draft = event.draft ?: it.draft, sims = sims.options, simId = it.simId ?: sims.preferred?.subscriptionId)
@@ -290,9 +292,14 @@ class ThreadViewModel
             viewModelScope.launch { if (block() is AppResult.Failure) composer.update { it.copy(failed = true) } }
         }
 
+        // The screen can say it is in front before it says which thread it shows; the thread is read once both are known.
         private fun visible(visible: Boolean) {
-            val id = threadId.value ?: return
-            if (visible) viewModelScope.launch { presence.shown(id) } else presence.hidden()
+            inFront = visible
+            val id = threadId.value
+            when {
+                !visible -> presence.hidden()
+                id != null -> viewModelScope.launch { presence.shown(id) }
+            }
         }
 
         override fun onCleared() {

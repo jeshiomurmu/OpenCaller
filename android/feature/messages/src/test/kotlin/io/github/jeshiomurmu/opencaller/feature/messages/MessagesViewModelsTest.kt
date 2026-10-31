@@ -241,6 +241,17 @@ class MessagesViewModelsTest {
         }
 
     @Test
+    fun aThreadInFrontBeforeItOpensIsReadToo() =
+        runTest {
+            // The screen's resume callback runs before its Open event.
+            val vm = thread()
+            vm.onEvent(ThreadEvent.Visible(true))
+            assertEquals(emptyList<Long>(), presence.shown)
+            vm.onEvent(ThreadEvent.Open(7))
+            assertEquals(listOf(7L), presence.shown)
+        }
+
+    @Test
     fun aNewMessagePicksContactsAndTypedNumbers() =
         runTest {
             val vm = NewMessageViewModel(contactsOf(PhoneNumber("+12015550111")), conversations, numbers, dispatchers())
