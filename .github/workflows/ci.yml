@@ -116,6 +116,7 @@ jobs:
             scripts/ci/emulator-smoke.sh android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/emulator/api-${{ matrix.api-level }}
             scripts/qa/blocking.sh android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/emulator/api-${{ matrix.api-level }}/blocking || { adb logcat -d | grep -iE 'opencaller|Telecom|CallScreen|AndroidRuntime' | tail -n 400; exit 1; }
             scripts/qa/incall.sh io.github.jeshiomurmu.opencaller.debug build/emulator/api-${{ matrix.api-level }}/incall || { adb logcat -d | grep -iE 'opencaller|Telecom|InCall|ActivityTaskManager|AndroidRuntime' | tail -n 400; exit 1; }
+            scripts/qa/sms.sh io.github.jeshiomurmu.opencaller.debug build/emulator/api-${{ matrix.api-level }}/sms || { adb logcat -d | grep -iE 'opencaller|SmsManager|InboundSms|SMSDispatcher|AndroidRuntime' | tail -n 400; exit 1; }
 
       - name: Upload screenshots and test reports
         if: always()

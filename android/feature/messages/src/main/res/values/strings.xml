@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Notification channels. -->
+    <string name="channel_messages">Messages</string>
+    <string name="channel_messages_description">New text and picture messages, one notification per conversation.</string>
+    <string name="channel_message_failures">Messages not sent</string>
+    <string name="channel_message_failures_description">When a message you wrote couldn\'t be sent.</string>
+
+    <!-- Notifications. -->
+    <string name="messages_you">You</string>
+    <string name="messages_new_message">New message</string>
+    <string name="messages_reply">Reply</string>
+    <string name="messages_mark_read">Mark as read</string>
+    <string name="messages_not_sent_title">Message not sent</string>
+    <string name="messages_not_sent_body">Open the conversation to try again.</string>
+    <string name="messages_picture">Picture</string>
+    <string name="messages_picture_message">Picture message</string>
+
+    <!-- Conversations. -->
+    <string name="messages_new">New message</string>
+    <string name="messages_empty">No conversations yet. Tap + to write a message.</string>
+    <string name="messages_failed">Your messages couldn\'t be read. Try again in a moment.</string>
+    <string name="messages_not_default">Make OpenCaller your messages app to read and send messages here.</string>
+    <string name="messages_snippet_you">You: %1$s</string>
+    <plurals name="messages_unread">
+        <item quantity="one">%1$d unread message</item>
+        <item quantity="other">%1$d unread messages</item>
+    </plurals>
+    <string name="messages_delete">Delete</string>
+    <string name="messages_keep">Keep</string>
+    <string name="messages_delete_title">Delete this conversation?</string>
+    <string name="messages_delete_body">All messages with %1$s will be deleted from this phone.</string>
+
+    <!-- Thread. -->
+    <string name="messages_compose_hint">Text message</string>
+    <string name="messages_send">Send</string>
+    <string name="messages_attach">Attach a picture</string>
+    <string name="messages_remove_picture">Remove picture</string>
+    <string name="messages_status_sending">Sending…</string>
+    <string name="messages_status_sent">Sent</string>
+    <string name="messages_status_delivered">Delivered</string>
+    <string name="messages_status_failed">Not sent · Tap to try again</string>
+    <string name="messages_retry">Try again</string>
+    <string name="messages_download">Download</string>
+    <string name="messages_downloading">Downloading…</string>
+    <string name="messages_download_waiting">Picture message (%1$s)</string>
+    <string name="messages_download_failed">Download failed (%1$s)</string>
+    <string name="messages_action_failed">That didn\'t work. Check your signal and try again.</string>
+    <string name="messages_ok">OK</string>
+    <string name="messages_cancel">Cancel</string>
+    <string name="messages_sim_title">Send with</string>
+    <string name="messages_sim_ask">Choose SIM</string>
+    <string name="messages_sim_slot">SIM %1$d</string>
+
+    <!-- New message. -->
+    <string name="messages_to">To</string>
+    <string name="messages_to_hint">Name or number</string>
+    <string name="messages_add_number">Add %1$s</string>
+    <string name="messages_next">Next</string>
+</resources>

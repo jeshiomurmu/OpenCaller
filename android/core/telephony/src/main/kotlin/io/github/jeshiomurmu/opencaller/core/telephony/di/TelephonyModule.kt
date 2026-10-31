@@ -26,6 +26,11 @@ import io.github.jeshiomurmu.opencaller.core.telephony.QuickReplyTemplates
 import io.github.jeshiomurmu.opencaller.core.telephony.RoleManagerHelper
 import io.github.jeshiomurmu.opencaller.core.telephony.SimAccounts
 import io.github.jeshiomurmu.opencaller.core.telephony.lookup.ServerNetworkLookup
+import io.github.jeshiomurmu.opencaller.core.telephony.messaging.ConversationSource
+import io.github.jeshiomurmu.opencaller.core.telephony.messaging.DefaultSmsAppRole
+import io.github.jeshiomurmu.opencaller.core.telephony.messaging.DeviceConversations
+import io.github.jeshiomurmu.opencaller.core.telephony.messaging.DeviceMessagingSims
+import io.github.jeshiomurmu.opencaller.core.telephony.messaging.MessagingSimSource
 import io.github.jeshiomurmu.opencaller.core.telephony.providers.CallLogSource
 import io.github.jeshiomurmu.opencaller.core.telephony.providers.ContactsSource
 import io.github.jeshiomurmu.opencaller.core.telephony.providers.DefaultPhoneAppRole
@@ -101,6 +106,12 @@ internal interface TelephonyModule {
     @Binds
     fun emergencyNumbers(impl: TelephonyEmergencyNumbers): EmergencyNumbers
 
+    @Binds
+    fun messagingSims(impl: DeviceMessagingSims): MessagingSimSource
+
+    @Binds
+    fun conversations(impl: DeviceConversations): ConversationSource
+
     @Suppress("TooManyFunctions") // One provider per object Hilt can't construct itself.
     companion object {
         @Provides
@@ -116,6 +127,9 @@ internal interface TelephonyModule {
 
         @Provides
         fun defaultPhoneAppRole(roles: RoleManagerHelper): DefaultPhoneAppRole = DefaultPhoneAppRole { roles.isRoleHeld(AppRole.DIALER) }
+
+        @Provides
+        fun defaultSmsAppRole(roles: RoleManagerHelper): DefaultSmsAppRole = DefaultSmsAppRole { roles.isRoleHeld(AppRole.SMS) }
 
         @Provides
         fun ruleValidator(
