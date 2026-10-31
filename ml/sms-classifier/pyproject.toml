@@ -1,0 +1,30 @@
+[build-system]
+# setuptools 77 is the first to read an SPDX licence string (PEP 639).
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opencaller-sms-classifier"
+version = "0.1.0"
+description = "Trains OpenCaller's on-device SMS classifier and exports it to LiteRT (.tflite, int8)."
+readme = "README.md"
+license = "GPL-3.0-only"
+requires-python = ">=3.12"
+# Corpus loading, features and the training gate use the standard library only.
+dependencies = []
+
+[project.optional-dependencies]
+# Verified on pypi.org 2026-10-31 (latest stable): tensorflow 2.21.0 (needs numpy >= 1.26), numpy 2.5.4.
+train = ["tensorflow==2.21.0", "numpy==2.5.4"]
+# Verified on pypi.org 2026-10-31 (latest stable).
+test = ["pytest==9.2.0"]
+
+[project.scripts]
+sms-classifier-train = "sms_classifier.train:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

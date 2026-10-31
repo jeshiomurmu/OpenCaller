@@ -1,0 +1,11 @@
+# Host hash prefixes for the known-bad link list (core:ml Hosts.prefix, server url list).
+# host,prefix: the first 4 bytes of SHA-256 over the host's lower-case ASCII (IDNA) form in UTF-8, as 8 hex digits.
+# Generated with Python 3 hashlib and the idna codec; the app and the server must give the same values.
+example.com,a379a6f6
+evil-shop.example,59fc7fae
+deals.evil-shop.example,21661a39
+bit.ly,b92a46b3
+sbi-kyc-update.click,a297bf92
+nagad.com.bd,c6ed3104
+pаypal.com,110b098d
+bücher.example,970ca6b7

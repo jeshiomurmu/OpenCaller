@@ -1,0 +1,191 @@
+id	template	country	lang	category	sender	otp	origin	app_hash	expiry_min	amount	currency	last4	merchant	text
+us-otp-04-00	us-otp-04	US	en	OTP	+15550100	99423042								Northpeak Bank: Your one-time passcode is 99423042. We will never call you to ask for it.
+us-otp-04-01	us-otp-04	US	en	OTP	+15550100	93032179								Northpeak Bank: Your one-time passcode is 93032179. We will never call you to ask for it.
+us-otp-04-02	us-otp-04	US	en	OTP	+15550100	97532093								Northpeak Bank: Your one-time passcode is 97532093. We will never call you to ask for it.
+us-otp-04-03	us-otp-04	US	en	OTP	+15550100	12178245								Northpeak Bank: Your one-time passcode is 12178245. We will never call you to ask for it.
+us-otp-04-04	us-otp-04	US	en	OTP	+15550100	15831553								Northpeak Bank: Your one-time passcode is 15831553. We will never call you to ask for it.
+us-otp-04-05	us-otp-04	US	en	OTP	+15550100	95773762								Northpeak Bank: Your one-time passcode is 95773762. We will never call you to ask for it.
+us-otp-04-06	us-otp-04	US	en	OTP	+15550100	76419331								Northpeak Bank: Your one-time passcode is 76419331. We will never call you to ask for it.
+us-otp-04-07	us-otp-04	US	en	OTP	+15550100	38093331								Northpeak Bank: Your one-time passcode is 38093331. We will never call you to ask for it.
+us-otp-08-00	us-otp-08	US	en	OTP	86753	4973			10					Ridely: 4973 is your code to confirm this device. Valid for 10 min.
+us-otp-08-01	us-otp-08	US	en	OTP	86753	4923			10					Ridely: 4923 is your code to confirm this device. Valid for 10 min.
+us-otp-08-02	us-otp-08	US	en	OTP	86753	6191			3					Ridely: 6191 is your code to confirm this device. Valid for 3 min.
+us-otp-08-03	us-otp-08	US	en	OTP	86753	7813			5					Ridely: 7813 is your code to confirm this device. Valid for 5 min.
+us-otp-08-04	us-otp-08	US	en	OTP	86753	7351			30					Ridely: 7351 is your code to confirm this device. Valid for 30 min.
+us-otp-08-05	us-otp-08	US	en	OTP	86753	5068			5					Ridely: 5068 is your code to confirm this device. Valid for 5 min.
+us-otp-08-06	us-otp-08	US	en	OTP	86753	1633			2					Ridely: 1633 is your code to confirm this device. Valid for 2 min.
+us-otp-08-07	us-otp-08	US	en	OTP	86753	8152			5					Ridely: 8152 is your code to confirm this device. Valid for 5 min.
+us-otp-12-00	us-otp-12	US	en	OTP	99887	62451								Shopnest: code 62451. Reply STOP to opt out.
+us-otp-12-01	us-otp-12	US	en	OTP	99887	15883								Shopnest: code 15883. Reply STOP to opt out.
+us-otp-12-02	us-otp-12	US	en	OTP	99887	35819								Shopnest: code 35819. Reply STOP to opt out.
+us-otp-12-03	us-otp-12	US	en	OTP	99887	14170								Shopnest: code 14170. Reply STOP to opt out.
+us-otp-12-04	us-otp-12	US	en	OTP	99887	25369								Shopnest: code 25369. Reply STOP to opt out.
+us-otp-12-05	us-otp-12	US	en	OTP	99887	51830								Shopnest: code 51830. Reply STOP to opt out.
+us-otp-12-06	us-otp-12	US	en	OTP	99887	34585								Shopnest: code 34585. Reply STOP to opt out.
+us-otp-12-07	us-otp-12	US	en	OTP	99887	98359								Shopnest: code 98359. Reply STOP to opt out.
+in-otp-01-00	in-otp-01	IN	en	OTP	VM-HDFCBK-S	930583			10					930583 is the OTP for your transaction of Rs.37.23 at Metro Fuels on HDFC Bank card ending 5464. Valid for 10 mins. Do not share it with anyone.
+in-otp-01-01	in-otp-01	IN	en	OTP	VM-HDFCBK-S	986261			5					986261 is the OTP for your transaction of Rs.1,906.69 at Digital Bazaar on HDFC Bank card ending 1153. Valid for 5 mins. Do not share it with anyone.
+in-otp-01-02	in-otp-01	IN	en	OTP	VM-HDFCBK-S	915991			3					915991 is the OTP for your transaction of Rs.16.32 at Sharma Kirana on HDFC Bank card ending 0569. Valid for 3 mins. Do not share it with anyone.
+in-otp-01-03	in-otp-01	IN	en	OTP	VM-HDFCBK-S	699766			10					699766 is the OTP for your transaction of Rs.54.53 at Chai Point Cafe on HDFC Bank card ending 8159. Valid for 10 mins. Do not share it with anyone.
+in-otp-01-04	in-otp-01	IN	en	OTP	VM-HDFCBK-S	685165			30					685165 is the OTP for your transaction of Rs.91.82 at Metro Fuels on HDFC Bank card ending 0001. Valid for 30 mins. Do not share it with anyone.
+in-otp-01-05	in-otp-01	IN	en	OTP	VM-HDFCBK-S	896273			15					896273 is the OTP for your transaction of Rs.45,074.00 at Chai Point Cafe on HDFC Bank card ending 6562. Valid for 15 mins. Do not share it with anyone.
+in-otp-01-06	in-otp-01	IN	en	OTP	VM-HDFCBK-S	596995			10					596995 is the OTP for your transaction of Rs.91.77 at Digital Bazaar on HDFC Bank card ending 1040. Valid for 10 mins. Do not share it with anyone.
+in-otp-01-07	in-otp-01	IN	en	OTP	VM-HDFCBK-S	261242			2					261242 is the OTP for your transaction of Rs.676.00 at Lotus Pharmacy on HDFC Bank card ending 3482. Valid for 2 mins. Do not share it with anyone.
+in-otp-05-00	in-otp-05	IN	en	OTP	BP-SWIGGY-S	5323		96fUeb7DP03						Your OTP for Biryanibox is 5323. Please do not share it with anyone.\n96fUeb7DP03
+in-otp-05-01	in-otp-05	IN	en	OTP	BP-SWIGGY-S	5970		2l4cRcpgDzM						Your OTP for Biryanibox is 5970. Please do not share it with anyone.\n2l4cRcpgDzM
+in-otp-05-02	in-otp-05	IN	en	OTP	BP-SWIGGY-S	9882		1aOhz+bFQ+l						Your OTP for Biryanibox is 9882. Please do not share it with anyone.\n1aOhz+bFQ+l
+in-otp-05-03	in-otp-05	IN	en	OTP	BP-SWIGGY-S	1098		k4VDElhAimq						Your OTP for Biryanibox is 1098. Please do not share it with anyone.\nk4VDElhAimq
+in-otp-05-04	in-otp-05	IN	en	OTP	BP-SWIGGY-S	2972		CBj+Po+0wsT						Your OTP for Biryanibox is 2972. Please do not share it with anyone.\nCBj+Po+0wsT
+in-otp-05-05	in-otp-05	IN	en	OTP	BP-SWIGGY-S	6391		V5QFZaqz5Tp						Your OTP for Biryanibox is 6391. Please do not share it with anyone.\nV5QFZaqz5Tp
+in-otp-05-06	in-otp-05	IN	en	OTP	BP-SWIGGY-S	3854		FLxG+oQAUNb						Your OTP for Biryanibox is 3854. Please do not share it with anyone.\nFLxG+oQAUNb
+in-otp-05-07	in-otp-05	IN	en	OTP	BP-SWIGGY-S	2832		P7UKvj65LY0						Your OTP for Biryanibox is 2832. Please do not share it with anyone.\nP7UKvj65LY0
+in-otp-09-00	in-otp-09	IN	hi	OTP	JM-IRCTCI-S	502434								502434 आपका सत्यापन कोड है। कृपया इसे किसी को न बताएं।
+in-otp-09-01	in-otp-09	IN	hi	OTP	JM-IRCTCI-S	865968								865968 आपका सत्यापन कोड है। कृपया इसे किसी को न बताएं।
+in-otp-09-02	in-otp-09	IN	hi	OTP	JM-IRCTCI-S	947779								947779 आपका सत्यापन कोड है। कृपया इसे किसी को न बताएं।
+in-otp-09-03	in-otp-09	IN	hi	OTP	JM-IRCTCI-S	798559								७९८५५९ आपका सत्यापन कोड है। कृपया इसे किसी को न बताएं।
+in-otp-09-04	in-otp-09	IN	hi	OTP	JM-IRCTCI-S	586467								५८६४६७ आपका सत्यापन कोड है। कृपया इसे किसी को न बताएं।
+in-otp-09-05	in-otp-09	IN	hi	OTP	JM-IRCTCI-S	637293								637293 आपका सत्यापन कोड है। कृपया इसे किसी को न बताएं।
+in-otp-09-06	in-otp-09	IN	hi	OTP	JM-IRCTCI-S	906012								९०६०१२ आपका सत्यापन कोड है। कृपया इसे किसी को न बताएं।
+in-otp-09-07	in-otp-09	IN	hi	OTP	JM-IRCTCI-S	821294								821294 आपका सत्यापन कोड है। कृपया इसे किसी को न बताएं।
+in-otp-13-00	in-otp-13	IN	hi	OTP	AX-HDFCBK-S	515399			3					ओटीपी: 515399. आपके कार्ड 6574 पर लेनदेन के लिए। 3 मिनट तक मान्य।
+in-otp-13-01	in-otp-13	IN	hi	OTP	AX-HDFCBK-S	245285			15					ओटीपी: २४५२८५. आपके कार्ड 1613 पर लेनदेन के लिए। १५ मिनट तक मान्य।
+in-otp-13-02	in-otp-13	IN	hi	OTP	AX-HDFCBK-S	583157			15					ओटीपी: 583157. आपके कार्ड 6600 पर लेनदेन के लिए। 15 मिनट तक मान्य।
+in-otp-13-03	in-otp-13	IN	hi	OTP	AX-HDFCBK-S	197531			30					ओटीपी: 197531. आपके कार्ड 3153 पर लेनदेन के लिए। 30 मिनट तक मान्य।
+in-otp-13-04	in-otp-13	IN	hi	OTP	AX-HDFCBK-S	378933			5					ओटीपी: 378933. आपके कार्ड 6200 पर लेनदेन के लिए। 5 मिनट तक मान्य।
+in-otp-13-05	in-otp-13	IN	hi	OTP	AX-HDFCBK-S	531720			2					ओटीपी: 531720. आपके कार्ड 2131 पर लेनदेन के लिए। 2 मिनट तक मान्य।
+in-otp-13-06	in-otp-13	IN	hi	OTP	AX-HDFCBK-S	433607			3					ओटीपी: 433607. आपके कार्ड 8833 पर लेनदेन के लिए। 3 मिनट तक मान्य।
+in-otp-13-07	in-otp-13	IN	hi	OTP	AX-HDFCBK-S	539613			2					ओटीपी: 539613. आपके कार्ड 4728 पर लेनदेन के लिए। 2 मिनट तक मान्य।
+bd-otp-02-00	bd-otp-02	BD	en	OTP	NAGAD	916384			3					Your Nagad OTP is 916384. It will expire in 3 minutes. Never share your OTP and PIN.
+bd-otp-02-01	bd-otp-02	BD	en	OTP	NAGAD	342935			2					Your Nagad OTP is 342935. It will expire in 2 minutes. Never share your OTP and PIN.
+bd-otp-02-02	bd-otp-02	BD	en	OTP	NAGAD	222159			10					Your Nagad OTP is 222159. It will expire in 10 minutes. Never share your OTP and PIN.
+bd-otp-02-03	bd-otp-02	BD	en	OTP	NAGAD	243715			5					Your Nagad OTP is 243715. It will expire in 5 minutes. Never share your OTP and PIN.
+bd-otp-02-04	bd-otp-02	BD	en	OTP	NAGAD	961323			2					Your Nagad OTP is 961323. It will expire in 2 minutes. Never share your OTP and PIN.
+bd-otp-02-05	bd-otp-02	BD	en	OTP	NAGAD	332229			10					Your Nagad OTP is 332229. It will expire in 10 minutes. Never share your OTP and PIN.
+bd-otp-02-06	bd-otp-02	BD	en	OTP	NAGAD	462423			2					Your Nagad OTP is 462423. It will expire in 2 minutes. Never share your OTP and PIN.
+bd-otp-02-07	bd-otp-02	BD	en	OTP	NAGAD	949904			30					Your Nagad OTP is 949904. It will expire in 30 minutes. Never share your OTP and PIN.
+bd-otp-06-00	bd-otp-06	BD	en	OTP	BRAC BANK	147197								OTP for your BRAC Bank card transaction of BDT 2,068.16 is 147197. Do not disclose it to anyone.
+bd-otp-06-01	bd-otp-06	BD	en	OTP	BRAC BANK	499508								OTP for your BRAC Bank card transaction of BDT 8,122.89 is 499508. Do not disclose it to anyone.
+bd-otp-06-02	bd-otp-06	BD	en	OTP	BRAC BANK	866747								OTP for your BRAC Bank card transaction of BDT 46,046.00 is 866747. Do not disclose it to anyone.
+bd-otp-06-03	bd-otp-06	BD	en	OTP	BRAC BANK	322207								OTP for your BRAC Bank card transaction of BDT 62.65 is 322207. Do not disclose it to anyone.
+bd-otp-06-04	bd-otp-06	BD	en	OTP	BRAC BANK	258661								OTP for your BRAC Bank card transaction of BDT 2,141.02 is 258661. Do not disclose it to anyone.
+bd-otp-06-05	bd-otp-06	BD	en	OTP	BRAC BANK	307407								OTP for your BRAC Bank card transaction of BDT 2898.88 is 307407. Do not disclose it to anyone.
+bd-otp-06-06	bd-otp-06	BD	en	OTP	BRAC BANK	462730								OTP for your BRAC Bank card transaction of BDT 8,573.24 is 462730. Do not disclose it to anyone.
+bd-otp-06-07	bd-otp-06	BD	en	OTP	BRAC BANK	871691								OTP for your BRAC Bank card transaction of BDT 7,979.40 is 871691. Do not disclose it to anyone.
+bd-otp-10-00	bd-otp-10	BD	en	OTP	Pathao	2371	chaka.example							Your Chaka Rides login code is 2371.\n\n@chaka.example #2371
+bd-otp-10-01	bd-otp-10	BD	en	OTP	Pathao	8298	chaka.example							Your Chaka Rides login code is 8298.\n\n@chaka.example #8298
+bd-otp-10-02	bd-otp-10	BD	en	OTP	Pathao	8588	chaka.example							Your Chaka Rides login code is 8588.\n\n@chaka.example #8588
+bd-otp-10-03	bd-otp-10	BD	en	OTP	Pathao	7986	chaka.example							Your Chaka Rides login code is 7986.\n\n@chaka.example #7986
+bd-otp-10-04	bd-otp-10	BD	en	OTP	Pathao	1067	chaka.example							Your Chaka Rides login code is 1067.\n\n@chaka.example #1067
+bd-otp-10-05	bd-otp-10	BD	en	OTP	Pathao	3575	chaka.example							Your Chaka Rides login code is 3575.\n\n@chaka.example #3575
+bd-otp-10-06	bd-otp-10	BD	en	OTP	Pathao	9212	chaka.example							Your Chaka Rides login code is 9212.\n\n@chaka.example #9212
+bd-otp-10-07	bd-otp-10	BD	en	OTP	Pathao	8934	chaka.example							Your Chaka Rides login code is 8934.\n\n@chaka.example #8934
+bd-otp-14-00	bd-otp-14	BD	en	OTP	EBL	68486850								EBL Skybanking: your one time password is 68486850. Do not share it.
+bd-otp-14-01	bd-otp-14	BD	en	OTP	EBL	76435249								EBL Skybanking: your one time password is 76435249. Do not share it.
+bd-otp-14-02	bd-otp-14	BD	en	OTP	EBL	14876175								EBL Skybanking: your one time password is 14876175. Do not share it.
+bd-otp-14-03	bd-otp-14	BD	en	OTP	EBL	63384149								EBL Skybanking: your one time password is 63384149. Do not share it.
+bd-otp-14-04	bd-otp-14	BD	en	OTP	EBL	49672799								EBL Skybanking: your one time password is 49672799. Do not share it.
+bd-otp-14-05	bd-otp-14	BD	en	OTP	EBL	78401663								EBL Skybanking: your one time password is 78401663. Do not share it.
+bd-otp-14-06	bd-otp-14	BD	en	OTP	EBL	80830035								EBL Skybanking: your one time password is 80830035. Do not share it.
+bd-otp-14-07	bd-otp-14	BD	en	OTP	EBL	31690025								EBL Skybanking: your one time password is 31690025. Do not share it.
+in-txn-04-00	in-txn-04	IN	en	TRANSACTION	AD-AXISBK-T					27095.00	INR	9553	Lotus Pharmacy	INR 27095 debited from A/c no. XX9553 on 13-Nov-26 at Lotus Pharmacy. Avl Bal INR 8,302.00 - Axis Bank
+in-txn-04-01	in-txn-04	IN	en	TRANSACTION	AD-AXISBK-T					6095.08	INR	9191	Lotus Pharmacy	INR 6,095.08 debited from A/c no. XX9191 on 27-Dec-26 at Lotus Pharmacy. Avl Bal INR 2,009.00 - Axis Bank
+in-txn-04-02	in-txn-04	IN	en	TRANSACTION	AD-AXISBK-T					7367.01	INR	6717	Lotus Pharmacy	INR 7367.01 debited from A/c no. XX6717 on 09-Dec-26 at Lotus Pharmacy. Avl Bal INR 49952 - Axis Bank
+in-txn-04-03	in-txn-04	IN	en	TRANSACTION	AD-AXISBK-T					21782.00	INR	4218	Chai Point Cafe	INR 21782 debited from A/c no. XX4218 on 26-Nov-26 at Chai Point Cafe. Avl Bal INR 51696 - Axis Bank
+in-txn-04-04	in-txn-04	IN	en	TRANSACTION	AD-AXISBK-T					53109.00	INR	2442	Metro Fuels	INR 53,109.00 debited from A/c no. XX2442 on 16-Oct-26 at Metro Fuels. Avl Bal INR 1635.68 - Axis Bank
+in-txn-04-05	in-txn-04	IN	en	TRANSACTION	AD-AXISBK-T					55132.00	INR	6703	Digital Bazaar	INR 55,132.00 debited from A/c no. XX6703 on 15-Oct-26 at Digital Bazaar. Avl Bal INR 20.78 - Axis Bank
+bd-txn-02-00	bd-txn-02	BD	en	TRANSACTION	NAGAD					6625.05	BDT		Dhaka Fuel	Payment of Tk 6,625.05 to Dhaka Fuel is successful. Balance: Tk 24.31. TxnID: 711791646
+bd-txn-02-01	bd-txn-02	BD	en	TRANSACTION	NAGAD					53.69	BDT		Bengal Books	Payment of Tk 53.69 to Bengal Books is successful. Balance: Tk 34701. TxnID: 764422811
+bd-txn-02-02	bd-txn-02	BD	en	TRANSACTION	NAGAD					20.64	BDT		Shwapno Mart	Payment of Tk 20.64 to Shwapno Mart is successful. Balance: Tk 972. TxnID: 783175175
+bd-txn-02-03	bd-txn-02	BD	en	TRANSACTION	NAGAD					42050.00	BDT		Mina Bazar	Payment of Tk 42,050.00 to Mina Bazar is successful. Balance: Tk 9642.12. TxnID: 788135465
+bd-txn-02-04	bd-txn-02	BD	en	TRANSACTION	NAGAD					84.12	BDT		Mina Bazar	Payment of Tk 84.12 to Mina Bazar is successful. Balance: Tk 40875. TxnID: 733276849
+bd-txn-02-05	bd-txn-02	BD	en	TRANSACTION	NAGAD					56.45	BDT		Dhaka Fuel	Payment of Tk 56.45 to Dhaka Fuel is successful. Balance: Tk 4,078.59. TxnID: 798494005
+bd-txn-06-00	bd-txn-06	BD	bn	TRANSACTION	bKash					8010.97	BDT			আপনি +880 1555-012043 নম্বরে ৳8010.97 সেন্ড মানি করেছেন। ব্যালেন্স ৳8928.08।
+bd-txn-06-01	bd-txn-06	BD	bn	TRANSACTION	bKash					77.34	BDT			আপনি +880 1555-012097 নম্বরে ৳77.34 সেন্ড মানি করেছেন। ব্যালেন্স ৳24.14।
+bd-txn-06-02	bd-txn-06	BD	bn	TRANSACTION	bKash					8761.04	BDT			আপনি +880 1555-012080 নম্বরে ৳8,761.04 সেন্ড মানি করেছেন। ব্যালেন্স ৳33.37।
+bd-txn-06-03	bd-txn-06	BD	bn	TRANSACTION	bKash					30063.00	BDT			আপনি +880 1555-012013 নম্বরে ৳30063 সেন্ড মানি করেছেন। ব্যালেন্স ৳90.31।
+bd-txn-06-04	bd-txn-06	BD	bn	TRANSACTION	bKash					2783.00	BDT			আপনি +880 1555-012081 নম্বরে ৳2,783.00 সেন্ড মানি করেছেন। ব্যালেন্স ৳448.81।
+bd-txn-06-05	bd-txn-06	BD	bn	TRANSACTION	bKash					10291.00	BDT			আপনি +880 1555-012036 নম্বরে ৳10,291.00 সেন্ড মানি করেছেন। ব্যালেন্স ৳83.02।
+us-txn-04-00	us-txn-04	US	en	TRANSACTION	692484					837.18	USD	5343	Harbor Books	Citi Alert: A $837.18 transaction was made at Harbor Books on card ending in 5343.
+us-txn-04-01	us-txn-04	US	en	TRANSACTION	692484					4960.20	USD	6045	Harbor Books	Citi Alert: A $4,960.20 transaction was made at Harbor Books on card ending in 6045.
+us-txn-04-02	us-txn-04	US	en	TRANSACTION	692484					13728.00	USD	6127	Corner Grocer	Citi Alert: A $13,728.00 transaction was made at Corner Grocer on card ending in 6127.
+us-txn-04-03	us-txn-04	US	en	TRANSACTION	692484					7023.71	USD	2587	Maple Fuel	Citi Alert: A $7,023.71 transaction was made at Maple Fuel on card ending in 2587.
+us-txn-04-04	us-txn-04	US	en	TRANSACTION	692484					57100.00	USD	1622	Maple Fuel	Citi Alert: A $57,100.00 transaction was made at Maple Fuel on card ending in 1622.
+us-txn-04-05	us-txn-04	US	en	TRANSACTION	692484					9934.00	USD	0931	Pixel Mart	Citi Alert: A $9,934.00 transaction was made at Pixel Mart on card ending in 0931.
+in-bill-01-00	in-bill-01	IN	en	BILL	AD-JIOINF-T									Your bill of Rs.2.55 for mobile +91 95550 12026 is due on 08-Dec-26. Pay now to avoid late fee.
+in-bill-01-01	in-bill-01	IN	en	BILL	AD-JIOINF-T									Your bill of Rs.43,932.00 for mobile +91 95550 12019 is due on 05-Dec-26. Pay now to avoid late fee.
+in-bill-01-02	in-bill-01	IN	en	BILL	AD-JIOINF-T									Your bill of Rs.65.75 for mobile +91 95550 12087 is due on 14-Oct-26. Pay now to avoid late fee.
+in-bill-01-03	in-bill-01	IN	en	BILL	AD-JIOINF-T									Your bill of Rs.49.10 for mobile +91 95550 12049 is due on 10-Nov-26. Pay now to avoid late fee.
+in-bill-01-04	in-bill-01	IN	en	BILL	AD-JIOINF-T									Your bill of Rs.76.21 for mobile +91 95550 12059 is due on 07-Nov-26. Pay now to avoid late fee.
+in-bill-01-05	in-bill-01	IN	en	BILL	AD-JIOINF-T									Your bill of Rs.9564.91 for mobile +91 95550 12072 is due on 08-Dec-26. Pay now to avoid late fee.
+bd-bill-02-00	bd-bill-02	BD	en	BILL	Titas Gas									Dear customer, your gas bill of Tk 29.12 is due on 17-Dec-26. Please pay to avoid disconnection.
+bd-bill-02-01	bd-bill-02	BD	en	BILL	Titas Gas									Dear customer, your gas bill of Tk 88.86 is due on 24-Dec-26. Please pay to avoid disconnection.
+bd-bill-02-02	bd-bill-02	BD	en	BILL	Titas Gas									Dear customer, your gas bill of Tk 3898.53 is due on 22-Dec-26. Please pay to avoid disconnection.
+bd-bill-02-03	bd-bill-02	BD	en	BILL	Titas Gas									Dear customer, your gas bill of Tk 33,722.00 is due on 06-Nov-26. Please pay to avoid disconnection.
+bd-bill-02-04	bd-bill-02	BD	en	BILL	Titas Gas									Dear customer, your gas bill of Tk 56.04 is due on 09-Oct-26. Please pay to avoid disconnection.
+bd-bill-02-05	bd-bill-02	BD	en	BILL	Titas Gas									Dear customer, your gas bill of Tk 46,262.00 is due on 11-Dec-26. Please pay to avoid disconnection.
+us-del-04-00	us-del-04	US	en	DELIVERY	468311									SwiftParcel: delivered. Your package TY320803514 was left at the front door at 7:57 PM.
+us-del-04-01	us-del-04	US	en	DELIVERY	468311									SwiftParcel: delivered. Your package QA813003718 was left at the front door at 10:08 PM.
+us-del-04-02	us-del-04	US	en	DELIVERY	468311									SwiftParcel: delivered. Your package KG641944816 was left at the front door at 9:52 PM.
+us-del-04-03	us-del-04	US	en	DELIVERY	468311									SwiftParcel: delivered. Your package OU224260309 was left at the front door at 12:30 PM.
+us-del-04-04	us-del-04	US	en	DELIVERY	468311									SwiftParcel: delivered. Your package EI342993989 was left at the front door at 11:08 PM.
+us-del-04-05	us-del-04	US	en	DELIVERY	468311									SwiftParcel: delivered. Your package SO993326455 was left at the front door at 3:36 PM.
+bd-del-01-00	bd-del-01	BD	en	DELIVERY	Pathao									Your parcel 70498504 has been picked up and will be delivered within 48 hours.
+bd-del-01-01	bd-del-01	BD	en	DELIVERY	Pathao									Your parcel 28651076 has been picked up and will be delivered within 48 hours.
+bd-del-01-02	bd-del-01	BD	en	DELIVERY	Pathao									Your parcel 83395992 has been picked up and will be delivered within 48 hours.
+bd-del-01-03	bd-del-01	BD	en	DELIVERY	Pathao									Your parcel 11031329 has been picked up and will be delivered within 48 hours.
+bd-del-01-04	bd-del-01	BD	en	DELIVERY	Pathao									Your parcel 80187636 has been picked up and will be delivered within 48 hours.
+bd-del-01-05	bd-del-01	BD	en	DELIVERY	Pathao									Your parcel 80277711 has been picked up and will be delivered within 48 hours.
+in-pro-01-00	in-pro-01	IN	en	PROMOTION	AD-CARTWL-P									Big Billion Sale is LIVE! Flat 25% off on mobiles. Shop now https://shopnest.example/t/4958 T&C
+in-pro-01-01	in-pro-01	IN	en	PROMOTION	AD-CARTWL-P									Big Billion Sale is LIVE! Flat 40% off on mobiles. Shop now https://ridely.example/r/6574 T&C
+in-pro-01-02	in-pro-01	IN	en	PROMOTION	AD-CARTWL-P									Big Billion Sale is LIVE! Flat 25% off on mobiles. Shop now https://shopnest.example/t/1182 T&C
+in-pro-01-03	in-pro-01	IN	en	PROMOTION	AD-CARTWL-P									Big Billion Sale is LIVE! Flat 25% off on mobiles. Shop now https://ridely.example/r/5237 T&C
+in-pro-01-04	in-pro-01	IN	en	PROMOTION	AD-CARTWL-P									Big Billion Sale is LIVE! Flat 10% off on mobiles. Shop now https://glimmer.example/s/5326 T&C
+in-pro-01-05	in-pro-01	IN	en	PROMOTION	AD-CARTWL-P									Big Billion Sale is LIVE! Flat 10% off on mobiles. Shop now https://shopnest.example/t/1192 T&C
+bd-pro-01-00	bd-pro-01	BD	en	PROMOTION	Haatbazar									11.11 Mega Sale! Up to 40% off on electronics. Download the app now.
+bd-pro-01-01	bd-pro-01	BD	en	PROMOTION	Haatbazar									11.11 Mega Sale! Up to 25% off on electronics. Download the app now.
+bd-pro-01-02	bd-pro-01	BD	en	PROMOTION	Haatbazar									11.11 Mega Sale! Up to 20% off on electronics. Download the app now.
+bd-pro-01-03	bd-pro-01	BD	en	PROMOTION	Haatbazar									11.11 Mega Sale! Up to 25% off on electronics. Download the app now.
+bd-pro-01-04	bd-pro-01	BD	en	PROMOTION	Haatbazar									11.11 Mega Sale! Up to 20% off on electronics. Download the app now.
+bd-pro-01-05	bd-pro-01	BD	en	PROMOTION	Haatbazar									11.11 Mega Sale! Up to 20% off on electronics. Download the app now.
+in-spm-01-00	in-spm-01	IN	en	SPAM	+919555012345									Dear user you have WON Rs.25,00,000 in KBC lucky draw. Call +91 95550 12036 to claim your prize.
+in-spm-01-01	in-spm-01	IN	en	SPAM	+919555012345									Dear user you have WON Rs.25,00,000 in KBC lucky draw. Call +91 95550 12020 to claim your prize.
+in-spm-01-02	in-spm-01	IN	en	SPAM	+919555012345									Dear user you have WON Rs.25,00,000 in KBC lucky draw. Call +91 95550 12005 to claim your prize.
+in-spm-01-03	in-spm-01	IN	en	SPAM	+919555012345									Dear user you have WON Rs.25,00,000 in KBC lucky draw. Call +91 95550 12055 to claim your prize.
+in-spm-01-04	in-spm-01	IN	en	SPAM	+919555012345									Dear user you have WON Rs.25,00,000 in KBC lucky draw. Call +91 95550 12021 to claim your prize.
+in-spm-01-05	in-spm-01	IN	en	SPAM	+919555012345									Dear user you have WON Rs.25,00,000 in KBC lucky draw. Call +91 95550 12087 to claim your prize.
+bd-spm-01-00	bd-spm-01	BD	en	SPAM	+8801555012345									Congratulations! You won 5 lakh taka in our mobile lottery. Call +880 1555-012008 now to receive it.
+bd-spm-01-01	bd-spm-01	BD	en	SPAM	+8801555012345									Congratulations! You won 5 lakh taka in our mobile lottery. Call +880 1555-012023 now to receive it.
+bd-spm-01-02	bd-spm-01	BD	en	SPAM	+8801555012345									Congratulations! You won 5 lakh taka in our mobile lottery. Call +880 1555-012017 now to receive it.
+bd-spm-01-03	bd-spm-01	BD	en	SPAM	+8801555012345									Congratulations! You won 5 lakh taka in our mobile lottery. Call +880 1555-012024 now to receive it.
+bd-spm-01-04	bd-spm-01	BD	en	SPAM	+8801555012345									Congratulations! You won 5 lakh taka in our mobile lottery. Call +880 1555-012041 now to receive it.
+bd-spm-01-05	bd-spm-01	BD	en	SPAM	+8801555012345									Congratulations! You won 5 lakh taka in our mobile lottery. Call +880 1555-012008 now to receive it.
+in-phi-01-00	in-phi-01	IN	en	PHISHING	+919555012349									Dear customer your SBI account will be blocked today. Update your PAN/KYC at https://northpeak-bank.verify-login.top/9880
+in-phi-01-01	in-phi-01	IN	en	PHISHING	+919555012349									Dear customer your SBI account will be blocked today. Update your PAN/KYC at http://dbbl-card.support/3997
+in-phi-01-02	in-phi-01	IN	en	PHISHING	+919555012349									Dear customer your SBI account will be blocked today. Update your PAN/KYC at http://nоrthpeak.example/secure
+in-phi-01-03	in-phi-01	IN	en	PHISHING	+919555012349									Dear customer your SBI account will be blocked today. Update your PAN/KYC at http://dbbl-card.support/6789
+in-phi-01-04	in-phi-01	IN	en	PHISHING	+919555012349									Dear customer your SBI account will be blocked today. Update your PAN/KYC at http://dbbl-card.support/7300
+in-phi-01-05	in-phi-01	IN	en	PHISHING	+919555012349									Dear customer your SBI account will be blocked today. Update your PAN/KYC at http://dbbl-card.support/2205
+bd-phi-02-00	bd-phi-02	BD	bn	PHISHING	+8801555012349									আপনার নগদ অ্যাকাউন্ট বন্ধ হয়ে যাবে। এখনই যাচাই করুন https://swiftparce1.example/fee/2266
+bd-phi-02-01	bd-phi-02	BD	bn	PHISHING	+8801555012349									আপনার নগদ অ্যাকাউন্ট বন্ধ হয়ে যাবে। এখনই যাচাই করুন https://bkash-verify.xyz/9444
+bd-phi-02-02	bd-phi-02	BD	bn	PHISHING	+8801555012349									আপনার নগদ অ্যাকাউন্ট বন্ধ হয়ে যাবে। এখনই যাচাই করুন http://sbi-kyc-update.click/5122
+bd-phi-02-03	bd-phi-02	BD	bn	PHISHING	+8801555012349									আপনার নগদ অ্যাকাউন্ট বন্ধ হয়ে যাবে। এখনই যাচাই করুন http://sbi-kyc-update.click/2226
+bd-phi-02-04	bd-phi-02	BD	bn	PHISHING	+8801555012349									আপনার নগদ অ্যাকাউন্ট বন্ধ হয়ে যাবে। এখনই যাচাই করুন http://sbi-kyc-update.click/6261
+bd-phi-02-05	bd-phi-02	BD	bn	PHISHING	+8801555012349									আপনার নগদ অ্যাকাউন্ট বন্ধ হয়ে যাবে। এখনই যাচাই করুন https://northpeak-bank.verify-login.top/2364
+us-per-04-00	us-per-04	US	en	PERSONAL	+15550192									I sent you $10.87 for the tickets. Room is 1204, see you there.
+us-per-04-01	us-per-04	US	en	PERSONAL	+15550192									I sent you $17,507.00 for the tickets. Room is 1204, see you there.
+us-per-04-02	us-per-04	US	en	PERSONAL	+15550192									I sent you $1,142.00 for the tickets. Room is 1204, see you there.
+us-per-04-03	us-per-04	US	en	PERSONAL	+15550192									I sent you $56.23 for the tickets. Room is 1204, see you there.
+us-per-04-04	us-per-04	US	en	PERSONAL	+15550192									I sent you $53,503.00 for the tickets. Room is 1204, see you there.
+us-per-04-05	us-per-04	US	en	PERSONAL	+15550192									I sent you $6,900.37 for the tickets. Room is 1204, see you there.
+in-per-03-00	in-per-03	IN	en	PERSONAL	+919555012354									Meeting moved to 3pm. Call me on +91 95550 12088 if you can't make it.
+in-per-03-01	in-per-03	IN	en	PERSONAL	+919555012354									Meeting moved to 3pm. Call me on +91 95550 12067 if you can't make it.
+in-per-03-02	in-per-03	IN	en	PERSONAL	+919555012354									Meeting moved to 3pm. Call me on +91 95550 12081 if you can't make it.
+in-per-03-03	in-per-03	IN	en	PERSONAL	+919555012354									Meeting moved to 3pm. Call me on +91 95550 12068 if you can't make it.
+in-per-03-04	in-per-03	IN	en	PERSONAL	+919555012354									Meeting moved to 3pm. Call me on +91 95550 12071 if you can't make it.
+in-per-03-05	in-per-03	IN	en	PERSONAL	+919555012354									Meeting moved to 3pm. Call me on +91 95550 12033 if you can't make it.
+bd-per-03-00	bd-per-03	BD	bn	PERSONAL	+8801555012353									ভাই, বাসার ঠিকানা বাড়ি ১২, রোড ৭। সন্ধ্যায় দেখা হবে।
+bd-per-03-01	bd-per-03	BD	bn	PERSONAL	+8801555012353									ভাই, বাসার ঠিকানা বাড়ি ১২, রোড ৭। সন্ধ্যায় দেখা হবে।
+bd-per-03-02	bd-per-03	BD	bn	PERSONAL	+8801555012353									ভাই, বাসার ঠিকানা বাড়ি ১২, রোড ৭। সন্ধ্যায় দেখা হবে।
+bd-per-03-03	bd-per-03	BD	bn	PERSONAL	+8801555012353									ভাই, বাসার ঠিকানা বাড়ি ১২, রোড ৭। সন্ধ্যায় দেখা হবে।
+bd-per-03-04	bd-per-03	BD	bn	PERSONAL	+8801555012353									ভাই, বাসার ঠিকানা বাড়ি ১২, রোড ৭। সন্ধ্যায় দেখা হবে।
+bd-per-03-05	bd-per-03	BD	bn	PERSONAL	+8801555012353									ভাই, বাসার ঠিকানা বাড়ি ১২, রোড ৭। সন্ধ্যায় দেখা হবে।

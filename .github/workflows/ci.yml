@@ -233,6 +233,28 @@ jobs:
         if: always()
         run: docker compose -f infra/docker/compose.yml down -v
 
+  ml:
+    name: ml (sms-classifier)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      # The runner's Python 3.12; pytest pinned in ml/sms-classifier/pyproject.toml. No model is trained here.
+      - name: Corpus, features and training gate (pytest)
+        working-directory: ml/sms-classifier
+        run: |
+          python3 --version
+          python3 -m venv .venv
+          .venv/bin/pip install --quiet -e '.[test]'
+          .venv/bin/pytest -q
+
+      # The corpus in core:testing must be exactly what the generator writes (the app's tests read it).
+      - name: Committed corpus matches the generator
+        run: |
+          python3 -I ml/sms-classifier/corpus/generate.py
+          git diff --exit-code -- android/core/testing/src/main/resources/fixtures/sms_corpus
+
   license:
     name: license
     runs-on: ubuntu-latest

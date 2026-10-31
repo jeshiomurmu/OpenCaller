@@ -1,0 +1,22 @@
+{
+  "kind": "synthetic",
+  "generator": "ml/sms-classifier/corpus/generate.py",
+  "seed": 20261031,
+  "columns": [
+    "id",
+    "template",
+    "country",
+    "lang",
+    "category",
+    "sender",
+    "otp",
+    "origin",
+    "app_hash",
+    "expiry_min",
+    "amount",
+    "currency",
+    "last4",
+    "merchant",
+    "text"
+  ]
+}
