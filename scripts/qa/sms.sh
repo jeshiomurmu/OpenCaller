@@ -133,7 +133,8 @@ if answer="$(wait_for_messages "$sender" "body=$text\$")"; then
     fail TC-SMS-001 "no conversation notification"
     grep -E "pkg=$app_id" <<< "$posted" | head -10 || true
   fi
-  adb shell am start -n "$main" --el io.github.jeshiomurmu.opencaller.extra.OPEN_THREAD "$thread" > /dev/null
+  # The notification's intent: NEW_TASK | CLEAR_TOP | SINGLE_TOP, so a running app gets it as a new intent.
+  adb shell am start -n "$main" -f 0x34000000 --el io.github.jeshiomurmu.opencaller.extra.OPEN_THREAD "$thread" > /dev/null
   if wait_for_text_starting "$text"; then
     screenshot thread-received
     pass TC-SMS-001 "shown in the thread"

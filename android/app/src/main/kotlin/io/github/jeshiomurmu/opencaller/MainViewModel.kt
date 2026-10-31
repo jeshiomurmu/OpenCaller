@@ -42,10 +42,11 @@ data class DialRequest(
     val number: String?,
 )
 
-/** Open conversation [threadId] (a new message when `null`) with [draft] in the composer. */
+/** Open conversation [threadId] (a new message when `null`) with [draft] in the composer and its [recipients]. */
 data class MessageRequest(
     val threadId: Long?,
     val draft: String? = null,
+    val recipients: List<String> = emptyList(),
 )
 
 /** Decides between onboarding and the app shell, and what the shell warns about. */
@@ -123,7 +124,7 @@ class MainViewModel
                 return
             }
             viewModelScope.launch {
-                message.value = MessageRequest(conversations.threadFor(recipients.toSet()).getOrNull(), draft)
+                message.value = MessageRequest(conversations.threadFor(recipients.toSet()).getOrNull(), draft, recipients)
             }
         }
 

@@ -1,6 +1,6 @@
 package io.github.jeshiomurmu.opencaller.feature.messages.ui
 
-import android.net.Uri
+import androidx.core.net.toUri
 import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.common.map
 import io.github.jeshiomurmu.opencaller.core.model.MessageKey
@@ -46,7 +46,7 @@ class DeviceMessageSending
             text: String,
             pictures: List<String>,
             subscriptionId: Int?,
-        ): AppResult<StoredMessage> = outgoing.send(recipients, text, pictures.map(Uri::parse), subscriptionId)
+        ): AppResult<StoredMessage> = outgoing.send(recipients, text, pictures.map { it.toUri() }, subscriptionId)
 
         override suspend fun retry(key: MessageKey): AppResult<Unit> = outgoing.retry(key).map { }
 

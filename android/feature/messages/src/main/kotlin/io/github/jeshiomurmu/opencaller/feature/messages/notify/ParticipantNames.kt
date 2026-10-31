@@ -20,6 +20,9 @@ class ParticipantNames
         /** [participant]'s address for display (no contact lookup). */
         fun address(participant: Participant): String = participant.number?.let { numbers.format(it) } ?: participant.address
 
+        /** A participant for [address] (a number as typed or as stored, or a sender ID). */
+        fun participant(address: String): Participant = Participant(address, numbers.parse(address))
+
         /** The name to show for [participant]. */
         suspend fun title(participant: Participant): String = contactName(participant) ?: address(participant)
     }

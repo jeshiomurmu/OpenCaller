@@ -47,12 +47,16 @@ import io.github.jeshiomurmu.opencaller.core.model.MessagingSim
 import io.github.jeshiomurmu.opencaller.core.ui.EmptyState
 import io.github.jeshiomurmu.opencaller.feature.messages.R
 
-/** One conversation, wired to its view model. [draft] fills the composer (a `sms_body` from another app). */
+/**
+ * One conversation, wired to its view model. [draft] fills the composer (a `sms_body` from another app); [recipients]
+ * are the people of a new conversation.
+ */
 @Composable
 fun ThreadRoute(
     threadId: Long,
     modifier: Modifier = Modifier,
     draft: String? = null,
+    recipients: List<String> = emptyList(),
     viewModel: ThreadViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -60,7 +64,7 @@ fun ThreadRoute(
         rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(MAX_PICK)) { uris ->
             if (uris.isNotEmpty()) viewModel.onEvent(ThreadEvent.AddPictures(uris.map { it.toString() }))
         }
-    LaunchedEffect(threadId) { viewModel.onEvent(ThreadEvent.Open(threadId, draft)) }
+    LaunchedEffect(threadId) { viewModel.onEvent(ThreadEvent.Open(threadId, draft, recipients)) }
     LifecycleResumeEffect(threadId) {
         viewModel.onEvent(ThreadEvent.Visible(true))
         onPauseOrDispose { viewModel.onEvent(ThreadEvent.Visible(false)) }

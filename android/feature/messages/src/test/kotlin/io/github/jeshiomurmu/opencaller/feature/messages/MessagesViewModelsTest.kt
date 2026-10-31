@@ -209,6 +209,17 @@ class MessagesViewModelsTest {
         }
 
     @Test
+    fun aNewConversationSendsToTheRecipientsItWasOpenedWith() =
+        runTest {
+            // Android's store knows a thread's people only from its messages; a new thread has none yet.
+            val vm = thread()
+            vm.onEvent(ThreadEvent.Open(8, draft = "Hi", recipients = listOf("+12015550111")))
+            assertEquals("Ana Silva", vm.uiState.value.title)
+            vm.onEvent(ThreadEvent.Send)
+            assertEquals(listOf("+12015550111"), sending.sent.single()[0])
+        }
+
+    @Test
     fun theDefaultSimIsPreselected() =
         runTest {
             conversations.people[7] = listOf(ana)
@@ -250,7 +261,10 @@ class MessagesViewModelsTest {
             vm.onEvent(NewMessageEvent.Query("+1 201 555 0133"))
             val effect =
                 backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                    assertEquals(NewMessageEffect.OpenThread(FakeConversations.NEW_THREAD), vm.effects.first())
+                    assertEquals(
+                        NewMessageEffect.OpenThread(FakeConversations.NEW_THREAD, listOf("+12015550111", "+12015550133")),
+                        vm.effects.first(),
+                    )
                 }
             vm.onEvent(NewMessageEvent.Next)
             assertEquals("a typed number counts on Next", setOf("+12015550111", "+12015550133"), conversations.threadForAsked)

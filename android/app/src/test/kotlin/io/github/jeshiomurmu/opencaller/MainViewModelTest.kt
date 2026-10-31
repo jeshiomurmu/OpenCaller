@@ -118,7 +118,10 @@ class MainViewModelTest {
         runTest {
             val vm = MainViewModel(UserSettingsDataSource.inMemory(), access, conversations)
             vm.requestMessage(listOf("+15550001111", "+15550002222"), "Hi")
-            assertEquals(MessageRequest(threadId = 42, draft = "Hi"), vm.pendingMessage.value)
+            assertEquals(
+                MessageRequest(threadId = 42, draft = "Hi", recipients = listOf("+15550001111", "+15550002222")),
+                vm.pendingMessage.value,
+            )
             assertEquals(setOf("+15550001111", "+15550002222"), conversations.asked)
 
             vm.messageShown()

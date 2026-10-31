@@ -1,7 +1,6 @@
 package io.github.jeshiomurmu.opencaller.feature.messages.ui
 
 import android.graphics.ImageDecoder
-import android.net.Uri
 import android.text.format.DateUtils
 import android.text.format.Formatter
 import androidx.compose.foundation.Image
@@ -32,6 +31,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.core.net.toUri
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerShape
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacing
 import io.github.jeshiomurmu.opencaller.core.model.MessageKind
@@ -206,7 +206,7 @@ private fun decode(
 ): ImageBitmap? =
     try {
         ImageDecoder
-            .decodeBitmap(ImageDecoder.createSource(resolver, Uri.parse(uri))) { decoder, info, _ ->
+            .decodeBitmap(ImageDecoder.createSource(resolver, uri.toUri())) { decoder, info, _ ->
                 val longer = max(info.size.width, info.size.height)
                 if (longer > IMAGE_SIDE) {
                     val scale = IMAGE_SIDE.toFloat() / longer

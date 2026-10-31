@@ -34,13 +34,13 @@ internal fun NavGraphBuilder.messageRoutes(
     }
     composable<ConversationRoute> { entry ->
         val route = entry.toRoute<ConversationRoute>()
-        ThreadRoute(threadId = route.threadId, draft = route.draft)
+        ThreadRoute(threadId = route.threadId, draft = route.draft, recipients = route.recipients?.split(',').orEmpty())
     }
     composable<ComposeMessageRoute> {
         NewMessageRoute(
-            onOpenThread = { id ->
+            onOpenThread = { id, recipients ->
                 navController.popBackStack()
-                navController.navigate(ConversationRoute(id)) { launchSingleTop = true }
+                navController.navigate(ConversationRoute(id, recipients = recipients.joinToString(","))) { launchSingleTop = true }
             },
         )
     }

@@ -41,7 +41,7 @@ import io.github.jeshiomurmu.opencaller.feature.messages.R
 /** Pick who a new message goes to, wired to its view model; [onOpenThread] opens the conversation. */
 @Composable
 fun NewMessageRoute(
-    onOpenThread: (Long) -> Unit,
+    onOpenThread: (threadId: Long, recipients: List<String>) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: NewMessageViewModel = hiltViewModel(),
 ) {
@@ -49,7 +49,7 @@ fun NewMessageRoute(
     LaunchedEffect(Unit) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                is NewMessageEffect.OpenThread -> onOpenThread(effect.threadId)
+                is NewMessageEffect.OpenThread -> onOpenThread(effect.threadId, effect.recipients)
             }
         }
     }

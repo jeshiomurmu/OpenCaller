@@ -3,8 +3,8 @@ package io.github.jeshiomurmu.opencaller.feature.messages.send
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
+import androidx.core.net.toUri
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.StoredMessage
 
 /**
@@ -105,7 +105,7 @@ internal object MessagingIntents {
         context: Context,
         action: String,
         path: String,
-    ): Intent = Intent(action, Uri.parse("$SCHEME://$path"), context, MessageStatusReceiver::class.java)
+    ): Intent = Intent(action, "$SCHEME://$path".toUri(), context, MessageStatusReceiver::class.java)
 
     private fun broadcast(
         context: Context,

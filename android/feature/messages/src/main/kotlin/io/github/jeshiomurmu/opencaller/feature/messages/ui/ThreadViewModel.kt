@@ -84,10 +84,14 @@ data class ThreadUiState(
 
 /** What the user did in the thread. */
 sealed interface ThreadEvent {
-    /** Show thread [threadId], with [draft] in the composer (a `sms_body` from another app). */
+    /**
+     * Show thread [threadId], with [draft] in the composer (a `sms_body` from another app). [recipients] are the people
+     * of a new conversation: Android's store only knows a thread's people from its messages.
+     */
     data class Open(
         val threadId: Long,
         val draft: String? = null,
+        val recipients: List<String> = emptyList(),
     ) : ThreadEvent
 
     /** The composer's text changed. */
@@ -186,7 +190,7 @@ class ThreadViewModel
         /** Handles [event]. */
         fun onEvent(event: ThreadEvent) {
             when (event) {
-                is ThreadEvent.Open -> open(event.threadId, event.draft)
+                is ThreadEvent.Open -> open(event)
                 is ThreadEvent.PickSim -> pickSim(event.subscriptionId)
                 ThreadEvent.Send -> send()
                 is ThreadEvent.Retry -> act { sending.retry(event.key) }
@@ -210,18 +214,22 @@ class ThreadViewModel
                 else -> state
             }
 
-        private fun open(
-            id: Long,
-            draft: String?,
-        ) {
+        private fun open(event: ThreadEvent.Open) {
+            val id = event.threadId
             if (threadId.value == id) return
             threadId.value = id
             val sims = sending.sims()
             composer.update {
-                it.copy(draft = draft ?: it.draft, sims = sims.options, simId = it.simId ?: sims.preferred?.subscriptionId)
+                it.copy(draft = event.draft ?: it.draft, sims = sims.options, simId = it.simId ?: sims.preferred?.subscriptionId)
             }
             viewModelScope.launch {
-                val people = conversations.participants(id).getOrNull().orEmpty()
+                // A conversation without messages yet has its people only in the request that opened it.
+                val people =
+                    conversations
+                        .participants(id)
+                        .getOrNull()
+                        .orEmpty()
+                        .ifEmpty { event.recipients.map(names::participant) }
                 header.value = Header(people.map { names.title(it) }.joinToString(", "), people.map(Participant::address), people.size > 1)
             }
         }

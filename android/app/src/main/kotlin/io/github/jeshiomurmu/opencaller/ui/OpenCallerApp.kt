@@ -136,7 +136,9 @@ private fun OpenMessageWhenAsked(
         if (thread == null) {
             navController.navigate(ComposeMessageRoute) { launchSingleTop = true }
         } else {
-            navController.navigate(ConversationRoute(thread, request.draft)) { launchSingleTop = true }
+            navController.navigate(
+                ConversationRoute(thread, request.draft, request.recipients.joinToString(",")),
+            ) { launchSingleTop = true }
         }
         onShown()
     }

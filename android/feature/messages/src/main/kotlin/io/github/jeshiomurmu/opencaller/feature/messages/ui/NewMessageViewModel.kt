@@ -77,9 +77,10 @@ sealed interface NewMessageEvent {
 
 /** Something the screen does once. */
 sealed interface NewMessageEffect {
-    /** Open thread [threadId]. */
+    /** Open thread [threadId] with [recipients] (it has no messages yet). */
     data class OpenThread(
         val threadId: Long,
+        val recipients: List<String>,
     ) : NewMessageEffect
 }
 
@@ -204,7 +205,7 @@ class NewMessageViewModel
             local.update { it.copy(opening = true) }
             viewModelScope.launch {
                 when (val thread = conversations.threadFor(addresses)) {
-                    is AppResult.Success -> effectChannel.send(NewMessageEffect.OpenThread(thread.value))
+                    is AppResult.Success -> effectChannel.send(NewMessageEffect.OpenThread(thread.value, addresses.toList()))
                     is AppResult.Failure -> local.update { it.copy(failed = true) }
                 }
                 local.update { it.copy(opening = false) }

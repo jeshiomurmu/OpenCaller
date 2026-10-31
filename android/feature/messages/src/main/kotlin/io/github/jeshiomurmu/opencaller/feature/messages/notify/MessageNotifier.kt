@@ -11,8 +11,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Icon
-import android.net.Uri
 import android.os.Build
+import androidx.core.net.toUri
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.designsystem.icon.OpenCallerIcons
@@ -164,7 +164,7 @@ class MessageNotifier
             action: String,
             threadId: Long,
         ): Intent =
-            Intent(action, Uri.parse("opencaller-thread://$threadId"), context, MessageActionReceiver::class.java)
+            Intent(action, "opencaller-thread://$threadId".toUri(), context, MessageActionReceiver::class.java)
                 .putExtra(MessagesIntents.EXTRA_THREAD_ID, threadId)
 
         private fun openThread(threadId: Long): PendingIntent? =
