@@ -5,8 +5,9 @@
 #               gets a MessageMeta row (Personal) without its text, shows a conversation notification, and appears in
 #               the thread, which then counts as read
 #   TC-SMS-002  a long SMS (3 parts) written in the thread (opened with ACTION_SENDTO, the text from sms_body) goes out
-#               with sendMultipartTextMessage, moves to the sent box, and comes back whole: the emulator delivers
-#               messages to its own number (1555521<console port>)
+#               with sendMultipartTextMessage, moves to the sent box, and either comes back whole (the API 29 emulator
+#               delivers messages to its own number, 1555521<console port>) or is reported Delivered (the API 36
+#               emulator's network returns a delivery report but no message)
 #
 # Screenshots go to <out-dir>. Removes the role again at the end.
 #
@@ -179,12 +180,18 @@ if wait_for_text_starting "TC-SMS-002"; then
     diagnostics sent
     fail TC-SMS-002 "not in the sent box ($answer)"
   fi
-  if answer="$(wait_for_messages "$own" "body=$long\$" 60)"; then
+  # The end of the trip: the API 29 emulator delivers messages to its own number (the parts come back joined); the
+  # API 36 emulator's network doesn't, but returns a delivery report.
+  if answer="$(wait_for_messages "$own" "body=$long\$|out=SENT/DELIVERED/" 60)"; then
     screenshot thread-sent
-    pass TC-SMS-002 "the long SMS came back to the emulator's own number whole"
+    if [[ "$answer" == *"body=$long" ]]; then
+      pass TC-SMS-002 "the long SMS came back to the emulator's own number whole"
+    else
+      pass TC-SMS-002 "delivery report handled: Delivered (this emulator doesn't deliver to its own number)"
+    fi
   else
     diagnostics loopback
-    fail TC-SMS-002 "the long SMS didn't come back whole ($answer)"
+    fail TC-SMS-002 "neither came the long SMS back nor did a delivery report say Delivered ($answer)"
   fi
 else
   screenshot thread-draft-missing
