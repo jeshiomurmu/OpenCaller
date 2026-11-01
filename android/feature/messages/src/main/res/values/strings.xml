@@ -59,7 +59,7 @@
     <string name="messages_next">Next</string>
     <!-- One-time codes (TC-OTP-008). -->
     <string name="channel_otp">Verification codes</string>
-    <string name="channel_otp_description">One-time codes, hidden on the lock screen.</string>
+    <string name="channel_otp_description">One-time codes. Hidden on the lock screen when it hides sensitive content.</string>
     <string name="channel_filtered">Spam and suspicious messages</string>
     <string name="channel_filtered_description">Messages sorted into Spam, shown quietly.</string>
     <string name="otp_notification_title">Verification code</string>

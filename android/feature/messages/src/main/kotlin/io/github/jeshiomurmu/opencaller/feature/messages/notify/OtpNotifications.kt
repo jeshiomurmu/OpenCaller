@@ -19,9 +19,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * The notification of a one-time code (TC-OTP-008): the code in large type with Copy, private on the lock screen,
- * where its public version says only "Verification code" and never shows the code. It disappears when the code
- * expires.
+ * The notification of a one-time code (TC-OTP-008): the code in large type with Copy. It is private, so a secure lock
+ * screen set to hide sensitive content shows its public version ("Verification code", "Unlock to see the code").
+ * With "Show all notification content" (Android's default) the system shows it in full; only the user changes that
+ * (the channel's lock-screen visibility is the user's setting, an app's value is ignored; docs/phase.md issue 100).
+ * It disappears when the code expires.
  */
 @Singleton
 class OtpNotifications
@@ -93,7 +95,6 @@ class OtpNotifications
             manager.createNotificationChannel(
                 NotificationChannel(CHANNEL_OTP, context.getString(R.string.channel_otp), NotificationManager.IMPORTANCE_HIGH).apply {
                     description = context.getString(R.string.channel_otp_description)
-                    lockscreenVisibility = Notification.VISIBILITY_PRIVATE
                 },
             )
         }

@@ -173,7 +173,6 @@ class MessagingDeviceTest {
                 }
             assertTrue("the public version never shows the code", shown.none { "482913" in it })
             assertEquals(listOf("Copy code"), posted.actions.map { it.title.toString() })
-            assertEquals(Notification.VISIBILITY_PRIVATE, manager.getNotificationChannel(OtpNotifications.CHANNEL_OTP).lockscreenVisibility)
         }
 
     @Test

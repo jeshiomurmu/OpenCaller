@@ -7,7 +7,10 @@
 #   TC-OTP-005  the same with a caller who is not a contact: the guard raises its warning within 1 s of the SMS
 #               reaching OpenCaller (timed from the app's debug log), the full-screen warning opens over the in-call
 #               screen, the message is stored with the OTP_DURING_CALL risk, and the warning's Hang up ends the call
-#   TC-OTP-008  with a PIN on the lock screen, the code's notification shows "Verification code" there, not the code
+#   TC-OTP-008  with a PIN and the lock screen set to hide sensitive content, the code's notification shows its public
+#               version there ("Unlock to see the code"), not the code. With "Show all notification content" (Android's
+#               default) the system shows private notifications in full; an app can't change that (docs/phase.md
+#               issue 100)
 #
 # 006 runs first: a code arriving up to 2 minutes after a call with a stranger counts too. Each call rings with the
 # screen off, so Android opens the in-call screen through its full-screen intent (with the screen on and unlocked it
@@ -29,6 +32,7 @@ code_sender="57575"
 pin="1234"
 contact_id=""
 lock_after=""
+private_content=""
 code_sent=""
 failures=0
 mkdir -p "$out"
@@ -144,6 +148,9 @@ cleanup() {
   adb emu gsm cancel "$stranger" > /dev/null 2>&1 || true
   adb shell input keyevent KEYCODE_WAKEUP || true
   adb shell locksettings clear --old "$pin" > /dev/null 2>&1 || true
+  if [[ -n "$private_content" ]]; then
+    adb shell settings put secure lock_screen_allow_private_notifications "$private_content" > /dev/null 2>&1 || true
+  fi
   if [[ -n "$lock_after" ]]; then adb shell settings put secure lock_screen_lock_after_timeout "$lock_after" > /dev/null 2>&1 || true; fi
   adb shell wm dismiss-keyguard > /dev/null 2>&1 || true
   if [[ -n "$contact_id" ]]; then
@@ -294,8 +301,7 @@ wait_for_state 0 || true
 
 # --- TC-OTP-008: the code is hidden on the lock screen ----------------------------------------------------------------
 # The notification checked is TC-OTP-005's code (482913): a new code now would raise the guard again, since the
-# stranger's call ended less than 2 minutes ago. The phone is unlocked first: a PIN set while the swipe lock screen is
-# showing only applies once a lock screen shows again, and until then notifications appear in full.
+# stranger's call ended less than 2 minutes ago. The phone is unlocked first, so the PIN applies to a fresh lock screen.
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell wm dismiss-keyguard > /dev/null 2>&1 || true
 for _ in $(seq 1 10); do
@@ -304,6 +310,10 @@ for _ in $(seq 1 10); do
 done
 keyguard_locked && echo "warning: the swipe lock screen is still showing before the PIN is set"
 adb shell locksettings set-pin "$pin" > /dev/null
+# The lock screen setting "Sensitive notifications: hide" (the user's choice; the default shows everything).
+private_content="$(adb shell settings get secure lock_screen_allow_private_notifications | tr -d '\r')"
+[[ "$private_content" =~ ^[01]$ ]] || private_content=1
+adb shell settings put secure lock_screen_allow_private_notifications 0
 # A PIN locks 5 s after the screen goes off by default; lock at once instead.
 lock_after="$(adb shell settings get secure lock_screen_lock_after_timeout | tr -d '\r')"
 [[ "$lock_after" =~ ^[0-9]+$ ]] || lock_after=5000
@@ -318,7 +328,7 @@ if keyguard_locked; then echo "Locked with a PIN"; else echo "warning: keyguard 
 keyguard_dump | grep -iE 'secure|showing' | sed -n 1,10p || true
 sleep 1
 locked_window="$(dump)" || true
-if ! grep -qF 'text="Verification code"' <<< "$locked_window"; then
+if ! grep -qF 'text="Unlock to see the code"' <<< "$locked_window"; then
   # The lock screen shows only the first few notifications; the shade lists them all (still redacted).
   adb shell cmd statusbar expand-notifications > /dev/null 2>&1 || true
   sleep 2
@@ -331,8 +341,8 @@ elif grep -qF "482913" <<< "$locked_window"; then
   echo "Lock screen texts:"
   grep -oE 'text="[^"]+"' <<< "$locked_window" | head -30 || true
   fail TC-OTP-008 "the code is readable on the lock screen"
-elif grep -qF 'text="Verification code"' <<< "$locked_window"; then
-  pass TC-OTP-008 "the lock screen shows \"Verification code\", not the code"
+elif grep -qF 'text="Unlock to see the code"' <<< "$locked_window"; then
+  pass TC-OTP-008 "the lock screen shows the public version (\"Unlock to see the code\"), not the code"
 else
   echo "Lock screen texts:"
   grep -oE 'text="[^"]+"' <<< "$locked_window" | head -30 || true
