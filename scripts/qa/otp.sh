@@ -261,6 +261,9 @@ adb shell input keyevent KEYCODE_HOME
 
 # --- TC-OTP-005: a code during a call with a stranger -----------------------------------------------------------------
 code_005="TC-OTP-005 Your Ridely code is 482913. Valid for 5 minutes."
+# Earlier QA left many OpenCaller notifications; Android bundles four or more of one app, and TC-OTP-008's lock screen
+# would show that bundle only as "OpenCaller". Start TC-OTP-005 (whose code TC-OTP-008 checks) without them.
+qa_ok clear-notifications
 if answer_call "$stranger"; then
   adb logcat -c || true
   adb emu sms send "$code_sender" "$code_005"
