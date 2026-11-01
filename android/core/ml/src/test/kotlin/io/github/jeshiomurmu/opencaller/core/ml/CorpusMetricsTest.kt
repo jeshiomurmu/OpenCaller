@@ -20,7 +20,7 @@ class CorpusMetricsTest {
             val scores = SmsCorpus.SPLITS.map { CorpusScoring.score(it, SmsCorpus.load(it)) }
             val report = scores.joinToString("\n\n", transform = ::describe)
             println(report)
-            System.getProperty("opencaller.ml.report")?.let { File(it).apply { parentFile.mkdirs() }.writeText(report + "\n") }
+            System.getProperty("opencaller.ml.report")?.let { File(it).apply { parentFile?.mkdirs() }.writeText(report + "\n") }
 
             val test = scores.single { it.split == "test" }
             assertTrue("OTP precision ${test.otp.precision} < $MIN_PRECISION", test.otp.precision >= MIN_PRECISION)
