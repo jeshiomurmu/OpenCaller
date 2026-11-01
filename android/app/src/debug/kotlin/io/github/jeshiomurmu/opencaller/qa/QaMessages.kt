@@ -5,6 +5,7 @@ import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.common.getOrNull
 import io.github.jeshiomurmu.opencaller.core.data.MessageMetaRepository
 import io.github.jeshiomurmu.opencaller.core.model.MessageKind
+import io.github.jeshiomurmu.opencaller.core.model.MessageRisk
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.ConversationSource
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.MessageAddresses
 import kotlinx.coroutines.flow.first
@@ -15,8 +16,9 @@ import javax.inject.Inject
  * screens.
  *
  * - `messages --es address A`: the conversations with A, as "ok thread=T count=N unread=U in=I
- *   out=BOX/DELIVERY/LENGTH meta=CATEGORY body=TEXT" (T, the meta row and the text of the newest received message, the
- *   state of the newest sent one), or "ok none" when there is no conversation with A.
+ *   out=BOX/DELIVERY/LENGTH meta=CATEGORY risks=R1,R2 code=yes|no body=TEXT" (T, the meta row and the text of the newest
+ *   received message, the state of the newest sent one; the code itself is never printed), or "ok none" when there is
+ *   no conversation with A.
  */
 class QaMessages
     @Inject
@@ -58,6 +60,7 @@ class QaMessages
             val row = received?.takeIf { it.key.kind == MessageKind.SMS }?.let { meta.find(it.key.id).getOrNull() }
             return "ok thread=${received?.threadId ?: threads.first()} count=${messages.size} unread=$unread " +
                 "in=${messages.count { !it.isOutgoing }} out=${sent?.let { "${it.box}/${it.delivery}/${it.body.length}" } ?: "none"} " +
-                "meta=${row?.category ?: "none"} body=${received?.body.orEmpty()}"
+                "meta=${row?.category ?: "none"} risks=${row?.let { MessageRisk.fromBits(it.riskFlags).joinToString(",") }.orEmpty()} " +
+                "code=${if (row?.otp != null) "yes" else "no"} body=${received?.body.orEmpty()}"
         }
     }

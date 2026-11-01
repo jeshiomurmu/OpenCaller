@@ -37,6 +37,7 @@ class OtpGuardAlarm
             codeFrom: String?,
             flashCall: Boolean,
         ) {
+            Timber.i("OTP guard warning raised (flash call: %b)", flashCall)
             val intent = OtpGuardActivity.intent(context, codeFrom, flashCall)
             if (canNotify()) {
                 val open =

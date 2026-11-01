@@ -105,6 +105,8 @@ class MessagePipeline(
 ) {
     /** Runs the pipeline for [sms]; never throws except to pass on the caller's cancellation. */
     suspend fun receive(sms: IncomingSms): PipelineOutcome {
+        // The QA script times the OTP guard from this line (debug builds only log).
+        Timber.i("SMS received (%d characters)", sms.body.length)
         val stored = store(sms)
         // The address and the extractors are regular expressions and libphonenumber only, so they share one short step.
         val extracted =
