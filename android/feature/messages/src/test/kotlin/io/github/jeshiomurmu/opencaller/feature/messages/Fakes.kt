@@ -6,12 +6,20 @@ import io.github.jeshiomurmu.opencaller.core.model.Conversation
 import io.github.jeshiomurmu.opencaller.core.model.Message
 import io.github.jeshiomurmu.opencaller.core.model.MessageKey
 import io.github.jeshiomurmu.opencaller.core.model.MessageKind
+import io.github.jeshiomurmu.opencaller.core.model.MessageMeta
 import io.github.jeshiomurmu.opencaller.core.model.MessagingSims
 import io.github.jeshiomurmu.opencaller.core.model.Participant
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
+import io.github.jeshiomurmu.opencaller.core.model.ScheduledMessage
+import io.github.jeshiomurmu.opencaller.core.model.SyncState
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.ConversationSource
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.StoredMessage
+import io.github.jeshiomurmu.opencaller.feature.messages.ui.CleanPlan
+import io.github.jeshiomurmu.opencaller.feature.messages.ui.InboxCleanup
 import io.github.jeshiomurmu.opencaller.feature.messages.ui.MessageSending
+import io.github.jeshiomurmu.opencaller.feature.messages.ui.PresetKind
+import io.github.jeshiomurmu.opencaller.feature.messages.ui.SchedulePreset
+import io.github.jeshiomurmu.opencaller.feature.messages.ui.ThreadMetadata
 import io.github.jeshiomurmu.opencaller.feature.messages.ui.ThreadPresence
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -55,6 +63,13 @@ internal class FakeConversations(
         return AppResult.Success(1)
     }
 
+    val deletedSms = mutableListOf<Long>()
+
+    override suspend fun deleteSms(ids: Collection<Long>): AppResult<Int> {
+        deletedSms += ids
+        return AppResult.Success(ids.size)
+    }
+
     companion object {
         const val NEW_THREAD = 99L
     }
@@ -90,6 +105,28 @@ internal class FakeSending(
         downloaded += id
         return AppResult.Success(Unit)
     }
+
+    val scheduledMessages = MutableStateFlow<List<ScheduledMessage>>(emptyList())
+
+    override suspend fun schedule(
+        to: String,
+        text: String,
+        atMillis: Long,
+        subscriptionId: Int?,
+    ): AppResult<Long> {
+        val id = scheduledMessages.value.size + 1L
+        scheduledMessages.value += ScheduledMessage(id, to, text, atMillis, subscriptionId, SyncState.PENDING)
+        return AppResult.Success(id)
+    }
+
+    override suspend fun cancel(id: Long): AppResult<Unit> {
+        scheduledMessages.value = scheduledMessages.value.filter { it.id != id }
+        return AppResult.Success(Unit)
+    }
+
+    override fun pending(): Flow<List<ScheduledMessage>> = scheduledMessages
+
+    override fun schedulePresets(): List<SchedulePreset> = listOf(SchedulePreset(PresetKind.IN_AN_HOUR, 3_600_000L))
 }
 
 /** Records what the thread screen said about being in front. */
@@ -108,3 +145,37 @@ internal class FakePresence : ThreadPresence {
 
 /** A participant with a valid number. */
 internal fun person(e164: String) = Participant(e164, PhoneNumber(e164))
+
+/** Message metadata the test puts in. */
+internal class FakeMetadata : ThreadMetadata {
+    val metas = MutableStateFlow<List<MessageMeta>>(emptyList())
+    val forgotten = mutableListOf<Long>()
+
+    override fun observe(): Flow<List<MessageMeta>> = metas
+
+    override suspend fun forget(threadId: Long) {
+        forgotten += threadId
+    }
+}
+
+/** A cleaner with a fixed plan. */
+internal class FakeCleanup(
+    var plan: CleanPlan =
+        CleanPlan(emptyMap(), emptyList()),
+) : InboxCleanup {
+    val autoDelete = MutableStateFlow(false)
+    val cleaned = mutableListOf<CleanPlan>()
+
+    override suspend fun plan(): AppResult<CleanPlan> = AppResult.Success(plan)
+
+    override suspend fun clean(plan: CleanPlan): AppResult<Int> {
+        cleaned += plan
+        return AppResult.Success(plan.total)
+    }
+
+    override fun autoDelete(): Flow<Boolean> = autoDelete
+
+    override suspend fun setAutoDelete(enabled: Boolean) {
+        autoDelete.value = enabled
+    }
+}

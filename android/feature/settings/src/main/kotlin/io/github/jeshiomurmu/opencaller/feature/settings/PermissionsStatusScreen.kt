@@ -96,7 +96,8 @@ fun PermissionsStatusScreen(
         if (state.settingsPageMissing) {
             Text(text = stringResource(R.string.permissions_settings_missing), style = MaterialTheme.typography.bodyMedium)
         }
-        HowItWorks(callerId = state.callerIdSurface, afterCall = state.afterCallSurface)
+        // Not drawn from the placeholder state: it would first say the opposite of the real setup.
+        if (state.loaded) HowItWorks(callerId = state.callerIdSurface, afterCall = state.afterCallSurface)
     }
 }
 
@@ -180,6 +181,7 @@ private fun PermissionsStatusPreview() {
             PermissionsStatusScreen(
                 state =
                     PermissionsStatusUiState(
+                        loaded = true,
                         rows =
                             listOf(
                                 AccessRow(AccessItem.CALL_SCREENING, AccessItemStatus.NOT_GRANTED),

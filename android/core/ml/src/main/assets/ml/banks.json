@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "about": "Transaction message templates per bank (core:ml TransactionParser). Each pattern is a case-insensitive Java regular expression; {amount}, {last4} and {merchant} mark the fields. The formats are approximations written for OpenCaller from the shape of common alerts, not copies of real messages: check them against real messages (docs/phase.md, Open issues). Senders are the registered header (India) or sender name (Bangladesh); US banks send from short codes, which are not listed here.",
+  "banks": [
+    {
+      "id": "hdfc", "name": "HDFC Bank", "country": "IN", "currency": "INR", "senders": ["HDFCBK"],
+      "templates": [
+        { "direction": "DEBIT", "pattern": "Rs\\.?\\s?{amount} spent on HDFC Bank Card x{last4} at {merchant} on " },
+        { "direction": "DEBIT", "pattern": "खाते XX{last4} से रु\\.?\\s?{amount} डेबिट" }
+      ]
+    },
+    {
+      "id": "sbi", "name": "State Bank of India", "country": "IN", "currency": "INR", "senders": ["SBIINB", "SBIPSG", "SBIUPI"],
+      "templates": [
+        { "direction": "DEBIT", "pattern": "A/c XX{last4} is debited by Rs\\.?\\s?{amount} on \\S+ trf to {merchant}\\.\\s*-SBI" }
+      ]
+    },
+    {
+      "id": "icici", "name": "ICICI Bank", "country": "IN", "currency": "INR", "senders": ["ICICIT", "ICICIB"],
+      "templates": [
+        { "direction": "CREDIT", "pattern": "ICICI Bank Acct XX{last4} credited with INR {amount} on " },
+        { "direction": "DEBIT", "pattern": "ICICI Bank Acct XX{last4} debited (?:with|for) INR {amount} on " }
+      ]
+    },
+    {
+      "id": "axis", "name": "Axis Bank", "country": "IN", "currency": "INR", "senders": ["AXISBK"],
+      "templates": [
+        { "direction": "DEBIT", "pattern": "INR {amount} debited from A/c no\\. XX{last4} on \\S+ at {merchant}\\. Avl Bal" },
+        { "direction": "CREDIT", "pattern": "INR {amount} credited to A/c no\\. XX{last4} on " }
+      ]
+    },
+    {
+      "id": "kotak", "name": "Kotak Mahindra Bank", "country": "IN", "currency": "INR", "senders": ["KOTAKB"],
+      "templates": [
+        { "direction": "DEBIT", "pattern": "Sent Rs\\.?\\s?{amount} from Kotak Bank AC X{last4} to {merchant} on " },
+        { "direction": "CREDIT", "pattern": "Received Rs\\.?\\s?{amount} in your Kotak Bank AC X{last4} " }
+      ]
+    },
+    {
+      "id": "bkash", "name": "bKash", "country": "BD", "currency": "BDT", "senders": ["bKash"],
+      "templates": [
+        { "direction": "DEBIT", "pattern": "Cash Out Tk {amount} to \\+?[\\d -]+ successful" },
+        { "direction": "DEBIT", "pattern": "Send Money Tk {amount} to \\+?[\\d -]+ successful" },
+        { "direction": "CREDIT", "pattern": "You have received Tk {amount} from " },
+        { "direction": "DEBIT", "pattern": "নম্বরে ৳{amount} সেন্ড মানি করেছেন" }
+      ]
+    },
+    {
+      "id": "nagad", "name": "Nagad", "country": "BD", "currency": "BDT", "senders": ["NAGAD"],
+      "templates": [
+        { "direction": "DEBIT", "pattern": "Payment of Tk {amount} to {merchant} is successful" },
+        { "direction": "CREDIT", "pattern": "Cash In Tk {amount} (?:from|is) " }
+      ]
+    },
+    {
+      "id": "dbbl", "name": "Dutch-Bangla Bank", "country": "BD", "currency": "BDT", "senders": ["DBBL"],
+      "templates": [
+        { "direction": "DEBIT", "pattern": "A/C \\*+{last4} has been debited by BDT {amount} on \\S+ for POS purchase at {merchant}(?:\\.|$)" },
+        { "direction": "CREDIT", "pattern": "A/C \\*+{last4} has been credited by BDT {amount} " }
+      ]
+    },
+    {
+      "id": "brac", "name": "BRAC Bank", "country": "BD", "currency": "BDT", "senders": ["BRAC BANK"],
+      "templates": [
+        { "direction": "CREDIT", "pattern": "BDT {amount} has been credited to your account \\*+{last4} on " },
+        { "direction": "DEBIT", "pattern": "BDT {amount} has been debited from your account \\*+{last4} on " }
+      ]
+    },
+    {
+      "id": "city", "name": "City Bank", "country": "BD", "currency": "BDT", "senders": ["CityBank"],
+      "templates": [
+        { "direction": "DEBIT", "pattern": "BDT {amount} was spent on your card ending {last4} at {merchant} on " }
+      ]
+    },
+    {
+      "id": "chase", "name": "Chase", "country": "US", "currency": "USD", "senders": [],
+      "templates": [
+        { "direction": "DEBIT", "pattern": "Chase: A \\${amount} transaction was made on your card ending in {last4} at {merchant}(?:\\.|$)" },
+        { "direction": "CREDIT", "pattern": "Chase: You received \\${amount} via a deposit to account ending in {last4}" }
+      ]
+    },
+    {
+      "id": "bofa", "name": "Bank of America", "country": "US", "currency": "USD", "senders": [],
+      "templates": [
+        { "direction": "DEBIT", "pattern": "BofA: Purchase of \\${amount} at {merchant} on card ending {last4} was approved" }
+      ]
+    },
+    {
+      "id": "wellsfargo", "name": "Wells Fargo", "country": "US", "currency": "USD", "senders": [],
+      "templates": [
+        { "direction": "DEBIT", "pattern": "Wells Fargo: A \\${amount} debit was made on your account ending {last4}" },
+        { "direction": "CREDIT", "pattern": "Wells Fargo: A \\${amount} deposit was made to your account ending {last4}" }
+      ]
+    },
+    {
+      "id": "citi", "name": "Citi", "country": "US", "currency": "USD", "senders": [],
+      "templates": [
+        { "direction": "DEBIT", "pattern": "Citi Alert: A \\${amount} transaction was made at {merchant} on card ending in {last4}" }
+      ]
+    },
+    {
+      "id": "capitalone", "name": "Capital One", "country": "US", "currency": "USD", "senders": [],
+      "templates": [
+        { "direction": "DEBIT", "pattern": "Capital One: Your card ending in {last4} was used for \\${amount} at {merchant}(?:\\.|$)" }
+      ]
+    }
+  ]
+}

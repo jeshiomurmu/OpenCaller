@@ -32,8 +32,10 @@ data class AccessRow(
  *
  * @property explaining the item whose explainer is open (Fix was pressed), shown before any request.
  * @property pendingRequest a request the screen must start now, then report [PermissionsStatusEvent.RequestLaunched].
+ * @property loaded false until the access status has been read; the surfaces below are placeholders until then.
  */
 data class PermissionsStatusUiState(
+    val loaded: Boolean = false,
     val rows: List<AccessRow> = emptyList(),
     val callerIdSurface: CallerIdSurface = CallerIdSurface.NOTIFICATION,
     val afterCallSurface: AfterCallSurface = AfterCallSurface.NOTIFICATION,
@@ -88,6 +90,7 @@ class PermissionsStatusViewModel
             combine(settings.preferences, access.status, explaining, denials, pending) { preferences, status, open, denied, request ->
                 val openItem = open?.let(AccessItem::valueOf)
                 PermissionsStatusUiState(
+                    loaded = true,
                     rows =
                         AccessItem.entries
                             .map { AccessRow(it, status.statusOf(it), needsSettings = it.isBlocked(denied)) }

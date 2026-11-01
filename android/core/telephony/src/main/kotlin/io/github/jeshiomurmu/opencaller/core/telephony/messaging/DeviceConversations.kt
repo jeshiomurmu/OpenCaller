@@ -57,9 +57,13 @@ interface ConversationSource {
 
     /** Deletes thread [threadId] (its SMS and MMS); returns how many messages went. */
     suspend fun delete(threadId: Long): AppResult<Int>
+
+    /** Deletes the SMS with provider ids [ids] (the inbox cleaner, OTP auto-delete); returns how many went. */
+    suspend fun deleteSms(ids: Collection<Long>): AppResult<Int>
 }
 
 /** [ConversationSource] over `Telephony.Sms` and `Telephony.Mms`, only while OpenCaller is the default SMS app. */
+@Suppress("TooManyFunctions") // One function per ConversationSource operation.
 @Singleton
 class DeviceConversations
     @Inject
@@ -141,6 +145,20 @@ class DeviceConversations
                 }
             }
 
+        override suspend fun deleteSms(ids: Collection<Long>): AppResult<Int> =
+            withContext(dispatchers.io) {
+                read("delete messages") {
+                    ids.chunked(DELETE_CHUNK).sumOf { chunk ->
+                        val marks = chunk.joinToString(",") { "?" }
+                        resolver.delete(
+                            Telephony.Sms.CONTENT_URI,
+                            "${Telephony.Sms._ID} IN ($marks)",
+                            chunk.map(Long::toString).toTypedArray(),
+                        )
+                    }
+                }
+            }
+
         private fun participantOf(address: String): Participant =
             Participant(
                 address,
@@ -157,6 +175,9 @@ class DeviceConversations
 
         private companion object {
             const val UNKNOWN_REGION = "ZZ"
+
+            // SQLite's default limit on bound arguments is 999.
+            const val DELETE_CHUNK = 500
         }
     }
 

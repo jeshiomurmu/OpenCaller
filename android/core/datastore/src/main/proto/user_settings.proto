@@ -23,6 +23,8 @@ message UserSettings {
   bool list_updates_on_mobile_data = 11;
   // The user's own quick replies (decline with a message, after-call Message), in order; empty = Android's replies.
   repeated string quick_replies = 12;
+  // Delete one-time-code messages a day after they arrive (the inbox's OTP auto-delete).
+  bool otp_auto_delete = 13;
 }
 
 enum SpamThresholdProto {

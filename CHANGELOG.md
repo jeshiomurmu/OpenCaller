@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Smart inbox (Phase 7b): messages sorted on the phone into Personal, Codes, Transactions, Bills, Deliveries,
+  Promotions and Spam (the spam folder), with unread counts; Clean up deletes old codes, deliveries, promotions and
+  spam (never personal messages, transactions or bills); optionally codes are deleted a day after they arrive.
+- One-time codes: the code in its own notification with Copy, hidden on a locked screen, gone when it expires; the
+  current code on a card in the Codes tab. Codes in Bengali or Devanagari digits, site-bound codes (`@site #code`) and
+  app codes are understood.
+- Code safety warning: a sign-in code that arrives during, or just after, a call with someone not in your contacts
+  opens a full-screen "Don't share this code" warning (with Hang up as the default phone app); also for a code that
+  comes as a missed call from a verification service. Several codes from different services within minutes raise an
+  alert.
+- Senders named from your contacts, the official sender-ID registry (Indian `XX-HEADER-T` headers), the app a code
+  is for, or the bank whose message it is; links that imitate a known brand, mix alphabets, are shortened or are on
+  OpenCaller's known-bad list get a warning. Everything is worked out on the phone; no message leaves it.
+- Send later: schedule a text message in a one-to-one conversation (in an hour, tonight, tomorrow morning or evening)
+  and cancel it before it goes.
+- Server: `GET /v1/link-prefixes` (known-bad link hosts as hash prefixes); the app keeps the sender-ID registry, the
+  code sources and this list current with its daily update.
+- `ml/sms-classifier`: training project for a future on-device SMS model, with a generated test corpus; no model
+  ships yet (the classifier is rules-based).
 - Default phone app (Phase 6a): OpenCaller can now be your phone app. Incoming calls show full screen over the lock
   screen with the caller card from caller ID (answer without unlocking), or as a call notification with Answer and
   Decline while you use the phone. During a call: mute, keypad tones, speaker or Bluetooth/headset, hold, add a call,

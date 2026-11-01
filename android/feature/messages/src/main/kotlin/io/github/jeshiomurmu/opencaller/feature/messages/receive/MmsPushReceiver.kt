@@ -8,6 +8,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.DeliveryReports
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.DeviceMmsStore
+import io.github.jeshiomurmu.opencaller.core.telephony.messaging.ReceivedDetails
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.mms.DeliveryInd
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.mms.MalformedPduException
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.mms.MmsPdu
@@ -61,7 +62,7 @@ class MmsPushReceiver : BroadcastReceiver() {
         val stored = store.saveNotice(notice, subscription)
         if (stored is AppResult.Success) {
             val started = downloader.download(stored.value.key.id)
-            if (started is AppResult.Failure) notifier.stored(stored.value, senderName = null)
+            if (started is AppResult.Failure) notifier.stored(stored.value, ReceivedDetails(null))
         } else {
             Timber.e("MMS notice not stored")
         }

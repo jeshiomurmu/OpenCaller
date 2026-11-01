@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="channel_otp_guard">Code safety warnings</string>
+    <string name="channel_otp_guard_description">Warnings when a sign-in code arrives during a call with a stranger, or many codes arrive at once.</string>
+    <string name="otp_guard_title">Don\'t share this code</string>
+    <string name="otp_guard_body">A sign-in code arrived during, or just after, a call with someone who isn\'t in your contacts. Banks, delivery companies and the police never ask for codes. If the caller asks for it, it\'s a scam.</string>
+    <string name="otp_guard_from">The code is from %1$s.</string>
+    <string name="otp_guard_flash_call">The code came as a missed call from %1$s.</string>
+    <string name="otp_guard_hang_up">Hang up</string>
+    <string name="otp_guard_close">I understand</string>
+    <string name="otp_guard_notification_title">Don\'t share the code with the caller</string>
+    <string name="otp_guard_notification_text">A sign-in code arrived during a call with a stranger.</string>
+    <string name="otp_burst_title">Several sign-in codes at once</string>
+    <plurals name="otp_burst_text">
+        <item quantity="one">%1$d code arrived from different services within minutes. If you didn\'t ask for it, someone may be trying to get into your accounts. Don\'t share it.</item>
+        <item quantity="other">%1$d codes arrived from different services within minutes. If you didn\'t ask for them, someone may be trying to get into your accounts. Don\'t share any of them.</item>
+    </plurals>
+</resources>

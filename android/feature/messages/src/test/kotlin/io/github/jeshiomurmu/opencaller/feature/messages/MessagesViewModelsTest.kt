@@ -11,22 +11,29 @@ import io.github.jeshiomurmu.opencaller.core.model.Conversation
 import io.github.jeshiomurmu.opencaller.core.model.DeliveryState
 import io.github.jeshiomurmu.opencaller.core.model.Message
 import io.github.jeshiomurmu.opencaller.core.model.MessageBox
+import io.github.jeshiomurmu.opencaller.core.model.MessageCategory
 import io.github.jeshiomurmu.opencaller.core.model.MessageKey
 import io.github.jeshiomurmu.opencaller.core.model.MessageKind
+import io.github.jeshiomurmu.opencaller.core.model.MessageMeta
+import io.github.jeshiomurmu.opencaller.core.model.MessageRisk
 import io.github.jeshiomurmu.opencaller.core.model.MessagingSim
 import io.github.jeshiomurmu.opencaller.core.model.MessagingSims
 import io.github.jeshiomurmu.opencaller.core.model.MmsDownload
+import io.github.jeshiomurmu.opencaller.core.model.OtpInfo
 import io.github.jeshiomurmu.opencaller.core.model.PhoneLabel
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 import io.github.jeshiomurmu.opencaller.core.telephony.NumberDisplay
 import io.github.jeshiomurmu.opencaller.core.telephony.providers.ContactsSource
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ContactLookup
+import io.github.jeshiomurmu.opencaller.core.testing.FakeClock
 import io.github.jeshiomurmu.opencaller.core.testing.MainDispatcherRule
 import io.github.jeshiomurmu.opencaller.core.testing.TestDispatcherProvider
 import io.github.jeshiomurmu.opencaller.feature.messages.notify.ParticipantNames
+import io.github.jeshiomurmu.opencaller.feature.messages.ui.CleanPlan
 import io.github.jeshiomurmu.opencaller.feature.messages.ui.ConversationsEvent
 import io.github.jeshiomurmu.opencaller.feature.messages.ui.ConversationsViewModel
+import io.github.jeshiomurmu.opencaller.feature.messages.ui.InboxTab
 import io.github.jeshiomurmu.opencaller.feature.messages.ui.MessageStatus
 import io.github.jeshiomurmu.opencaller.feature.messages.ui.NewMessageEffect
 import io.github.jeshiomurmu.opencaller.feature.messages.ui.NewMessageEvent
@@ -72,11 +79,114 @@ class MessagesViewModelsTest {
 
     private fun TestScope.dispatchers() = TestDispatcherProvider(UnconfinedTestDispatcher(testScheduler))
 
+    private val metadata = FakeMetadata()
+    private val cleanup = FakeCleanup()
+    private val clock = FakeClock(100_000_000L)
+
+    private fun TestScope.conversationsVm() = ConversationsViewModel(conversations, names, metadata, cleanup, clock, dispatchers())
+
+    private fun meta(
+        thread: Long,
+        category: MessageCategory,
+        at: Long,
+        otp: OtpInfo? = null,
+        risks: Set<MessageRisk> = emptySet(),
+    ) = MessageMeta(
+        at,
+        thread,
+        category,
+        senderName = "Bank",
+        senderSource = null,
+        atMillis = at,
+        otp = otp,
+        riskFlags = MessageRisk.toBits(risks),
+    )
+
+    @Test
+    fun tcSms004ConversationsAreSortedIntoTabsAndSpamIntoTheSpamFolder() =
+        runTest {
+            val vm = conversationsVm()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+            conversations.list.value =
+                listOf(
+                    Conversation(1, listOf(ana), "See you", 3_000),
+                    Conversation(2, listOf(ram), "You won!", 2_000, unreadCount = 1),
+                )
+            metadata.metas.value =
+                listOf(
+                    meta(2, MessageCategory.SPAM, 2_000),
+                    meta(2, MessageCategory.PHISHING, 1_500, risks = setOf(MessageRisk.LOOKALIKE_LINK)),
+                )
+
+            assertEquals(
+                listOf(1L),
+                vm.uiState.value.rows
+                    .map { it.threadId },
+            )
+            vm.onEvent(ConversationsEvent.SelectTab(InboxTab.SPAM))
+            val spam =
+                vm.uiState.value.rows
+                    .single()
+            assertEquals(2L, spam.threadId)
+            assertTrue("a phishing link marks the conversation", spam.risky)
+            assertEquals(
+                1,
+                vm.uiState.value.tabs
+                    .single { it.tab == InboxTab.SPAM }
+                    .unread,
+            )
+            assertNull("the code card is on the OTP tab only", vm.uiState.value.otp)
+        }
+
+    @Test
+    fun theOtpTabShowsTheCurrentCodeUntilItExpires() =
+        runTest {
+            val vm = conversationsVm()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+            conversations.list.value = listOf(Conversation(3, listOf(ram), "Code", 1_000, unreadCount = 1))
+            metadata.metas.value =
+                listOf(meta(3, MessageCategory.OTP, 99_999_000L, otp = OtpInfo("482913", expiresAtMillis = 100_100_000L)))
+
+            vm.onEvent(ConversationsEvent.SelectTab(InboxTab.OTP))
+            assertEquals(
+                listOf(3L),
+                vm.uiState.value.rows
+                    .map { it.threadId },
+            )
+            assertEquals(
+                "482913",
+                vm.uiState.value.otp
+                    ?.code,
+            )
+            clock.set(100_100_001L)
+            vm.onEvent(ConversationsEvent.Reload)
+            assertNull("an expired code has no card", vm.uiState.value.otp)
+        }
+
+    @Test
+    fun theCleanerShowsWhatItDeletesAndDeletesOnConfirm() =
+        runTest {
+            val vm = conversationsVm()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+            cleanup.plan = CleanPlan(mapOf(MessageCategory.OTP to 2), listOf(4L, 5L))
+            vm.onEvent(ConversationsEvent.AskClean)
+            assertEquals(
+                2,
+                vm.uiState.value.cleanPlan
+                    ?.total,
+            )
+            vm.onEvent(ConversationsEvent.AutoDeleteCodes(true))
+            assertTrue(vm.uiState.value.autoDeleteCodes)
+            vm.onEvent(ConversationsEvent.ConfirmClean)
+            assertEquals(listOf(4L, 5L), cleanup.cleaned.single().ids)
+            assertEquals(2, vm.uiState.value.cleaned)
+            assertNull(vm.uiState.value.cleanPlan)
+        }
+
     @Test
     fun conversationsAreNamedFromContactsAndNewestFirst() =
         runTest {
-            val forgotten = mutableListOf<Long>()
-            val vm = ConversationsViewModel(conversations, names, { forgotten += it }, dispatchers())
+            val vm = conversationsVm()
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
             conversations.list.value =
                 listOf(
@@ -93,7 +203,7 @@ class MessagesViewModelsTest {
             assertEquals(rows[1], vm.uiState.value.confirmDelete)
             vm.onEvent(ConversationsEvent.ConfirmDelete)
             assertEquals(listOf(2L), conversations.deleted)
-            assertEquals("its meta rows go too", listOf(2L), forgotten)
+            assertEquals("its meta rows go too", listOf(2L), metadata.forgotten)
             assertNull(vm.uiState.value.confirmDelete)
         }
 
@@ -101,7 +211,7 @@ class MessagesViewModelsTest {
     fun withoutTheRoleNothingIsRead() =
         runTest {
             conversations.readable = false
-            val vm = ConversationsViewModel(conversations, names, {}, dispatchers())
+            val vm = conversationsVm()
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
             assertFalse(vm.uiState.value.canRead)
             assertTrue(
@@ -115,7 +225,7 @@ class MessagesViewModelsTest {
         runTest {
             conversations.failDelete = true
             conversations.list.value = listOf(Conversation(1, listOf(ana), "x", 1))
-            val vm = ConversationsViewModel(conversations, names, {}, dispatchers())
+            val vm = conversationsVm()
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
             vm.onEvent(
                 ConversationsEvent.AskDelete(
@@ -125,6 +235,49 @@ class MessagesViewModelsTest {
             )
             vm.onEvent(ConversationsEvent.ConfirmDelete)
             assertTrue(vm.uiState.value.failed)
+        }
+
+    @Test
+    fun aDraftIsScheduledForLaterAndCanBeCancelled() =
+        runTest {
+            conversations.people[7] = listOf(ana)
+            val vm = thread()
+            vm.onEvent(ThreadEvent.Open(7))
+            vm.onEvent(ThreadEvent.Draft("Happy birthday!"))
+            vm.onEvent(ThreadEvent.AskSchedule)
+            val preset =
+                vm.uiState.value.presets
+                    .single()
+            assertTrue(vm.uiState.value.choosingSchedule)
+            vm.onEvent(ThreadEvent.Schedule(preset.atMillis))
+
+            val scheduled =
+                vm.uiState.value.scheduled
+                    .single()
+            assertEquals("Happy birthday!", scheduled.body)
+            assertEquals(ana.address, scheduled.to)
+            assertEquals(preset.atMillis, scheduled.sendAtMillis)
+            assertEquals("", vm.uiState.value.draft)
+            assertTrue("nothing was sent now", sending.sent.isEmpty())
+            vm.onEvent(ThreadEvent.CancelScheduled(scheduled.id))
+            assertTrue(
+                vm.uiState.value.scheduled
+                    .isEmpty(),
+            )
+        }
+
+    @Test
+    fun tcSms005AMessageWithALookalikeLinkCarriesAWarning() =
+        runTest {
+            conversations.people[7] = listOf(ana)
+            conversations.threads.value = mapOf(7L to sixMessages())
+            val first = sixMessages().first().key.id
+            metadata.metas.value =
+                listOf(meta(7, MessageCategory.PHISHING, 1, risks = setOf(MessageRisk.LOOKALIKE_LINK)).copy(providerId = first))
+            val vm = thread()
+            vm.onEvent(ThreadEvent.Open(7))
+            val items = vm.uiState.value.messages
+            assertEquals(listOf(first), items.filter { it.risky }.map { it.key.id })
         }
 
     @Test
@@ -302,7 +455,7 @@ class MessagesViewModelsTest {
         )
 
     private fun TestScope.thread(): ThreadViewModel =
-        ThreadViewModel(conversations, names, sending, presence, dispatchers()).also { vm ->
+        ThreadViewModel(conversations, names, sending, presence, metadata, dispatchers()).also { vm ->
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         }
 

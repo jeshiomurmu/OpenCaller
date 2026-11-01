@@ -10,12 +10,14 @@ import io.github.jeshiomurmu.opencaller.core.common.AppError
 import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.data.reports.ReportUploader
 import io.github.jeshiomurmu.opencaller.core.data.reports.UploadOutcome
+import io.github.jeshiomurmu.opencaller.core.data.sync.RegistrySyncRepository
 import io.github.jeshiomurmu.opencaller.core.data.sync.SpamListSyncRepository
 import timber.log.Timber
 
 /**
- * Daily (and "Update now") spam-list update. Network errors retry with backoff; a rejected download (checksum or
- * format) waits for the next scheduled run so a broken file isn't fetched again and again. The old list stays either way.
+ * Daily (and "Update now") update of the server's public data: the spam list, then the registries (sender IDs, OTP
+ * sources, known-bad link prefixes). Network errors retry with backoff; a rejected download (checksum or format)
+ * waits for the next scheduled run so a broken file isn't fetched again and again. The old data stays either way.
  */
 @HiltWorker
 class SpamListSyncWorker
@@ -24,19 +26,15 @@ class SpamListSyncWorker
         @Assisted context: Context,
         @Assisted params: WorkerParameters,
         private val sync: SpamListSyncRepository,
+        private val registries: RegistrySyncRepository,
     ) : CoroutineWorker(context, params) {
-        override suspend fun doWork(): Result =
-            when (val result = sync.sync()) {
-                is AppResult.Success -> {
-                    Timber.i("Spam list update: %s", result.value)
-                    Result.success()
-                }
-
-                is AppResult.Failure -> {
-                    Timber.w("Spam list update failed: %s", result.error)
-                    if (result.error == AppError.Network && runAttemptCount < MAX_RETRIES) Result.retry() else Result.success()
-                }
-            }
+        override suspend fun doWork(): Result {
+            val list = sync.sync()
+            val registry = registries.sync()
+            Timber.i("Spam list update: %s; registries: %s", list, registry)
+            val networkFailed = listOf(list, registry).any { it is AppResult.Failure && it.error == AppError.Network }
+            return if (networkFailed && runAttemptCount < MAX_RETRIES) Result.retry() else Result.success()
+        }
 
         private companion object {
             const val MAX_RETRIES = 10

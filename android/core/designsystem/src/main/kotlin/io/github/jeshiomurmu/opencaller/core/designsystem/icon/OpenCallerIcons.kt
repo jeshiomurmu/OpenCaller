@@ -142,4 +142,10 @@ object OpenCallerIcons {
 
     /** Start something new (a message). */
     @get:DrawableRes val Add: Int = R.drawable.ic_add
+
+    /** Copy (a one-time code). */
+    @get:DrawableRes val Copy: Int = R.drawable.ic_content_copy
+
+    /** A time (scheduled messages). */
+    @get:DrawableRes val Schedule: Int = R.drawable.ic_schedule
 }

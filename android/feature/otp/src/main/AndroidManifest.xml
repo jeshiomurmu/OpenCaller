@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        The OTP safety guard (docs/architecture.md §4.5) warns over the lock screen through a full-screen intent, as
+        the incoming-call screen does (Android 14+ lets the user turn full-screen intents off; the warning is then a
+        heads-up notification).
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+    <application>
+        <activity
+            android:name=".OtpGuardActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:showWhenLocked="true"
+            android:theme="@style/Theme.OpenCaller.OtpGuard"
+            android:turnScreenOn="true" />
+    </application>
+
+</manifest>

@@ -1,18 +1,16 @@
 package io.github.jeshiomurmu.opencaller.feature.messages.ui
 
-import androidx.core.net.toUri
 import io.github.jeshiomurmu.opencaller.core.common.AppResult
-import io.github.jeshiomurmu.opencaller.core.common.map
 import io.github.jeshiomurmu.opencaller.core.model.MessageKey
 import io.github.jeshiomurmu.opencaller.core.model.MessagingSims
-import io.github.jeshiomurmu.opencaller.core.telephony.messaging.MessagingSimSource
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.StoredMessage
-import io.github.jeshiomurmu.opencaller.feature.messages.send.MmsDownloader
-import io.github.jeshiomurmu.opencaller.feature.messages.send.OutgoingMessages
-import javax.inject.Inject
+import io.github.jeshiomurmu.opencaller.feature.messages.work.MessageScheduling
 
-/** What the thread screen sends with (pictures are `content://` addresses from the photo picker). */
-interface MessageSending {
+/**
+ * What the thread screen sends with (pictures are `content://` addresses from the photo picker), including messages
+ * scheduled for later.
+ */
+interface MessageSending : MessageScheduling {
     /** The SIMs to send with. */
     fun sims(): MessagingSims
 
@@ -29,26 +27,7 @@ interface MessageSending {
 
     /** Downloads the MMS of notice [id]. */
     suspend fun download(id: Long): AppResult<Unit>
+
+    /** The times offered for scheduling now. */
+    fun schedulePresets(): List<SchedulePreset>
 }
-
-/** [MessageSending] with [OutgoingMessages] and [MmsDownloader]. */
-class DeviceMessageSending
-    @Inject
-    constructor(
-        private val outgoing: OutgoingMessages,
-        private val downloader: MmsDownloader,
-        private val simSource: MessagingSimSource,
-    ) : MessageSending {
-        override fun sims(): MessagingSims = simSource.sims()
-
-        override suspend fun send(
-            recipients: List<String>,
-            text: String,
-            pictures: List<String>,
-            subscriptionId: Int?,
-        ): AppResult<StoredMessage> = outgoing.send(recipients, text, pictures.map { it.toUri() }, subscriptionId)
-
-        override suspend fun retry(key: MessageKey): AppResult<Unit> = outgoing.retry(key).map { }
-
-        override suspend fun download(id: Long): AppResult<Unit> = downloader.download(id)
-    }

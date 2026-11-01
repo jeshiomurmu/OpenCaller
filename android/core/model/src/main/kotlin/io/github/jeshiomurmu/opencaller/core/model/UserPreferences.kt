@@ -84,6 +84,7 @@ enum class OnboardingStep {
  *   unmetered networks only).
  * @property quickReplies the user's own quick replies for declining a call with a message and for the after-call
  *   card's Message, in display order; empty means Android's built-in replies (Settings → Quick replies).
+ * @property otpAutoDelete whether one-time-code messages are deleted a day after they arrive.
  */
 data class UserPreferences(
     val blockHiddenNumbers: Boolean = false,
@@ -98,6 +99,7 @@ data class UserPreferences(
     val onboardingStep: OnboardingStep = OnboardingStep.WELCOME,
     val listUpdatesOnMobileData: Boolean = false,
     val quickReplies: List<String> = emptyList(),
+    val otpAutoDelete: Boolean = false,
 ) {
     /** Limits for [quickReplies]. */
     companion object {

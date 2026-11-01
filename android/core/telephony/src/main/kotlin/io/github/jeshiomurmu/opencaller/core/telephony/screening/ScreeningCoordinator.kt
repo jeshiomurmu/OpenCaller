@@ -89,8 +89,9 @@ class ScreeningCoordinator
         ) {
             scope.launch {
                 val result = engine.screen(call)
-                // In memory only, for the in-call screen of the default phone app (Telecom adds the call next).
-                if (result.showsCallerId) followUps.screened.remember(result)
+                // In memory only, for the in-call screen of the default phone app (Telecom adds the call next) and the
+                // OTP guard, which needs to know who the user is talking to.
+                followUps.screened.remember(result)
                 respondSafely(respond, result.decision)
                 record(result)
                 if (result.showsCallerId) present(result)

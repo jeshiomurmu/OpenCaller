@@ -10,9 +10,13 @@ import io.github.jeshiomurmu.opencaller.core.model.DeliveryState
 import io.github.jeshiomurmu.opencaller.core.model.Message
 import io.github.jeshiomurmu.opencaller.core.model.MessageBox
 import io.github.jeshiomurmu.opencaller.core.model.MessageKey
+import io.github.jeshiomurmu.opencaller.core.model.MessageKind
+import io.github.jeshiomurmu.opencaller.core.model.MessageMeta
+import io.github.jeshiomurmu.opencaller.core.model.MessageRisk
 import io.github.jeshiomurmu.opencaller.core.model.MessagingSim
 import io.github.jeshiomurmu.opencaller.core.model.MmsDownload
 import io.github.jeshiomurmu.opencaller.core.model.Participant
+import io.github.jeshiomurmu.opencaller.core.model.ScheduledMessage
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.ConversationSource
 import io.github.jeshiomurmu.opencaller.feature.messages.notify.ParticipantNames
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -61,6 +65,7 @@ data class ThreadItem(
     val images: List<String> = emptyList(),
     val download: MmsDownload = MmsDownload.DONE,
     val sizeBytes: Long = 0,
+    val risky: Boolean = false,
 )
 
 /** The thread screen. [simId] is the SIM the next message goes out with (`null`: the default). */
@@ -77,9 +82,17 @@ data class ThreadUiState(
     val choosingSim: Boolean = false,
     val sending: Boolean = false,
     val failed: Boolean = false,
+    val scheduled: List<ScheduledMessage> = emptyList(),
+    val presets: List<SchedulePreset> = emptyList(),
 ) {
     /** True when Send has something to send. */
     val canSend: Boolean get() = !sending && (draft.isNotBlank() || pictures.isNotEmpty())
+
+    /** True when the draft can be scheduled: text only, to one person (an SMS). */
+    val canSchedule: Boolean get() = canSend && pictures.isEmpty() && !isGroup
+
+    /** True while the time chooser is open. */
+    val choosingSchedule: Boolean get() = presets.isNotEmpty()
 }
 
 /** What the user did in the thread. */
@@ -137,6 +150,22 @@ sealed interface ThreadEvent {
 
     /** The failure was read. */
     data object DismissFailure : ThreadEvent
+
+    /** Open the time chooser for the draft. */
+    data object AskSchedule : ThreadEvent
+
+    /** Schedule the draft for [atMillis]. */
+    data class Schedule(
+        val atMillis: Long,
+    ) : ThreadEvent
+
+    /** Close the time chooser. */
+    data object CloseSchedule : ThreadEvent
+
+    /** Cancel scheduled message [id]. */
+    data class CancelScheduled(
+        val id: Long,
+    ) : ThreadEvent
 }
 
 /** What the thread screen does while it is in front: the conversation counts as read and has no notification. */
@@ -167,6 +196,7 @@ class ThreadViewModel
         private val names: ParticipantNames,
         private val sending: MessageSending,
         private val presence: ThreadPresence,
+        private val metadata: ThreadMetadata,
         dispatchers: DispatcherProvider,
     ) : ViewModel() {
         private val threadId = MutableStateFlow<Long?>(null)
@@ -176,7 +206,7 @@ class ThreadViewModel
 
         /** Screen state. */
         val uiState: StateFlow<ThreadUiState> =
-            combine(threadId.filterNotNull().flatMapLatest(::messages), header, composer) { loaded, head, local ->
+            combine(threadId.filterNotNull().flatMapLatest(::messages), header, composer, sending.pending()) { loaded, head, local, later ->
                 local.copy(
                     loading = loaded.loading,
                     canRead = loaded.canRead,
@@ -184,6 +214,7 @@ class ThreadViewModel
                     title = head.title,
                     isGroup = head.isGroup,
                     failed = loaded.failed || local.failed,
+                    scheduled = later.filter { head.recipients == listOf(it.to) },
                 )
             }.flowOn(dispatchers.default)
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ThreadUiState())
@@ -191,13 +222,49 @@ class ThreadViewModel
         /** Handles [event]. */
         fun onEvent(event: ThreadEvent) {
             when (event) {
-                is ThreadEvent.Open -> open(event)
-                is ThreadEvent.PickSim -> pickSim(event.subscriptionId)
-                ThreadEvent.Send -> send()
-                is ThreadEvent.Retry -> act { sending.retry(event.key) }
-                is ThreadEvent.Download -> act { sending.download(event.key.id) }
-                is ThreadEvent.Visible -> visible(event.visible)
-                else -> composer.update { edited(it, event) }
+                is ThreadEvent.Open -> {
+                    open(event)
+                }
+
+                is ThreadEvent.PickSim -> {
+                    pickSim(event.subscriptionId)
+                }
+
+                ThreadEvent.Send -> {
+                    send()
+                }
+
+                is ThreadEvent.Retry -> {
+                    act { sending.retry(event.key) }
+                }
+
+                is ThreadEvent.Download -> {
+                    act { sending.download(event.key.id) }
+                }
+
+                is ThreadEvent.Visible -> {
+                    visible(event.visible)
+                }
+
+                ThreadEvent.AskSchedule -> {
+                    composer.update {
+                        it.copy(
+                            presets = if (it.canSchedule) sending.schedulePresets() else emptyList(),
+                        )
+                    }
+                }
+
+                is ThreadEvent.Schedule -> {
+                    schedule(event.atMillis)
+                }
+
+                is ThreadEvent.CancelScheduled -> {
+                    act { sending.cancel(event.id) }
+                }
+
+                else -> {
+                    composer.update { edited(it, event) }
+                }
             }
         }
 
@@ -212,6 +279,7 @@ class ThreadViewModel
                 is ThreadEvent.RemovePicture -> state.copy(pictures = state.pictures - event.uri)
                 ThreadEvent.CancelSim -> state.copy(choosingSim = false)
                 ThreadEvent.DismissFailure -> state.copy(failed = false)
+                ThreadEvent.CloseSchedule -> state.copy(presets = emptyList())
                 else -> state
             }
 
@@ -236,29 +304,31 @@ class ThreadViewModel
             }
         }
 
+        // The messages with a risky link or code (from OpenCaller's metadata) carry a warning (TC-SMS-005).
         private fun messages(id: Long): Flow<ThreadUiState> {
             if (!conversations.canRead()) return flowOf(ThreadUiState(loading = false, canRead = false))
-            return conversations.observeThread(id).map { result ->
+            return combine(conversations.observeThread(id), metadata.observe()) { result, metas ->
                 when (result) {
-                    is AppResult.Success -> ThreadUiState(loading = false, messages = result.value.map { itemOf(it) })
-                    is AppResult.Failure -> ThreadUiState(loading = false, failed = true)
+                    is AppResult.Success -> {
+                        val risky = riskyMessages(metas, id)
+                        ThreadUiState(
+                            loading = false,
+                            messages =
+                                result.value.map {
+                                    it.toItem(
+                                        names,
+                                        it.key.kind == MessageKind.SMS && it.key.id in risky,
+                                    )
+                                },
+                        )
+                    }
+
+                    is AppResult.Failure -> {
+                        ThreadUiState(loading = false, failed = true)
+                    }
                 }
             }
         }
-
-        private suspend fun itemOf(message: Message): ThreadItem =
-            ThreadItem(
-                key = message.key,
-                outgoing = message.isOutgoing,
-                sender = message.from?.let { names.title(it) },
-                body = message.body,
-                subject = message.subject,
-                atMillis = message.atMillis,
-                status = statusOf(message),
-                images = message.attachments.filter { it.isImage }.map { it.uri },
-                download = message.download,
-                sizeBytes = message.sizeBytes,
-            )
 
         private fun pickSim(subscriptionId: Int) {
             val wasAsking = composer.value.choosingSim
@@ -288,6 +358,17 @@ class ThreadViewModel
             }
         }
 
+        private fun schedule(atMillis: Long) {
+            val state = composer.value
+            val to = header.value.recipients.singleOrNull()
+            composer.update { it.copy(presets = emptyList()) }
+            if (to == null || !state.canSchedule) return
+            viewModelScope.launch {
+                val result = sending.schedule(to, state.draft.trim(), atMillis, state.simId)
+                composer.update { if (result is AppResult.Success) it.copy(draft = "") else it.copy(failed = true) }
+            }
+        }
+
         private fun act(block: suspend () -> AppResult<Unit>) {
             viewModelScope.launch { if (block() is AppResult.Failure) composer.update { it.copy(failed = true) } }
         }
@@ -311,6 +392,35 @@ class ThreadViewModel
             const val MAX_PICTURES = 5
         }
     }
+
+private suspend fun Message.toItem(
+    names: ParticipantNames,
+    risky: Boolean,
+): ThreadItem =
+    ThreadItem(
+        key = key,
+        outgoing = isOutgoing,
+        sender = from?.let { names.title(it) },
+        body = body,
+        subject = subject,
+        atMillis = atMillis,
+        status = statusOf(this),
+        images = attachments.filter { it.isImage }.map { it.uri },
+        download = download,
+        sizeBytes = sizeBytes,
+        risky = risky,
+    )
+
+// Received SMS of thread [threadId] whose link was risky or whose code came during a call with a stranger.
+private fun riskyMessages(
+    metas: List<MessageMeta>,
+    threadId: Long,
+): Set<Long> {
+    val risks = MessageRisk.LINK_RISKS + MessageRisk.OTP_DURING_CALL
+    return metas
+        .filter { it.threadId == threadId && MessageRisk.fromBits(it.riskFlags).any { risk -> risk in risks } }
+        .mapTo(mutableSetOf()) { it.providerId }
+}
 
 /** The status shown under a message. */
 internal fun statusOf(message: Message): MessageStatus =

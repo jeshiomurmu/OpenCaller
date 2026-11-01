@@ -54,13 +54,20 @@ object Ui {
         timeoutMillis: Long = TIMEOUT_MILLIS,
     ): Boolean = device.wait(Until.hasObject(By.text(text)), timeoutMillis) == true
 
-    /** Scrolls the first scrollable container until [text] appears, then returns it. */
+    /**
+     * Scrolls the first scrollable container until [text] appears, then returns it. A screen can still be loading
+     * (fitting on screen, so nothing scrolls) and then grow and push [text] below the edge, so this tries again until
+     * the timeout.
+     */
     fun scrollTo(text: String): UiObject2 {
-        val found =
-            device.findObject(By.text(text))
-                ?: device
-                    .wait(Until.findObject(By.scrollable(true)), TIMEOUT_MILLIS)
-                    ?.scrollUntil(Direction.DOWN, Until.findObject(By.text(text)))
+        val deadline = System.currentTimeMillis() + TIMEOUT_MILLIS
+        var found: UiObject2? = null
+        while (found == null && System.currentTimeMillis() < deadline) {
+            device.waitForIdle()
+            found = device.findObject(By.text(text))
+                ?: device.findObject(By.scrollable(true))?.scrollUntil(Direction.DOWN, Until.findObject(By.text(text)))
+            if (found == null) Thread.sleep(POLL_MILLIS)
+        }
         return found ?: waitFor(text)
     }
 

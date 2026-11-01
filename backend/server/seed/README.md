@@ -7,10 +7,12 @@ CSV files the server loads at start-up (they are packaged into the server under 
 | `sender_ids.csv` | `GET /v1/sender-ids/{countryIso}?since=` | `sender_ids` table (upserted on start) |
 | `otp_app_hashes.csv` | `GET /v1/otp-sources?since=` (`appHashes`) | memory |
 | `verification_ranges.csv` | `GET /v1/otp-sources?since=` (`verificationRanges`) | memory |
+| `bad_hosts.csv` | `GET /v1/link-prefixes` (hash prefixes only, whole list) | memory |
 
 Rules:
 
-- **Example rows only** until Phase 9: every brand, package and provider here is fake and says so.
+- **Example rows only** until Phase 9: every brand, package and provider here is fake and says so; bad hosts are
+  on the reserved `.example` domain.
 - Lines starting with `#` are comments. No quoting: values must not contain commas or quotes.
 - `updated_at` is an ISO-8601 instant. Apps sync with `?since=<epoch ms>` and get rows with a later `updated_at`,
   so change `updated_at` whenever a row changes.

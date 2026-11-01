@@ -11,15 +11,20 @@ import android.telephony.SubscriptionManager
 import androidx.test.core.app.ApplicationProvider
 import io.github.jeshiomurmu.opencaller.core.model.Message
 import io.github.jeshiomurmu.opencaller.core.model.MessageBox
+import io.github.jeshiomurmu.opencaller.core.model.MessageCategory
 import io.github.jeshiomurmu.opencaller.core.model.MessageKey
 import io.github.jeshiomurmu.opencaller.core.model.MessageKind
+import io.github.jeshiomurmu.opencaller.core.model.OtpInfo
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 import io.github.jeshiomurmu.opencaller.core.telephony.NumberDisplay
+import io.github.jeshiomurmu.opencaller.core.telephony.messaging.ReceivedDetails
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.StoredMessage
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ContactLookup
+import io.github.jeshiomurmu.opencaller.core.testing.FakeClock
 import io.github.jeshiomurmu.opencaller.feature.messages.notify.ActiveThread
 import io.github.jeshiomurmu.opencaller.feature.messages.notify.MessageNotifier
+import io.github.jeshiomurmu.opencaller.feature.messages.notify.OtpNotifications
 import io.github.jeshiomurmu.opencaller.feature.messages.notify.ParticipantNames
 import io.github.jeshiomurmu.opencaller.feature.messages.receive.IncomingSmsReader
 import kotlinx.coroutines.test.runTest
@@ -50,7 +55,8 @@ class MessagingDeviceTest {
             },
             NumberDisplay(PhoneNumberNormalizer()) { "US" },
         )
-    private val notifier = MessageNotifier(app, conversations, names, active)
+    private val clock = FakeClock()
+    private val notifier = MessageNotifier(app, conversations, names, active, OtpNotifications(app, clock))
 
     @Before
     fun allowNotifications() {
@@ -112,7 +118,7 @@ class MessagingDeviceTest {
                         ),
                 )
 
-            notifier.stored(StoredMessage(MessageKey(MessageKind.SMS, 2), 7), senderName = "Ana Silva")
+            notifier.stored(StoredMessage(MessageKey(MessageKind.SMS, 2), 7), ReceivedDetails("Ana Silva"))
 
             val posted = manager.activeNotifications.single { it.tag == MessageNotifier.TAG_THREAD && it.id == 7 }.notification
             assertEquals(Notification.CATEGORY_MESSAGE, posted.category)
@@ -139,9 +145,46 @@ class MessagingDeviceTest {
                 mapOf(7L to listOf(Message(MessageKey(MessageKind.SMS, 2), 7, MessageBox.INBOX, ana, "Hi", 2_000, read = false)))
             active.set(7)
 
-            notifier.stored(StoredMessage(MessageKey(MessageKind.SMS, 2), 7), senderName = null)
+            notifier.stored(StoredMessage(MessageKey(MessageKind.SMS, 2), 7), ReceivedDetails(null))
 
             assertTrue(manager.activeNotifications.none { it.tag == MessageNotifier.TAG_THREAD })
             assertEquals("it counts as read", listOf(7L), conversations.markedRead)
+        }
+
+    @Test
+    fun tcOtp008TheCodeIsHiddenOnTheLockScreen() =
+        runTest {
+            val code = OtpInfo("482913", expiresAtMillis = clock.nowMillis() + 5 * 60_000L)
+            notifier.stored(StoredMessage(MessageKey(MessageKind.SMS, 3), 9), ReceivedDetails("Ridely", MessageCategory.OTP, code))
+
+            val posted = manager.activeNotifications.single { it.tag == MessageNotifier.TAG_THREAD && it.id == 9 }.notification
+            assertEquals(OtpNotifications.CHANNEL_OTP, posted.channelId)
+            assertEquals(Notification.VISIBILITY_PRIVATE, posted.visibility)
+            assertTrue(
+                posted.extras
+                    .getCharSequence(Notification.EXTRA_TEXT)
+                    .toString()
+                    .startsWith("482913"),
+            )
+            val public = checkNotNull(posted.publicVersion)
+            val shown =
+                listOf(Notification.EXTRA_TITLE, Notification.EXTRA_TEXT, Notification.EXTRA_BIG_TEXT).map {
+                    public.extras.getCharSequence(it).toString()
+                }
+            assertTrue("the public version never shows the code", shown.none { "482913" in it })
+            assertEquals(listOf("Copy code"), posted.actions.map { it.title.toString() })
+        }
+
+    @Test
+    fun spamIsPostedQuietly() =
+        runTest {
+            val stranger = person("+15550123000")
+            conversations.threads.value =
+                mapOf(8L to listOf(Message(MessageKey(MessageKind.SMS, 4), 8, MessageBox.INBOX, stranger, "You won!", 2_000, read = false)))
+            notifier.stored(StoredMessage(MessageKey(MessageKind.SMS, 4), 8), ReceivedDetails(null, MessageCategory.SPAM))
+
+            val posted = manager.activeNotifications.single { it.tag == MessageNotifier.TAG_THREAD && it.id == 8 }.notification
+            assertEquals(MessageNotifier.CHANNEL_FILTERED, posted.channelId)
+            assertEquals(NotificationManager.IMPORTANCE_LOW, manager.getNotificationChannel(MessageNotifier.CHANNEL_FILTERED).importance)
         }
 }

@@ -223,21 +223,40 @@ takes it away again). Device steps (a phone with a SIM; OpenCaller set as the de
 | TC-SMS-001 | Receive SMS as default app | Stored in provider, shown in thread, notification posted | I + U + R — 7a: `scripts/qa/sms.sh` on API 29 + 36: `adb emu sms send` → the SMS is in the inbox of Android's message store, its `MessageMeta` row says Personal (no text), a conversation notification is posted, the thread shows it and then counts as read. `MessagePipelineTest` (stored → meta → notification; a refused write tried once more, a slow one not; the text shown in a notification when the store refuses it; lookups that fail or hang leave the message Personal within the 10 s), `MessagingDeviceTest` (a real SMS-DELIVER PDU read from the broadcast; one MessagingStyle notification with Reply and Mark as read, private on the lock screen; none for the open conversation), `DefaultAppEligibilityTest` (the four role components, protected), `MessagesViewModelsTest` |
 | TC-SMS-002 | Send SMS / long SMS | Multipart sent; delivery report handled | I + U — 7a: `scripts/qa/sms.sh`: `ACTION_SENDTO smsto:` with a long `sms_body` opens the thread with the text, Send hands it to `sendMultipartTextMessage` in 3 parts and the message moves to the sent box; on API 29 it comes back whole to the emulator's own number, on API 36 (whose emulated network delivers nothing to its own number) the delivery report marks it Delivered. `MessagePipelineTest` (delivery report status in both formats; a multipart message is delivered with its last part and fails with any part), `MessagesViewModelsTest` (statuses, send to everyone in the thread, a failed send keeps the draft, the SIM is asked for with two SIMs and no default) |
 | TC-SMS-003 | MMS image | Received and displayed | D + U — 7a: `MmsPduTest` (a download notice; a downloaded message with a UTF-8 subject, two recipients, a text part and a base64 picture; a composed message read back with its SMIL layout; send confirmations, delivery reports, the download answers byte for byte; broken PDUs refused), `MessageAddressesTest` (group members without the user), `MessagesViewModelsTest` (pictures and the Download button in the thread); device steps below |
-| TC-SMS-004 | Spam classification | Corpus test split macro-F1 recorded; spam to Spam tab | U |
-| TC-SMS-005 | Phishing link | Lookalike domain flagged with warning banner | U |
-| TC-OTP-001 | Extract code | Precision ≥ 98%, recall ≥ 95% on held-out corpus | U |
-| TC-OTP-002 | Domain-bound code | `@example.com #123456` → origin `example.com`, code `123456` | U |
-| TC-OTP-003 | Registered header | `VM-HDFCBK-T` → brand from registry, category Transactional | U |
-| TC-OTP-004 | App hash | Message ending in known 11-char hash → app name | U |
-| TC-OTP-005 | OTP during unknown call | Active call with non-contact + OTP SMS → full-screen guard within 1 s | I |
-| TC-OTP-006 | OTP during contact call | No guard (just normal OTP notification) | I |
-| TC-OTP-007 | Flash call | Missed call < 3 s from verification range during unknown call → guard | D |
-| TC-OTP-008 | Lock screen | OTP code hidden on lock screen notification | I |
-| TC-OTP-009 | OTP burst | 3 OTPs, 2 brands, 10 min → alert | R |
+| TC-SMS-004 | Spam classification | Corpus test split macro-F1 recorded; spam to Spam tab | U — 7b: `CorpusMetricsTest` (`./gradlew :core:ml:corpusMetrics`; macro-F1 on every split below), `RuleSmsClassifierTest` (each category's rule; phishing needs a dangerous link, or a threat with a link), `MessagesViewModelsTest` (spam and phishing conversations in the Spam tab, unread counts per tab), `MessagingDeviceTest` (Spam posted on the quiet channel) |
+| TC-SMS-005 | Phishing link | Lookalike domain flagged with warning banner | U — 7b: `LinkCheckerTest` (digit and Cyrillic look-alikes, a brand on someone else's domain, mixed scripts, shorteners, a listed host and its sub-domains, the brand's own domains clean, `user@host` links), `MessagesViewModelsTest` (the message with the lookalike link carries the warning line in the thread, the conversation a warning icon) |
+| TC-OTP-001 | Extract code | Precision ≥ 98%, recall ≥ 95% on held-out corpus | U — 7b: `CorpusMetricsTest` gates the test split (scores below); `OtpExtractorTest` (Bengali and Devanagari digits, amounts, card digits and phone numbers left out, `G-123456`, messages without a code) |
+| TC-OTP-002 | Domain-bound code | `@example.com #123456` → origin `example.com`, code `123456` | U — 7b: `OtpExtractorTest` (alone and after text; with an embedded origin the top-level one is kept) |
+| TC-OTP-003 | Registered header | `VM-HDFCBK-T` → brand from registry, category Transactional | U — 7b: `SenderHeaderTest` (S/T/P/G and the older form), `SenderResolverTest` (the registry's brand with source Sender registry and traffic type Transactional), `RegistrySyncTest` (the registry synced from the server and read back) |
+| TC-OTP-004 | App hash | Message ending in known 11-char hash → app name | U — 7b: `OtpExtractorTest` (the hash read, never taken for the code, words aren't hashes), `SenderResolverTest` (hash → app name), `RegistrySyncTest` |
+| TC-OTP-005 | OTP during unknown call | Active call with non-contact + OTP SMS → full-screen guard within 1 s | I + U — 7b: `scripts/qa/otp.sh` on API 29 + 36 (answered call from a non-contact, `adb emu sms send` with a code: the warning raised within 1 s of the SMS reaching OpenCaller, timed from the debug log, the full-screen warning over the in-call screen, `OTP_DURING_CALL` stored, Hang up on the warning ends the call); `MessagePipelineTest`, `OtpWatchTest` (during, and up to 2 minutes after, a conversation with a stranger; a missed call is no conversation, a call the user placed is) |
+| TC-OTP-006 | OTP during contact call | No guard (just normal OTP notification) | I + U — 7b: `scripts/qa/otp.sh` (a contact's answered call: the code stored without a risk, no warning), `OtpWatchTest` |
+| TC-OTP-007 | Flash call | Missed call < 3 s from verification range during unknown call → guard | D + U — 7b: `OtpWatchTest` (a missed call ≤ 3 s from a verification range during a stranger's call warns; a longer one or one outside the ranges doesn't); device steps below |
+| TC-OTP-008 | Lock screen | OTP code hidden on lock screen notification | I + U — 7b: `scripts/qa/otp.sh` (PIN lock screen set to hide sensitive content: the public version "Unlock to see the code" shows, the code doesn't; with "Show all notification content", Android's default, the system shows the code, phase.md issue 100), `MessagingDeviceTest` (the notification private, its public version without the code, Copy) |
+| TC-OTP-009 | OTP burst | 3 OTPs, 2 brands, 10 min → alert | U — 7b: `OtpWatchTest` (3 codes from 2 conversations in 10 minutes raise the alert and `OTP_BURST`; one sender, or codes spread over more than 10 minutes, don't). The alert's notification is `OtpGuardAlarm.warnBurst` (`feature:otp`) |
 
-Where they run (Phase 7a): unit and Robolectric tests in the `android` CI job; `scripts/qa/sms.sh` at the end of the
-emulator job on API 29 and 36 (after `scripts/qa/incall.sh`; it gives the debug build the default SMS app role and takes
-it away again). The emulator has no MMS centre, so MMS is checked on a phone. Device steps (a phone with a SIM and
+Where they run: unit and Robolectric tests in the `android` CI job; `scripts/qa/sms.sh` (7a) and `scripts/qa/otp.sh`
+(7b) at the end of the emulator job on API 29 and 36 (after `scripts/qa/incall.sh`; they give the debug build the roles
+they need and take them away again).
+
+**Corpus scores (TC-OTP-001, TC-SMS-004).** `./gradlew :core:ml:corpusMetrics` runs the rules over the SMS corpus
+(`core/testing/src/main/resources/fixtures/sms_corpus/`, made by `ml/sms-classifier/corpus/generate.py`; each template in
+one split only) and prints, per split, OTP precision and recall, the origin, app hash and expiry fields, the
+transaction fields and the classifier's per-class F1 and macro-F1. The test split is gated (OTP precision ≥ 98 %,
+recall ≥ 95 %, macro-F1 ≥ 90 %). Scores of 2026-11-01 (rules only; no trained model ships):
+
+| Split | Messages | OTP codes | OTP precision | OTP recall | Origin / app hash / expiry | Transaction fields (amount, currency, last 4, merchant) | Classifier macro-F1 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| train | 454 | 184 | 100.0 % | 100.0 % | 24/24, 24/24, 88/88 | 60/60 each | 100.0 % |
+| val | 202 | 88 | 100.0 % | 100.0 % | –, –, 40/40 | 24/24 each | 100.0 % |
+| test (held out) | 190 | 88 | 100.0 % | 100.0 % | 8/8, 8/8, 32/32 | 24/24 each | 100.0 % |
+
+These numbers only show that the rules handle the formats they were written for. The corpus is generated from
+templates written by the same person who wrote the rules, so the "held-out" templates were not unseen while the rules
+were written. They are no estimate of how OpenCaller does on real SMS; that needs a collected corpus
+(`ml/sms-classifier/README.md`, docs/phase.md Open issues).
+
+Phase 7a: the emulator has no MMS centre, so MMS is checked on a phone. Device steps (a phone with a SIM and
 mobile data; OpenCaller set as the default SMS app in Settings → Apps → Default apps → SMS app):
 
 - **TC-SMS-003:** from a second phone send a picture message with a caption; the conversation shows "Downloading…",
@@ -252,6 +271,25 @@ mobile data; OpenCaller set as the default SMS app in Settings → Apps → Defa
 - **Delivery report:** with delivery reports supported by the carrier, a sent message shows "Delivered".
 - **Quick reply:** decline an incoming call with a quick reply (OpenCaller's in-call screen or another phone app): the
   reply is sent by OpenCaller's quick-reply service and shows in the conversation.
+
+Phase 7b device steps (a phone with a SIM; OpenCaller the default SMS app, and for the first two also the default phone
+app):
+
+- **TC-OTP-005 on a phone:** call the phone from a number not in the contacts, answer, and request a sign-in code from
+  any service by SMS while talking: "Don't share this code" covers the screen at once; Hang up there ends the call. Do
+  it once with the phone locked (the warning comes over the lock screen through the full-screen intent; on Android 14+
+  check Settings → Apps → OpenCaller → Full-screen notifications is on, otherwise it is a heads-up notification).
+- **TC-OTP-007 (flash call):** add a verification range for a flash-call provider to the server's
+  `seed/verification_ranges.csv` (or use a real one once Phase 9 ships them), let the app sync, call the phone from a
+  stranger, answer, and have the provider ring the phone: a missed call of 3 s or less from the range raises the
+  warning ("The code came as a missed call from …").
+- **TC-OTP-009:** request sign-in codes from three different services within 10 minutes: "Several sign-in codes at
+  once" is posted with the third.
+- **Scheduled SMS:** in a one-to-one thread write a message, tap the clock, choose "In an hour"; the line "time: text"
+  shows above the composer; after the hour (a few minutes later in Doze) the message is sent and the line goes away.
+  Cancel removes it before then.
+- **Inbox cleaner and auto-delete:** Clean up lists old codes, deliveries, promotions and spam; with "Delete codes a day
+  after they arrive" on, codes older than a day are gone after the next check (every 6 hours).
 
 ### Social, business, utilities, VoIP, family, lines (Phases 8–13)
 

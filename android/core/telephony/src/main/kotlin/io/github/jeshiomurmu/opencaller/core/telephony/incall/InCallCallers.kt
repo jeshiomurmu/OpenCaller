@@ -23,11 +23,17 @@ class ScreenedCalls
     ) {
         private val results = ConcurrentHashMap<PhoneNumber, Remembered>()
 
-        /** Keeps [result] when it is for an incoming call with a number. */
+        @Volatile private var last: Remembered? = null
+
+        /**
+         * Keeps [result]: the newest of any call (the OTP guard's view of who the user talks to), and by number the
+         * incoming calls that ring (the in-call screen's caller card; blocked calls never reach it).
+         */
         fun remember(result: ScreeningResult) {
-            val number = result.caller.number ?: return
-            if (result.direction != Direction.INCOMING) return
             val now = clock.nowMillis()
+            last = Remembered(result, now)
+            val number = result.caller.number
+            if (number == null || result.direction != Direction.INCOMING || !result.showsCallerId) return
             results.entries.removeIf { now - it.value.atMillis > KEEP_MILLIS }
             results[number] = Remembered(result, now)
         }
@@ -35,6 +41,9 @@ class ScreenedCalls
         /** The answer for [number] from the last few minutes, if any. */
         fun latest(number: PhoneNumber): ScreeningResult? =
             results[number]?.takeIf { clock.nowMillis() - it.atMillis <= KEEP_MILLIS }?.result
+
+        /** The newest screening answer (any direction), if it is at most [withinMillis] old. */
+        fun newest(withinMillis: Long): ScreeningResult? = last?.takeIf { clock.nowMillis() - it.atMillis <= withinMillis }?.result
 
         private class Remembered(
             val result: ScreeningResult,

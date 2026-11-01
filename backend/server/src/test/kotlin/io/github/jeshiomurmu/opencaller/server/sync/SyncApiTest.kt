@@ -24,7 +24,43 @@ class SyncApiTest {
         seed.senderIds.forEach { assertTrue(it.brandName.endsWith("(fake)") && it.source == "seed-example", it.toString()) }
         seed.appHashes.forEach { assertTrue(it.appName.endsWith("(fake)") && it.packageName.startsWith("org.example."), it.toString()) }
         seed.verificationRanges.forEach { assertTrue(it.provider.endsWith("(fake)") && it.prefix.startsWith("+1555"), it.toString()) }
+        assertTrue(seed.badHosts.isNotEmpty())
+        seed.badHosts.forEach { assertTrue(it.host.endsWith(".example"), it.toString()) }
     }
+
+    @Test
+    fun hostPrefixesMatchTheVectorsSharedWithTheApp() {
+        val vectors =
+            checkNotNull(javaClass.getResourceAsStream("/fixtures/host_prefix_vectors.csv"))
+                .bufferedReader(Charsets.UTF_8)
+                .readLines()
+                .filter { it.isNotBlank() && !it.startsWith("#") }
+                .map { it.split(',') }
+        assertTrue(vectors.size >= 5)
+        vectors.forEach { (host, prefix) -> assertEquals(prefix, HostPrefix.of(host), host) }
+    }
+
+    @Test
+    fun linkPrefixesAreTheWholeListWithoutHostNames() =
+        apiTest {
+            val response = client.getWith("/v1/link-prefixes")
+            assertEquals(HttpStatusCode.OK, response.status, response.bodyAsText())
+            assertEquals("public, max-age=3600", response.headers[HttpHeaders.CacheControl])
+            val body = response.bodyAsText()
+            val list = testJson.decodeFromString(LinkPrefixesResponse.serializer(), body)
+            assertEquals(3, list.prefixes.size)
+            assertEquals(list.prefixes.sorted(), list.prefixes)
+            assertTrue(HostPrefix.of("evil-shop.example") in list.prefixes)
+            assertTrue(list.prefixes.all { Regex("[0-9a-f]{8}").matches(it) })
+            assertEquals(Instant.parse("2026-10-31T00:00:00Z").toEpochMilli(), list.syncedAt)
+            // Only prefixes are served, never the hosts.
+            assertTrue("example" !in body)
+            val etag = response.headers[HttpHeaders.ETag]!!
+            assertEquals(
+                HttpStatusCode.NotModified,
+                client.getWith("/v1/link-prefixes", headers = mapOf(HttpHeaders.IfNoneMatch to etag)).status,
+            )
+        }
 
     @Test
     fun senderIdsAreServedPerCountrySinceATime() =

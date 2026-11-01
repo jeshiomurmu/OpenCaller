@@ -490,6 +490,26 @@ paths:
         "304": { $ref: "#/components/responses/NotModified" }
         "400": { $ref: "#/components/responses/BadRequest" }
 
+  /v1/link-prefixes:
+    get:
+      tags: [sync]
+      summary: Known-bad link hosts as hash prefixes
+      description: |
+        The whole list on every call (it is small), so hosts taken off the list disappear on the next sync. Each
+        prefix is the first 4 bytes of SHA-256 over a host's lower-case ASCII (IDNA) form, as 8 hex digits; the app
+        flags a link whose host or parent domain has a listed prefix. Host names are never served. Seeded from
+        `backend/server/seed/bad_hosts.csv` (example rows only until Phase 9).
+      operationId: getLinkPrefixes
+      responses:
+        "200":
+          description: "Prefixes (`Cache-Control: public, max-age=3600`)."
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LinkPrefixesResponse" }
+        "304": { $ref: "#/components/responses/NotModified" }
+
 components:
   securitySchemes:
     accessToken:
@@ -808,6 +828,16 @@ components:
               prefix: { type: string, description: E.164 prefix used by a flash-call provider. }
               provider: { type: string }
               updatedAt: { type: integer }
+
+    LinkPrefixesResponse:
+      type: object
+      required: [syncedAt, prefixes]
+      properties:
+        syncedAt: { type: integer, description: Newest change to the list (epoch milliseconds). }
+        prefixes:
+          type: array
+          description: Sorted, distinct.
+          items: { type: string, pattern: "^[0-9a-f]{8}$" }
 
     Problem:
       type: object

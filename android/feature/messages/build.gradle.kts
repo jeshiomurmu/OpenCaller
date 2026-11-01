@@ -13,6 +13,9 @@ android {
 // sending and downloading through SmsManager, notifications and the conversation screens.
 dependencies {
     implementation(projects.core.telephony)
+    implementation(projects.core.datastore)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)

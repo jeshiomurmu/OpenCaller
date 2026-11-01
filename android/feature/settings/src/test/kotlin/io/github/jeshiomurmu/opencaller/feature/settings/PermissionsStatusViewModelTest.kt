@@ -58,6 +58,15 @@ class PermissionsStatusViewModelTest {
     }
 
     @Test
+    fun theFallbacksAreOnlyShownOnceTheStatusIsRead() =
+        runTest {
+            // Before the first status the surfaces are placeholders, so the screen leaves "How it works" out.
+            assertFalse(vm.uiState.value.loaded)
+            subscribe()
+            assertTrue(vm.uiState.value.loaded)
+        }
+
+    @Test
     fun listsEveryApplicableItemAndHowCallerIdFallsBack() =
         runTest {
             subscribe()

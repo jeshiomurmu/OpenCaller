@@ -172,3 +172,19 @@ data class MessageMeta(
     /** Never prints the sender's name or the code. */
     override fun toString(): String = "MessageMeta(providerId=$providerId, threadId=$threadId, category=$category)"
 }
+
+/**
+ * An SMS the user scheduled (Phase 7b): [body] to the address [to] at [sendAtMillis], from SIM [subscriptionId]
+ * (`null`: the default SMS SIM). Kept in OpenCaller's database until it is sent.
+ */
+data class ScheduledMessage(
+    val id: Long,
+    val to: String,
+    val body: String,
+    val sendAtMillis: Long,
+    val subscriptionId: Int?,
+    val state: SyncState,
+) {
+    /** Never prints the text or the recipient. */
+    override fun toString(): String = "ScheduledMessage(id=$id, sendAtMillis=$sendAtMillis, state=$state)"
+}
