@@ -12,7 +12,7 @@
         <item quantity="one">You\'ve used today\'s %1$d search. More tomorrow, or become a supporter.</item>
         <item quantity="other">You\'ve used today\'s %1$d searches. More tomorrow, or become a supporter.</item>
     </plurals>
-    <string name="search_privacy">The number you type is sent to OpenCaller to look it up. Calls are checked differently: during a call, only a short code is sent.</string>
+    <string name="search_privacy">The number you type is sent to OpenCaller to look it up. Calls are checked differently: during a call, only a short code is sent. If the number belongs to an OpenCaller user, they may see that you searched for it, unless you turn on Incognito in your profile.</string>
     <string name="search_offline">You\'re offline. Blocking still works with your saved spam list.</string>
     <string name="search_server_error">Something went wrong on our side. Your protection still works offline.</string>
     <string name="search_retry">Retry</string>
@@ -26,6 +26,7 @@
         <item quantity="other">%d people said it\'s not spam.</item>
     </plurals>
     <string name="search_dispute">Is this your number? Ask for a review</string>
+    <string name="search_open_profile">Open profile</string>
 
     <!-- Disputes. -->
     <string name="dispute_title">Wrongly marked as spam?</string>

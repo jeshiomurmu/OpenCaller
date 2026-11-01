@@ -6,8 +6,8 @@ import org.jetbrains.exposed.v1.core.java.javaUUID
 import org.jetbrains.exposed.v1.javatime.CurrentTimestampWithTimeZone
 import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
 
-// Exposed mirrors of the tables in db/migration (V1__init.sql = docs/architecture.md §7, then V2). Flyway owns the schema;
-// these objects are only used for queries. ServerSchemaTest compares them with the migrated database.
+// Exposed mirrors of the tables in db/migration (V1__init.sql = docs/architecture.md §7, then V2 and V3). Flyway
+// owns the schema; these objects are only used for queries. ServerSchemaTest compares them with the migrated database.
 
 private const val COUNTRY_ISO_LENGTH = 2
 
@@ -173,6 +173,7 @@ object ContactRequests : Table("contact_requests") {
     val targetId = optReference("target_id", Users.id, onDelete = ReferenceOption.CASCADE)
     val status = pgEnum<ReviewStatus>("status", "review_status").default(ReviewStatus.PENDING)
     val createdAt = timestampWithTimeZone("created_at").defaultExpression(CurrentTimestampWithTimeZone)
+    val decidedAt = timestampWithTimeZone("decided_at").nullable() // V3
     override val primaryKey = PrimaryKey(id)
 }
 

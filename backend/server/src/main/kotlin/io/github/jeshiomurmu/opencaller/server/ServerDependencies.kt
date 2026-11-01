@@ -20,6 +20,13 @@ import io.github.jeshiomurmu.opencaller.server.lists.ListBuildResult
 import io.github.jeshiomurmu.opencaller.server.lists.ListBuilder
 import io.github.jeshiomurmu.opencaller.server.lists.ListService
 import io.github.jeshiomurmu.opencaller.server.lookup.LookupService
+import io.github.jeshiomurmu.opencaller.server.profile.ContactRequestService
+import io.github.jeshiomurmu.opencaller.server.profile.Entitlements
+import io.github.jeshiomurmu.opencaller.server.profile.ProfileService
+import io.github.jeshiomurmu.opencaller.server.profile.RetentionJob
+import io.github.jeshiomurmu.opencaller.server.profile.RetentionResult
+import io.github.jeshiomurmu.opencaller.server.profile.StoredTierEntitlements
+import io.github.jeshiomurmu.opencaller.server.profile.VisitorService
 import io.github.jeshiomurmu.opencaller.server.redis.RateLimiter
 import io.github.jeshiomurmu.opencaller.server.redis.Redis
 import io.github.jeshiomurmu.opencaller.server.reports.ReportService
@@ -74,6 +81,11 @@ class ServerDependencies(
             processedWithinMinutes = config.scoring.intervalMinutes,
         )
     val sync = SyncService(database, SeedData.load())
+    val entitlements: Entitlements = StoredTierEntitlements(database)
+    val profiles = ProfileService(database, objectStore, clock)
+    val visitors = VisitorService(database, objectStore, entitlements, rateLimiter, clock)
+    val contactRequests = ContactRequestService(database, rateLimiter, clock)
+    val retentionJob = RetentionJob(database, objectStore, clock)
 
     val scoringJob = ScoringJob(database, config.scoring, clock)
     val listBuilder = ListBuilder(database, objectStore, config.lists, clock)
@@ -84,13 +96,17 @@ class ServerDependencies(
         listOf(
             LeaderJob(ScoringJob.JOB_NAME, SCORING_LOCK) { ApiJson.encodeToJsonElement(ScoringResult.serializer(), scoringJob.run()) },
             LeaderJob(LISTS_JOB, LISTS_LOCK) { ApiJson.encodeToJsonElement(ListBuildResult.serializer(), listBuilder.build()) },
+            LeaderJob(RetentionJob.JOB_NAME, RETENTION_LOCK) {
+                ApiJson.encodeToJsonElement(RetentionResult.serializer(), retentionJob.run())
+            },
         )
 
-    /** Starts the scoring job every [ScoringConfig.intervalMinutes] and the list build nightly. */
+    /** Starts the scoring job every [ScoringConfig.intervalMinutes], and the list build and the retention job daily. */
     fun startJobs(scope: CoroutineScope) {
         val scheduler = JobScheduler(scope, jobRunner, clock)
         scheduler.every(Duration.ofMinutes(config.scoring.intervalMinutes.toLong()), jobs.first { it.name == ScoringJob.JOB_NAME })
         scheduler.dailyAt(config.lists.buildHourUtc, jobs.first { it.name == LISTS_JOB })
+        scheduler.dailyAt(RetentionJob.HOUR_UTC, jobs.first { it.name == RetentionJob.JOB_NAME })
     }
 
     override fun close() {
@@ -105,6 +121,7 @@ class ServerDependencies(
         const val LISTS_JOB = "lists"
         private const val SCORING_LOCK = 4_000_001L
         private const val LISTS_LOCK = 4_000_002L
+        private const val RETENTION_LOCK = 4_000_003L
 
         /** Connects to PostgreSQL (running migrations) and Redis, picks the OTP provider and seeds sender IDs. */
         fun create(

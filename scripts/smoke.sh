@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Smoke test of the whole API against the compose stack (docs/implementation_plan.md Phase 4), with curl + jq:
 # health, sign-in, refresh rotation, rate limits, reports, scoring, bucket lookup, search, lists, disputes,
-# unlisting (API and HTML form), sender IDs, OTP sources and metrics.
+# unlisting (API and HTML form), sender IDs, OTP sources, profiles (Phase 8) and metrics.
 #
 #   docker compose -f infra/docker/compose.yml up -d --build --wait
 #   scripts/smoke.sh
@@ -19,6 +19,7 @@ number="+12015550123"   # signs in, rotates its refresh token, hits the start li
 reporter="+12015550199" # signs in and uses the API
 spammer="+12025550143"  # gets reported
 unlisted="+12015550177" # is unlisted through the HTML form and the API
+profile="+12015550188"  # edits, hides and deletes its profile
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 failures=0
@@ -47,6 +48,8 @@ request() {
 }
 # authed <name> <method> <path> [json]: request with the reporter's access token.
 authed() { request "$1" "$2" "$3" "${4:-}" -H "Authorization: Bearer $access"; }
+# as_profile <name> <method> <path> [json]: request with the profile user's access token.
+as_profile() { request "$1" "$2" "$3" "${4:-}" -H "Authorization: Bearer $profile_access"; }
 
 field() { jq -r "$2" "$work/$1.body"; }
 header() { grep -i "^$2:" "$work/$1.headers" | head -1 | cut -d: -f2- | sed 's/^ *//' | tr -d '\r'; }
@@ -192,6 +195,38 @@ since="$(field senders .syncedAt)"
 expect "  nothing newer than syncedAt" 0 "$(request senders_since GET "/v1/sender-ids/BD?since=$since" > /dev/null; field senders_since '.senderIds | length')"
 expect "GET /v1/otp-sources" 200 "$(request otp GET /v1/otp-sources)"
 expect "  app hashes" 2 "$(field otp '.appHashes | length')"
+
+echo "== Profiles (TC-SOC-001, TC-SOC-003)"
+expect "sign in the profile user" 200 "$(sign_in "$profile" profile_user)"
+profile_access="$(field profile_user .accessToken)"
+expect "PUT /v1/me" 200 "$(as_profile me_put PUT /v1/me '{"displayName":"Smoke Profile","visibility":"everyone","incognito":false}')"
+expect "  visibility" everyone "$(field me_put .visibility)"
+expect "  Cache-Control" no-store "$(header me_put Cache-Control)"
+profile_bucket="$(bucket_of "$profile")"
+profile_hash="$(hash_of "$profile")"
+name_in_bucket() {
+  request "$1" GET "/v1/lookup/buckets/1/$profile_bucket" > /dev/null
+  jq -r --arg h "$profile_hash" '[.entries[] | select(.hash == $h) | .info.name][0]' "$work/$1.body"
+}
+expect "  name in the anonymous bucket" "Smoke Profile" "$(name_in_bucket bucket_everyone)"
+as_profile me_hide PUT /v1/me '{"displayName":"Smoke Profile","visibility":"nobody","incognito":false}' > /dev/null
+expect "  hidden at once (TC-SOC-001)" null "$(name_in_bucket bucket_nobody)"
+expect "POST /v1/me/avatar" 200 "$(as_profile avatar POST /v1/me/avatar '{}')"
+printf '\xff\xd8\xff\xe0smoke-test-jpeg\xff\xd9' > "$work/avatar.jpg"
+upload_status="$(curl -sS -o /dev/null -w '%{http_code}' -X PUT -H 'Content-Type: image/jpeg' --data-binary "@$work/avatar.jpg" "$(field avatar .uploadUrl)")"
+expect "  upload to the presigned URL (no token)" 200 "$upload_status"
+avatar_key="$(field avatar .avatarKey)"
+expect "  set avatarKey" 200 "$(as_profile me_avatar PUT /v1/me "{\"displayName\":\"Smoke Profile\",\"visibility\":\"nobody\",\"incognito\":false,\"avatarKey\":\"$avatar_key\"}")"
+expect "  picture readable from avatarUrl" "$(sha256sum < "$work/avatar.jpg")" "$(curl -sS "$(field me_avatar .avatarUrl)" | sha256sum)"
+expect "GET /v1/me/viewers (not a supporter)" 403 "$(as_profile viewers GET /v1/me/viewers)"
+expect "  code" supporter_required "$(field viewers .code)"
+expect "POST /v1/contact-requests" 202 "$(authed contact POST /v1/contact-requests "{\"e164\":\"$profile\"}")"
+expect "  same answer for everyone" sent "$(field contact .status)"
+expect "GET /v1/contact-requests" 1 "$(as_profile incoming GET /v1/contact-requests > /dev/null; field incoming '.items | length')"
+expect "DELETE /v1/me" 204 "$(as_profile me_delete DELETE /v1/me)"
+expect "  GET /v1/me afterwards (TC-SOC-003)" 401 "$(as_profile me_gone GET /v1/me)"
+run_job retention
+expect "  purged by the retention job" 1 "$(jq -r .result.accountsPurged "$work/job_retention.body")"
 
 echo "== Metrics (internal port only)"
 expect "GET /metrics on the API port" 404 "$(request metrics_api GET /metrics)"

@@ -99,8 +99,11 @@ services:
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
       TWILIO_FROM: ${TWILIO_FROM:-}
       TWILIO_MESSAGING_SERVICE_SID: ${TWILIO_MESSAGING_SERVICE_SID:-}
-      # Spam lists are uploaded to this MinIO bucket (created on first upload).
+      # Spam lists and profile pictures go to this MinIO bucket (created on first upload).
       MINIO_BUCKET: ${MINIO_BUCKET:-opencaller}
+      # MinIO's address as apps reach it, for presigned profile-picture uploads and downloads. The default is the
+      # published port on this machine; an emulator reaches it as http://10.0.2.2:9000.
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://127.0.0.1:9000}
       # Bearer token for POST /admin/jobs/{scoring|lists} on the internal port 9090; unset = admin endpoints off.
       ADMIN_TOKEN: ${ADMIN_TOKEN:-}
     ports:

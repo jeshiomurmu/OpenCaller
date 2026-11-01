@@ -7,6 +7,7 @@ import io.github.jeshiomurmu.opencaller.server.db.ReviewStatus
 import io.github.jeshiomurmu.opencaller.server.db.UnlistRequests
 import io.github.jeshiomurmu.opencaller.server.db.Users
 import io.github.jeshiomurmu.opencaller.server.db.Visibility
+import io.github.jeshiomurmu.opencaller.server.profile.SupporterTier
 import io.github.jeshiomurmu.opencaller.server.scoring.SpamLabels
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.v1.core.JoinType
@@ -29,11 +30,13 @@ data class BusinessInfo(
 
 /**
  * What the server may say about a number: a name (only if the profile's visibility allows it and the number is
- * not unlisted), community spam data (only if it has reports) and a verified business.
+ * not unlisted) with the owner's supporter [badge] (`supporter` or `gold`, only next to a name), community spam
+ * data (only if it has reports) and a verified business.
  */
 @Serializable
 data class NumberInfo(
     val name: String? = null,
+    val badge: String? = null,
     val spamScore: Double? = null,
     val label: String? = null,
     val category: String? = null,
@@ -64,6 +67,7 @@ object NumberDirectory {
             Users.displayName,
             Users.visibility,
             Users.deletedAt,
+            Users.supporterTier,
             Businesses.displayName,
             Businesses.category,
             Businesses.status,
@@ -106,8 +110,10 @@ object NumberDirectory {
         val notSpam = row[NumberReputation.notSpamCount]
         val hasReports = reports + notSpam > 0
         val score = row[NumberReputation.spamScore].toDouble().takeIf { hasReports }
+        val name = if (listed) visibleName(row, authenticated) else null
         return NumberInfo(
-            name = if (listed) visibleName(row, authenticated) else null,
+            name = name,
+            badge = name?.let { SupporterTier.of(row.getOrNull(Users.supporterTier)).badge },
             spamScore = score?.let { Math.round(it * SCORE_SCALE) / SCORE_SCALE },
             label = score?.let(SpamLabels::of),
             category = row[NumberReputation.category].takeIf { hasReports },

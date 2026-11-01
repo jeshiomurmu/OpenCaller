@@ -18,6 +18,8 @@ import io.github.jeshiomurmu.opencaller.core.data.account.KeystoreTokenStore
 import io.github.jeshiomurmu.opencaller.core.data.lookup.NumberSearch
 import io.github.jeshiomurmu.opencaller.core.data.lookup.SearchQuotaStore
 import io.github.jeshiomurmu.opencaller.core.data.lookup.SearchRepository
+import io.github.jeshiomurmu.opencaller.core.data.profile.ProfileRepository
+import io.github.jeshiomurmu.opencaller.core.data.profile.Profiles
 import io.github.jeshiomurmu.opencaller.core.data.sync.DefaultSpamListUpdates
 import io.github.jeshiomurmu.opencaller.core.data.sync.LinkPrefixStore
 import io.github.jeshiomurmu.opencaller.core.data.sync.RegistrySyncStateStore
@@ -29,6 +31,7 @@ import io.github.jeshiomurmu.opencaller.core.database.crypto.AndroidKeystoreCiph
 import io.github.jeshiomurmu.opencaller.core.network.LookupApi
 import io.github.jeshiomurmu.opencaller.core.network.OpenCallerApi
 import io.github.jeshiomurmu.opencaller.core.network.OpenCallerNetwork
+import io.github.jeshiomurmu.opencaller.core.network.ProfileApi
 import io.github.jeshiomurmu.opencaller.core.network.ServerConfig
 import io.github.jeshiomurmu.opencaller.core.network.TokenStore
 import javax.inject.Singleton
@@ -55,6 +58,10 @@ interface NetworkModule {
     /** Number search and disputes. */
     @Binds
     fun numberSearch(impl: SearchRepository): NumberSearch
+
+    /** Profile, visitors, contact requests and account deletion. */
+    @Binds
+    fun profiles(impl: ProfileRepository): Profiles
 
     /** Spam-list update status and "Update now". */
     @Binds
@@ -89,6 +96,10 @@ interface NetworkModule {
         /** The main API. */
         @Provides
         fun api(network: OpenCallerNetwork): OpenCallerApi = network.api
+
+        /** Profiles, visitors and contact requests. */
+        @Provides
+        fun profileApi(network: OpenCallerNetwork): ProfileApi = network.profileApi
 
         /** The live-lookup API (800 ms limit). */
         @Provides

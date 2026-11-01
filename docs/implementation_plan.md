@@ -126,19 +126,19 @@ Rough effort for one full-time developer working with an AI agent: Phases 0–7 
 
 Done in two parts: 7a (default SMS app: the four role components, provider storage, conversations, thread, compose, MMS incl. group MMS, dual-SIM send, delivery reports, notifications) and 7b (the rest of this list).
 
-- [ ] Default SMS role components: `SMS_DELIVER` receiver, `WAP_PUSH_DELIVER` receiver, `RESPOND_VIA_MESSAGE` service, `SENDTO` activity
-- [ ] Conversations, thread, compose, MMS (images), group MMS, dual-SIM send, delivery reports
-- [ ] `MessagePipeline` (architecture §4.4)
-- [ ] `SenderResolver` incl. registered-header parsing (e.g. India `XX-HEADER-T` format), domain-bound code, app hash, verification ranges
-- [ ] `OtpExtractor` with test corpus (≥ 300 real-format samples across BD/IN/US, anonymised)
-- [ ] `SmsClassifier` LiteRT model v0 (trained in `ml/sms-classifier`, exported `.tflite` in assets) + rule fallback
-- [ ] Smart inbox tabs, spam folder, inbox cleaner
-- [ ] OTP card + notification (code hidden on lock screen), auto-delete option
-- [ ] `OtpSafetyGuard` + full-screen warning; flash-call detection
-- [ ] Unrequested-OTP / OTP-burst alert
-- [ ] Transaction parser (top banks for BD/IN/US)
-- [ ] `LinkChecker` (lookalike domains + hash-prefix bad-URL list from server)
-- [ ] Scheduled SMS
+- [x] Default SMS role components: `SMS_DELIVER` receiver, `WAP_PUSH_DELIVER` receiver, `RESPOND_VIA_MESSAGE` service, `SENDTO` activity
+- [x] Conversations, thread, compose, MMS (images), group MMS, dual-SIM send, delivery reports
+- [x] `MessagePipeline` (architecture §4.4)
+- [x] `SenderResolver` incl. registered-header parsing (e.g. India `XX-HEADER-T` format), domain-bound code, app hash, verification ranges
+- [x] `OtpExtractor` with test corpus (≥ 300 real-format samples across BD/IN/US, anonymised)
+- [ ] `SmsClassifier` LiteRT model v0 (trained in `ml/sms-classifier`, exported `.tflite` in assets) + rule fallback — the rule fallback ships; no model until a collected corpus exists (`docs/phase.md` issue 89)
+- [x] Smart inbox tabs, spam folder, inbox cleaner
+- [x] OTP card + notification (code hidden on lock screen), auto-delete option
+- [x] `OtpSafetyGuard` + full-screen warning; flash-call detection
+- [x] Unrequested-OTP / OTP-burst alert
+- [x] Transaction parser (top banks for BD/IN/US)
+- [x] `LinkChecker` (lookalike domains + hash-prefix bad-URL list from server)
+- [x] Scheduled SMS
 
 **Exit:** TC-SMS-*, TC-OTP-* pass; OTP extraction precision ≥ 98% and recall ≥ 95% on the held-out corpus; classifier macro-F1 reported in testing.md.
 

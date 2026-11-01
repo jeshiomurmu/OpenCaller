@@ -45,7 +45,8 @@ class AuthRepository(
     private val clock: Clock,
 ) {
     /**
-     * After a verified code: finds or creates the user for [number] (marking it verified now and undeleted),
+     * After a verified code: finds or creates the user for [number] (marking it verified now; a deleted account
+     * is set aside for the purge job and a new one created),
      * registers a new device of [flavor] and stores its first refresh token.
      */
     suspend fun signIn(
@@ -56,19 +57,21 @@ class AuthRepository(
     ): Session =
         db.query {
             val now = now()
-            val existing =
+            val row =
                 Users
                     .selectAll()
                     .where { Users.e164 eq number.value }
                     .forUpdate()
                     .singleOrNull()
-                    ?.get(Users.id)
+            // A deleted account is never restored: it keeps waiting for the purge job under a placeholder number,
+            // and this sign-in starts a new account.
+            if (row != null && row[Users.deletedAt] != null) {
+                Users.update({ Users.id eq row[Users.id] }) { it[e164] = "deleted:${row[Users.id]}" }
+            }
+            val existing = row?.takeIf { it[Users.deletedAt] == null }?.get(Users.id)
             val userId =
                 if (existing != null) {
-                    Users.update({ Users.id eq existing }) {
-                        it[verifiedAt] = now
-                        it[deletedAt] = null
-                    }
+                    Users.update({ Users.id eq existing }) { it[verifiedAt] = now }
                     existing
                 } else {
                     UUID.randomUUID().also { id ->

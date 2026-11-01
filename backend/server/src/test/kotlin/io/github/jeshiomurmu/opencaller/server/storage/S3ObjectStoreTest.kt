@@ -4,9 +4,13 @@ import io.github.jeshiomurmu.opencaller.server.config.MinioConfig
 import io.github.jeshiomurmu.opencaller.server.testing.MinioContainer
 import io.github.jeshiomurmu.opencaller.server.testing.TestInfra
 import kotlinx.coroutines.runBlocking
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 import java.time.Clock
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
@@ -36,6 +40,37 @@ class S3ObjectStoreTest {
             // A second client finds the bucket already there (409 from MinIO) and still works.
             store().put("again", byteArrayOf(9), "application/octet-stream")
             assertContentEquals(byteArrayOf(9), store().get("again"))
+        }
+
+    // What an app does with the URLs from POST /v1/me/avatar and GET /v1/me: MinIO accepts our query signatures.
+    @Test
+    fun presignedUrlsWorkWithoutCredentialsAndHeadAndDeleteToo() =
+        runBlocking {
+            val store = store(bucket = "presign-test")
+            store.put("warm-up", byteArrayOf(0), "application/octet-stream") // creates the bucket
+            val http = HttpClient.newHttpClient()
+            val picture = ByteArray(5_000) { (it % 7).toByte() }
+            val put =
+                HttpRequest
+                    .newBuilder(store.presignPut("avatars/u1/p.jpg", "image/jpeg", 600))
+                    .header("Content-Type", "image/jpeg")
+                    .PUT(HttpRequest.BodyPublishers.ofByteArray(picture))
+                    .build()
+            assertEquals(200, http.send(put, HttpResponse.BodyHandlers.discarding()).statusCode())
+            assertEquals(ObjectInfo(5_000, "image/jpeg"), store.head("avatars/u1/p.jpg"))
+            val get = HttpRequest.newBuilder(store.presignGet("avatars/u1/p.jpg", 900)).GET().build()
+            assertContentEquals(picture, http.send(get, HttpResponse.BodyHandlers.ofByteArray()).body())
+            // The signed content type can't be swapped.
+            val png =
+                HttpRequest
+                    .newBuilder(store.presignPut("avatars/u1/q.jpg", "image/jpeg", 600))
+                    .header("Content-Type", "image/png")
+                    .PUT(HttpRequest.BodyPublishers.ofByteArray(picture))
+                    .build()
+            assertEquals(403, http.send(png, HttpResponse.BodyHandlers.discarding()).statusCode())
+            store.delete("avatars/u1/p.jpg")
+            assertNull(store.head("avatars/u1/p.jpg"))
+            store.delete("avatars/u1/p.jpg") // deleting a missing object is fine
         }
 
     @Test

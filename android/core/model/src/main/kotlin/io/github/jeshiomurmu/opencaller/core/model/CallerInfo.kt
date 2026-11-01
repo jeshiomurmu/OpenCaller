@@ -13,6 +13,7 @@ package io.github.jeshiomurmu.opencaller.core.model
  * @property lineType kind of line, if known.
  * @property regionCode ISO 3166-1 alpha-2 region of the number, if known.
  * @property verification the carrier's STIR/SHAKEN verdict for the call (Android 11+).
+ * @property badge the owner's supporter badge, only with a self-registered [displayName] (docs/prd.md F-SO-06).
  */
 data class CallerInfo(
     val number: PhoneNumber?,
@@ -25,6 +26,7 @@ data class CallerInfo(
     val lineType: LineType? = null,
     val regionCode: String? = null,
     val verification: CallerVerification = CallerVerification.UNKNOWN,
+    val badge: SupporterBadge? = null,
 ) {
     /** True when the caller withheld their number. */
     val isHidden: Boolean get() = number == null

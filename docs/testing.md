@@ -295,9 +295,9 @@ app):
 
 | ID | Title | Expected | Type |
 | --- | --- | --- | --- |
-| TC-SOC-001 | Visibility change | Name disappears from buckets after next build | E2E |
-| TC-SOC-002 | Incognito search | Target's searcher list doesn't include viewer | U |
-| TC-SOC-003 | Delete account | Profile gone from API immediately; purge job ≤ 30 days | U |
+| TC-SOC-001 | Visibility change | Name disappears from buckets after next build (buckets are built per request, so at once) | I (`MeApiTest`; compose `scripts/smoke.sh` → Profiles) |
+| TC-SOC-002 | Incognito search | Target's searcher list doesn't include viewer | I (`VisitorsTest`, Testcontainers) |
+| TC-SOC-003 | Delete account | Profile gone from API immediately; purge job ≤ 30 days (daily `retention` job) | I (`DeleteAccountTest`; smoke) |
 | TC-BIZ-001 | Claim requires ownership | Claim without OTP to that number fails | U |
 | TC-BIZ-002 | Verified badge | Approved business shows badge, logo, reason on card | I |
 | TC-UT-001 | Ghost call | Scheduled fake call appears with chosen name/photo; no real call placed | I |

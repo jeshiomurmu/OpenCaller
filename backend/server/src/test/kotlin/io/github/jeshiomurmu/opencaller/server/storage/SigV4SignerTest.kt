@@ -40,6 +40,27 @@ class SigV4SignerTest {
     }
 
     @Test
+    fun presignedUrlsMatchBotocoreVectors() {
+        val vectors =
+            javaClass
+                .getResource("/fixtures/presign_vectors.csv")!!
+                .readText()
+                .lines()
+                .filter { it.isNotBlank() && !it.startsWith("#") }
+                .map { it.split(',') }
+        assertEquals(3, vectors.size)
+        vectors.forEach { row ->
+            val (method, url, contentType) = row
+            val (date, region, expires) = row.drop(3)
+            val headers = if (contentType.isEmpty()) emptyMap() else mapOf("Content-Type" to contentType)
+            val presigned =
+                SigV4Signer("test-access-key", "test-secret-key/not+real", region)
+                    .presign(method, URI.create(url), Instant.from(parseDate.parse(date)), expires.toInt(), headers)
+            assertEquals(row[6], presigned.toString(), "$method $url")
+        }
+    }
+
+    @Test
     fun encodesKeysLikeS3() {
         assertEquals("lists/BD/3/full.ocsl", SigV4Signer.uriEncode("lists/BD/3/full.ocsl", keepSlash = true))
         assertEquals("a%20b/c%2Bd~e_f.g-h", SigV4Signer.uriEncode("a b/c+d~e_f.g-h", keepSlash = true))

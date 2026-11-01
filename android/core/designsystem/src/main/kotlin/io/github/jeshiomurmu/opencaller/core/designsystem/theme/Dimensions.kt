@@ -45,6 +45,9 @@ object OpenCallerSpacing {
     /** Caller avatars and business logos: a 40 dp circle (docs/design.md §10). */
     val avatar: Dp = 40.dp
 
+    /** The picture on a profile screen: a 96 dp circle (Phase 8). */
+    val profilePicture: Dp = 96.dp
+
     /** Answer, decline and hang-up buttons of the in-call screen: a 64 dp circle. */
     val callAction: Dp = 64.dp
 

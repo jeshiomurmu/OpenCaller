@@ -39,8 +39,9 @@ import java.util.Locale
 
 /**
  * Who is calling, decided in one glance (docs/design.md §1, §5): avatar, name in `headlineMedium` with its
- * [SourceChip] (a name is never shown without its source), the risk banner, a meta row (country, line type, reports),
- * the carrier's STIR/SHAKEN verdict and its actions. Risk is always icon + words, never colour alone.
+ * [SourceChip] (a name is never shown without its source) and a supporter's [SupporterBadgeLabel], the risk banner,
+ * a meta row (country, line type, reports), the carrier's STIR/SHAKEN verdict and its actions. Risk is always
+ * icon + words, never colour alone.
  *
  * @param formattedNumber the caller's number formatted for display (national format when in the user's country).
  * @param content the actions row (e.g. Block, Close).
@@ -74,6 +75,7 @@ fun CallerCard(
                     )
                 }
                 caller.nameSource?.takeIf { name != null }?.let { SourceChip(source = it) }
+                caller.badge?.takeIf { name != null }?.let { SupporterBadgeLabel(it) }
                 if (caller.isVerifiedBusiness) VerifiedBadge()
             }
         }

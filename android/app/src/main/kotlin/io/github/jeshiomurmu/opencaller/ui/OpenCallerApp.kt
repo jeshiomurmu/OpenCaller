@@ -57,14 +57,18 @@ import io.github.jeshiomurmu.opencaller.navigation.BlockingRulesRoute
 import io.github.jeshiomurmu.opencaller.navigation.CallsRoute
 import io.github.jeshiomurmu.opencaller.navigation.ComposeMessageRoute
 import io.github.jeshiomurmu.opencaller.navigation.ContactEditorRoute
+import io.github.jeshiomurmu.opencaller.navigation.ContactRequestsInboxRoute
 import io.github.jeshiomurmu.opencaller.navigation.ContactRoute
 import io.github.jeshiomurmu.opencaller.navigation.ContactsRoute
 import io.github.jeshiomurmu.opencaller.navigation.ConversationRoute
 import io.github.jeshiomurmu.opencaller.navigation.DialerRoute
 import io.github.jeshiomurmu.opencaller.navigation.MeRoute
 import io.github.jeshiomurmu.opencaller.navigation.NEW_CONTACT
+import io.github.jeshiomurmu.opencaller.navigation.NumberProfileRoute
 import io.github.jeshiomurmu.opencaller.navigation.NumberSearchRoute
+import io.github.jeshiomurmu.opencaller.navigation.OwnProfileRoute
 import io.github.jeshiomurmu.opencaller.navigation.PermissionsRoute
+import io.github.jeshiomurmu.opencaller.navigation.ProfileVisitorsRoute
 import io.github.jeshiomurmu.opencaller.navigation.ProtectionRoute
 import io.github.jeshiomurmu.opencaller.navigation.QuickRepliesSettingsRoute
 import io.github.jeshiomurmu.opencaller.navigation.ScreeningDebugRoute
@@ -167,11 +171,13 @@ private fun AppNavHost(
                         onSignIn = { navController.navigate(AccountSignInRoute) { launchSingleTop = true } },
                         onSearch = { navController.navigate(NumberSearchRoute) { launchSingleTop = true } },
                         onDispute = { navController.navigate(SpamDisputeRoute()) { launchSingleTop = true } },
+                        onProfile = { navController.navigate(OwnProfileRoute) { launchSingleTop = true } },
                     )
                 },
             )
         }
         onlineRoutes(navController)
+        profileRoutes(navController)
         composable<ScreeningDebugRoute> { DebugRoute() }
         composable<QuickRepliesSettingsRoute> { QuickRepliesRoute() }
         composable<PermissionsRoute> { entry ->
@@ -210,6 +216,7 @@ private fun NavGraphBuilder.onlineRoutes(navController: NavHostController) {
                 SearchNavigation(
                     onSignIn = signIn,
                     onDispute = { navController.navigate(SpamDisputeRoute(number = it)) { launchSingleTop = true } },
+                    onOpenProfile = { navController.navigate(NumberProfileRoute(it)) { launchSingleTop = true } },
                 ),
         )
     }
@@ -250,8 +257,8 @@ internal fun PlaceholderScreen(
     EmptyState(icon = destination.icon, message = stringResource(destination.placeholder), modifier = modifier)
 }
 
-// Permissions & roles, the debug screen, sign-in, disputes and quick replies live under the Me tab; the rules and the
-// blocked log under Protection; search and the dial pad under Calls; a contact and its editor under Contacts.
+// Permissions & roles, the debug screen, sign-in, disputes, quick replies and my profile live under the Me tab; the rules and the
+// blocked log under Protection; search (with a result's profile) and the dial pad under Calls; a contact and its editor under Contacts.
 private fun NavDestination?.isOn(destination: TopLevelDestination): Boolean =
     this?.hierarchy?.any { node ->
         node.hasRoute(destination.route::class) || CHILDREN[destination].orEmpty().any { node.hasRoute(it) }
@@ -259,7 +266,7 @@ private fun NavDestination?.isOn(destination: TopLevelDestination): Boolean =
 
 private val CHILDREN =
     mapOf(
-        TopLevelDestination.CALLS to listOf(NumberSearchRoute::class, DialerRoute::class),
+        TopLevelDestination.CALLS to listOf(NumberSearchRoute::class, DialerRoute::class, NumberProfileRoute::class),
         TopLevelDestination.MESSAGES to listOf(ConversationRoute::class, ComposeMessageRoute::class),
         TopLevelDestination.CONTACTS to listOf(ContactRoute::class, ContactEditorRoute::class),
         TopLevelDestination.ME to
@@ -269,6 +276,9 @@ private val CHILDREN =
                 AccountSignInRoute::class,
                 SpamDisputeRoute::class,
                 QuickRepliesSettingsRoute::class,
+                OwnProfileRoute::class,
+                ProfileVisitorsRoute::class,
+                ContactRequestsInboxRoute::class,
             ),
         TopLevelDestination.PROTECTION to listOf(BlockingRulesRoute::class, BlockedCallsRoute::class),
     )

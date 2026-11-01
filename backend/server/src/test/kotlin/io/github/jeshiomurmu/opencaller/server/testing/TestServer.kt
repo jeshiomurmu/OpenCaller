@@ -17,12 +17,14 @@ import io.github.jeshiomurmu.opencaller.server.config.RedisConfig
 import io.github.jeshiomurmu.opencaller.server.db.ServerDatabase
 import io.github.jeshiomurmu.opencaller.server.db.allTables
 import io.github.jeshiomurmu.opencaller.server.redis.Redis
+import io.github.jeshiomurmu.opencaller.server.storage.ObjectInfo
 import io.github.jeshiomurmu.opencaller.server.storage.ObjectStore
 import kotlinx.coroutines.Dispatchers
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.postgresql.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
+import java.net.URI
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -81,9 +83,41 @@ class InMemoryObjectStore : ObjectStore {
         contentType: String,
     ) {
         objects[key] = bytes.copyOf()
+        contentTypes[key] = contentType
     }
 
     override suspend fun get(key: String): ByteArray? = objects[key]?.copyOf()
+
+    /** Content types of [objects] (set by [put] and by tests standing in for an app's upload). */
+    val contentTypes = ConcurrentHashMap<String, String>()
+
+    override suspend fun head(key: String): ObjectInfo? = objects[key]?.let { ObjectInfo(it.size.toLong(), contentTypes[key]) }
+
+    override suspend fun delete(key: String) {
+        objects.remove(key)
+        contentTypes.remove(key)
+    }
+
+    override fun presignPut(
+        key: String,
+        contentType: String,
+        expiresSeconds: Int,
+    ): URI = URI.create("http://objects.test/$key?put&type=$contentType&expires=$expiresSeconds")
+
+    override fun presignGet(
+        key: String,
+        expiresSeconds: Int,
+    ): URI = URI.create("http://objects.test/$key?get&expires=$expiresSeconds")
+
+    /** Stands in for an app's upload to a presigned URL. */
+    fun upload(
+        key: String,
+        bytes: ByteArray,
+        contentType: String,
+    ) {
+        objects[key] = bytes.copyOf()
+        contentTypes[key] = contentType
+    }
 }
 
 /** One PostgreSQL and one Redis container for the whole test run, started on first use. */
@@ -171,6 +205,9 @@ class TestServer(
     suspend fun reset() {
         TestInfra.redis.evalLong("redis.call('FLUSHALL') return 1", emptyList())
         TestInfra.database.query { exec("TRUNCATE ${allTables.joinToString { it.tableName }} RESTART IDENTITY CASCADE") }
-        (objectStore as? InMemoryObjectStore)?.objects?.clear()
+        (objectStore as? InMemoryObjectStore)?.let {
+            it.objects.clear()
+            it.contentTypes.clear()
+        }
     }
 }

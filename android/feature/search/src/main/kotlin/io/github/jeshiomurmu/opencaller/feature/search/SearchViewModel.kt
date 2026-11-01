@@ -130,6 +130,7 @@ class SearchViewModel
                                 SpamVerdict(score, SpamVerdict.levelFor(score, threshold), category, reportCount, VerdictSource.SEARCH)
                             },
                         verifiedBusinessId = businessName?.let { VERIFIED },
+                        badge = badge,
                         regionCode = normalizer.regionCode(number),
                         lineType = normalizer.numberType(number),
                     ),

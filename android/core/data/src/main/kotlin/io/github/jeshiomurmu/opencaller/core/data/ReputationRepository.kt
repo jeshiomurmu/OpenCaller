@@ -9,6 +9,7 @@ import io.github.jeshiomurmu.opencaller.core.database.entity.NumberInfoEntity
 import io.github.jeshiomurmu.opencaller.core.model.LineType
 import io.github.jeshiomurmu.opencaller.core.model.NameSource
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
+import io.github.jeshiomurmu.opencaller.core.model.SupporterBadge
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,6 +29,7 @@ data class CachedReputation(
     val logoUrl: String?,
     val callReason: String?,
     val lineType: LineType?,
+    val badge: SupporterBadge? = null,
 )
 
 /** Reputation cache (docs/architecture.md §4.1 step 9): entries expire after their TTL (24 h). */
@@ -56,5 +58,6 @@ class ReputationRepository
                 logoUrl = logoUrl,
                 callReason = callReason,
                 lineType = lineType?.let { name -> LineType.entries.firstOrNull { it.name == name } },
+                badge = SupporterBadge.parse(badge),
             )
     }

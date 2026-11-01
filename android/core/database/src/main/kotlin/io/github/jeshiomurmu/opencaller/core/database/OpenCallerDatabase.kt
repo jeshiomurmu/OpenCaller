@@ -50,7 +50,7 @@ import io.github.jeshiomurmu.opencaller.core.database.entity.VerificationRangeEn
         ScheduledSmsEntity::class,
         FamilyMemberEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @Suppress("TooManyFunctions") // One accessor per DAO is how Room exposes them.

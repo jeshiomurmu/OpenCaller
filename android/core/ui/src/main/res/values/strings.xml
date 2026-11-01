@@ -53,6 +53,9 @@
 
     <!-- VerifiedBadge. -->
     <string name="verified_business">Verified business</string>
+    <!-- Supporter badges (docs/prd.md F-SO-06). -->
+    <string name="badge_supporter">Supporter</string>
+    <string name="badge_gold">Gold supporter</string>
     <string name="verified_business_explain">Verified business. Tap to see how it was verified.</string>
 
     <!-- PermissionExplainer (docs/design.md §5). -->

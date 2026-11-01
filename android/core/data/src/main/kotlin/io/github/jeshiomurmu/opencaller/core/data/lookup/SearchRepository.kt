@@ -10,6 +10,7 @@ import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.common.Clock
 import io.github.jeshiomurmu.opencaller.core.model.NameSource
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
+import io.github.jeshiomurmu.opencaller.core.model.SupporterBadge
 import io.github.jeshiomurmu.opencaller.core.network.DisputeRequest
 import io.github.jeshiomurmu.opencaller.core.network.OpenCallerApi
 import io.github.jeshiomurmu.opencaller.core.network.apiCall
@@ -77,6 +78,7 @@ class SearchRepository
                 reportCount = reportCount,
                 notSpamCount = notSpamCount,
                 businessName = business?.name,
+                badge = SupporterBadge.parse(badge).takeIf { business == null && name != null },
             )
 
         /** Quota. */

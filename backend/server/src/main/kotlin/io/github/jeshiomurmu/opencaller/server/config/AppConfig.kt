@@ -58,15 +58,21 @@ data class RedisConfig(
     override fun toString() = "RedisConfig(url=$url, password=${if (password == null) "none" else "***"})"
 }
 
-/** MinIO / S3-compatible object storage for the published spam lists. */
+/**
+ * MinIO / S3-compatible object storage for the published spam lists and profile pictures. The server talks to
+ * [endpoint]; presigned URLs for apps use [publicEndpoint] (the store's address as apps reach it), which defaults
+ * to [endpoint].
+ */
 data class MinioConfig(
     val endpoint: String,
     val accessKey: String,
     val secretKey: String,
     val bucket: String = "opencaller",
     val region: String = "us-east-1",
+    val publicEndpoint: String = endpoint,
 ) {
-    override fun toString() = "MinioConfig(endpoint=$endpoint, accessKey=***, secretKey=***, bucket=$bucket, region=$region)"
+    override fun toString() =
+        "MinioConfig(endpoint=$endpoint, publicEndpoint=$publicEndpoint, accessKey=***, secretKey=***, bucket=$bucket, region=$region)"
 }
 
 /**
@@ -201,12 +207,17 @@ private class ConfigReader(
     private fun readMinio(): MinioConfig {
         val bucket = required("minio.bucket", "MINIO_BUCKET")
         if (bucket.isNotEmpty() && !BUCKET_NAME.matches(bucket)) problems += "MINIO_BUCKET must be a valid S3 bucket name"
+        val endpoint = prefixed("minio.endpoint", "MINIO_ENDPOINT", "http://", "https://")
         return MinioConfig(
-            endpoint = prefixed("minio.endpoint", "MINIO_ENDPOINT", "http://", "https://"),
+            endpoint = endpoint,
             accessKey = required("minio.accessKey", "MINIO_ACCESS_KEY"),
             secretKey = required("minio.secretKey", "MINIO_SECRET_KEY"),
             bucket = bucket,
             region = required("minio.region", "MINIO_REGION"),
+            publicEndpoint =
+                string("minio.publicEndpoint")
+                    ?.let { prefixed("minio.publicEndpoint", "MINIO_PUBLIC_ENDPOINT", "http://", "https://") }
+                    ?: endpoint,
         )
     }
 

@@ -9,9 +9,10 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
 /**
- * AWS Signature Version 4 for S3 requests in header form (the scheme MinIO implements): canonical request →
- * string to sign → HMAC-SHA256 with a key derived from the secret, date, region and service. Only the three
- * headers below are signed. Tests compare the output with signatures computed by botocore (AWS's Python SDK).
+ * AWS Signature Version 4 for S3 requests (the scheme MinIO implements): canonical request → string to sign →
+ * HMAC-SHA256 with a key derived from the secret, date, region and service. [sign] signs a request the server
+ * sends itself (header form, three signed headers); [presign] makes a URL an app can use on its own (query form).
+ * Tests compare both with botocore (AWS's Python SDK).
  */
 class SigV4Signer(
     private val accessKey: String,
@@ -40,16 +41,58 @@ class SigV4Signer(
             ).joinToString("\n")
         val scope = "$day/$region/$SERVICE/aws4_request"
         val stringToSign = "$ALGORITHM\n$amzDate\n$scope\n${sha256Hex(canonicalRequest.toByteArray(Charsets.UTF_8))}"
-        val signingKey =
-            listOf(day, region, SERVICE, "aws4_request")
-                .fold("AWS4$secretKey".toByteArray(Charsets.UTF_8)) { key, part -> hmac(key, part) }
-        val signature = hmac(signingKey, stringToSign).toHexString()
+        val signature = hmac(signingKey(day), stringToSign).toHexString()
         return mapOf(
             "x-amz-date" to amzDate,
             "x-amz-content-sha256" to payloadHash,
             "Authorization" to "$ALGORITHM Credential=$accessKey/$scope, SignedHeaders=$SIGNED_HEADERS, Signature=$signature",
         )
     }
+
+    /**
+     * A presigned URL (query-string authentication): anyone holding it may send [method] to [uri] until
+     * [expiresSeconds] after [at], without credentials. Signed headers are `host` plus [headers] (e.g.
+     * `content-type`, which the client must then send with exactly that value); the payload is not signed.
+     */
+    fun presign(
+        method: String,
+        uri: URI,
+        at: Instant,
+        expiresSeconds: Int,
+        headers: Map<String, String> = emptyMap(),
+    ): URI {
+        val amzDate = AMZ_DATE.format(at)
+        val day = amzDate.substring(0, DAY_LENGTH)
+        val scope = "$day/$region/$SERVICE/aws4_request"
+        val host = if (uri.port == -1) uri.host else "${uri.host}:${uri.port}"
+        val signed = (headers.mapKeys { it.key.lowercase() } + ("host" to host)).toSortedMap()
+        val signedHeaders = signed.keys.joinToString(";")
+        val query =
+            listOf(
+                "X-Amz-Algorithm" to ALGORITHM,
+                "X-Amz-Credential" to "$accessKey/$scope",
+                "X-Amz-Date" to amzDate,
+                "X-Amz-Expires" to expiresSeconds.toString(),
+                "X-Amz-SignedHeaders" to signedHeaders,
+            ).joinToString("&") { (name, value) -> "$name=${uriEncode(value, keepSlash = false)}" }
+        val canonicalRequest =
+            listOf(
+                method,
+                canonicalPath(uri.rawPath),
+                canonicalQuery(query),
+                signed.entries.joinToString("") { (name, value) -> "$name:${value.trim()}\n" },
+                signedHeaders,
+                UNSIGNED_PAYLOAD,
+            ).joinToString("\n")
+        val stringToSign = "$ALGORITHM\n$amzDate\n$scope\n${sha256Hex(canonicalRequest.toByteArray(Charsets.UTF_8))}"
+        val signature = hmac(signingKey(day), stringToSign).toHexString()
+        val base = uri.toString().substringBefore('?')
+        return URI.create("$base?$query&X-Amz-Signature=$signature")
+    }
+
+    private fun signingKey(day: String): ByteArray =
+        listOf(day, region, SERVICE, "aws4_request")
+            .fold("AWS4$secretKey".toByteArray(Charsets.UTF_8)) { key, part -> hmac(key, part) }
 
     private fun hmac(
         key: ByteArray,
@@ -66,6 +109,7 @@ class SigV4Signer(
         private const val SERVICE = "s3"
         private const val HMAC = "HmacSHA256"
         private const val SIGNED_HEADERS = "host;x-amz-content-sha256;x-amz-date"
+        private const val UNSIGNED_PAYLOAD = "UNSIGNED-PAYLOAD"
         private const val DAY_LENGTH = 8
         private val AMZ_DATE = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(ZoneOffset.UTC)
 

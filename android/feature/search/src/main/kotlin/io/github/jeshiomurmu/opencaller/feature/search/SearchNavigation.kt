@@ -4,4 +4,5 @@ package io.github.jeshiomurmu.opencaller.feature.search
 data class SearchNavigation(
     val onSignIn: () -> Unit,
     val onDispute: (e164: String) -> Unit,
+    val onOpenProfile: (e164: String) -> Unit = {},
 )

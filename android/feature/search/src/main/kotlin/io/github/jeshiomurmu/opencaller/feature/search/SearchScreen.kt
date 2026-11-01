@@ -129,13 +129,16 @@ private fun SearchForm(
     Body(stringResource(R.string.search_privacy))
     state.problem?.let { problem -> ProblemMessage(problem, onRetry = search, onSignIn = navigation.onSignIn) }
     state.found?.let { found ->
-        SearchResultCard(found = found, onWhy = onWhy, onDispute = {
-            navigation.onDispute(
-                found.caller.number
-                    ?.e164
-                    .orEmpty(),
-            )
-        })
+        val e164 =
+            found.caller.number
+                ?.e164
+                .orEmpty()
+        SearchResultCard(
+            found = found,
+            onWhy = onWhy,
+            onDispute = { navigation.onDispute(e164) },
+            onOpenProfile = { navigation.onOpenProfile(e164) },
+        )
     }
 }
 

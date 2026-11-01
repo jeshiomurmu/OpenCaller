@@ -74,6 +74,7 @@ data class BusinessInfoDto(
 @Serializable
 data class NumberInfoDto(
     val name: String? = null,
+    val badge: String? = null,
     val spamScore: Double? = null,
     val label: String? = null,
     val category: String? = null,
