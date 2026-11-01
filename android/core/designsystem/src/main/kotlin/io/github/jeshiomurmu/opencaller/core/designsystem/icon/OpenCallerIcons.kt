@@ -130,4 +130,16 @@ object OpenCallerIcons {
 
     /** Search. */
     @get:DrawableRes val Search: Int = R.drawable.ic_search
+
+    /** Send a message. */
+    @get:DrawableRes val Send: Int = R.drawable.ic_send
+
+    /** Attach a picture. */
+    @get:DrawableRes val Image: Int = R.drawable.ic_image
+
+    /** Download (an MMS waiting on the carrier's server). */
+    @get:DrawableRes val Download: Int = R.drawable.ic_download
+
+    /** Start something new (a message). */
+    @get:DrawableRes val Add: Int = R.drawable.ic_add
 }

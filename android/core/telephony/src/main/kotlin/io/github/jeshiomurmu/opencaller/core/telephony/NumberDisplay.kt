@@ -30,6 +30,9 @@ class NumberDisplay
             home: String = homeRegion(),
         ): String = normalizer.formatAsYouType(input, home)
 
+        /** [raw] (a number as typed or as a message address) as a phone number, or `null` for a sender ID. */
+        fun parse(raw: String): PhoneNumber? = normalizer.fromHandle(raw, homeRegion())
+
         /** [number] with its middle hidden, e.g. `+880 ••• 1234`. */
         fun masked(number: PhoneNumber): String = normalizer.masked(number)
 

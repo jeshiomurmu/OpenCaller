@@ -124,6 +124,8 @@ Rough effort for one full-time developer working with an AI agent: Phases 0–7 
 
 ## Phase 7 — SMS app, smart inbox, OTP
 
+Done in two parts: 7a (default SMS app: the four role components, provider storage, conversations, thread, compose, MMS incl. group MMS, dual-SIM send, delivery reports, notifications) and 7b (the rest of this list).
+
 - [ ] Default SMS role components: `SMS_DELIVER` receiver, `WAP_PUSH_DELIVER` receiver, `RESPOND_VIA_MESSAGE` service, `SENDTO` activity
 - [ ] Conversations, thread, compose, MMS (images), group MMS, dual-SIM send, delivery reports
 - [ ] `MessagePipeline` (architecture §4.4)

@@ -26,6 +26,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import io.github.jeshiomurmu.opencaller.AppUiState
 import io.github.jeshiomurmu.opencaller.DialRequest
+import io.github.jeshiomurmu.opencaller.MessageRequest
 import io.github.jeshiomurmu.opencaller.R
 import io.github.jeshiomurmu.opencaller.core.designsystem.preview.OpenCallerPreviews
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
@@ -54,12 +55,13 @@ import io.github.jeshiomurmu.opencaller.navigation.AccountSignInRoute
 import io.github.jeshiomurmu.opencaller.navigation.BlockedCallsRoute
 import io.github.jeshiomurmu.opencaller.navigation.BlockingRulesRoute
 import io.github.jeshiomurmu.opencaller.navigation.CallsRoute
+import io.github.jeshiomurmu.opencaller.navigation.ComposeMessageRoute
 import io.github.jeshiomurmu.opencaller.navigation.ContactEditorRoute
 import io.github.jeshiomurmu.opencaller.navigation.ContactRoute
 import io.github.jeshiomurmu.opencaller.navigation.ContactsRoute
+import io.github.jeshiomurmu.opencaller.navigation.ConversationRoute
 import io.github.jeshiomurmu.opencaller.navigation.DialerRoute
 import io.github.jeshiomurmu.opencaller.navigation.MeRoute
-import io.github.jeshiomurmu.opencaller.navigation.MessagesRoute
 import io.github.jeshiomurmu.opencaller.navigation.NEW_CONTACT
 import io.github.jeshiomurmu.opencaller.navigation.NumberSearchRoute
 import io.github.jeshiomurmu.opencaller.navigation.PermissionsRoute
@@ -81,6 +83,8 @@ fun OpenCallerApp(
     onReportShown: () -> Unit = {},
     dialRequest: DialRequest? = null,
     onDialShown: () -> Unit = {},
+    messageRequest: MessageRequest? = null,
+    onMessageShown: () -> Unit = {},
     navController: NavHostController = rememberNavController(),
 ) {
     val openPermissions = { item: AccessItem? -> navController.navigate(PermissionsRoute(explain = item?.name)) { launchSingleTop = true } }
@@ -93,6 +97,7 @@ fun OpenCallerApp(
             onDialShown()
         }
     }
+    OpenMessageWhenAsked(messageRequest, navController, onMessageShown)
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -118,6 +123,27 @@ fun OpenCallerApp(
     }
 }
 
+// A send-to link or a tapped message notification opens the conversation (or a new message without one).
+@Composable
+private fun OpenMessageWhenAsked(
+    request: MessageRequest?,
+    navController: NavHostController,
+    onShown: () -> Unit,
+) {
+    LaunchedEffect(request) {
+        if (request == null) return@LaunchedEffect
+        val thread = request.threadId
+        if (thread == null) {
+            navController.navigate(ComposeMessageRoute) { launchSingleTop = true }
+        } else {
+            navController.navigate(
+                ConversationRoute(thread, request.draft, request.recipients.joinToString(",")),
+            ) { launchSingleTop = true }
+        }
+        onShown()
+    }
+}
+
 @Composable
 private fun AppNavHost(
     state: AppUiState,
@@ -129,7 +155,7 @@ private fun AppNavHost(
 ) {
     NavHost(navController = navController, startDestination = CallsRoute, modifier = modifier) {
         phoneRoutes(state, navController, openPermissions)
-        composable<MessagesRoute> { PlaceholderScreen(TopLevelDestination.MESSAGES) }
+        messageRoutes(state, navController, openPermissions)
         protectionRoutes(navController, reportNumber, onReportShown, openPermissions)
         composable<MeRoute> {
             MeScreen(
@@ -234,6 +260,7 @@ private fun NavDestination?.isOn(destination: TopLevelDestination): Boolean =
 private val CHILDREN =
     mapOf(
         TopLevelDestination.CALLS to listOf(NumberSearchRoute::class, DialerRoute::class),
+        TopLevelDestination.MESSAGES to listOf(ConversationRoute::class, ComposeMessageRoute::class),
         TopLevelDestination.CONTACTS to listOf(ContactRoute::class, ContactEditorRoute::class),
         TopLevelDestination.ME to
             listOf(

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        Default SMS app (docs/architecture.md §5). Android grants these with the SMS role (its permission groups); they
+        are never requested before OpenCaller holds the role. READ_PHONE_STATE and READ_PHONE_NUMBERS: the SIMs to send
+        with and the user's own numbers (left out of group conversations).
+    -->
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_MMS" />
+    <uses-permission android:name="android.permission.RECEIVE_WAP_PUSH" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application>
+        <!--
+            The four components a default SMS app must declare (developer.android.com/reference/android/provider/
+            Telephony: "Creating an SMS app"; the same list is the SMS role's requirement). The send-to activity is
+            MainActivity (app module). Only the system may deliver SMS_DELIVER (BROADCAST_SMS) and WAP_PUSH_DELIVER
+            (BROADCAST_WAP_PUSH); only Telecom may start the quick-reply service (SEND_RESPOND_VIA_MESSAGE).
+        -->
+        <receiver
+            android:name=".receive.SmsDeliverReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_DELIVER" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".receive.MmsPushReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_WAP_PUSH">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.WAP_PUSH_DELIVER" />
+                <data android:mimeType="application/vnd.wap.mms-message" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name=".RespondViaMessageService"
+            android:exported="true"
+            android:permission="android.permission.SEND_RESPOND_VIA_MESSAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.RESPOND_VIA_MESSAGE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="sms" />
+                <data android:scheme="smsto" />
+                <data android:scheme="mms" />
+                <data android:scheme="mmsto" />
+            </intent-filter>
+        </service>
+
+        <!-- Send, delivery and download results, and the notification's Reply and Mark as read: OpenCaller's own only. -->
+        <receiver
+            android:name=".send.MessageStatusReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".notify.MessageActionReceiver"
+            android:exported="false" />
+
+        <!-- MMS files for Android's MMS service, readable only through the URI grant of each send or download. -->
+        <provider
+            android:name=".send.MmsPduProvider"
+            android:authorities="${applicationId}.messaging.pdu"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+    </application>
+
+</manifest>

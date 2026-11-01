@@ -3,8 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!--
-        Requested only after an explainer (docs/architecture.md §5). Call log and SMS permissions are added with the
-        dialer and SMS app phases, and only requested while OpenCaller holds the matching role. feature:callerid adds
+        Requested only after an explainer (docs/architecture.md §5). Call log and SMS permissions are declared by
+        feature:calllog and feature:messages, and only used while OpenCaller holds the matching role. feature:callerid adds
         READ_PHONE_STATE (call state on Android 12+, to close the caller card when the call ends).
     -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
@@ -43,6 +43,18 @@
                 <action android:name="android.intent.action.DIAL" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="tel" />
+            </intent-filter>
+            <!--
+                Writing a message. The default SMS app must handle ACTION_SENDTO with sms:, smsto:, mms: and mmsto:
+                (developer.android.com/reference/android/provider/Telephony, "Creating an SMS app").
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.SENDTO" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="sms" />
+                <data android:scheme="smsto" />
+                <data android:scheme="mms" />
+                <data android:scheme="mmsto" />
             </intent-filter>
         </activity>
 

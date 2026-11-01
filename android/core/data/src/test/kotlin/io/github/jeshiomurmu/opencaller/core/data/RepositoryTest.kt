@@ -14,7 +14,10 @@ import io.github.jeshiomurmu.opencaller.core.model.CallerVerification
 import io.github.jeshiomurmu.opencaller.core.model.Decision
 import io.github.jeshiomurmu.opencaller.core.model.Direction
 import io.github.jeshiomurmu.opencaller.core.model.LineType
+import io.github.jeshiomurmu.opencaller.core.model.MessageCategory
+import io.github.jeshiomurmu.opencaller.core.model.MessageMeta
 import io.github.jeshiomurmu.opencaller.core.model.NameSource
+import io.github.jeshiomurmu.opencaller.core.model.OtpInfo
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import io.github.jeshiomurmu.opencaller.core.model.ReportLabel
 import io.github.jeshiomurmu.opencaller.core.model.RuleAction
@@ -204,6 +207,30 @@ class RepositoryTest {
         }
 
     private fun <T> AppResult<T>.ok(): T = (this as AppResult.Success).value
+
+    @Test
+    fun messageMetaKeepsNoTextAndGoesWithItsThread() =
+        runTest {
+            val meta = MessageMetaRepository(access, dispatchers)
+            val otp =
+                MessageMeta(
+                    7,
+                    threadId = 3,
+                    MessageCategory.OTP,
+                    "Bank",
+                    NameSource.SENDER_REGISTRY,
+                    1_000,
+                    OtpInfo("123456", origin = "example.com"),
+                )
+            meta.save(otp).ok()
+            meta.save(otp.copy(providerId = 8, category = MessageCategory.PERSONAL, otp = null)).ok()
+            meta.save(otp.copy(providerId = 9, threadId = 4)).ok()
+
+            assertEquals(otp, meta.find(7).ok())
+            assertEquals(2, meta.deleteThread(3).ok())
+            assertNull(meta.find(8).ok())
+            assertEquals(4L, meta.find(9).ok()?.threadId)
+        }
 
     private fun event(
         decision: Decision,

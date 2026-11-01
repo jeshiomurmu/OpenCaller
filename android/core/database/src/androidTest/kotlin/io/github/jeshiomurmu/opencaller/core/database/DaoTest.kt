@@ -172,6 +172,8 @@ class DaoTest {
             assertEquals(MessageCategory.PROMOTION, dao.find(2)?.category)
             dao.delete(2)
             assertNull(dao.find(2))
+            assertEquals(1, dao.deleteThread(threadId = 1))
+            assertNull(dao.find(1))
         }
 
     @Test
