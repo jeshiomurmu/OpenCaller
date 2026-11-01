@@ -18,6 +18,7 @@ import io.github.jeshiomurmu.opencaller.server.http.metricsModule
 import io.github.jeshiomurmu.opencaller.server.http.respondProblem
 import io.github.jeshiomurmu.opencaller.server.lists.listRoutes
 import io.github.jeshiomurmu.opencaller.server.lookup.lookupRoutes
+import io.github.jeshiomurmu.opencaller.server.profile.profileRoutes
 import io.github.jeshiomurmu.opencaller.server.reports.reportRoutes
 import io.github.jeshiomurmu.opencaller.server.sync.syncRoutes
 import io.github.jeshiomurmu.opencaller.server.unlist.unlistRoutes
@@ -107,6 +108,7 @@ fun Application.module(deps: ServerDependencies) {
         disputeRoutes(deps.disputes)
         unlistRoutes(deps.unlist)
         syncRoutes(deps.sync)
+        profileRoutes(deps.profiles, deps.visitors, deps.contactRequests)
     }
 }
 

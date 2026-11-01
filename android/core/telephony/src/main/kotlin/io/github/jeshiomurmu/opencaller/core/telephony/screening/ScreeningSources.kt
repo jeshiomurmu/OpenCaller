@@ -6,6 +6,7 @@ import io.github.jeshiomurmu.opencaller.core.data.SpamListHit
 import io.github.jeshiomurmu.opencaller.core.model.BlockRule
 import io.github.jeshiomurmu.opencaller.core.model.NameSource
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
+import io.github.jeshiomurmu.opencaller.core.model.SupporterBadge
 import io.github.jeshiomurmu.opencaller.core.model.UserPreferences
 
 /** The user's contacts, read on the device only. */
@@ -48,6 +49,7 @@ data class NetworkVerdict(
     val displayName: String?,
     val nameSource: NameSource?,
     val fromCache: Boolean = false,
+    val badge: SupporterBadge? = null,
 )
 
 /**

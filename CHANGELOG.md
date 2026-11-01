@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Profiles (Phase 8): sign in and add your name and a picture, and choose who sees your name: everyone, signed-in
+  users only, or nobody. Incognito keeps your searches and profile visits out of other people's lists. Supporters see
+  who viewed their profile and who searched for their number (last 90 days; names only as each visitor allows, never
+  numbers). Ask a private number's owner to share their name; they choose to share or not. Supporter and Gold
+  supporter badges on the caller card, search results and profiles. Delete your account from My profile: you're
+  unlisted at once and everything is removed within a day.
+- Server: `GET/PUT/DELETE /v1/me`, `POST /v1/me/avatar` (pre-signed upload), `GET /v1/me/viewers`,
+  `GET /v1/me/searchers`, `GET /v1/profiles/{e164}`, contact requests, and a daily retention job; ADR 0004 records what
+  viewer and searcher logging stores and for how long.
 - Smart inbox (Phase 7b): messages sorted on the phone into Personal, Codes, Transactions, Bills, Deliveries,
   Promotions and Spam (the spam folder), with unread counts; Clean up deletes old codes, deliveries, promotions and
   spam (never personal messages, transactions or bills); optionally codes are deleted a day after they arrive.

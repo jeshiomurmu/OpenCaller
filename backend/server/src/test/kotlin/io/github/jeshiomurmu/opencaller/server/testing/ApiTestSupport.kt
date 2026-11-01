@@ -5,9 +5,11 @@ import io.github.jeshiomurmu.opencaller.server.http.ProblemDetails
 import io.github.jeshiomurmu.opencaller.server.http.ProblemJson
 import io.github.jeshiomurmu.opencaller.server.module
 import io.ktor.client.HttpClient
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
@@ -46,6 +48,24 @@ suspend fun HttpClient.postJson(
         headers.forEach { (name, value) -> header(name, value) }
         setBody(json)
     }
+
+/** PUTs [json] to [path] with a bearer [token]. */
+suspend fun HttpClient.putJson(
+    path: String,
+    json: String,
+    token: String,
+): HttpResponse =
+    put(path) {
+        contentType(ContentType.Application.Json)
+        header(HttpHeaders.Authorization, "Bearer $token")
+        setBody(json)
+    }
+
+/** DELETEs [path] with a bearer [token]. */
+suspend fun HttpClient.deleteWith(
+    path: String,
+    token: String,
+): HttpResponse = delete(path) { header(HttpHeaders.Authorization, "Bearer $token") }
 
 /** GETs [path] with a bearer [token] (if given) and extra [headers]. */
 suspend fun HttpClient.getWith(

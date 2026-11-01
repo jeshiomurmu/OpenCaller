@@ -59,6 +59,14 @@ suspend fun updateProfile(
     }
 }
 
+/** Sets the supporter tier (`none`, `supporter`, `gold`) of the user with [e164]; billing does this from Phase 10. */
+suspend fun setSupporterTier(
+    e164: String,
+    tier: String,
+) {
+    TestInfra.database.query { Users.update({ Users.e164 eq e164 }) { it[supporterTier] = tier } }
+}
+
 /** Inserts a business owning [e164] with [status] (APPROVED = verified) and returns its id. */
 suspend fun insertBusiness(
     e164: String,

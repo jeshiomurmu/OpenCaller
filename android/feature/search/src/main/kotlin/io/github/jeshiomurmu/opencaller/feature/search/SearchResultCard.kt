@@ -35,12 +35,16 @@ internal fun QuotaIndicator(
     )
 }
 
-/** A search result: the caller card (name with its source, risk, reports), "not spam" votes and a review link. */
+/**
+ * A search result: the caller card (name with its source and supporter badge, risk, reports), "not spam" votes, a
+ * review link, and "Open profile" (the profile, or a way to ask for a hidden name) for numbers without a business.
+ */
 @Composable
 internal fun SearchResultCard(
     found: SearchFound,
     onWhy: () -> Unit,
     onDispute: () -> Unit,
+    onOpenProfile: () -> Unit = {},
 ) {
     CallerCardSurface {
         Column {
@@ -61,6 +65,11 @@ internal fun SearchResultCard(
             ) {
                 TextButton(onClick = onDispute, modifier = Modifier.padding(horizontal = OpenCallerSpacing.xs)) {
                     Text(text = stringResource(R.string.search_dispute))
+                }
+            }
+            if (!found.caller.isVerifiedBusiness) {
+                TextButton(onClick = onOpenProfile, modifier = Modifier.padding(horizontal = OpenCallerSpacing.xs)) {
+                    Text(text = stringResource(R.string.search_open_profile))
                 }
             }
         }

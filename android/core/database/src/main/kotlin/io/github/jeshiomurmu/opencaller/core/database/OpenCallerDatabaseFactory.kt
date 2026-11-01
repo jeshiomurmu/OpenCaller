@@ -26,6 +26,9 @@ object OpenCallerDatabaseFactory {
             } else {
                 Room.databaseBuilder(context, OpenCallerDatabase::class.java, name)
             }
-        return builder.openHelperFactory(SupportOpenHelperFactory(passphrase)).build()
+        return builder
+            .openHelperFactory(SupportOpenHelperFactory(passphrase))
+            .apply { Migrations.ALL.forEach { addMigrations(it) } }
+            .build()
     }
 }

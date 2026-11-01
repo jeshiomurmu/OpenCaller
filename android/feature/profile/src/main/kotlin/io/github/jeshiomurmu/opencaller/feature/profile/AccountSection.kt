@@ -28,6 +28,7 @@ fun AccountRoute(
     onSignIn: () -> Unit,
     onSearch: () -> Unit,
     onDispute: () -> Unit,
+    onProfile: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AccountViewModel = hiltViewModel(),
 ) {
@@ -42,6 +43,7 @@ fun AccountRoute(
                 onSearch = onSearch,
                 onDispute = onDispute,
                 onUnlist = { state.unlistPageUrl?.let(uri::openUri) },
+                onProfile = onProfile,
             ),
         modifier = modifier,
     )
@@ -54,11 +56,12 @@ data class AccountActions(
     val onSearch: () -> Unit,
     val onDispute: () -> Unit,
     val onUnlist: () -> Unit,
+    val onProfile: () -> Unit,
 )
 
 /**
- * Account: sign in (optional) or out, number search, and the dispute and unlist flows. Without a server, a single
- * line says the app isn't connected; blocking works anyway.
+ * Account: sign in (optional) or out, the own profile (signed in), number search, and the dispute and unlist flows.
+ * Without a server, a single line says the app isn't connected; blocking works anyway.
  */
 @Composable
 fun AccountSection(
@@ -77,6 +80,7 @@ fun AccountSection(
             AccountRow(stringResource(R.string.not_connected_title), stringResource(R.string.not_connected_body), onClick = null)
         } else {
             if (state.signedIn) {
+                AccountRow(stringResource(R.string.account_profile), stringResource(R.string.account_profile_summary), actions.onProfile)
                 AccountRow(stringResource(R.string.account_signed_in), stringResource(R.string.account_sign_out), actions.onSignOut)
             } else {
                 AccountRow(stringResource(R.string.account_sign_in), stringResource(R.string.account_sign_in_summary), actions.onSignIn)
@@ -121,7 +125,7 @@ private fun AccountSectionPreview() {
                         signedIn = false,
                         unlistPageUrl = "https://example.org/unlist",
                     ),
-                actions = AccountActions({}, {}, {}, {}, {}),
+                actions = AccountActions({}, {}, {}, {}, {}, {}),
             )
         }
     }

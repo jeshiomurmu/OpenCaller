@@ -21,6 +21,7 @@ import io.github.jeshiomurmu.opencaller.core.model.NameSource
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import io.github.jeshiomurmu.opencaller.core.model.RiskLevel
 import io.github.jeshiomurmu.opencaller.core.model.SpamVerdict
+import io.github.jeshiomurmu.opencaller.core.model.SupporterBadge
 
 /** One sample caller per [CallerCardState], with STIR/SHAKEN lines on some. Fictional numbers only. */
 internal class CallerCardSamples : PreviewParameterProvider<CallerInfo> {
@@ -30,6 +31,7 @@ internal class CallerCardSamples : PreviewParameterProvider<CallerInfo> {
         sequenceOf(
             CallerInfo(number, "Amina Rahman", NameSource.CONTACT, lineType = LineType.MOBILE, regionCode = "US"),
             CallerInfo(number, "Jordan Lee", NameSource.SELF_REGISTERED, regionCode = "US", verification = CallerVerification.PASSED),
+            CallerInfo(number, "Priya Das", NameSource.SELF_REGISTERED, regionCode = "IN", badge = SupporterBadge.GOLD),
             CallerInfo(
                 number,
                 "City Bank",

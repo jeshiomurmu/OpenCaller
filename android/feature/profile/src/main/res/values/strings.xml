@@ -50,4 +50,79 @@
     <string name="account_dispute_summary">Ask for a review of a number\'s spam label</string>
     <string name="account_unlist">Unlist my number</string>
     <string name="account_unlist_summary">Remove your name from OpenCaller (opens a web page)</string>
+
+    <string name="account_profile">My profile</string>
+    <string name="account_profile_summary">Your name, picture, who sees them, incognito</string>
+
+    <!-- My profile (docs/prd.md F-SO-01/04/07). -->
+    <string name="profile_title">My profile</string>
+    <string name="profile_retry">Try again</string>
+    <string name="profile_picture">Profile picture</string>
+    <string name="profile_picture_change">Change picture</string>
+    <string name="profile_picture_remove">Remove picture</string>
+    <string name="profile_name">Your name</string>
+    <string name="profile_name_hint">Shown in caller ID and search, as your visibility allows</string>
+    <string name="profile_save">Save</string>
+    <string name="profile_saved">Saved</string>
+    <string name="profile_problem_signed_out">You\'re signed out. Sign in again to see your profile.</string>
+    <string name="profile_problem_picture">That picture couldn\'t be used. Try another one.</string>
+    <string name="profile_activity_title">Your profile\'s activity</string>
+    <string name="profile_viewers">Who viewed my profile</string>
+    <plurals name="profile_viewers_summary">
+        <item quantity="one">%d view in the last 90 days</item>
+        <item quantity="other">%d views in the last 90 days</item>
+    </plurals>
+    <string name="profile_searchers">Who searched for me</string>
+    <plurals name="profile_searchers_summary">
+        <item quantity="one">%d search in the last 90 days</item>
+        <item quantity="other">%d searches in the last 90 days</item>
+    </plurals>
+    <string name="profile_requests">Contact requests</string>
+    <string name="profile_requests_summary">People asking for your name</string>
+    <string name="profile_delete">Delete account</string>
+    <string name="profile_delete_summary">Removes your profile, your reports and your visitors from OpenCaller</string>
+
+    <string name="visibility_title">Who sees your name</string>
+    <string name="visibility_everyone">Everyone</string>
+    <string name="visibility_everyone_explain">Anyone with OpenCaller sees your name when you call, signed in or not.</string>
+    <string name="visibility_registered">Signed-in OpenCaller users</string>
+    <string name="visibility_registered_explain">Only people signed in to OpenCaller see your name. This is the default.</string>
+    <string name="visibility_nobody">Nobody</string>
+    <string name="visibility_nobody_explain">Your name is never shown. People can ask for it, and you decide.</string>
+    <string name="visibility_note">Whatever you choose, people you call still see your number, and spam reports about your number stay.</string>
+
+    <string name="incognito_title">Incognito</string>
+    <string name="incognito_summary">Your searches and profile visits aren\'t shown to the people you look up. Visits from before you turned it on stay.</string>
+
+    <string name="delete_first_title">Delete your account?</string>
+    <string name="delete_first_body">OpenCaller deletes your profile and picture, the spam reports you wrote, and who viewed or searched for you. You\'ll be signed out on every phone. Your blocking rules and settings on this phone stay.</string>
+    <string name="delete_continue">Continue</string>
+    <string name="delete_cancel">Cancel</string>
+    <string name="delete_second_title">This can\'t be undone</string>
+    <string name="delete_second_body">Your profile disappears from caller ID and search at once; everything else is deleted within 30 days. Delete your account now?</string>
+    <string name="delete_confirm">Delete account</string>
+    <string name="delete_progress">Deleting your account…</string>
+
+    <!-- Who viewed / searched (docs/prd.md F-SO-02/03, docs/decisions/0004-viewer-searcher-logging.md). -->
+    <string name="visitors_supporters_only">Seeing who viewed or searched for you is a supporter feature. Supporter plans arrive in a later update.</string>
+    <plurals name="visitors_total">
+        <item quantity="one">%1$d in the last %2$d days</item>
+        <item quantity="other">%1$d in the last %2$d days</item>
+    </plurals>
+    <string name="visitors_empty">Nobody yet.</string>
+    <string name="visitors_hidden_name">Someone who hides their name</string>
+    <string name="visitors_unknown_time">Unknown time</string>
+
+    <!-- Contact requests (docs/prd.md F-SO-05). -->
+    <string name="requests_explain">These people asked for your name. If you share it, they see it when they search your number. Asking gave you their number and name.</string>
+    <string name="requests_empty">No requests.</string>
+    <string name="requests_approve">Share my name</string>
+    <string name="requests_deny">Don\'t share</string>
+
+    <!-- Another number's profile. -->
+    <string name="public_profile_no_name">Name not shown</string>
+    <string name="public_profile_visit_note">The owner may see that you looked at this profile, unless you turn on Incognito in your profile.</string>
+    <string name="public_profile_request">Ask for their name</string>
+    <string name="public_profile_request_explain">If this number has a private OpenCaller profile, its owner sees your number and name and can share their name with you. You won\'t be told if they say no.</string>
+    <string name="public_profile_request_sent">Asked. If they share their name, you\'ll see it when you search this number.</string>
 </resources>

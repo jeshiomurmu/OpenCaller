@@ -3,6 +3,7 @@ package io.github.jeshiomurmu.opencaller.core.data.lookup
 import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.model.NameSource
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
+import io.github.jeshiomurmu.opencaller.core.model.SupporterBadge
 import kotlinx.coroutines.flow.Flow
 
 /** What an explicit search found. [spamScore] is `null` when nobody reported the number. */
@@ -16,6 +17,7 @@ data class SearchResult(
     val reportCount: Int,
     val notSpamCount: Int,
     val businessName: String?,
+    val badge: SupporterBadge? = null,
 )
 
 /**

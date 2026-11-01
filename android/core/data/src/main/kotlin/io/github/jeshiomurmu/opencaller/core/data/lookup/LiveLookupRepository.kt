@@ -10,6 +10,7 @@ import io.github.jeshiomurmu.opencaller.core.database.entity.LookupBucketEntity
 import io.github.jeshiomurmu.opencaller.core.database.entity.NumberInfoEntity
 import io.github.jeshiomurmu.opencaller.core.model.NameSource
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
+import io.github.jeshiomurmu.opencaller.core.model.SupporterBadge
 import io.github.jeshiomurmu.opencaller.core.network.LookupApi
 import io.github.jeshiomurmu.opencaller.core.network.NumberInfoDto
 import io.github.jeshiomurmu.opencaller.core.network.OpenCallerNetwork
@@ -35,6 +36,7 @@ data class LiveLookupResult(
     val displayName: String?,
     val nameSource: NameSource?,
     val fromCache: Boolean,
+    val badge: SupporterBadge? = null,
 )
 
 /**
@@ -117,6 +119,8 @@ class LiveLookupRepository
                 lineType = null,
                 fetchedAt = now,
                 expiresAt = now + CACHE_MILLIS,
+                // A badge belongs to a self-registered name; a business name never carries one.
+                badge = SupporterBadge.parse(this?.badge)?.takeIf { business == null && name != null }?.name,
             )
         }
 
@@ -128,6 +132,7 @@ class LiveLookupRepository
                 displayName = displayName,
                 nameSource = nameSource.takeIf { displayName != null },
                 fromCache = true,
+                badge = SupporterBadge.parse(badge).takeIf { displayName != null },
             )
 
         private companion object {

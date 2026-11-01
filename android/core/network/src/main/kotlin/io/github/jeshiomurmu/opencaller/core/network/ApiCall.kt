@@ -35,6 +35,15 @@ suspend fun <T : Any> apiCall(call: suspend () -> Response<T>): AppResult<T> =
         AppResult.Failure(AppError.Unexpected(e))
     }
 
+/**
+ * Like [apiCall] for endpoints without a response body (204, or an upload): success needs only a 2xx status.
+ */
+suspend fun apiCallNoContent(call: suspend () -> Response<Unit>): AppResult<Unit> =
+    when (val result = apiCall { call().let { if (it.isSuccessful) Response.success(Unit, it.raw()) else it } }) {
+        is AppResult.Success -> AppResult.Success(Unit)
+        is AppResult.Failure -> result
+    }
+
 /** The [AppError] for an unsuccessful [response]. */
 fun errorOf(response: Response<*>): AppError =
     when (response.code()) {

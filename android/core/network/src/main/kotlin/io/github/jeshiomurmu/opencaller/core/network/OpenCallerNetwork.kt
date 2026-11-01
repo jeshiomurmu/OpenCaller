@@ -72,6 +72,9 @@ class OpenCallerNetwork(
     /** The API for everything except the live lookup. */
     val api: OpenCallerApi = retrofit(authed).create(OpenCallerApi::class.java)
 
+    /** Profiles, visitors and contact requests (and the picture upload to presigned URLs, which carries no token). */
+    val profileApi: ProfileApi = retrofit(authed).create(ProfileApi::class.java)
+
     /** The live lookup, cut off after the lookup timeout so a slow server never holds up a call. */
     val lookupApi: LookupApi =
         retrofit(

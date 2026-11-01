@@ -2,8 +2,10 @@ package io.github.jeshiomurmu.opencaller.core.telephony.screening
 
 import io.github.jeshiomurmu.opencaller.core.data.CachedReputation
 import io.github.jeshiomurmu.opencaller.core.model.CallerInfo
+import io.github.jeshiomurmu.opencaller.core.model.NameSource
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import io.github.jeshiomurmu.opencaller.core.model.SpamVerdict
+import io.github.jeshiomurmu.opencaller.core.model.SupporterBadge
 import io.github.jeshiomurmu.opencaller.core.model.UserPreferences
 import io.github.jeshiomurmu.opencaller.core.model.VerdictSource
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
@@ -12,6 +14,13 @@ import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 internal class KnownCaller(
     val verified: Boolean,
     val cached: CachedReputation?,
+)
+
+/** A name for the card, where it came from and, for a self-registered name, the owner's supporter badge. */
+private class Named(
+    val name: String,
+    val source: NameSource?,
+    val badge: SupporterBadge?,
 )
 
 /** What [ScreeningEngine] knows about a caller: country, line type, spam verdict and the caller card details. */
@@ -45,11 +54,12 @@ internal class CallerDescriber(
                     c.spamScore?.let { verdict(it, c.spamCategory, c.reportCount, prefs, VerdictSource.REPUTATION_CACHE) }
                 }
         val named =
-            network?.let { n -> n.displayName?.let { it to n.nameSource } }
-                ?: cached?.let { c -> c.displayName?.let { it to c.nameSource } }
+            network?.let { n -> n.displayName?.let { Named(it, n.nameSource, n.badge) } }
+                ?: cached?.let { c -> c.displayName?.let { Named(it, c.nameSource, c.badge) } }
         return caller.copy(
-            displayName = named?.first,
-            nameSource = named?.second,
+            displayName = named?.name,
+            nameSource = named?.source,
+            badge = named?.badge,
             spamVerdict = verdict,
             verifiedBusinessId = cached?.verifiedBusinessId ?: VERIFIED_WITHOUT_ID.takeIf { known.verified },
             logoUrl = cached?.logoUrl,

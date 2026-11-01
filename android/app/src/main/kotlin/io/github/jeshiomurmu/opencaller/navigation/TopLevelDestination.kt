@@ -98,6 +98,26 @@ data class ContactEditorRoute(
 /** [ContactEditorRoute.contactId] of a contact that doesn't exist yet (provider ids start at 1). */
 const val NEW_CONTACT: Long = -1L
 
+/** Me → My profile (signed in). */
+@Serializable
+data object OwnProfileRoute
+
+/** My profile → Who viewed my profile / Who searched for me; [kind] is a `VisitKind` name. */
+@Serializable
+data class ProfileVisitorsRoute(
+    val kind: String,
+)
+
+/** My profile → Contact requests. */
+@Serializable
+data object ContactRequestsInboxRoute
+
+/** Search → a result's profile ([e164] is the number searched for). */
+@Serializable
+data class NumberProfileRoute(
+    val e164: String,
+)
+
 /** Me → Settings → Quick replies. */
 @Serializable
 data object QuickRepliesSettingsRoute

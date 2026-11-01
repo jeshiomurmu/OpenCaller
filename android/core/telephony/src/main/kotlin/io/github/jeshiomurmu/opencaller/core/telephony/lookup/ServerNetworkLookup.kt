@@ -21,6 +21,7 @@ class ServerNetworkLookup
                     displayName = it.displayName,
                     nameSource = it.nameSource,
                     fromCache = it.fromCache,
+                    badge = it.badge,
                 )
             }
     }

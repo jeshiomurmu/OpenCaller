@@ -12,6 +12,7 @@ import io.github.jeshiomurmu.opencaller.core.model.RuleAction
 import io.github.jeshiomurmu.opencaller.core.model.RuleType
 import io.github.jeshiomurmu.opencaller.core.model.ScreeningReason
 import io.github.jeshiomurmu.opencaller.core.model.SpamThreshold
+import io.github.jeshiomurmu.opencaller.core.model.SupporterBadge
 import io.github.jeshiomurmu.opencaller.core.model.VerdictSource
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 import io.github.jeshiomurmu.opencaller.core.testing.TestDispatcherProvider
@@ -321,6 +322,19 @@ class ScreeningEngineTest {
             assertEquals("Example Bank", result.caller.displayName)
             assertEquals(NameSource.VERIFIED_BUSINESS, result.caller.nameSource)
             assertNull(result.caller.spamVerdict)
+        }
+
+    // F-SO-06: a supporter's badge comes with their self-registered name to the caller card.
+    @Test
+    fun aSupportersBadgeComesWithTheirName() =
+        runTest {
+            sources.network =
+                NetworkLookup { NetworkVerdict(null, null, 0, "Priya Das", NameSource.SELF_REGISTERED, badge = SupporterBadge.GOLD) }
+            val result = engine().incoming(us)
+            assertEquals("Priya Das", result.caller.displayName)
+            assertEquals(SupporterBadge.GOLD, result.caller.badge)
+            sources.network = NetworkLookup { NetworkVerdict(0.2f, null, 1, null, null, badge = SupporterBadge.GOLD) }
+            assertNull(engine().incoming(us).caller.badge)
         }
 
     @Test

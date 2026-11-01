@@ -152,6 +152,15 @@ class ConfigTest {
         assertEquals(listOf("SCORING_VERIFIED_CAP must be below LIST_MIN_SCORE"), cap.problems)
     }
 
+    // Presigned profile-picture URLs use the address apps reach MinIO at (docs/architecture.md §8).
+    @Test
+    fun theMinioPublicEndpointDefaultsToTheEndpoint() {
+        assertEquals("http://localhost:9000", loadConfig(valid).minio.publicEndpoint)
+        assertEquals("http://10.0.2.2:9000", loadConfig(valid + ("MINIO_PUBLIC_ENDPOINT" to "http://10.0.2.2:9000")).minio.publicEndpoint)
+        val error = assertFailsWith<ConfigException> { loadConfig(valid + ("MINIO_PUBLIC_ENDPOINT" to "10.0.2.2:9000")) }
+        assertEquals(listOf("MINIO_PUBLIC_ENDPOINT must start with http:// or https://"), error.problems)
+    }
+
     @Test
     fun productionRefusesTheLogOtpProvider() {
         val error = assertFailsWith<ConfigException> { loadConfig(valid + ("ENV" to "production")) }

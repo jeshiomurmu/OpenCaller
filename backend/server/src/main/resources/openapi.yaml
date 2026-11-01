@@ -36,6 +36,8 @@ tags:
     description: Disputes and unlisting (docs/prd.md F-PR-16/17)
   - name: sync
     description: Registries apps sync incrementally
+  - name: profile
+    description: Own profile, visitors and contact requests (docs/prd.md §6.4, docs/decisions/0004-viewer-searcher-logging.md)
 
 paths:
   /health:
@@ -234,7 +236,8 @@ paths:
         The user typed the number, so the full number is sent. Limit: 50 searches per user per day
         (docs/rules.md §7); the 51st gets 429 with `Retry-After`. Invalid numbers don't count. If the number
         belongs to a registered user and the searcher is not incognito, the search is recorded for that user's
-        "who searched me" list (`profile_views`, kind `search`). Not cacheable.
+        "who searched me" list (`profile_views`, kind `search`; at most once a day per searcher). An owner who
+        approved the searcher's contact request shows their name whatever their visibility. Not cacheable.
       operationId: searchNumber
       security: [{ accessToken: [] }]
       parameters:
@@ -510,6 +513,212 @@ paths:
               schema: { $ref: "#/components/schemas/LinkPrefixesResponse" }
         "304": { $ref: "#/components/responses/NotModified" }
 
+  /v1/me:
+    get:
+      tags: [profile]
+      summary: Own profile
+      description: |
+        The signed-in user's profile, supporter badge, and how many views and searches (last 90 days) and pending
+        contact requests they have. `avatarUrl` is a presigned download link valid 15 minutes. 401 if the account
+        was deleted after the token was issued. `Cache-Control: no-store`.
+      operationId: getMe
+      security: [{ accessToken: [] }]
+      responses:
+        "200":
+          description: The profile.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MeResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    put:
+      tags: [profile]
+      summary: Replace own profile
+      description: |
+        Send every field: `displayName` (1–60 characters on one line, or null), `visibility` (who sees the name in
+        caller ID and search: `everyone`, `registered_only` = signed-in users, `nobody`), `incognito` (your views
+        and searches aren't recorded in others' lists) and `avatarKey` (the current key, one from
+        `POST /v1/me/avatar` whose upload finished, or null to remove the picture). A new picture must be a JPEG of
+        at most 1,000,000 bytes; a replaced or removed picture is deleted. Changes show in lookups at once.
+      operationId: putMe
+      security: [{ accessToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateMeRequest" }
+      responses:
+        "200":
+          description: The updated profile.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MeResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    delete:
+      tags: [profile]
+      summary: Delete the account
+      description: |
+        At once: the profile is out of every lookup, search and profile answer, every device is signed out, and the
+        views and contact requests involving the account are deleted. The daily retention job then deletes the
+        reports the user wrote (their numbers are rescored), the picture and the account row, within a day (the
+        PRD allows 30). Signing in again later starts a new, empty account.
+      operationId: deleteMe
+      security: [{ accessToken: [] }]
+      responses:
+        "204": { description: Deleted. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/me/avatar:
+    post:
+      tags: [profile]
+      summary: Upload URL for a profile picture
+      description: |
+        A presigned `PUT` URL valid 10 minutes, under a key for this user. Upload the JPEG to it with
+        `Content-Type: image/jpeg` (signed; no access token), then set `avatarKey` with `PUT /v1/me`.
+      operationId: postAvatar
+      security: [{ accessToken: [] }]
+      responses:
+        "200":
+          description: Where and how to upload.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AvatarUploadResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/me/viewers:
+    get:
+      tags: [profile]
+      summary: Who viewed my profile (supporters)
+      description: |
+        Profile views of the last 90 days, newest first (at most 200 listed; `total` counts all). Views by incognito
+        users, of your own profile and repeats within 24 hours are never recorded. A viewer's name shows only if
+        their own visibility lets signed-in users see it; their number is never shown. 403 `supporter_required`
+        for non-supporters (supporter status comes from billing in Phase 10).
+      operationId: getViewers
+      security: [{ accessToken: [] }]
+      responses:
+        "200":
+          description: The viewers.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VisitorsResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/SupporterRequired" }
+
+  /v1/me/searchers:
+    get:
+      tags: [profile]
+      summary: Who searched for me (supporters)
+      description: Like `/v1/me/viewers`, for searches of your number (`GET /v1/numbers/{e164}`).
+      operationId: getSearchers
+      security: [{ accessToken: [] }]
+      responses:
+        "200":
+          description: The searchers.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VisitorsResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/SupporterRequired" }
+
+  /v1/profiles/{e164}:
+    get:
+      tags: [profile]
+      summary: Open a profile
+      description: |
+        What the signed-in user may see of the number's profile: the name (by the owner's visibility, or because
+        the owner approved their contact request), and with a name the supporter badge and a picture URL valid
+        15 minutes. The answer has the same shape for unregistered numbers. Recorded as a view in the owner's
+        "who viewed my profile" list unless the viewer is incognito. 100 per user per day.
+      operationId: getProfile
+      security: [{ accessToken: [] }]
+      parameters:
+        - { name: e164, in: path, required: true, description: "E.164 number; `+` may be sent as `%2B`.", schema: { $ref: "#/components/schemas/E164" } }
+      responses:
+        "200":
+          description: The profile as this user may see it.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicProfileResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /v1/contact-requests:
+    post:
+      tags: [profile]
+      summary: Ask for a hidden profile's name
+      description: |
+        Always 202 `{"status":"sent"}` for a valid number, whether it has a profile, a hidden name, an earlier
+        request or a denial, so requests reveal neither who is registered nor what an owner decided. Only owners
+        with visibility `nobody` receive the request; they see the requester's number and name. If they approve,
+        search and profile show the requester their name. A denied requester may ask again after 30 days. 20 per
+        user per day.
+      operationId: postContactRequest
+      security: [{ accessToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ContactRequestBody" }
+      responses:
+        "202":
+          description: Sent (or nothing to send; the answer is the same).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ContactRequestSent" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+    get:
+      tags: [profile]
+      summary: Pending requests to me
+      description: Requests waiting for the signed-in user's answer, newest first (at most 200).
+      operationId: getContactRequests
+      security: [{ accessToken: [] }]
+      responses:
+        "200":
+          description: The pending requests.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IncomingContactRequests" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/contact-requests/{id}/approve:
+    post:
+      tags: [profile]
+      summary: Approve a contact request
+      operationId: approveContactRequest
+      security: [{ accessToken: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/ContactRequestId" }
+      responses:
+        "200":
+          description: Approved.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ContactRequestDecision" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/ContactRequestNotFound" }
+
+  /v1/contact-requests/{id}/deny:
+    post:
+      tags: [profile]
+      summary: Deny a contact request
+      description: The requester isn't told; their requests keep getting the same answer.
+      operationId: denyContactRequest
+      security: [{ accessToken: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/ContactRequestId" }
+      responses:
+        "200":
+          description: Denied.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ContactRequestDecision" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/ContactRequestNotFound" }
+
 components:
   securitySchemes:
     accessToken:
@@ -547,6 +756,12 @@ components:
       required: false
       description: Epoch milliseconds; only entries updated later are returned. Omit for everything.
       schema: { type: integer, minimum: 0, default: 0 }
+    ContactRequestId:
+      name: id
+      in: path
+      required: true
+      description: Request ID from `GET /v1/contact-requests`.
+      schema: { type: integer }
 
   responses:
     BadRequest:
@@ -582,6 +797,16 @@ components:
           schema: { $ref: "#/components/schemas/Problem" }
     ListNotFound:
       description: "`list_not_found`: no list published for this country (or no such file)."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    SupporterRequired:
+      description: "`supporter_required`: a supporter feature."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    ContactRequestNotFound:
+      description: "`not_found`: no pending request with this ID to the signed-in user."
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
@@ -693,10 +918,12 @@ components:
       type: object
       description: |
         `spamScore` (0–1, three decimals), `label` and `category` are null when the number has no reports.
-        `label` is `likely_spam` from 0.85 and `suspicious` from 0.6 (docs/architecture.md §9).
+        `label` is `likely_spam` from 0.85 and `suspicious` from 0.6 (docs/architecture.md §9). `badge` is the
+        owner's supporter badge and is only set next to a `name`.
       required: [reportCount, notSpamCount]
       properties:
         name: { type: [string, "null"] }
+        badge: { type: [string, "null"], enum: [supporter, gold, null] }
         spamScore: { type: [number, "null"], minimum: 0, maximum: 1 }
         label: { type: [string, "null"], enum: [likely_spam, suspicious, null] }
         category: { type: [string, "null"] }
@@ -839,6 +1066,105 @@ components:
           description: Sorted, distinct.
           items: { type: string, pattern: "^[0-9a-f]{8}$" }
 
+    MeResponse:
+      type: object
+      required: [e164, visibility, incognito, supporter, viewerCount, searcherCount, pendingContactRequests]
+      properties:
+        e164: { $ref: "#/components/schemas/E164" }
+        displayName: { type: [string, "null"] }
+        avatarKey: { type: [string, "null"] }
+        avatarUrl: { type: [string, "null"], format: uri, description: Presigned download link, valid 15 minutes. }
+        visibility: { type: string, enum: [everyone, registered_only, nobody] }
+        incognito: { type: boolean }
+        badge: { type: [string, "null"], enum: [supporter, gold, null] }
+        supporter: { type: boolean }
+        viewerCount: { type: integer, description: Profile views in the last 90 days. }
+        searcherCount: { type: integer, description: Searches for this number in the last 90 days. }
+        pendingContactRequests: { type: integer }
+
+    UpdateMeRequest:
+      type: object
+      required: [displayName, visibility, incognito]
+      properties:
+        displayName: { type: [string, "null"], minLength: 1, maxLength: 60 }
+        visibility: { type: string, enum: [everyone, registered_only, nobody] }
+        incognito: { type: boolean }
+        avatarKey: { type: [string, "null"] }
+
+    AvatarUploadResponse:
+      type: object
+      required: [uploadUrl, avatarKey, contentType, maxBytes, expiresInSeconds]
+      properties:
+        uploadUrl: { type: string, format: uri }
+        avatarKey: { type: string }
+        contentType: { type: string, const: image/jpeg }
+        maxBytes: { type: integer }
+        expiresInSeconds: { type: integer }
+
+    VisitorItem:
+      type: object
+      required: [at]
+      properties:
+        name: { type: [string, "null"], description: "Null when the visitor's visibility hides it." }
+        badge: { type: [string, "null"], enum: [supporter, gold, null] }
+        at: { type: string, format: date-time }
+
+    VisitorsResponse:
+      type: object
+      required: [kind, days, total, items]
+      properties:
+        kind: { type: string, enum: [view, search] }
+        days: { type: integer, const: 90 }
+        total: { type: integer }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/VisitorItem" }
+
+    PublicProfileResponse:
+      type: object
+      required: [e164]
+      properties:
+        e164: { $ref: "#/components/schemas/E164" }
+        name: { type: [string, "null"] }
+        avatarUrl: { type: [string, "null"], format: uri }
+        badge: { type: [string, "null"], enum: [supporter, gold, null] }
+
+    ContactRequestBody:
+      type: object
+      required: [e164]
+      properties:
+        e164: { $ref: "#/components/schemas/E164" }
+
+    ContactRequestSent:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, const: sent }
+
+    IncomingContactRequest:
+      type: object
+      required: [id, requesterE164, createdAt]
+      properties:
+        id: { type: integer }
+        requesterE164: { $ref: "#/components/schemas/E164" }
+        requesterName: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+
+    IncomingContactRequests:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/IncomingContactRequest" }
+
+    ContactRequestDecision:
+      type: object
+      required: [id, status]
+      properties:
+        id: { type: integer }
+        status: { type: string, enum: [approved, denied] }
+
     Problem:
       type: object
       description: RFC 9457 problem details.
@@ -872,3 +1198,4 @@ components:
             - invalid_country
             - list_not_found
             - job_running
+            - supporter_required
