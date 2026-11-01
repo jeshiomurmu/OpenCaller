@@ -8,6 +8,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,6 +29,12 @@ class MigrationTest {
             driver = AndroidSQLiteDriver(),
             databaseClass = OpenCallerDatabase::class,
         )
+
+    // The helper doesn't delete the file between tests, and creating version 1 over an existing one fails.
+    @Before
+    fun deleteTestDatabase() {
+        instrumentation.targetContext.deleteDatabase(TEST_DB)
+    }
 
     @Test
     fun exportedVersion1SchemaIsValid() =
