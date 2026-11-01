@@ -114,7 +114,7 @@ jobs:
           heap-size: 512M
           disable-animations: true
           script: |
-            cd android && ./gradlew --continue :core:database:connectedDebugAndroidTest :app:connectedFossDebugAndroidTest || { find core/database/build/outputs/androidTest-results app/build/outputs/androidTest-results \( -name '*.xml' -o -name '*.txt' \) -exec cat {} +; adb logcat -d -b crash; adb logcat -d | grep -iE 'opencaller|AndroidRuntime|RoleController|Killing' | tail -n 400; exit 1; }
+            cd android && ./gradlew --continue :core:database:connectedDebugAndroidTest :app:connectedFossDebugAndroidTest || { find core/database/build/outputs/androidTest-results app/build/outputs/androidTest-results -name '*.txt' -exec cat {} +; adb logcat -d -b crash; adb logcat -d | grep -iE 'opencaller|AndroidRuntime|RoleController|Killing' | tail -n 400; echo '== Test reports (last, so they stay in the log tail)'; find core/database/build/outputs/androidTest-results app/build/outputs/androidTest-results -name '*.xml' -exec cat {} +; exit 1; }
             scripts/ci/emulator-smoke.sh android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/emulator/api-${{ matrix.api-level }}
             scripts/qa/blocking.sh android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/emulator/api-${{ matrix.api-level }}/blocking || { adb logcat -d | grep -iE 'opencaller|Telecom|CallScreen|AndroidRuntime' | tail -n 400; exit 1; }
             scripts/qa/incall.sh io.github.jeshiomurmu.opencaller.debug build/emulator/api-${{ matrix.api-level }}/incall || { adb logcat -d | grep -iE 'opencaller|Telecom|InCall|ActivityTaskManager|AndroidRuntime' | tail -n 400; exit 1; }
