@@ -108,9 +108,7 @@ fun DeleteAccountDialogs(
     val cancel = { onEvent(MyProfileEvent.CancelDelete) }
     val next = { onEvent(MyProfileEvent.Delete) }
     when (step) {
-        DeleteStep.NONE -> {
-            Unit
-        }
+        DeleteStep.NONE -> {}
 
         DeleteStep.FIRST_CONFIRM -> {
             ConfirmDialog(
