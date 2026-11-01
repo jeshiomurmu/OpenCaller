@@ -43,6 +43,12 @@ class UserSettingsMappingTest {
     }
 
     @Test
+    fun otpAutoDeleteIsOffUntilTurnedOn() {
+        assertRoundTrip(UserPreferences(otpAutoDelete = true))
+        assertEquals(false, UserSettings.getDefaultInstance().toDomain().otpAutoDelete)
+    }
+
+    @Test
     fun quickRepliesKeepTheirOrder() {
         assertRoundTrip(UserPreferences(quickReplies = listOf("Can't talk now", "Call you back in 5", "Can't talk now")))
         assertEquals(emptyList<String>(), UserSettings.getDefaultInstance().toDomain().quickReplies)

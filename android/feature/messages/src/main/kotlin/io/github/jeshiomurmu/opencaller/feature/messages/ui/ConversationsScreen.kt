@@ -69,26 +69,48 @@ fun ConversationsRoute(
             }
         }
     }
+    ConversationsDialogs(state = state, onEvent = viewModel::onEvent)
+}
+
+// Delete, the inbox cleaner and its result.
+@Composable
+private fun ConversationsDialogs(
+    state: ConversationsUiState,
+    onEvent: (ConversationsEvent) -> Unit,
+) {
     state.confirmDelete?.let { row ->
         AlertDialog(
-            onDismissRequest = { viewModel.onEvent(ConversationsEvent.CancelDelete) },
+            onDismissRequest = { onEvent(ConversationsEvent.CancelDelete) },
             title = { Text(stringResource(R.string.messages_delete_title)) },
             text = { Text(stringResource(R.string.messages_delete_body, row.title)) },
             confirmButton = {
                 TextButton(
-                    onClick = { viewModel.onEvent(ConversationsEvent.ConfirmDelete) },
+                    onClick = { onEvent(ConversationsEvent.ConfirmDelete) },
                 ) { Text(stringResource(R.string.messages_delete)) }
             },
             dismissButton = {
                 TextButton(
-                    onClick = { viewModel.onEvent(ConversationsEvent.CancelDelete) },
+                    onClick = { onEvent(ConversationsEvent.CancelDelete) },
                 ) { Text(stringResource(R.string.messages_keep)) }
+            },
+        )
+    }
+    state.cleanPlan?.let { CleanDialog(plan = it, autoDelete = state.autoDeleteCodes, onEvent = onEvent) }
+    state.cleaned?.let { count ->
+        AlertDialog(
+            onDismissRequest = { onEvent(ConversationsEvent.DismissMessage) },
+            text = { Text(pluralStringResource(R.plurals.inbox_cleaned, count, count)) },
+            confirmButton = {
+                TextButton(onClick = { onEvent(ConversationsEvent.DismissMessage) }) { Text(stringResource(R.string.inbox_ok)) }
             },
         )
     }
 }
 
-/** Every conversation, newest first: who, the latest message, when, and how many are unread. Long-press deletes. */
+/**
+ * The smart inbox: the tab chips and Clean up, the current code on the OTP tab, then the tab's conversations, newest
+ * first (who, the latest message, when, how many are unread, a warning for a suspicious one). Long-press deletes.
+ */
 @Composable
 fun ConversationsScreen(
     state: ConversationsUiState,
@@ -96,11 +118,25 @@ fun ConversationsScreen(
     onOpen: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    when {
-        !state.canRead -> {
-            EmptyState(icon = OpenCallerIcons.Messages, message = stringResource(R.string.messages_not_default), modifier = modifier)
-        }
+    if (!state.canRead) {
+        EmptyState(icon = OpenCallerIcons.Messages, message = stringResource(R.string.messages_not_default), modifier = modifier)
+        return
+    }
+    Column(modifier = modifier.fillMaxSize()) {
+        InboxTabs(state = state, onEvent = onEvent, modifier = Modifier.padding(vertical = OpenCallerSpacing.xs))
+        state.otp?.let { CurrentOtp(otp = it, modifier = Modifier.padding(horizontal = OpenCallerSpacing.screenPadding)) }
+        ConversationList(state = state, onEvent = onEvent, onOpen = onOpen, modifier = Modifier.weight(1f))
+    }
+}
 
+@Composable
+private fun ConversationList(
+    state: ConversationsUiState,
+    onEvent: (ConversationsEvent) -> Unit,
+    onOpen: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    when {
         state.failed && state.rows.isEmpty() -> {
             EmptyState(icon = OpenCallerIcons.Messages, message = stringResource(R.string.messages_failed), modifier = modifier)
         }
@@ -110,7 +146,8 @@ fun ConversationsScreen(
         }
 
         state.rows.isEmpty() -> {
-            EmptyState(icon = OpenCallerIcons.Messages, message = stringResource(R.string.messages_empty), modifier = modifier)
+            val empty = if (state.tab == InboxTab.PERSONAL) R.string.messages_empty else R.string.inbox_empty_tab
+            EmptyState(icon = OpenCallerIcons.Messages, message = stringResource(empty), modifier = modifier)
         }
 
         else -> {
@@ -153,6 +190,13 @@ private fun ConversationItem(
     ) {
         Avatar(title = row.title, group = row.isGroup)
         ConversationText(row = row, unread = unread, modifier = Modifier.weight(1f))
+        if (row.risky) {
+            Icon(
+                painter = painterResource(OpenCallerIcons.Warning),
+                contentDescription = stringResource(R.string.inbox_risky),
+                tint = OpenCallerTheme.semanticColors.danger,
+            )
+        }
         if (unread) Box(modifier = Modifier.size(OpenCallerSpacing.xs).background(MaterialTheme.colorScheme.primary, CircleShape))
     }
 }

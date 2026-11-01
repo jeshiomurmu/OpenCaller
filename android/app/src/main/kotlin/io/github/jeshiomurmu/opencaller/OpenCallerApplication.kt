@@ -13,6 +13,7 @@ import io.github.jeshiomurmu.opencaller.core.network.NetworkLog
 import io.github.jeshiomurmu.opencaller.core.network.ServerConfig
 import io.github.jeshiomurmu.opencaller.core.telephony.otp.OtpSafetyMonitor
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ScreeningWarmUp
+import io.github.jeshiomurmu.opencaller.feature.messages.work.ScheduledSending
 import io.github.jeshiomurmu.opencaller.logging.RedactingTree
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -58,6 +59,9 @@ class OpenCallerApplication :
     @Inject
     lateinit var otpSafety: OtpSafetyMonitor
 
+    @Inject
+    lateinit var messageWork: ScheduledSending
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
 
@@ -76,6 +80,8 @@ class OpenCallerApplication :
         }
         // The OTP guard watches calls from the start, so a code right after a call is still caught (§4.5).
         otpSafety.start(scope)
+        // Checks a few times a day whether codes are due for auto-delete (does nothing while that setting is off).
+        messageWork.scheduleCodeCleanup()
         if (server.isConfigured) {
             work.uploadReports()
             scope.launch {

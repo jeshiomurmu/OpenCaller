@@ -60,6 +60,7 @@ internal fun UserSettings.toDomain(): UserPreferences =
         onboardingStep = onboardingSteps.domainOf(onboardingStep, defaults.onboardingStep),
         listUpdatesOnMobileData = listUpdatesOnMobileData,
         quickReplies = quickRepliesList.toList(),
+        otpAutoDelete = otpAutoDelete,
     )
 
 /** Maps the domain model to its stored form. Region codes are stored sorted so equal sets serialize equally. */
@@ -78,4 +79,5 @@ internal fun UserPreferences.toProto(): UserSettings =
         .setOnboardingStep(onboardingSteps.getValue(onboardingStep))
         .setListUpdatesOnMobileData(listUpdatesOnMobileData)
         .addAllQuickReplies(quickReplies)
+        .setOtpAutoDelete(otpAutoDelete)
         .build()

@@ -155,4 +155,6 @@ private class FakeConversations : ConversationSource {
     override suspend fun markRead(threadId: Long): AppResult<Int> = AppResult.Success(0)
 
     override suspend fun delete(threadId: Long): AppResult<Int> = AppResult.Success(0)
+
+    override suspend fun deleteSms(ids: Collection<Long>): AppResult<Int> = AppResult.Success(0)
 }

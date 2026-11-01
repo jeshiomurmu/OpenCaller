@@ -8,6 +8,7 @@ import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.DeliveryReports
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.DeviceMmsStore
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.DeviceSmsStore
+import io.github.jeshiomurmu.opencaller.core.telephony.messaging.ReceivedDetails
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.mms.MalformedPduException
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.mms.MmsPduParser
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.mms.SendConf
@@ -105,7 +106,7 @@ class MessageResults
                         MessagingIntents.NO_SUBSCRIPTION
                 }
             val stored = downloader.downloaded(id, file, subscription, ok)
-            if (stored is AppResult.Success) notifier.stored(stored.value, senderName = null)
+            if (stored is AppResult.Success) notifier.stored(stored.value, ReceivedDetails(null))
         }
 
         private fun sendConf(bytes: ByteArray): SendConf? =

@@ -68,4 +68,38 @@
     <string name="otp_notification_locked">Unlock to see the code</string>
     <string name="otp_notification_never_share">Never share this code with someone who calls you.</string>
     <string name="otp_copy">Copy code</string>
+    <!-- Smart inbox (PRD F-SMS-03). -->
+    <string name="inbox_tab_personal">Personal</string>
+    <string name="inbox_tab_otp">Codes</string>
+    <string name="inbox_tab_transactions">Transactions</string>
+    <string name="inbox_tab_bills">Bills</string>
+    <string name="inbox_tab_deliveries">Deliveries</string>
+    <string name="inbox_tab_promotions">Promotions</string>
+    <string name="inbox_tab_spam">Spam</string>
+    <string name="inbox_tab_unread">%1$s (%2$d)</string>
+    <string name="inbox_empty_tab">Nothing here.</string>
+    <string name="inbox_clean">Clean up</string>
+    <string name="inbox_clean_title">Clean up the inbox</string>
+    <string name="inbox_clean_nothing">Nothing to clean up: codes older than a day, and deliveries, promotions and spam older than 30 days are deleted here.</string>
+    <plurals name="inbox_clean_body">
+        <item quantity="one">%1$d old message will be deleted: codes older than a day, deliveries, promotions and spam older than 30 days. Personal messages, transactions and bills stay.</item>
+        <item quantity="other">%1$d old messages will be deleted: codes older than a day, deliveries, promotions and spam older than 30 days. Personal messages, transactions and bills stay.</item>
+    </plurals>
+    <string name="inbox_auto_delete">Delete codes a day after they arrive</string>
+    <plurals name="inbox_cleaned">
+        <item quantity="one">%1$d message deleted.</item>
+        <item quantity="other">%1$d messages deleted.</item>
+    </plurals>
+    <string name="inbox_ok">OK</string>
+    <string name="inbox_risky">Suspicious message</string>
+    <!-- Scheduled SMS. -->
+    <string name="schedule_title">Send later</string>
+    <string name="schedule_in_an_hour">In an hour</string>
+    <string name="schedule_tonight">Tonight</string>
+    <string name="schedule_tomorrow_morning">Tomorrow morning</string>
+    <string name="schedule_tomorrow_evening">Tomorrow evening</string>
+    <string name="schedule_about">Sent at about that time; the phone may hold it a few minutes while it saves battery.</string>
+    <string name="schedule_line">%1$s: %2$s</string>
+    <string name="schedule_cancel">Cancel</string>
+    <string name="messages_risky_warning">Careful: suspicious link or code. Don\'t enter passwords or card details.</string>
 </resources>

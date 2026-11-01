@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -29,11 +30,14 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.core.net.toUri
+import io.github.jeshiomurmu.opencaller.core.designsystem.icon.OpenCallerIcons
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerShape
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacing
+import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
 import io.github.jeshiomurmu.opencaller.core.model.MessageKind
 import io.github.jeshiomurmu.opencaller.core.model.MmsDownload
 import io.github.jeshiomurmu.opencaller.feature.messages.R
@@ -58,6 +62,7 @@ internal fun MessageBubble(
         horizontalAlignment = if (item.outgoing) Alignment.End else Alignment.Start,
         modifier = modifier.fillMaxWidth(),
     ) {
+        if (item.risky && !item.outgoing) RiskyLine()
         if (showSender && !item.outgoing && item.sender != null) {
             Text(text = item.sender, style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
         }
@@ -77,6 +82,24 @@ internal fun MessageBubble(
             }
         }
         StatusLine(item = item, onRetry = onRetry)
+    }
+}
+
+// TC-SMS-005: a link that imitates a brand or is on the bad list, or a code that came during a call with a stranger.
+@Composable
+private fun RiskyLine() {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xs)) {
+        Icon(
+            painter = painterResource(OpenCallerIcons.Warning),
+            contentDescription = null,
+            tint = OpenCallerTheme.semanticColors.danger,
+            modifier = Modifier.size(OpenCallerSpacing.iconSmall),
+        )
+        Text(
+            text = stringResource(R.string.messages_risky_warning),
+            style = MaterialTheme.typography.labelMedium,
+            color = OpenCallerTheme.semanticColors.danger,
+        )
     }
 }
 

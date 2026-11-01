@@ -18,6 +18,21 @@ interface ScheduledSmsDao {
     @Query("SELECT * FROM scheduled_sms WHERE state = :state ORDER BY sendAt ASC")
     fun observeInState(state: SyncState): Flow<List<ScheduledSmsEntity>>
 
+    /** Message [id], or `null`. */
+    @Query("SELECT * FROM scheduled_sms WHERE id = :id")
+    suspend fun find(id: Long): ScheduledSmsEntity?
+
+    /** Sets the WorkManager work name of message [id]. */
+    @Query("UPDATE scheduled_sms SET workId = :workId WHERE id = :id")
+    suspend fun updateWork(
+        id: Long,
+        workId: String,
+    )
+
+    /** Removes message [id] (cancelled). */
+    @Query("DELETE FROM scheduled_sms WHERE id = :id")
+    suspend fun delete(id: Long)
+
     /** Updates the state of message [id]. */
     @Query("UPDATE scheduled_sms SET state = :state WHERE id = :id")
     suspend fun updateState(

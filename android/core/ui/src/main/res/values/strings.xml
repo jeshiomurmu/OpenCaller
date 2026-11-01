@@ -142,4 +142,9 @@
     <string name="why_stir_passed">Your carrier verified the caller\'s number.</string>
     <string name="why_stir_failed">Your carrier couldn\'t verify the caller\'s number. It may be spoofed.</string>
     <string name="why_privacy">OpenCaller never uploads your contacts or call history.</string>
+    <!-- One-time code card (OtpCard). -->
+    <string name="otp_card_title">Verification code</string>
+    <string name="otp_card_from">Code from %1$s</string>
+    <string name="otp_card_copy">Copy</string>
+    <string name="otp_card_never_share">Never share a code with someone who calls or messages you.</string>
 </resources>

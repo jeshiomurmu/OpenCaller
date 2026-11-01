@@ -75,6 +75,13 @@ fun ThreadRoute(
         onAttach = { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
         modifier = modifier,
     )
+    if (state.choosingSchedule) {
+        ScheduleChooser(
+            presets = state.presets,
+            onPick = { viewModel.onEvent(ThreadEvent.Schedule(it)) },
+            onClose = { viewModel.onEvent(ThreadEvent.CloseSchedule) },
+        )
+    }
     if (state.choosingSim) {
         SimChooser(sims = state.sims, onPick = {
             viewModel.onEvent(ThreadEvent.PickSim(it))
@@ -120,6 +127,7 @@ fun ThreadScreen(
             }
         }
         if (state.failed) FailureLine(onDismiss = { onEvent(ThreadEvent.DismissFailure) })
+        if (state.scheduled.isNotEmpty()) ScheduledMessages(state.scheduled, onCancel = { onEvent(ThreadEvent.CancelScheduled(it)) })
         if (state.canRead) Composer(state = state, onEvent = onEvent, onAttach = onAttach)
     }
 }
@@ -179,6 +187,11 @@ private fun Composer(
                 modifier = Modifier.weight(1f),
             )
             if (state.sims.size > 1) SimButton(state = state, onEvent = onEvent)
+            if (!state.isGroup) {
+                IconButton(onClick = { onEvent(ThreadEvent.AskSchedule) }, enabled = state.canSchedule) {
+                    Icon(painter = painterResource(OpenCallerIcons.Schedule), contentDescription = stringResource(R.string.schedule_title))
+                }
+            }
             IconButton(onClick = { onEvent(ThreadEvent.Send) }, enabled = state.canSend) {
                 Icon(painter = painterResource(OpenCallerIcons.Send), contentDescription = stringResource(R.string.messages_send))
             }
