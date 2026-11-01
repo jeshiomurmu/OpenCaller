@@ -176,6 +176,14 @@ grant_role() {
   exit 1
 }
 
+keyguard_dump() { { adb shell dumpsys window policy; adb shell dumpsys activity activities; } | tr -d '\r'; }
+
+keyguard_locked() {
+  local state
+  state="$(keyguard_dump)" || true
+  grep -qE '^\s*showing=true|mKeyguardShowing=true|isKeyguardShowing=true|mIsShowing=true|isStatusBarKeyguard=true|KeyguardShowing: true' <<< "$state"
+}
+
 # Turns the screen off and waits until Android reports it asleep.
 screen_off() {
   adb shell input keyevent KEYCODE_SLEEP
@@ -286,7 +294,15 @@ wait_for_state 0 || true
 
 # --- TC-OTP-008: the code is hidden on the lock screen ----------------------------------------------------------------
 # The notification checked is TC-OTP-005's code (482913): a new code now would raise the guard again, since the
-# stranger's call ended less than 2 minutes ago.
+# stranger's call ended less than 2 minutes ago. The phone is unlocked first: a PIN set while the swipe lock screen is
+# showing only applies once a lock screen shows again, and until then notifications appear in full.
+adb shell input keyevent KEYCODE_WAKEUP
+adb shell wm dismiss-keyguard > /dev/null 2>&1 || true
+for _ in $(seq 1 10); do
+  if ! keyguard_locked; then break; fi
+  sleep 1
+done
+keyguard_locked && echo "warning: the swipe lock screen is still showing before the PIN is set"
 adb shell locksettings set-pin "$pin" > /dev/null
 # A PIN locks 5 s after the screen goes off by default; lock at once instead.
 lock_after="$(adb shell settings get secure lock_screen_lock_after_timeout | tr -d '\r')"
@@ -294,7 +310,13 @@ lock_after="$(adb shell settings get secure lock_screen_lock_after_timeout | tr 
 adb shell settings put secure lock_screen_lock_after_timeout 0
 screen_off
 adb shell input keyevent KEYCODE_WAKEUP
-sleep 2
+for _ in $(seq 1 10); do
+  if keyguard_locked; then break; fi
+  sleep 1
+done
+if keyguard_locked; then echo "Locked with a PIN"; else echo "warning: keyguard not reported as showing"; fi
+keyguard_dump | grep -iE 'secure|showing' | sed -n 1,10p || true
+sleep 1
 locked_window="$(dump)" || true
 if ! grep -qF 'text="Verification code"' <<< "$locked_window"; then
   # The lock screen shows only the first few notifications; the shade lists them all (still redacted).
@@ -306,6 +328,8 @@ screenshot otp-008-lock-screen
 if [[ -z "$code_sent" ]]; then
   fail TC-OTP-008 "not checked: TC-OTP-005 sent no code"
 elif grep -qF "482913" <<< "$locked_window"; then
+  echo "Lock screen texts:"
+  grep -oE 'text="[^"]+"' <<< "$locked_window" | head -30 || true
   fail TC-OTP-008 "the code is readable on the lock screen"
 elif grep -qF 'text="Verification code"' <<< "$locked_window"; then
   pass TC-OTP-008 "the lock screen shows \"Verification code\", not the code"
