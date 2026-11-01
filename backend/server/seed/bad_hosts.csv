@@ -1,0 +1,7 @@
+# Known-bad link hosts (phishing, malware) served as SHA-256 hash prefixes by GET /v1/link-prefixes; the host names
+# themselves never leave the server. EXAMPLE ROWS ONLY — every host below is on the reserved .example domain; real
+# data and curation tooling arrive in Phase 9. Columns (no quoting, no commas in values):
+# host,reason,updated_at
+evil-shop.example,phishing,2026-10-31T00:00:00Z
+login-verify.example,phishing,2026-10-31T00:00:00Z
+parcel-fee.example,phishing,2026-10-31T00:00:00Z

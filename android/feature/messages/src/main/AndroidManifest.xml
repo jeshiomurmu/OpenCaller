@@ -62,6 +62,9 @@
         <receiver
             android:name=".notify.MessageActionReceiver"
             android:exported="false" />
+        <receiver
+            android:name=".notify.OtpCopyReceiver"
+            android:exported="false" />
 
         <!-- MMS files for Android's MMS service, readable only through the URI grant of each send or download. -->
         <provider

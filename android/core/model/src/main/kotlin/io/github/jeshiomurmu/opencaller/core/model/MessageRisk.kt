@@ -24,11 +24,8 @@ enum class MessageRisk {
     /** A one-time code arrived during, or within 2 minutes after, a call with someone not in the contacts. */
     OTP_DURING_CALL,
 
-    /** Several one-time codes from different senders in a short time (F-PR-12). */
+    /** Several one-time codes from different senders in a short time, which the user likely didn't ask for (F-PR-12). */
     OTP_BURST,
-
-    /** A one-time code the user doesn't seem to have asked for. */
-    UNREQUESTED_OTP,
     ;
 
     /** This risk's bit in `MessageMeta.riskFlags`. */

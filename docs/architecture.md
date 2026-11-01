@@ -181,7 +181,7 @@ SMS_DELIVER broadcast → SmsDeliverReceiver → goAsync() → MessagePipeline (
   2. SenderResolver: contact → sender-ID registry → claimed business → OTP signals → self-registered → community → template inference
   3. OtpExtractor: code, expiry, domain-bound origin (@domain #code), app hash, flash-call link
   4. SmsClassifier (on-device): Personal / OTP / Transaction / Bill / Delivery / Promotion / Spam / Phishing
-  5. LinkChecker: lookalike + known-bad hash-prefix check
+  5. LinkChecker: lookalike + known-bad hash-prefix check (prefixes from `GET /v1/link-prefixes`; links never leave the device)
   6. OtpSafetyGuard: if OTP && active call with non-contact → full-screen warning
   7. Save MessageMeta row; post notification (OTP notification hides code on lock screen)
 ```
@@ -411,6 +411,7 @@ Later migrations (V1 stays exactly the SQL above): `V2__jobs_and_lookup_indexes.
 | `POST /v1/reports` | access | Batch of reports |
 | `GET /v1/sender-ids/{countryIso}?since=` | none | Sender-ID registry delta |
 | `GET /v1/otp-sources?since=` | none | App-hash table + verification-provider ranges |
+| `GET /v1/link-prefixes` | none | Known-bad link hosts as SHA-256 hash prefixes (4 bytes; whole list), for `LinkChecker` |
 | `GET/PUT /v1/me` | access | Profile, visibility, incognito |
 | `DELETE /v1/me` | access | Delete account |
 | `GET /v1/me/viewers`, `GET /v1/me/searchers` | access + supporter | F-SO-02/03 |

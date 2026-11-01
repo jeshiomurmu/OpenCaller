@@ -61,6 +61,23 @@ interface OpenCallerApi {
         @Path("countryIso") countryIso: String,
     ): Response<ListManifestDto>
 
+    /** Sender IDs of [countryIso] changed after [since] (epoch ms; `null` for all). */
+    @GET("v1/sender-ids/{countryIso}")
+    suspend fun senderIds(
+        @Path("countryIso") countryIso: String,
+        @Query("since") since: Long?,
+    ): Response<SenderIdsDto>
+
+    /** SMS Retriever app hashes and flash-call verification ranges changed after [since]. */
+    @GET("v1/otp-sources")
+    suspend fun otpSources(
+        @Query("since") since: Long?,
+    ): Response<OtpSourcesDto>
+
+    /** The known-bad link hosts as hash prefixes (the whole list). */
+    @GET("v1/link-prefixes")
+    suspend fun linkPrefixes(): Response<LinkPrefixesDto>
+
     /** Downloads a list file (a path from the manifest). */
     @Streaming
     @GET

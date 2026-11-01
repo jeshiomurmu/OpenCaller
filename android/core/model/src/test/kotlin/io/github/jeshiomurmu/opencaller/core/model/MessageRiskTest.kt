@@ -25,6 +25,6 @@ class MessageRiskTest {
     fun storedBitValuesNeverChange() {
         assertEquals(1, MessageRisk.LOOKALIKE_LINK.bit)
         assertEquals(1 shl 5, MessageRisk.OTP_DURING_CALL.bit)
-        assertEquals(1 shl 7, MessageRisk.UNREQUESTED_OTP.bit)
+        assertEquals(1 shl 6, MessageRisk.OTP_BURST.bit)
     }
 }

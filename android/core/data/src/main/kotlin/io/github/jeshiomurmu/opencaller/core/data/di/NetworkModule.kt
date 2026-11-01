@@ -10,6 +10,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.github.jeshiomurmu.opencaller.core.common.Clock
+import io.github.jeshiomurmu.opencaller.core.common.DispatcherProvider
 import io.github.jeshiomurmu.opencaller.core.data.account.Account
 import io.github.jeshiomurmu.opencaller.core.data.account.AccountRepository
 import io.github.jeshiomurmu.opencaller.core.data.account.AccountStatus
@@ -18,6 +19,8 @@ import io.github.jeshiomurmu.opencaller.core.data.lookup.NumberSearch
 import io.github.jeshiomurmu.opencaller.core.data.lookup.SearchQuotaStore
 import io.github.jeshiomurmu.opencaller.core.data.lookup.SearchRepository
 import io.github.jeshiomurmu.opencaller.core.data.sync.DefaultSpamListUpdates
+import io.github.jeshiomurmu.opencaller.core.data.sync.LinkPrefixStore
+import io.github.jeshiomurmu.opencaller.core.data.sync.RegistrySyncStateStore
 import io.github.jeshiomurmu.opencaller.core.data.sync.SpamListSyncStateStore
 import io.github.jeshiomurmu.opencaller.core.data.sync.SpamListUpdates
 import io.github.jeshiomurmu.opencaller.core.data.work.BackgroundWork
@@ -98,6 +101,22 @@ interface NetworkModule {
             @ApplicationContext context: Context,
         ): SpamListSyncStateStore =
             SpamListSyncStateStore(PreferenceDataStoreFactory.create { context.preferencesDataStoreFile(SpamListSyncStateStore.FILE_NAME) })
+
+        /** Where the registry updates stand. */
+        @Provides
+        @Singleton
+        fun registrySyncStateStore(
+            @ApplicationContext context: Context,
+        ): RegistrySyncStateStore =
+            RegistrySyncStateStore(PreferenceDataStoreFactory.create { context.preferencesDataStoreFile(RegistrySyncStateStore.FILE_NAME) })
+
+        /** The known-bad link prefixes, in the no-backup directory (the server sends them again after a restore). */
+        @Provides
+        @Singleton
+        fun linkPrefixStore(
+            @ApplicationContext context: Context,
+            dispatchers: DispatcherProvider,
+        ): LinkPrefixStore = LinkPrefixStore(java.io.File(context.noBackupFilesDir, LinkPrefixStore.FILE_NAME), dispatchers)
 
         /** Search quota bookkeeping. */
         @Provides

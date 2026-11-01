@@ -22,6 +22,28 @@ interface MessageMetaDao {
     @Query("SELECT * FROM message_meta WHERE category = :category ORDER BY at DESC")
     fun observeByCategory(category: MessageCategory): Flow<List<MessageMetaEntity>>
 
+    /** Messages in [category] received at or after [atMillis]. */
+    @Query("SELECT * FROM message_meta WHERE category = :category AND at >= :atMillis ORDER BY at")
+    suspend fun since(
+        category: MessageCategory,
+        atMillis: Long,
+    ): List<MessageMetaEntity>
+
+    /** Every message's metadata (the smart inbox sorts conversations by it). */
+    @Query("SELECT * FROM message_meta")
+    fun observeAll(): Flow<List<MessageMetaEntity>>
+
+    /** Messages in [categories] received before [atMillis] (the inbox cleaner's candidates). */
+    @Query("SELECT * FROM message_meta WHERE category IN (:categories) AND at < :atMillis")
+    suspend fun olderThan(
+        categories: List<MessageCategory>,
+        atMillis: Long,
+    ): List<MessageMetaEntity>
+
+    /** Forgets the one-time codes of messages received before [atMillis]; returns how many. */
+    @Query("UPDATE message_meta SET otpCode = NULL WHERE otpCode IS NOT NULL AND at < :atMillis")
+    suspend fun clearCodesBefore(atMillis: Long): Int
+
     /** Removes metadata for a deleted message. */
     @Query("DELETE FROM message_meta WHERE providerId = :providerId")
     suspend fun delete(providerId: Long)

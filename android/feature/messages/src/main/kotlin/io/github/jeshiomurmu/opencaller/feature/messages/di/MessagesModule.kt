@@ -10,9 +10,12 @@ import io.github.jeshiomurmu.opencaller.core.data.MessageMetaRepository
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.ConversationSource
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.DeviceSmsStore
+import io.github.jeshiomurmu.opencaller.core.telephony.messaging.MessageAnalyzer
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.MessageMetaSink
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.MessagePipeline
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.SenderNames
+import io.github.jeshiomurmu.opencaller.core.telephony.messaging.SenderResolver
+import io.github.jeshiomurmu.opencaller.core.telephony.otp.OtpWatch
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ContactLookup
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.HomeRegionProvider
 import io.github.jeshiomurmu.opencaller.feature.messages.notify.ActiveThread
@@ -30,7 +33,7 @@ internal interface MessagesModule {
     fun messageSending(impl: DeviceMessageSending): MessageSending
 
     companion object {
-        // A sender's name comes from the user's contacts only (sender IDs and the registry are Phase 7b).
+        // The contacts' name for an address; the registries and templates come after it (SenderResolver).
         @Provides
         fun senderNames(
             contacts: ContactLookup,
@@ -41,14 +44,18 @@ internal interface MessagesModule {
                 normalizer.fromHandle(address, region.homeRegion() ?: UNKNOWN_REGION)?.let { contacts.displayName(it) }
             }
 
+        // One collaborator per pipeline step, as MessagePipeline takes them.
+        @Suppress("LongParameterList")
         @Provides
         fun messagePipeline(
             inbox: DeviceSmsStore,
-            names: SenderNames,
+            resolver: SenderResolver,
+            analyzer: MessageAnalyzer,
+            otp: OtpWatch,
             meta: MessageMetaRepository,
             notifier: MessageNotifier,
             clock: Clock,
-        ): MessagePipeline = MessagePipeline(inbox, names, MessageMetaSink { meta.save(it) }, notifier, clock)
+        ): MessagePipeline = MessagePipeline(inbox, resolver, analyzer, otp, MessageMetaSink { meta.save(it) }, notifier, clock)
 
         @Provides
         fun threadMetaCleaner(meta: MessageMetaRepository): ThreadMetaCleaner = ThreadMetaCleaner { meta.deleteThread(it) }

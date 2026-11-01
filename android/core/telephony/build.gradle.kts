@@ -15,6 +15,7 @@ dependencies {
     api(projects.core.common)
     api(projects.core.data)
     api(projects.core.phonenumber)
+    api(projects.core.ml)
     api(libs.androidx.lifecycle.common)
     api(libs.kotlinx.coroutines.core)
     implementation(projects.core.datastore)

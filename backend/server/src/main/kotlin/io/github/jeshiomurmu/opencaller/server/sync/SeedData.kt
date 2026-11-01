@@ -28,6 +28,13 @@ data class VerificationRangeSeed(
     val updatedAt: Instant,
 )
 
+/** A row of `seed/bad_hosts.csv`: a known-bad link host (lower-case ASCII) and why it is listed. */
+data class BadHostSeed(
+    val host: String,
+    val reason: String,
+    val updatedAt: Instant,
+)
+
 /** A seed file is malformed; the message names the file and line. */
 class SeedDataException(
     message: String,
@@ -39,6 +46,7 @@ data class SeedData(
     val senderIds: List<SenderIdSeed>,
     val appHashes: List<AppHashSeed>,
     val verificationRanges: List<VerificationRangeSeed>,
+    val badHosts: List<BadHostSeed>,
 ) {
     /** Loading from the classpath (`seed/…`, packaged from backend/server/seed). */
     companion object {
@@ -49,9 +57,10 @@ data class SeedData(
         private val PACKAGE = Regex("[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)+")
         private val PREFIX = Regex("\\+[1-9][0-9]{0,14}")
         private val SOURCE = Regex("[a-z0-9-]{2,32}")
+        private val HOST = Regex("[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+")
         private const val MAX_NAME = 100
 
-        /** Reads the three files from the classpath. */
+        /** Reads the four files from the classpath. */
         fun load(): SeedData =
             SeedData(
                 senderIds =
@@ -73,6 +82,10 @@ data class SeedData(
                     rows("verification_ranges.csv", listOf("prefix", "provider", "updated_at")) { c ->
                         VerificationRangeSeed(c.cell("prefix", PREFIX), c.name("provider"), c.instant("updated_at"))
                     }.also { rows -> unique(rows.map { it.prefix }, "verification_ranges.csv") },
+                badHosts =
+                    rows("bad_hosts.csv", listOf("host", "reason", "updated_at")) { c ->
+                        BadHostSeed(c.cell("host", HOST), c.cell("reason", SLUG), c.instant("updated_at"))
+                    }.also { rows -> unique(rows.map { it.host }, "bad_hosts.csv") },
             )
 
         /** One CSV line by column name; [where] names the file and line for error messages. */

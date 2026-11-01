@@ -11,6 +11,7 @@ import io.github.jeshiomurmu.opencaller.core.data.work.BackgroundWork
 import io.github.jeshiomurmu.opencaller.core.datastore.UserSettingsDataSource
 import io.github.jeshiomurmu.opencaller.core.network.NetworkLog
 import io.github.jeshiomurmu.opencaller.core.network.ServerConfig
+import io.github.jeshiomurmu.opencaller.core.telephony.otp.OtpSafetyMonitor
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ScreeningWarmUp
 import io.github.jeshiomurmu.opencaller.logging.RedactingTree
 import kotlinx.coroutines.CoroutineScope
@@ -26,7 +27,8 @@ import javax.inject.Inject
  * background, it loads the bundled seed spam list and warms up call screening (database, numbering metadata of the
  * user's country), so the first screened call is as fast as the others. With a server configured it keeps the daily
  * spam-list update scheduled (unmetered networks unless the user allows mobile data) and sends queued reports.
- * WorkManager is started on demand with Hilt's worker factory (its default initializer is removed in the manifest).
+ * It starts the OTP safety guard's call watch (docs/architecture.md §4.5). WorkManager is started on demand with
+ * Hilt's worker factory (its default initializer is removed in the manifest).
  */
 @HiltAndroidApp
 class OpenCallerApplication :
@@ -53,6 +55,9 @@ class OpenCallerApplication :
     @Inject
     lateinit var server: ServerConfig
 
+    @Inject
+    lateinit var otpSafety: OtpSafetyMonitor
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
 
@@ -69,6 +74,8 @@ class OpenCallerApplication :
             }
             screeningWarmUp.warmUp()
         }
+        // The OTP guard watches calls from the start, so a code right after a call is still caught (§4.5).
+        otpSafety.start(scope)
         if (server.isConfigured) {
             work.uploadReports()
             scope.launch {

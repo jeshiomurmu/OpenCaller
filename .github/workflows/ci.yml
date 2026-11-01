@@ -69,8 +69,10 @@ jobs:
       - name: Check (format, static analysis, tests incl. Testcontainers PostgreSQL + Redis)
         run: ./gradlew check
 
-      - name: Bucket test vectors match the app's copy
-        run: cmp src/test/resources/fixtures/bucket_vectors.csv ../../android/core/testing/src/main/resources/fixtures/bucket_vectors.csv
+      - name: Bucket and host-prefix test vectors match the app's copies
+        run: |
+          cmp src/test/resources/fixtures/bucket_vectors.csv ../../android/core/testing/src/main/resources/fixtures/bucket_vectors.csv
+          cmp src/test/resources/fixtures/host_prefix_vectors.csv ../../android/core/testing/src/main/resources/fixtures/host_prefix_vectors.csv
 
   emulator:
     name: emulator (API ${{ matrix.api-level }})

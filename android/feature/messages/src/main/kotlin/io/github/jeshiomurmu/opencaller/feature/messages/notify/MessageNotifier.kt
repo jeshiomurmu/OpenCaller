@@ -18,11 +18,13 @@ import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.designsystem.icon.OpenCallerIcons
 import io.github.jeshiomurmu.opencaller.core.model.Message
 import io.github.jeshiomurmu.opencaller.core.model.MessageBox
+import io.github.jeshiomurmu.opencaller.core.model.MessageCategory
 import io.github.jeshiomurmu.opencaller.core.model.MmsDownload
 import io.github.jeshiomurmu.opencaller.core.model.Participant
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.ConversationSource
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.IncomingMessageNotifier
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.IncomingSms
+import io.github.jeshiomurmu.opencaller.core.telephony.messaging.ReceivedDetails
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.StoredMessage
 import io.github.jeshiomurmu.opencaller.feature.messages.MessagesIntents
 import io.github.jeshiomurmu.opencaller.feature.messages.R
@@ -43,13 +45,22 @@ class MessageNotifier
         private val conversations: ConversationSource,
         private val names: ParticipantNames,
         private val active: ActiveThread,
+        private val otp: OtpNotifications,
     ) : IncomingMessageNotifier {
         private val manager: NotificationManager = context.getSystemService(NotificationManager::class.java)
 
+        // A code gets its own notification (hidden on the lock screen); Spam and Phishing are posted quietly.
         override suspend fun stored(
             message: StoredMessage,
-            senderName: String?,
-        ) = refresh(message.threadId)
+            details: ReceivedDetails,
+        ) {
+            val threadId = message.threadId
+            when {
+                details.otp != null && canNotify() && !active.isShowing(threadId) -> otp.show(threadId, details, openThread(threadId))
+                details.category in FILTERED -> refresh(threadId, CHANNEL_FILTERED)
+                else -> refresh(threadId)
+            }
+        }
 
         override suspend fun unsaved(
             sms: IncomingSms,
@@ -66,15 +77,18 @@ class MessageNotifier
             manager.notify(TAG_UNSAVED, sms.address.hashCode(), notification)
         }
 
-        /** Shows thread [threadId]'s unread messages, or removes its notification when none are left. */
-        suspend fun refresh(threadId: Long) {
+        /** Shows thread [threadId]'s unread messages on [channel], or removes its notification when none are left. */
+        suspend fun refresh(
+            threadId: Long,
+            channel: String = CHANNEL_MESSAGES,
+        ) {
             // The conversation on screen is read as messages arrive.
             val showing = active.isShowing(threadId)
             if (showing) conversations.markRead(threadId)
             val unread = if (showing || !canNotify()) emptyList() else unreadIn(threadId)
             if (unread.isEmpty()) return cancel(threadId)
             val people = (conversations.participants(threadId) as? AppResult.Success)?.value.orEmpty()
-            manager.notify(TAG_THREAD, threadId.toInt(), conversation(threadId, people, unread.takeLast(MAX_MESSAGES)))
+            manager.notify(TAG_THREAD, threadId.toInt(), conversation(threadId, people, unread.takeLast(MAX_MESSAGES), channel))
         }
 
         private suspend fun unreadIn(threadId: Long): List<Message> =
@@ -102,6 +116,7 @@ class MessageNotifier
             threadId: Long,
             people: List<Participant>,
             unread: List<Message>,
+            channel: String,
         ): Notification {
             val me = Person.Builder().setName(context.getString(R.string.messages_you)).build()
             val style = Notification.MessagingStyle(me)
@@ -116,7 +131,7 @@ class MessageNotifier
                     Notification.MessagingStyle.Message(textOf(message), message.atMillis, Person.Builder().setName(from).build()),
                 )
             }
-            return builder(CHANNEL_MESSAGES)
+            return builder(channel)
                 .setStyle(style)
                 .setContentIntent(openThread(threadId))
                 .setPublicVersion(publicVersion())
@@ -208,6 +223,14 @@ class MessageNotifier
                         lockscreenVisibility = Notification.VISIBILITY_PRIVATE
                     },
                     NotificationChannel(
+                        CHANNEL_FILTERED,
+                        context.getString(R.string.channel_filtered),
+                        NotificationManager.IMPORTANCE_LOW,
+                    ).apply {
+                        description = context.getString(R.string.channel_filtered_description)
+                        lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+                    },
+                    NotificationChannel(
                         CHANNEL_FAILURES,
                         context.getString(R.string.channel_message_failures),
                         NotificationManager.IMPORTANCE_DEFAULT,
@@ -223,12 +246,16 @@ class MessageNotifier
             /** Received messages. */
             const val CHANNEL_MESSAGES = "messages"
 
+            /** Spam and Phishing, shown without sound or a heads-up. */
+            const val CHANNEL_FILTERED = "messages_filtered"
+
             /** Messages that couldn't be sent. */
             const val CHANNEL_FAILURES = "message_failures"
 
             /** Tag of a conversation's notification (its id is the thread id). */
             const val TAG_THREAD = "thread"
 
+            private val FILTERED = setOf(MessageCategory.SPAM, MessageCategory.PHISHING)
             private const val TAG_FAILED = "not_sent"
             private const val TAG_UNSAVED = "unsaved"
             private const val MAX_MESSAGES = 8

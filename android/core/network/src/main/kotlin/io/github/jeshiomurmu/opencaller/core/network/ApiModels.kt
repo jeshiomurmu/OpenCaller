@@ -140,6 +140,57 @@ data class DisputeResponse(
     val status: String,
 )
 
+/** A registered SMS sender ID (`GET /v1/sender-ids/{countryIso}`); times are epoch milliseconds. */
+@Serializable
+data class SenderIdDto(
+    val header: String,
+    val brandName: String,
+    val category: String,
+    val source: String,
+    val businessId: String? = null,
+    val updatedAt: Long,
+)
+
+/** `GET /v1/sender-ids/{countryIso}` response; pass [syncedAt] as `since` next time. */
+@Serializable
+data class SenderIdsDto(
+    val countryIso: String,
+    val syncedAt: Long,
+    val senderIds: List<SenderIdDto>,
+)
+
+/** An SMS Retriever app hash and its app. */
+@Serializable
+data class AppHashDto(
+    val hash: String,
+    val packageName: String,
+    val appName: String,
+    val updatedAt: Long,
+)
+
+/** A flash-call verification provider's E.164 prefix. */
+@Serializable
+data class VerificationRangeDto(
+    val prefix: String,
+    val provider: String,
+    val updatedAt: Long,
+)
+
+/** `GET /v1/otp-sources` response. */
+@Serializable
+data class OtpSourcesDto(
+    val syncedAt: Long,
+    val appHashes: List<AppHashDto>,
+    val verificationRanges: List<VerificationRangeDto>,
+)
+
+/** `GET /v1/link-prefixes` response: 8-hex-digit SHA-256 prefixes of known-bad hosts, sorted. */
+@Serializable
+data class LinkPrefixesDto(
+    val syncedAt: Long,
+    val prefixes: List<String>,
+)
+
 /** RFC 9457 problem details as the server sends them. */
 @Serializable
 data class ProblemDto(

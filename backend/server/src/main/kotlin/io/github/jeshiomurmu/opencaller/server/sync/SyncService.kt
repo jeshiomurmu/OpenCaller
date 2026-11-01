@@ -61,8 +61,19 @@ data class OtpSourcesResponse(
 )
 
 /**
+ * `GET /v1/link-prefixes` response: every known-bad host's [HostPrefix], sorted. Always the whole list (it is small),
+ * so a host taken off the list disappears from apps on their next sync.
+ */
+@Serializable
+data class LinkPrefixesResponse(
+    val syncedAt: Long,
+    val prefixes: List<String>,
+)
+
+/**
  * Registry data apps sync incrementally with `?since=<epoch ms>` (rows with a later `updated_at`): sender IDs from
- * the `sender_ids` table (seeded from `seed/sender_ids.csv` on start) and OTP sources from the seed files.
+ * the `sender_ids` table (seeded from `seed/sender_ids.csv` on start) and OTP sources from the seed files; and the
+ * known-bad link list, served only as hash prefixes.
  */
 class SyncService(
     private val db: ServerDatabase,
@@ -133,6 +144,17 @@ class SyncService(
         val newest = (hashes.map { it.updatedAt } + ranges.map { it.updatedAt }).maxOrNull() ?: since.toEpochMilli()
         return OtpSourcesResponse(newest, hashes, ranges)
     }
+
+    /** The known-bad link hosts as hash prefixes; the host names never leave the server. */
+    fun linkPrefixes(): LinkPrefixesResponse =
+        LinkPrefixesResponse(
+            syncedAt = seed.badHosts.maxOfOrNull { it.updatedAt.toEpochMilli() } ?: 0L,
+            prefixes =
+                seed.badHosts
+                    .map { HostPrefix.of(it.host) }
+                    .distinct()
+                    .sorted(),
+        )
 
     private fun since(raw: String?): Instant {
         if (raw == null) return Instant.EPOCH
