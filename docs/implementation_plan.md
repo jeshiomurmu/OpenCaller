@@ -144,12 +144,12 @@ Done in two parts: 7a (default SMS app: the four role components, provider stora
 
 ## Phase 8 — Profiles and social
 
-- [ ] My profile: name, photo, visibility (Everyone / Registered users only / Nobody). No "people I call" option: it would require sending call pairs to the server, which breaks the privacy invariants
-- [ ] Who viewed my profile, who searched for me (supporter-gated)
-- [ ] Incognito mode
-- [ ] Contact requests
-- [ ] Supporter / Gold badge rendering
-- [ ] Delete account flow
+- [x] My profile: name, photo, visibility (Everyone / Registered users only / Nobody). No "people I call" option: it would require sending call pairs to the server, which breaks the privacy invariants
+- [x] Who viewed my profile, who searched for me (supporter-gated)
+- [x] Incognito mode
+- [x] Contact requests
+- [x] Supporter / Gold badge rendering
+- [x] Delete account flow
 
 **Exit:** TC-SOC-* pass; privacy review of viewer/searcher logging recorded in `docs/decisions/`.
 
