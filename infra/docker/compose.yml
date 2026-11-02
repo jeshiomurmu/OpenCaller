@@ -99,6 +99,8 @@ services:
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
       TWILIO_FROM: ${TWILIO_FROM:-}
       TWILIO_MESSAGING_SERVICE_SID: ${TWILIO_MESSAGING_SERVICE_SID:-}
+      # Optional: a Twilio phone number that reads business-claim codes aloud (landlines).
+      TWILIO_VOICE_FROM: ${TWILIO_VOICE_FROM:-}
       # Spam lists and profile pictures go to this MinIO bucket (created on first upload).
       MINIO_BUCKET: ${MINIO_BUCKET:-opencaller}
       # MinIO's address as apps reach it, for presigned profile-picture uploads and downloads. The default is the
@@ -106,6 +108,14 @@ services:
       MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://127.0.0.1:9000}
       # Bearer token for POST /admin/jobs/{scoring|lists} on the internal port 9090; unset = admin endpoints off.
       ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      # Admin web (claim review, OTP sources, sender-ID imports) on an internal port, never published here; reach it
+      # with `docker compose exec server curl -u …` or an SSH tunnel. Unset ADMIN_WEB_PORT = off.
+      ADMIN_WEB_PORT: ${ADMIN_WEB_PORT:-}
+      ADMIN_WEB_USER: ${ADMIN_WEB_USER:-}
+      ADMIN_WEB_PASSWORD: ${ADMIN_WEB_PASSWORD:-}
+      ADMIN_WEB_ALLOWED_NETWORKS: ${ADMIN_WEB_ALLOWED_NETWORKS:-}
+      # Optional: folder (inside the container) with sender-ID CSV extracts, <source>/<ISO>.csv, imported daily.
+      IMPORT_DIR: ${IMPORT_DIR:-}
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:

@@ -6,10 +6,10 @@ import org.jetbrains.exposed.v1.core.java.javaUUID
 import org.jetbrains.exposed.v1.javatime.CurrentTimestampWithTimeZone
 import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
 
-// Exposed mirrors of the tables in db/migration (V1__init.sql = docs/architecture.md §7, then V2 and V3). Flyway
+// Exposed mirrors of the tables in db/migration (V1__init.sql = docs/architecture.md §7, then V2 to V4). Flyway
 // owns the schema; these objects are only used for queries. ServerSchemaTest compares them with the migrated database.
 
-private const val COUNTRY_ISO_LENGTH = 2
+internal const val COUNTRY_ISO_LENGTH = 2
 
 /** `users`. */
 object Users : Table("users") {
@@ -60,6 +60,8 @@ object Businesses : Table("businesses") {
     val status = pgEnum<ReviewStatus>("status", "review_status").default(ReviewStatus.PENDING)
     val verifiedAt = timestampWithTimeZone("verified_at").nullable()
     val createdAt = timestampWithTimeZone("created_at").defaultExpression(CurrentTimestampWithTimeZone)
+    val hours = text("hours").nullable() // V4
+    val updatedAt = timestampWithTimeZone("updated_at").defaultExpression(CurrentTimestampWithTimeZone) // V4
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -70,6 +72,7 @@ object BusinessNumbers : Table("business_numbers") {
     val defaultCallReason = text("default_call_reason").nullable()
     val claimedVia = text("claimed_via")
     val claimedAt = timestampWithTimeZone("claimed_at").defaultExpression(CurrentTimestampWithTimeZone)
+    val updatedAt = timestampWithTimeZone("updated_at").defaultExpression(CurrentTimestampWithTimeZone) // V4
     override val primaryKey = PrimaryKey(e164)
 }
 
@@ -82,6 +85,7 @@ object SenderIds : Table("sender_ids") {
     val sourceName = text("source")
     val businessId = optReference("business_id", Businesses.id)
     val updatedAt = timestampWithTimeZone("updated_at").defaultExpression(CurrentTimestampWithTimeZone)
+    val deletedAt = timestampWithTimeZone("deleted_at").nullable() // V4
     override val primaryKey = PrimaryKey(countryIso, header)
 }
 
@@ -223,7 +227,7 @@ object JobState : Table("job_state") {
     override val primaryKey = PrimaryKey(name)
 }
 
-/** Every table (V1, then V2), in creation order. */
+/** Every table (V1, then V2 to V4), in creation order. */
 val allTables: List<Table> =
     listOf(
         Users,
@@ -245,4 +249,10 @@ val allTables: List<Table> =
         FamilyMembers,
         ListVersions,
         JobState,
+        BusinessClaims,
+        BusinessClaimDocuments,
+        AdminAudit,
+        OtpAppHashes,
+        VerificationRanges,
+        ImportRuns,
     )

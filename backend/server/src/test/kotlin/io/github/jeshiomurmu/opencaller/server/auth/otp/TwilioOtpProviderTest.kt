@@ -56,6 +56,18 @@ class TwilioOtpProviderTest {
         service: String? = null,
     ) = TwilioOtpProvider(TwilioConfig("AC0123456789abcdef", "token", from, service, "http://127.0.0.1:${server.address.port}"))
 
+    private fun voiceProvider() =
+        TwilioVoiceOtpProvider(
+            TwilioConfig(
+                "AC0123456789abcdef",
+                "token",
+                "+15005550006",
+                null,
+                "http://127.0.0.1:${server.address.port}",
+                voiceFrom = "+15005550007",
+            ),
+        )
+
     private val number = E164.parseOrNull("+12015550123")!!
 
     @AfterTest
@@ -99,5 +111,25 @@ class TwilioOtpProviderTest {
     fun anUnreachableServerIsADeliveryFailure() {
         server.stop(0)
         assertFailsWith<OtpDeliveryException> { runBlocking { provider().send(number, "123456", 5.minutes) } }
+    }
+
+    @Test
+    fun readsTheCodeInAPhoneCallAsTwilioDocumentsIt() =
+        runBlocking {
+            voiceProvider().send(number, "472913", 5.minutes)
+            val request = received.single()
+            assertEquals("/2010-04-01/Accounts/AC0123456789abcdef/Calls.json", request.path)
+            assertEquals("+12015550123", request.form["To"])
+            assertEquals("+15005550007", request.form["From"])
+            assertEquals("30", request.form["Timeout"])
+            val twiml = "<Response><Say loop=\"3\">Your OpenCaller business code is 4, 7, 2, 9, 1, 3.</Say></Response>"
+            assertEquals(twiml, request.form["Twiml"])
+            assertTrue(request.form["Twiml"]!!.length <= 4000)
+        }
+
+    @Test
+    fun aRefusedCallIsADeliveryFailure() {
+        status = 400
+        assertFailsWith<OtpDeliveryException> { runBlocking { voiceProvider().send(number, "123456", 5.minutes) } }
     }
 }

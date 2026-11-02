@@ -50,15 +50,15 @@ data class SeedData(
 ) {
     /** Loading from the classpath (`seed/…`, packaged from backend/server/seed). */
     companion object {
-        private val ISO = Regex("[A-Z]{2}")
-        private val HEADER = Regex("[A-Za-z0-9-]{2,20}")
-        private val SLUG = Regex("[a-z_]{2,32}")
-        private val APP_HASH = Regex("[A-Za-z0-9+/]{11}")
-        private val PACKAGE = Regex("[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)+")
-        private val PREFIX = Regex("\\+[1-9][0-9]{0,14}")
-        private val SOURCE = Regex("[a-z0-9-]{2,32}")
+        private val ISO = RegistryRules.ISO
+        private val HEADER = RegistryRules.HEADER
+        private val SLUG = RegistryRules.SLUG
+        private val APP_HASH = RegistryRules.APP_HASH
+        private val PACKAGE = RegistryRules.PACKAGE
+        private val PREFIX = RegistryRules.PREFIX
+        private val SOURCE = RegistryRules.SOURCE
         private val HOST = Regex("[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+")
-        private const val MAX_NAME = 100
+        private const val MAX_NAME = RegistryRules.MAX_NAME
 
         /** Reads the four files from the classpath. */
         fun load(): SeedData =
@@ -121,8 +121,7 @@ data class SeedData(
             pattern: Regex,
         ): String = this[column].takeIf(pattern::matches) ?: fail("$where: invalid $column")
 
-        private fun Cells.name(column: String): String =
-            this[column].takeIf { it.length in 1..MAX_NAME && it.none(Char::isISOControl) } ?: fail("$where: invalid $column")
+        private fun Cells.name(column: String): String = this[column].takeIf(RegistryRules::isName) ?: fail("$where: invalid $column")
 
         private fun Cells.instant(column: String): Instant =
             try {

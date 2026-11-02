@@ -65,9 +65,9 @@ class SyncApiTest {
     @Test
     fun senderIdsAreServedPerCountrySinceATime() =
         apiTest { server ->
-            server.deps.sync.seedSenderIds()
+            server.deps.sync.seed()
             // Seeding twice is harmless.
-            server.deps.sync.seedSenderIds()
+            server.deps.sync.seed()
             val response = client.getWith("/v1/sender-ids/bd")
             assertEquals(HttpStatusCode.OK, response.status, response.bodyAsText())
             assertEquals("public, max-age=3600", response.headers[HttpHeaders.CacheControl])
@@ -93,7 +93,8 @@ class SyncApiTest {
 
     @Test
     fun otpSourcesAreServedSinceATime() =
-        apiTest {
+        apiTest { server ->
+            server.deps.sync.seed()
             val all = testJson.decodeFromString(OtpSourcesResponse.serializer(), client.getWith("/v1/otp-sources").bodyAsText())
             assertEquals(2, all.appHashes.size)
             assertEquals(AppHashDto("AAAAAAAAAA0", "org.example.fakebank", "Example Bank (fake)", seedTime), all.appHashes.first())

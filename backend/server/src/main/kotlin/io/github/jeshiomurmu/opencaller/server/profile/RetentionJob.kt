@@ -1,5 +1,8 @@
 package io.github.jeshiomurmu.opencaller.server.profile
 
+import io.github.jeshiomurmu.opencaller.server.business.ClaimStatus
+import io.github.jeshiomurmu.opencaller.server.db.BusinessClaimDocuments
+import io.github.jeshiomurmu.opencaller.server.db.BusinessClaims
 import io.github.jeshiomurmu.opencaller.server.db.Disputes
 import io.github.jeshiomurmu.opencaller.server.db.NumberReputation
 import io.github.jeshiomurmu.opencaller.server.db.ProfileViews
@@ -9,6 +12,9 @@ import io.github.jeshiomurmu.opencaller.server.db.Users
 import io.github.jeshiomurmu.opencaller.server.storage.ObjectStore
 import io.github.jeshiomurmu.opencaller.server.storage.ObjectStoreException
 import kotlinx.serialization.Serializable
+import org.jetbrains.exposed.v1.core.JoinType
+import org.jetbrains.exposed.v1.core.Op
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.isNotNull
@@ -29,6 +35,7 @@ data class RetentionResult(
     val accountsPurged: Int,
     val reportsDeleted: Int,
     val visitsExpired: Int,
+    val claimFilesDeleted: Int = 0,
 )
 
 /**
@@ -36,7 +43,8 @@ data class RetentionResult(
  * 1. purges accounts deleted with `DELETE /v1/me`: the reports the user wrote (their numbers are queued for
  *    rescoring), the profile picture and the user row with everything that cascades from it (devices, tokens,
  *    reporter trust, subscriptions, family groups); disputes they opened stay, without the claimant;
- * 2. deletes profile views and searches older than 90 days.
+ * 2. deletes profile views and searches older than 90 days;
+ * 3. deletes the files of business claims decided more than 90 days ago (an approved business keeps its logo).
  * A run happens daily, so a deleted account is gone within a day, well inside the 30 days the PRD allows.
  */
 class RetentionJob(
@@ -57,7 +65,10 @@ class RetentionJob(
         var purged = 0
         var reports = 0
         deleted.forEach { (id, avatar) ->
-            if (avatar == null || deleteAvatar(avatar)) {
+            val claimFiles = db.query { claimFilesOf(BusinessClaims.userId eq id) }
+            val files = listOfNotNull(avatar) + claimFiles.map { it.second }
+            // A file that can't be deleted now keeps its account for the next run, so nothing is left behind.
+            if (deleteFiles(files) == files.size) {
                 reports += db.query { purge(id) }
                 purged++
             }
@@ -66,17 +77,44 @@ class RetentionJob(
             db.query {
                 ProfileViews.deleteWhere { ProfileViews.at less now().minusDays(ProfileService.VISIT_DAYS) }
             }
-        return RetentionResult(purged, reports, expired)
+        return RetentionResult(purged, reports, expired, expireClaimFiles())
     }
 
-    // A picture that can't be deleted now keeps its account for the next run, so it is never left behind.
-    private suspend fun deleteAvatar(key: String): Boolean =
-        try {
-            objects.delete(key)
-            true
-        } catch (e: ObjectStoreException) {
-            log.warn("Could not delete a deleted account's profile picture; trying again next run", e)
-            false
+    // Files of claims decided more than 90 days ago; a file that can't be deleted now keeps its row for the next run.
+    private suspend fun expireClaimFiles(): Int {
+        val decided = ClaimStatus.entries.filterNot { it.isOpen }.map { it.value }
+        val files =
+            db.query {
+                claimFilesOf((BusinessClaims.status inList decided) and (BusinessClaims.decidedAt less now().minusDays(CLAIM_FILE_DAYS)))
+            }
+        var deleted = 0
+        files.forEach { (claim, key) ->
+            if (deleteFiles(listOf(key)) == 1) {
+                db.query { BusinessClaimDocuments.deleteWhere { (claimId eq claim) and (objectKey eq key) } }
+                deleted++
+            }
+        }
+        return deleted
+    }
+
+    private fun JdbcTransaction.claimFilesOf(where: Op<Boolean>): List<Pair<UUID, String>> =
+        BusinessClaimDocuments
+            .join(BusinessClaims, JoinType.INNER, BusinessClaimDocuments.claimId, BusinessClaims.id)
+            .select(BusinessClaimDocuments.claimId, BusinessClaimDocuments.objectKey)
+            .where(where)
+            .limit(PURGE_BATCH)
+            .map { it[BusinessClaimDocuments.claimId] to it[BusinessClaimDocuments.objectKey] }
+
+    // Returns how many of [keys] are gone; failures are logged and retried next run.
+    private suspend fun deleteFiles(keys: List<String>): Int =
+        keys.count { key ->
+            try {
+                objects.delete(key)
+                true
+            } catch (e: ObjectStoreException) {
+                log.warn("Could not delete a stored file (picture or claim file); trying again next run", e)
+                false
+            }
         }
 
     // Returns the number of reports deleted.
@@ -108,6 +146,7 @@ class RetentionJob(
         const val HOUR_UTC = 3
 
         private const val PURGE_BATCH = 500
+        private const val CLAIM_FILE_DAYS = 90L
         private const val CHUNK = 1_000
         private val RESCORE_SOON = OffsetDateTime.of(2000, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC)
         private val log = LoggerFactory.getLogger(RetentionJob::class.java)

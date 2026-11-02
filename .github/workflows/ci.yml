@@ -159,6 +159,7 @@ jobs:
               -e "s/^JWT_SECRET=.*/JWT_SECRET=$(openssl rand -hex 32)/" \
               -e "s/^OTP_PEPPER=.*/OTP_PEPPER=$(openssl rand -hex 32)/" \
               -e "s/^ADMIN_TOKEN=.*/ADMIN_TOKEN=$(openssl rand -hex 32)/" \
+              -e "s/^ADMIN_WEB_PASSWORD=.*/ADMIN_WEB_PASSWORD=$(openssl rand -hex 32)/" \
               .env.example > .env
 
       - name: Build and start the stack
@@ -212,6 +213,7 @@ jobs:
               -e "s/^JWT_SECRET=.*/JWT_SECRET=$(openssl rand -hex 32)/" \
               -e "s/^OTP_PEPPER=.*/OTP_PEPPER=$(openssl rand -hex 32)/" \
               -e "s/^ADMIN_TOKEN=.*/ADMIN_TOKEN=$(openssl rand -hex 32)/" \
+              -e "s/^ADMIN_WEB_PASSWORD=.*/ADMIN_WEB_PASSWORD=$(openssl rand -hex 32)/" \
               .env.example > .env
 
       - name: Build and start the stack

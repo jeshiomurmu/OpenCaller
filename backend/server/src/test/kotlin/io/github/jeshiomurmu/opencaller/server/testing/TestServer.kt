@@ -1,5 +1,6 @@
 package io.github.jeshiomurmu.opencaller.server.testing
 
+import io.github.jeshiomurmu.opencaller.server.CodeSenders
 import io.github.jeshiomurmu.opencaller.server.ServerDependencies
 import io.github.jeshiomurmu.opencaller.server.auth.E164
 import io.github.jeshiomurmu.opencaller.server.auth.otp.OtpDeliveryException
@@ -199,7 +200,10 @@ class TestServer(
 ) {
     val clock = MutableClock()
     val otp = RecordingOtpProvider()
-    val deps = ServerDependencies(config, TestInfra.database, TestInfra.redis, otp, clock, objectStore)
+
+    /** Codes "read aloud" for business claims by phone call. */
+    val voice = RecordingOtpProvider()
+    val deps = ServerDependencies(config, TestInfra.database, TestInfra.redis, CodeSenders(otp, voice), clock, objectStore)
 
     /** Empties Redis and every table so tests don't see each other's codes, limits, users or reports. */
     suspend fun reset() {
