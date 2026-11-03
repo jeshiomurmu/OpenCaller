@@ -21,6 +21,7 @@ import io.github.jeshiomurmu.opencaller.feature.callerid.announce.AnnouncePolicy
 import io.github.jeshiomurmu.opencaller.feature.callerid.announce.AudioConditions
 import io.github.jeshiomurmu.opencaller.feature.callerid.announce.CallerAnnouncer
 import io.github.jeshiomurmu.opencaller.feature.callerid.announce.Speaker
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -31,6 +32,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /** TC-UT-002: Announce Caller speaks the caller only when the mode, the entitlement and the phone's sound allow it. */
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.VANILLA_ICE_CREAM])
 class AnnounceCallerTest {

@@ -71,7 +71,7 @@ class GhostCallViewModelTest {
             val vm = GhostCallViewModel(settings, supporter, calls, FakePhotos(AppResult.Success(Unit)))
             observe(vm)
             vm.onEvent(GhostCallEvent.Name("Mum"))
-            vm.onEvent(GhostCallEvent.Number("+44 (7911) 123-456; DROP"))
+            vm.onEvent(GhostCallEvent.Number("+44 (7911) 123-456#*"))
             vm.onEvent(GhostCallEvent.Delay(60))
             vm.onEvent(GhostCallEvent.Delay(7))
             vm.onEvent(GhostCallEvent.PhotoPicked("content://picked"))

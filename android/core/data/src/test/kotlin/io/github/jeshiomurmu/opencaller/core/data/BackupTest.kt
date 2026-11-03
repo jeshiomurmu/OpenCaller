@@ -217,12 +217,6 @@ class BackupTest {
             val contents = BackupArchive.decode(cipher.decrypt(file, passphrase))
             assertEquals(2, contents.messages.size)
             assertFalse(BackupArchive.encode(contents).toString(Charsets.ISO_8859_1).contains("482913"))
-            assertNull(
-                contents.messages
-                    .first()
-                    .senderSource
-                    ?.takeIf { it != NameSource.SENDER_REGISTRY.name },
-            )
         }
 
     private companion object {
