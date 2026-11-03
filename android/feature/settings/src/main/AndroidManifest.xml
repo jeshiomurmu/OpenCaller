@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        Ghost Call (docs/prd.md F-UT-01): a made-up incoming call. The full-screen intent shows its screen over the lock
+        screen like a call (the permission is the one the incoming-call screen already uses); vibration when the phone
+        is on vibrate. It never uses Telecom.
+    -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application>
+        <activity
+            android:name=".ghostcall.GhostCallActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:turnScreenOn="true" />
+    </application>
+
+</manifest>

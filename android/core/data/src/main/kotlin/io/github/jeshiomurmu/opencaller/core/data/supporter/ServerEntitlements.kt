@@ -122,9 +122,10 @@ class ServerEntitlements
             val e = stored.entitlement
             if (!e.entitled) return Entitlement.NONE
             val now = clock.nowMillis()
+            val expiresAt = e.expiresAtMillis
             val until =
                 when {
-                    e.source == EntitlementSource.BILLING && e.expiresAtMillis != null -> e.expiresAtMillis + OFFLINE_GRACE_MILLIS
+                    e.source == EntitlementSource.BILLING && expiresAt != null -> expiresAt + OFFLINE_GRACE_MILLIS
                     else -> (stored.checkedAtMillis ?: 0L) + OFFLINE_GRACE_MILLIS
                 }
             return if (now < until) e else Entitlement.NONE

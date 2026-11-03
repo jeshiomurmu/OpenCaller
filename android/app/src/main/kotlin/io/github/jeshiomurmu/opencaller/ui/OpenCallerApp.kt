@@ -181,7 +181,7 @@ private fun AppNavHost(
         }
         onlineRoutes(navController)
         profileRoutes(navController)
-        supporterRoutes()
+        supporterRoutes(navController)
         composable<ScreeningDebugRoute> { DebugRoute() }
         composable<QuickRepliesSettingsRoute> { QuickRepliesRoute() }
         composable<PermissionsRoute> { entry ->

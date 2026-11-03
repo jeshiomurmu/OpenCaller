@@ -1,6 +1,5 @@
 package io.github.jeshiomurmu.opencaller.core.data.supporter
 
-import Entitlement
 import android.app.Activity
 import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.model.Entitlement

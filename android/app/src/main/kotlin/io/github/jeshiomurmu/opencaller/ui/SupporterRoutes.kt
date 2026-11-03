@@ -6,6 +6,10 @@ import androidx.navigation.compose.composable
 import io.github.jeshiomurmu.opencaller.core.model.AccessItem
 import io.github.jeshiomurmu.opencaller.feature.premium.SupporterRoute
 import io.github.jeshiomurmu.opencaller.feature.settings.SettingsLinks
+import io.github.jeshiomurmu.opencaller.feature.settings.extras.AnnounceCallerRoute
+import io.github.jeshiomurmu.opencaller.feature.settings.extras.AppearanceRoute
+import io.github.jeshiomurmu.opencaller.feature.settings.extras.MessengerCallerIdRoute
+import io.github.jeshiomurmu.opencaller.feature.settings.ghostcall.GhostCallRoute
 import io.github.jeshiomurmu.opencaller.navigation.AnnounceSettingsRoute
 import io.github.jeshiomurmu.opencaller.navigation.AppearanceSettingsRoute
 import io.github.jeshiomurmu.opencaller.navigation.BackupSettingsRoute
@@ -35,6 +39,11 @@ internal fun settingsLinks(
 }
 
 /** The supporter screen and the supporter extras (Phase 10). */
-internal fun NavGraphBuilder.supporterRoutes() {
+internal fun NavGraphBuilder.supporterRoutes(navController: NavHostController) {
+    val openSupporter = { navController.navigate(SupporterPlansRoute) { launchSingleTop = true } }
     composable<SupporterPlansRoute> { SupporterRoute() }
+    composable<AppearanceSettingsRoute> { AppearanceRoute(onOpenSupporter = openSupporter) }
+    composable<AnnounceSettingsRoute> { AnnounceCallerRoute(onOpenSupporter = openSupporter) }
+    composable<GhostCallSettingsRoute> { GhostCallRoute(onOpenSupporter = openSupporter) }
+    composable<MessengerSettingsRoute> { MessengerCallerIdRoute(onOpenSupporter = openSupporter) }
 }

@@ -2,6 +2,7 @@ package io.github.jeshiomurmu.opencaller.core.database
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import io.github.jeshiomurmu.opencaller.core.database.dao.BackupDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.BlockRuleDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.ExtendedSpamListDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.FamilyMemberDao
@@ -66,6 +67,9 @@ abstract class OpenCallerDatabase : RoomDatabase() {
 
     /** The extended spam list (supporters). */
     abstract fun extendedSpamListDao(): ExtendedSpamListDao
+
+    /** What backups read and restore. */
+    abstract fun backupDao(): BackupDao
 
     /** Reputation cache. */
     abstract fun numberInfoDao(): NumberInfoDao
