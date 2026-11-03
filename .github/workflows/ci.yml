@@ -40,32 +40,32 @@ jobs:
           assembleFossRelease assemblePlayRelease bundlePlayRelease
           check
 
-      # Room writes the schema while compiling; it must be committed (docs/architecture.md §6). The step fails when the
-      # build wrote no schema at all, so it can't pass by comparing the committed files with themselves (phase.md 102).
+      # Room writes the schema into core/database/schemas while compiling; it must be committed (docs/architecture.md
+      # §6). KSP is re-run (a build-cache hit writes nothing), and the step fails when Room wrote no schema, so it can't
+      # pass by comparing the committed files with themselves (docs/phase.md issue 102).
       - name: Room schemas are committed
         run: |
-          generated="$(grep -rl --include='*.json' '"formatVersion"' core/database/build 2>/dev/null | sort || true)"
+          schemas=core/database/schemas/io.github.jeshiomurmu.opencaller.core.database.OpenCallerDatabase
+          touch "$RUNNER_TEMP/before-ksp"
+          ./gradlew :core:database:kspDebugKotlin --rerun
+          written="$(find "$schemas" -name '*.json' -newer "$RUNNER_TEMP/before-ksp" | sort)"
           echo "Room schema files written by the build:"
-          echo "${generated:-none}"
-          if [[ -z "$generated" ]]; then
-            echo "::error::Room wrote no schema under core/database/build; the committed schemas can't be checked"
+          echo "${written:-none}"
+          if [[ -z "$written" ]]; then
+            echo "::error::Room wrote no schema to $schemas; the committed schemas can't be checked"
             exit 1
           fi
-          status=0
-          committed=core/database/schemas/io.github.jeshiomurmu.opencaller.core.database.OpenCallerDatabase
-          for file in $generated; do
-            name="$(basename "$file")"
-            if ! diff -u "$committed/$name" "$file"; then
-              echo "::error::Room schema $name differs from the build's ($file): commit the build's file"
-              status=1
-            fi
-          done
           git add --intent-to-add core/database/schemas
           if ! git diff --exit-code -- core/database/schemas; then
-            echo "::error::Room schema changed or missing: commit android/core/database/schemas (diff above)"
-            status=1
+            for file in $written; do
+              echo "----- BEGIN $file"
+              base64 -w 0 "$file"
+              echo
+              echo "----- END $file"
+            done
+            echo "::error::Room schema changed or missing: commit android/core/database/schemas (diff and files above)"
+            exit 1
           fi
-          exit "$status"
 
   backend:
     name: backend
