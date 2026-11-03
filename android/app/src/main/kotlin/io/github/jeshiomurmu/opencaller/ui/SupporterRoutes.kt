@@ -4,6 +4,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import io.github.jeshiomurmu.opencaller.core.model.AccessItem
+import io.github.jeshiomurmu.opencaller.feature.backup.BackupRoute
 import io.github.jeshiomurmu.opencaller.feature.premium.SupporterRoute
 import io.github.jeshiomurmu.opencaller.feature.settings.SettingsLinks
 import io.github.jeshiomurmu.opencaller.feature.settings.extras.AnnounceCallerRoute
@@ -46,4 +47,5 @@ internal fun NavGraphBuilder.supporterRoutes(navController: NavHostController) {
     composable<AnnounceSettingsRoute> { AnnounceCallerRoute(onOpenSupporter = openSupporter) }
     composable<GhostCallSettingsRoute> { GhostCallRoute(onOpenSupporter = openSupporter) }
     composable<MessengerSettingsRoute> { MessengerCallerIdRoute(onOpenSupporter = openSupporter) }
+    composable<BackupSettingsRoute> { BackupRoute(onOpenSupporter = openSupporter) }
 }

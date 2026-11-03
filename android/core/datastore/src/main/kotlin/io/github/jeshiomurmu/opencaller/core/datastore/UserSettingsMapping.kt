@@ -104,8 +104,16 @@ internal fun UserPreferences.toProto(): UserSettings =
  */
 fun UserPreferences.toBackupBytes(): ByteArray = copy(onboardingStep = OnboardingStep.WELCOME).toProto().toByteArray()
 
-/** Settings from [bytes] made by [toBackupBytes]; [onboardingStep] stays this phone's. Throws on unreadable bytes. */
+/**
+ * Settings from [bytes] made by [toBackupBytes]; [onboardingStep] stays this phone's. Throws
+ * [IllegalArgumentException] for bytes that aren't stored settings.
+ */
 fun backupBytesToPreferences(
     bytes: ByteArray,
     onboardingStep: OnboardingStep,
-): UserPreferences = UserSettings.parseFrom(bytes).toDomain().copy(onboardingStep = onboardingStep)
+): UserPreferences =
+    try {
+        UserSettings.parseFrom(bytes).toDomain().copy(onboardingStep = onboardingStep)
+    } catch (e: com.google.protobuf.InvalidProtocolBufferException) {
+        throw IllegalArgumentException("not stored settings", e)
+    }

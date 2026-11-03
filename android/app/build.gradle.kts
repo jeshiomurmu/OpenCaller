@@ -138,6 +138,7 @@ dependencies {
     "playImplementation"(libs.play.billing)
     "playImplementation"(libs.play.services.auth)
     "playImplementation"(libs.okhttp)
+    "playImplementation"(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit4)
     testImplementation(projects.core.testing)

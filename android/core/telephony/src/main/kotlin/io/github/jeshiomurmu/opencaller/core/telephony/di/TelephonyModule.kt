@@ -13,6 +13,7 @@ import io.github.jeshiomurmu.opencaller.core.data.BlockRuleRepository
 import io.github.jeshiomurmu.opencaller.core.data.ReputationRepository
 import io.github.jeshiomurmu.opencaller.core.data.ScreeningEventRepository
 import io.github.jeshiomurmu.opencaller.core.data.SpamListRepository
+import io.github.jeshiomurmu.opencaller.core.data.backup.MessageLocator
 import io.github.jeshiomurmu.opencaller.core.data.sync.CountrySource
 import io.github.jeshiomurmu.opencaller.core.datastore.UserSettingsDataSource
 import io.github.jeshiomurmu.opencaller.core.model.AppRole
@@ -29,6 +30,7 @@ import io.github.jeshiomurmu.opencaller.core.telephony.lookup.ServerNetworkLooku
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.ConversationSource
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.DefaultSmsAppRole
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.DeviceConversations
+import io.github.jeshiomurmu.opencaller.core.telephony.messaging.DeviceMessageLocator
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.DeviceMessagingSims
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.MessagingSimSource
 import io.github.jeshiomurmu.opencaller.core.telephony.providers.CallLogSource
@@ -96,6 +98,9 @@ internal interface TelephonyModule {
 
     @Binds
     fun simAccounts(impl: DeviceSimAccounts): SimAccounts
+
+    @Binds
+    fun messageLocator(impl: DeviceMessageLocator): MessageLocator
 
     @Binds
     fun callLog(impl: DeviceCallLog): CallLogSource

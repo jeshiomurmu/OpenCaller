@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_title">Backup and restore</string>
+    <string name="backup_intro">Your settings, block rules, call screening history and message categories, in one file encrypted with a passphrase you choose. Your messages, contacts and call log stay in Android and aren\'t in the file. One-time codes are never backed up.</string>
+    <string name="backup_passphrase">Passphrase</string>
+    <string name="backup_confirm">Passphrase again</string>
+    <string name="backup_passphrase_hint">At least 8 characters. Without it, nobody can open the backup, not even you: it can\'t be reset.</string>
+    <string name="backup_file_title">A file</string>
+    <string name="backup_to_file">Back up to a file</string>
+    <string name="backup_from_file">Restore from a file</string>
+    <string name="backup_drive_title">Google Drive</string>
+    <string name="backup_drive_body">Kept in a hidden folder of your Google Drive that only OpenCaller can open. It is encrypted on the phone first.</string>
+    <string name="backup_to_drive">Back up to Google Drive</string>
+    <string name="backup_from_drive">Restore from Google Drive</string>
+    <string name="backup_restore_note">Restoring replaces your block rules and history with the backup\'s and keeps this phone\'s permissions. Restoring is free; making a backup is a supporter feature.</string>
+    <string name="backup_saved">Backup saved.</string>
+    <string name="backup_restored">Restored %1$d rules and %2$d history entries; %3$d message categories found again, %4$d not found on this phone.</string>
+    <string name="backup_problem_not_entitled">Making a backup is a supporter feature.</string>
+    <string name="backup_problem_short">The passphrase needs at least 8 characters.</string>
+    <string name="backup_problem_differ">The two passphrases don\'t match.</string>
+    <string name="backup_problem_wrong">Wrong passphrase, or the file was changed.</string>
+    <string name="backup_problem_not_backup">That isn\'t an OpenCaller backup, or it was made by a newer version.</string>
+    <string name="backup_problem_no_drive">There is no backup in your Google Drive yet.</string>
+    <string name="backup_problem_drive">Google Drive access wasn\'t given.</string>
+    <string name="backup_problem_offline">You\'re offline. Try again when you\'re connected.</string>
+    <string name="backup_problem_failed">The backup couldn\'t be read or written. Try again.</string>
+    <string name="backup_file_name">opencaller-backup.ocbk</string>
+</resources>
