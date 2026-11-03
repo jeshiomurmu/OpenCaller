@@ -238,7 +238,7 @@ admin_web() {
   local name="$1" path="$2"
   shift 2
   compose exec -T server sh -c \
-    'p="$1"; shift; curl -sS -u "$ADMIN_WEB_USER:$ADMIN_WEB_PASSWORD" -o /tmp/admin.body -w "%{http_code}\n" "$@" "http://localhost:$ADMIN_WEB_PORT$p"; cat /tmp/admin.body' \
+    'p="$1"; shift; curl -sS -u "$ADMIN_WEB_USER:$ADMIN_WEB_PASSWORD" -o /tmp/admin.body -w "%{http_code}\n" "$@" "http://127.0.0.1:$ADMIN_WEB_PORT$p"; cat /tmp/admin.body' \
     sh "$path" "$@" > "$work/$name.admin" || true
 }
 claim_json="{\"e164\":\"$business\",\"legalName\":\"Smoke Bank LLC\",\"displayName\":\"Smoke Bank\",\"category\":\"bank\",\"callReason\":\"Card security\"}"
