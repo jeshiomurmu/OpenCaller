@@ -179,7 +179,7 @@ Phase 3 carry-over: measure the total screening p95 < 50 ms on a physical phone 
 123. **Messenger caller ID untested on a phone.** WhatsApp, Telegram and Signal change their notifications without notice; the parsing is unit-tested against the documented `CATEGORY_CALL` / `CallStyle` markers. No app version has been tested on a device yet (`docs/testing.md`, TC-UT-004).
 124. **Ghost Call timing.** WorkManager can ring a few seconds to minutes late in Doze; exact alarms need `SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM`, which Play limits to clocks and calendars. On Android 14+ the user can turn off full-screen intents; the fake call then shows as a heads-up.
 125. **Donation link** comes from `opencaller.donationUrl` at build time; none is set yet (the foss Supporter screen then says "This build has no donation link" and explains that a self-hosted server unlocks everything). The owner chooses the donation page.
-126. **Room 4.json** is Room's own file once CI's schema step prints it; until then the committed file is provisional (as for 3.json in Phase 9, issue 102).
+126. **Room 4.json.** Resolved: CI run 41662275244 printed Room's own `4.json`; the provisional file differed only in its identity hash (now `09fc7f26…`), and Room's file is committed.
 127. **Phase 10 app code runs only in CI** (as issues 76, 87, 99, 107, 112): the screens, Play Billing, Drive, the Robolectric tests (`BackupTest`, `GhostCallTest`, `AnnounceCallerTest`, `SpamListSyncTest` additions, `MigrationTest` 3→4) were first compiled there; `core:phonenumber` (`findInText`) and the backend were tested locally.
 
 ## Verified dependency versions
