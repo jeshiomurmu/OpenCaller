@@ -1,12 +1,17 @@
 name: Release
 
-# A version tag (v0.1.0-alpha, v1.2.3) builds the signed foss release APK and publishes it with its SHA-256 as a
-# GitHub release (a pre-release when the version has a suffix such as -alpha). The signing key comes from four
-# repository secrets and never touches the repository:
+# A version tag (v0.5.0-beta, v1.2.3) builds the signed foss and play release APKs and the play App Bundle, and
+# publishes the APKs with their SHA-256 as a GitHub release (a pre-release when the version has a suffix such as
+# -beta). The App Bundle (for Play Console) is a workflow artifact, not a release asset. One key signs everything and is
+# the Play upload key (owner's decision, 2026-11-02). It comes from four repository secrets and never touches the
+# repository:
 #   OPENCALLER_KEYSTORE_BASE64   the keystore file, base64-encoded
 #   OPENCALLER_KEYSTORE_PASSWORD the keystore password
 #   OPENCALLER_KEY_ALIAS         the key's alias
 #   OPENCALLER_KEY_PASSWORD      the key's password
+# Two optional secrets set the server (empty: an offline build, like v0.1.0-alpha):
+#   OPENCALLER_API_BASE_URL      https:// address of the server
+#   OPENCALLER_API_PINS          comma-separated sha256/ pins, at least two (needed by play builds with a server)
 on:
   push:
     tags: ["v*"]
@@ -19,10 +24,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  foss-apk:
-    name: signed foss APK
+  release:
+    name: signed APKs and App Bundle
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       TAG: ${{ github.ref_name }}
     steps:
@@ -46,32 +51,67 @@ jobs:
       - name: Restore the signing key
         env:
           KEYSTORE_BASE64: ${{ secrets.OPENCALLER_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.OPENCALLER_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.OPENCALLER_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.OPENCALLER_KEY_PASSWORD }}
         run: |
-          if [[ -z "$KEYSTORE_BASE64" ]]; then
-            echo "::error::repository secret OPENCALLER_KEYSTORE_BASE64 is not set"
+          missing=""
+          [[ -n "$KEYSTORE_BASE64" ]] || missing+=" OPENCALLER_KEYSTORE_BASE64"
+          [[ -n "$STORE_PASSWORD" ]] || missing+=" OPENCALLER_KEYSTORE_PASSWORD"
+          [[ -n "$KEY_ALIAS" ]] || missing+=" OPENCALLER_KEY_ALIAS"
+          [[ -n "$KEY_PASSWORD" ]] || missing+=" OPENCALLER_KEY_PASSWORD"
+          if [[ -n "$missing" ]]; then
+            echo "::error::repository secrets not set:$missing"
             exit 1
           fi
           printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
           echo "OPENCALLER_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
 
-      - name: Build the foss release APK
+      - name: Build the release APKs and the App Bundle
         working-directory: android
         env:
           OPENCALLER_KEYSTORE_PASSWORD: ${{ secrets.OPENCALLER_KEYSTORE_PASSWORD }}
           OPENCALLER_KEY_ALIAS: ${{ secrets.OPENCALLER_KEY_ALIAS }}
           OPENCALLER_KEY_PASSWORD: ${{ secrets.OPENCALLER_KEY_PASSWORD }}
-        run: ./gradlew assembleFossRelease
-
-      - name: Verify the signature and compute the SHA-256
+          API_BASE_URL: ${{ secrets.OPENCALLER_API_BASE_URL }}
+          API_PINS: ${{ secrets.OPENCALLER_API_PINS }}
         run: |
-          apk=android/app/build/outputs/apk/foss/release/app-foss-release.apk
-          test -f "$apk" || { echo "::error::no signed APK at $apk"; ls -R android/app/build/outputs/apk; exit 1; }
+          server=()
+          if [[ -n "$API_BASE_URL" ]]; then
+            server+=("-Popencaller.apiBaseUrl=$API_BASE_URL" "-Popencaller.apiPins=$API_PINS")
+            echo "Building with a server (address and pins from repository secrets)"
+          else
+            echo "Building without a server: online features show \"Not connected to a server\""
+          fi
+          ./gradlew "${server[@]}" assembleFossRelease assemblePlayRelease bundlePlayRelease
+
+      - name: Verify the signatures and compute the SHA-256
+        run: |
           apksigner="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
-          "$apksigner" verify --verbose --print-certs "$apk"
-          name="OpenCaller-$TAG-foss.apk"
-          mkdir -p dist
-          cp "$apk" "dist/$name"
-          (cd dist && sha256sum "$name" > "$name.sha256" && cat "$name.sha256")
+          mkdir -p dist bundle
+          for flavor in foss play; do
+            apk="android/app/build/outputs/apk/$flavor/release/app-$flavor-release.apk"
+            test -f "$apk" || { echo "::error::no signed APK at $apk"; ls -R android/app/build/outputs/apk; exit 1; }
+            "$apksigner" verify --verbose --print-certs "$apk"
+            cp "$apk" "dist/OpenCaller-$TAG-$flavor.apk"
+          done
+          aab=android/app/build/outputs/bundle/playRelease/app-play-release.aab
+          test -f "$aab" || { echo "::error::no App Bundle at $aab"; ls -R android/app/build/outputs/bundle; exit 1; }
+          # An App Bundle is signed with jarsigner's scheme (the upload key). jarsigner exits 0 for an unsigned file too, so
+          # its verdict is read ("jar verified."; a self-signed upload key only adds warnings).
+          verdict="$(jarsigner -verify "$aab" || true)"
+          echo "$verdict"
+          grep -q "jar verified" <<< "$verdict" || { echo "::error::the App Bundle is not signed"; exit 1; }
+          cp "$aab" "bundle/OpenCaller-$TAG-play.aab"
+          (cd dist && sha256sum ./*.apk | sed 's# \./# #' > SHA256SUMS && cat SHA256SUMS)
+          (cd bundle && sha256sum ./*.aab | sed 's# \./# #' > SHA256SUMS && cat SHA256SUMS)
+
+      - name: Upload the App Bundle for Play Console
+        uses: actions/upload-artifact@v7
+        with:
+          name: OpenCaller-${{ github.ref_name }}-play-aab
+          path: bundle/
+          retention-days: 90
 
       - name: Release notes from CHANGELOG.md
         run: |
@@ -80,13 +120,19 @@ jobs:
             $0 ~ "^## \\[" v "\\]" { on = 1; next }
             on && /^(## )?\[/ { exit }
             on { print }
-          ' CHANGELOG.md > dist/notes.md
+          ' CHANGELOG.md > notes.md
           {
             echo
-            echo "SHA-256 of the APK: \`$(cut -d' ' -f1 "dist/OpenCaller-$TAG-foss.apk.sha256")\`"
-            echo "Check it with \`sha256sum -c OpenCaller-$TAG-foss.apk.sha256\` before installing."
-          } >> dist/notes.md
-          cat dist/notes.md
+            echo "**Which file?** \`-foss.apk\` has no Google services (like the F-Droid build); \`-play.apk\` is the Google Play build."
+            echo "Both have the same app ID and signing key, so either one updates the other."
+            echo
+            echo "SHA-256:"
+            echo '```'
+            cat dist/SHA256SUMS
+            echo '```'
+            echo "Check a download with \`sha256sum -c SHA256SUMS --ignore-missing\` before installing."
+          } >> notes.md
+          cat notes.md
 
       - name: Publish the release
         env:
@@ -94,8 +140,8 @@ jobs:
         run: |
           prerelease=""
           if [[ "$TAG" == *-* ]]; then prerelease="--prerelease"; fi
-          gh release create "$TAG" "dist/OpenCaller-$TAG-foss.apk" "dist/OpenCaller-$TAG-foss.apk.sha256" \
-            --title "OpenCaller ${TAG#v}" --notes-file dist/notes.md --verify-tag $prerelease
+          gh release create "$TAG" dist/*.apk dist/SHA256SUMS \
+            --title "OpenCaller ${TAG#v}" --notes-file notes.md --verify-tag $prerelease
 
       - name: Remove the signing key
         if: always()

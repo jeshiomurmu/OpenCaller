@@ -1,0 +1,1 @@
+First alpha: call screening and blocking on the phone (rules, hidden numbers, non-contacts, foreign numbers), caller card, after-call summary, and onboarding for the roles and permissions it needs. No server is configured in this build.

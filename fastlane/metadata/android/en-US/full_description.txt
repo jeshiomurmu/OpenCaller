@@ -1,0 +1,34 @@
+OpenCaller is an open-source caller ID, spam blocker, phone app and SMS app. It is built so that your address book, call history and messages never leave your phone.
+
+<b>Block spam calls</b>
+* Block, silence or allow numbers, prefixes, countries and patterns, hidden numbers and numbers not in your contacts.
+* A community spam list, updated daily, catches known spam callers. Your contacts always ring; verified businesses are kept off the spam list and ring even when you block non-contacts.
+* Decisions are made on your phone in milliseconds. If something goes wrong, the call rings: OpenCaller never blocks emergency numbers or outgoing calls.
+
+<b>Know who is calling</b>
+* A caller card shows the name, where that name comes from (your contact, the number's owner, a verified business, an official sender registry) and any spam reports.
+* Names never come from other people's address books.
+* Verified businesses show their logo and why they call.
+
+<b>Phone app and dialer</b>
+* Full in-call screen, call waiting, hold, merge, Bluetooth, dual SIM.
+* Dial pad with suggestions from your contacts, a call log with filters, and a contacts editor.
+
+<b>Messages</b>
+* SMS and MMS, sorted on the phone into Personal, Codes, Transactions, Bills, Deliveries, Promotions and Spam.
+* One-time codes get their own notification with Copy, never shown on the lock screen.
+* If a code arrives while a stranger is on the phone with you, OpenCaller warns you not to share it.
+* Links that imitate well-known brands get a warning.
+
+<b>Privacy</b>
+* No ads, no trackers, no analytics.
+* Signing in is optional. Without an account, blocking works with your own rules.
+* Live lookups send only a short, anonymous hash prefix of the number, never the number itself.
+* A report you choose to send contains the reported number, a label and your optional comment, nothing about your contacts.
+
+<b>Businesses</b>
+Businesses can claim their number by proving they control it and sending documents for review.
+
+This build has no Google services. Online features need an OpenCaller server; without one, blocking, the dialer and messages work on the phone.
+
+OpenCaller is free software under the GPL-3.0.

@@ -37,7 +37,7 @@ jobs:
           spotlessCheck detekt lint
           testFossDebugUnitTest testPlayDebugUnitTest
           assembleFossDebug assemblePlayDebug
-          assembleFossRelease
+          assembleFossRelease assemblePlayRelease bundlePlayRelease
           check
 
       # Room writes the schema while compiling; it must be committed (docs/architecture.md §6). The step fails when the
