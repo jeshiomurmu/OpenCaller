@@ -85,7 +85,7 @@ class TestGraph {
             DeviceSources({ settings.preferences.first() }, contactLookup, { "US" }, { false }),
             ListSources(
                 rules = { rules.enabledCallRules().orFail() },
-                verifiedBusinesses = { false },
+                verifiedBusinesses = { null },
                 spamList = { spam.find(it).orFail() },
                 reputation = { null },
                 network = NoNetworkLookup,

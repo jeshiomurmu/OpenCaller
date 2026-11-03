@@ -42,7 +42,10 @@ import io.github.jeshiomurmu.opencaller.core.designsystem.icon.OpenCallerIcons
 import io.github.jeshiomurmu.opencaller.core.designsystem.preview.OpenCallerPreviews
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacing
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
+import io.github.jeshiomurmu.opencaller.core.model.NameSource
 import io.github.jeshiomurmu.opencaller.core.ui.EmptyState
+import io.github.jeshiomurmu.opencaller.core.ui.SourceChip
+import io.github.jeshiomurmu.opencaller.core.ui.VerifiedBadge
 import io.github.jeshiomurmu.opencaller.feature.messages.R
 
 /** The conversations list, wired to its view model. */
@@ -223,6 +226,12 @@ private fun ConversationText(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        row.nameSource?.let { source ->
+            Row(horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xxs), verticalAlignment = Alignment.CenterVertically) {
+                SourceChip(source = source)
+                if (source == NameSource.VERIFIED_BUSINESS) VerifiedBadge()
+            }
+        }
         Text(
             text = snippetOf(row),
             style = MaterialTheme.typography.bodyMedium,
@@ -274,6 +283,17 @@ private val PREVIEW_ROWS =
     listOf(
         ConversationRow(1, "Ana Silva", "See you at eight!", PREVIEW_TIME, unread = 2, isGroup = false, fromMe = false, hasImage = false),
         ConversationRow(2, "Ana, Ram, +1 555-000-3333", "", PREVIEW_TIME, unread = 0, isGroup = true, fromMe = true, hasImage = true),
+        ConversationRow(
+            3,
+            "Example Bank",
+            "Your card ending 4821 was used for 25.00",
+            PREVIEW_TIME,
+            unread = 1,
+            isGroup = false,
+            fromMe = false,
+            hasImage = false,
+            nameSource = NameSource.VERIFIED_BUSINESS,
+        ),
     )
 
 @OpenCallerPreviews

@@ -68,6 +68,8 @@ data class BusinessInfoDto(
     val category: String? = null,
     val verified: Boolean = true,
     val callReason: String? = null,
+    val businessId: String? = null,
+    val logoUrl: String? = null,
 )
 
 /** What the server may say about a number. */
@@ -150,6 +152,7 @@ data class SenderIdDto(
     val source: String,
     val businessId: String? = null,
     val updatedAt: Long,
+    val deleted: Boolean = false,
 )
 
 /** `GET /v1/sender-ids/{countryIso}` response; pass [syncedAt] as `since` next time. */
@@ -167,6 +170,7 @@ data class AppHashDto(
     val packageName: String,
     val appName: String,
     val updatedAt: Long,
+    val deleted: Boolean = false,
 )
 
 /** A flash-call verification provider's E.164 prefix. */
@@ -175,6 +179,7 @@ data class VerificationRangeDto(
     val prefix: String,
     val provider: String,
     val updatedAt: Long,
+    val deleted: Boolean = false,
 )
 
 /** `GET /v1/otp-sources` response. */

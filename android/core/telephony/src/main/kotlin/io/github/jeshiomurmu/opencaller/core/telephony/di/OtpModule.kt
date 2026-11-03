@@ -8,8 +8,11 @@ import io.github.jeshiomurmu.opencaller.core.common.getOrNull
 import io.github.jeshiomurmu.opencaller.core.data.MessageMetaRepository
 import io.github.jeshiomurmu.opencaller.core.data.RegisteredSender
 import io.github.jeshiomurmu.opencaller.core.data.SenderRegistryRepository
+import io.github.jeshiomurmu.opencaller.core.data.business.BusinessDirectory
 import io.github.jeshiomurmu.opencaller.core.ml.link.BadHostPrefixes
 import io.github.jeshiomurmu.opencaller.core.model.NameSource
+import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
+import io.github.jeshiomurmu.opencaller.core.model.VerifiedBusiness
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.SenderRegistry
 import io.github.jeshiomurmu.opencaller.core.telephony.otp.CallParties
 import io.github.jeshiomurmu.opencaller.core.telephony.otp.CallParty
@@ -25,7 +28,10 @@ import io.github.jeshiomurmu.opencaller.core.telephony.screening.CallerLookup
 @InstallIn(SingletonComponent::class)
 internal object OtpModule {
     @Provides
-    fun senderRegistry(registry: SenderRegistryRepository): SenderRegistry =
+    fun senderRegistry(
+        registry: SenderRegistryRepository,
+        businesses: BusinessDirectory,
+    ): SenderRegistry =
         object : SenderRegistry {
             override suspend fun sender(
                 countryIso: String,
@@ -33,6 +39,8 @@ internal object OtpModule {
             ): RegisteredSender? = registry.sender(countryIso, header).getOrNull()
 
             override suspend fun appForHash(hash: String): String? = registry.appForHash(hash).getOrNull()
+
+            override suspend fun verifiedBusiness(number: PhoneNumber): VerifiedBusiness? = businesses.find(number).getOrNull()
         }
 
     @Provides

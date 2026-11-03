@@ -1,6 +1,7 @@
 package io.github.jeshiomurmu.opencaller.core.data.sync
 
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -38,11 +39,14 @@ data class RegistrySyncState(
     val senderCountry: String? = null,
     val senderSince: Long? = null,
     val otpSince: Long? = null,
+    val businessCountry: String? = null,
+    val businessSince: Long? = null,
 )
 
 /**
  * Keeps the server's public registries on the phone (docs/architecture.md §8): the sender-ID registry of the
- * phone's country and the OTP sources (app hashes, flash-call ranges) into Room, changed rows only (`?since=`), and
+ * phone's country and the OTP sources (app hashes, flash-call ranges) into Room, changed rows only (`?since=`; a
+ * row marked `deleted` is removed here too), and
  * the known-bad link prefixes into [LinkPrefixStore] (whole list). Nothing about the user is sent.
  */
 @Singleton
@@ -85,23 +89,32 @@ class RegistrySyncRepository
             page: Int,
         ): AppResult<Int> =
             apiCall { api.senderIds(iso, since) }.flatMap { response ->
-                storage.run { senderIdDao().upsertAll(response.senderIds.map { it.toEntity(iso) }) }.flatMap {
-                    stateStore.update { it.copy(senderCountry = iso, senderSince = response.syncedAt) }
-                    val total = stored + response.senderIds.size
-                    if (response.senderIds.size < PAGE_SIZE || page + 1 >= MAX_PAGES) {
-                        AppResult.Success(total)
-                    } else {
-                        senderPages(iso, response.syncedAt, total, page + 1)
+                val (removed, current) = response.senderIds.partition { it.deleted }
+                storage
+                    .run {
+                        senderIdDao().upsertAll(current.map { it.toEntity(iso) })
+                        if (removed.isNotEmpty()) senderIdDao().deleteAll(iso, removed.map { it.header.uppercase() })
+                    }.flatMap {
+                        stateStore.update { it.copy(senderCountry = iso, senderSince = response.syncedAt) }
+                        val total = stored + response.senderIds.size
+                        if (response.senderIds.size < PAGE_SIZE || page + 1 >= MAX_PAGES) {
+                            AppResult.Success(total)
+                        } else {
+                            senderPages(iso, response.syncedAt, total, page + 1)
+                        }
                     }
-                }
             }
 
         private suspend fun syncOtpSources(state: RegistrySyncState): AppResult<Int> =
             apiCall { api.otpSources(state.otpSince) }.flatMap { sources ->
+                val (removedHashes, hashes) = sources.appHashes.partition { it.deleted }
+                val (removedRanges, ranges) = sources.verificationRanges.partition { it.deleted }
                 storage
                     .run {
-                        otpAppHashDao().upsertAll(sources.appHashes.map { OtpAppHashEntity(it.hash, it.packageName, it.appName) })
-                        verificationRangeDao().upsertAll(sources.verificationRanges.map { VerificationRangeEntity(it.prefix, it.provider) })
+                        otpAppHashDao().upsertAll(hashes.map { OtpAppHashEntity(it.hash, it.packageName, it.appName) })
+                        verificationRangeDao().upsertAll(ranges.map { VerificationRangeEntity(it.prefix, it.provider) })
+                        if (removedHashes.isNotEmpty()) otpAppHashDao().deleteAll(removedHashes.map { it.hash })
+                        if (removedRanges.isNotEmpty()) verificationRangeDao().deleteAll(removedRanges.map { it.prefix })
                     }.map {
                         stateStore.update { it.copy(otpSince = sources.syncedAt) }
                         sources.appHashes.size + sources.verificationRanges.size
@@ -154,16 +167,28 @@ class RegistrySyncStateStore(
 ) {
     /** The stored state. */
     val state: Flow<RegistrySyncState> =
-        dataStore.data.map { RegistrySyncState(it[SENDER_COUNTRY], it[SENDER_SINCE], it[OTP_SINCE]) }
+        dataStore.data.map { it.toState() }
 
     /** Changes the stored state with [change]. */
     suspend fun update(change: (RegistrySyncState) -> RegistrySyncState) {
         dataStore.edit { prefs ->
-            val next = change(RegistrySyncState(prefs[SENDER_COUNTRY], prefs[SENDER_SINCE], prefs[OTP_SINCE]))
-            next.senderCountry?.let { prefs[SENDER_COUNTRY] = it } ?: prefs.remove(SENDER_COUNTRY)
-            next.senderSince?.let { prefs[SENDER_SINCE] = it } ?: prefs.remove(SENDER_SINCE)
-            next.otpSince?.let { prefs[OTP_SINCE] = it } ?: prefs.remove(OTP_SINCE)
+            val next = change(prefs.toState())
+            prefs.put(SENDER_COUNTRY, next.senderCountry)
+            prefs.put(SENDER_SINCE, next.senderSince)
+            prefs.put(OTP_SINCE, next.otpSince)
+            prefs.put(BUSINESS_COUNTRY, next.businessCountry)
+            prefs.put(BUSINESS_SINCE, next.businessSince)
         }
+    }
+
+    private fun Preferences.toState() =
+        RegistrySyncState(this[SENDER_COUNTRY], this[SENDER_SINCE], this[OTP_SINCE], this[BUSINESS_COUNTRY], this[BUSINESS_SINCE])
+
+    private fun <T> MutablePreferences.put(
+        key: Preferences.Key<T>,
+        value: T?,
+    ) {
+        if (value == null) remove(key) else this[key] = value
     }
 
     /** Storage keys. */
@@ -173,5 +198,7 @@ class RegistrySyncStateStore(
         private val SENDER_COUNTRY = stringPreferencesKey("sender_country")
         private val SENDER_SINCE = longPreferencesKey("sender_since")
         private val OTP_SINCE = longPreferencesKey("otp_since")
+        private val BUSINESS_COUNTRY = stringPreferencesKey("business_country")
+        private val BUSINESS_SINCE = longPreferencesKey("business_since")
     }
 }

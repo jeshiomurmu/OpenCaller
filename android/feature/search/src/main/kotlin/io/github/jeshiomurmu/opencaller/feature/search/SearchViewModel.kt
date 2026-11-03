@@ -129,7 +129,7 @@ class SearchViewModel
                             spamScore?.let { score ->
                                 SpamVerdict(score, SpamVerdict.levelFor(score, threshold), category, reportCount, VerdictSource.SEARCH)
                             },
-                        verifiedBusinessId = businessName?.let { VERIFIED },
+                        verifiedBusinessId = businessName?.let { businessId ?: VERIFIED },
                         badge = badge,
                         regionCode = normalizer.regionCode(number),
                         lineType = normalizer.numberType(number),

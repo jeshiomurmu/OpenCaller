@@ -12,6 +12,10 @@ interface VerificationRangeDao {
     @Upsert
     suspend fun upsertAll(rows: List<VerificationRangeEntity>)
 
+    /** Removes [prefixes] (taken off the server's curated list). */
+    @Query("DELETE FROM verification_range WHERE prefix IN (:prefixes)")
+    suspend fun deleteAll(prefixes: List<String>)
+
     /** The longest stored prefix of [e164], or `null` if no range matches. */
     @Query(
         "SELECT * FROM verification_range WHERE substr(:e164, 1, length(prefix)) = prefix " +

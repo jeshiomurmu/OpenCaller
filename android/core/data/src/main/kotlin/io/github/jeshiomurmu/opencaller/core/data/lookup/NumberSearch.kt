@@ -6,7 +6,10 @@ import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import io.github.jeshiomurmu.opencaller.core.model.SupporterBadge
 import kotlinx.coroutines.flow.Flow
 
-/** What an explicit search found. [spamScore] is `null` when nobody reported the number. */
+/**
+ * What an explicit search found. [spamScore] is `null` when nobody reported the number; [businessId] is the
+ * verified business's profile id (servers before Phase 9 send none).
+ */
 data class SearchResult(
     val number: PhoneNumber,
     val displayName: String?,
@@ -18,6 +21,7 @@ data class SearchResult(
     val notSpamCount: Int,
     val businessName: String?,
     val badge: SupporterBadge? = null,
+    val businessId: String? = null,
 )
 
 /**

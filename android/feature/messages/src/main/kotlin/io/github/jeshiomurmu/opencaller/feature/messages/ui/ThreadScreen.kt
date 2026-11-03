@@ -44,6 +44,7 @@ import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
 import io.github.jeshiomurmu.opencaller.core.model.MessageKey
 import io.github.jeshiomurmu.opencaller.core.model.MessageKind
 import io.github.jeshiomurmu.opencaller.core.model.MessagingSim
+import io.github.jeshiomurmu.opencaller.core.model.NameSource
 import io.github.jeshiomurmu.opencaller.core.ui.EmptyState
 import io.github.jeshiomurmu.opencaller.feature.messages.R
 
@@ -104,13 +105,7 @@ fun ThreadScreen(
             modifier = Modifier.fillMaxWidth().padding(horizontal = OpenCallerSpacing.screenPadding, vertical = OpenCallerSpacing.xs),
         ) {
             Avatar(title = state.title, group = state.isGroup)
-            Text(
-                text = state.title,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f).semantics { heading() },
-            )
+            ThreadTitle(state = state, modifier = Modifier.weight(1f))
         }
         HorizontalDivider()
         when {
@@ -275,6 +270,7 @@ private val PREVIEW_THREAD =
     ThreadUiState(
         loading = false,
         title = "Ana Silva",
+        nameSource = NameSource.CONTACT,
         messages =
             listOf(
                 previewItem(1, outgoing = false, body = "Dinner at eight?", status = MessageStatus.NONE),

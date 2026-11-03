@@ -112,7 +112,7 @@ class LiveLookupRepository
                 spamCategory = this?.category,
                 reportCount = this?.reportCount ?: 0,
                 isBusiness = business != null,
-                businessId = business?.let { VERIFIED_BUSINESS_ID },
+                businessId = business?.let { it.businessId ?: VERIFIED_BUSINESS_ID },
                 verified = business?.verified == true,
                 logoUrl = null,
                 callReason = business?.callReason,
@@ -139,7 +139,7 @@ class LiveLookupRepository
             // docs/architecture.md §4.6: buckets are cacheable for 24 h.
             const val CACHE_MILLIS = 24 * 60 * 60 * 1_000L
 
-            // The server identifies verified businesses but sends no id yet (business profiles arrive in Phase 10).
+            // Servers before Phase 9 identify verified businesses without an id.
             const val VERIFIED_BUSINESS_ID = "verified"
         }
     }

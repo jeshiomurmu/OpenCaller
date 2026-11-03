@@ -40,14 +40,32 @@ jobs:
           assembleFossRelease
           check
 
-      # Room writes the schema while compiling; it must be committed (docs/architecture.md §6).
+      # Room writes the schema while compiling; it must be committed (docs/architecture.md §6). The step fails when the
+      # build wrote no schema at all, so it can't pass by comparing the committed files with themselves (phase.md 102).
       - name: Room schemas are committed
         run: |
+          generated="$(grep -rl --include='*.json' '"formatVersion"' core/database/build 2>/dev/null | sort || true)"
+          echo "Room schema files written by the build:"
+          echo "${generated:-none}"
+          if [[ -z "$generated" ]]; then
+            echo "::error::Room wrote no schema under core/database/build; the committed schemas can't be checked"
+            exit 1
+          fi
+          status=0
+          committed=core/database/schemas/io.github.jeshiomurmu.opencaller.core.database.OpenCallerDatabase
+          for file in $generated; do
+            name="$(basename "$file")"
+            if ! diff -u "$committed/$name" "$file"; then
+              echo "::error::Room schema $name differs from the build's ($file): commit the build's file"
+              status=1
+            fi
+          done
           git add --intent-to-add core/database/schemas
           if ! git diff --exit-code -- core/database/schemas; then
             echo "::error::Room schema changed or missing: commit android/core/database/schemas (diff above)"
-            exit 1
+            status=1
           fi
+          exit "$status"
 
   backend:
     name: backend

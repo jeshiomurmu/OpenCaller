@@ -79,6 +79,7 @@ class SearchRepository
                 notSpamCount = notSpamCount,
                 businessName = business?.name,
                 badge = SupporterBadge.parse(badge).takeIf { business == null && name != null },
+                businessId = business?.businessId,
             )
 
         /** Quota. */

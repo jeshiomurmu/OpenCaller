@@ -138,6 +138,7 @@ private fun SearchForm(
             onWhy = onWhy,
             onDispute = { navigation.onDispute(e164) },
             onOpenProfile = { navigation.onOpenProfile(e164) },
+            onOpenBusiness = navigation.onOpenBusiness,
         )
     }
 }

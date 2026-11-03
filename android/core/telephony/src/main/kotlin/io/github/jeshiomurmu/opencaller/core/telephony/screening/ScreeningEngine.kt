@@ -165,7 +165,7 @@ class ScreeningEngine(
                 ScreeningReason.FOREIGN
             }
 
-            prefs.blockNonContacts && device.contacts.canRead() && !lookups.verified.await() -> {
+            prefs.blockNonContacts && device.contacts.canRead() && lookups.verified.await() == null -> {
                 ScreeningReason.NON_CONTACT
             }
 
@@ -189,7 +189,7 @@ class ScreeningEngine(
         if (listVerdict?.level == RiskLevel.LIKELY_SPAM) {
             return ScreeningResult(prefs.spamDecision(), ScreeningReason.SPAM_LIST, call.direction, caller.copy(spamVerdict = listVerdict))
         }
-        val known = KnownCaller(verified = lookups.verified.await(), cached = lookups.reputation.await())
+        val known = KnownCaller(business = lookups.verified.await(), cached = lookups.reputation.await())
         val network = lookups.steps.measure("network") { lookUp(number) }
         val networkVerdict = describer.networkVerdict(network, prefs)
         val enriched = describer.enrich(caller, listVerdict ?: networkVerdict, network, prefs, known)
@@ -213,10 +213,10 @@ class ScreeningEngine(
             null
         }
 
-    // On-device answers for one number, fetched concurrently (see decideNumber). The rules, the spam list and the
-    // reputation cache live in one encrypted database and are read one after another: concurrent readers make the
-    // connection pool open another connection, and opening one derives the SQLCipher key (about 0.5 s on the CI
-    // emulators). join() waits without rethrowing, so a failed read still only counts where its answer is needed.
+    // On-device answers for one number, fetched concurrently (see decideNumber). The rules, verified businesses, the
+    // spam list and the reputation cache live in one encrypted database and are read one after another: concurrent
+    // readers make the connection pool open another connection, and opening one derives the SQLCipher key (about
+    // 0.5 s on the CI emulators). join() waits without rethrowing, so a failed read still only counts where its answer is needed.
     private inner class LocalLookups(
         scope: CoroutineScope,
         number: PhoneNumber,
@@ -224,11 +224,15 @@ class ScreeningEngine(
     ) {
         val prefs = scope.async { steps.measure("settings") { device.settings.current() } }
         val contactName = scope.async { steps.measure("contacts") { device.contacts.displayName(number) } }
-        val verified = scope.async { steps.measure("verified") { lists.verifiedBusinesses.isVerifiedBusiness(number) } }
         val rules = scope.async { steps.measure("rules") { lists.rules.callRules() } }
-        val spamHit =
+        val verified =
             scope.async {
                 rules.join()
+                steps.measure("verified") { lists.verifiedBusinesses.find(number) }
+            }
+        val spamHit =
+            scope.async {
+                verified.join()
                 steps.measure("spam") { lists.spamList.find(number) }
             }
         val reputation =

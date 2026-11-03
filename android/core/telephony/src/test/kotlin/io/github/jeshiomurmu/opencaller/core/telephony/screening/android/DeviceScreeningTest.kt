@@ -8,10 +8,15 @@ import android.telecom.Call
 import android.telecom.Connection
 import android.telephony.TelephonyManager
 import androidx.test.core.app.ApplicationProvider
+import io.github.jeshiomurmu.opencaller.core.common.AppError
+import io.github.jeshiomurmu.opencaller.core.common.AppResult
+import io.github.jeshiomurmu.opencaller.core.data.business.BusinessDirectory
 import io.github.jeshiomurmu.opencaller.core.model.CallerVerification
 import io.github.jeshiomurmu.opencaller.core.model.Decision
 import io.github.jeshiomurmu.opencaller.core.model.Direction
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
+import io.github.jeshiomurmu.opencaller.core.model.VerifiedBusiness
+import io.github.jeshiomurmu.opencaller.core.telephony.screening.ScreeningSourceException
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ScreeningTestHooks
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.device.AndroidContactLookup
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.device.DeviceHomeRegionProvider
@@ -102,10 +107,16 @@ class DeviceScreeningTest {
     }
 
     @Test
-    fun verifiedBusinessesComeOnlyFromQaHooksInPhase3() =
+    fun verifiedBusinessesComeFromTheDirectoryAndTheQaHooks() =
         runTest {
-            assertFalse(LocalVerifiedBusinessLookup(Optional.empty()).isVerifiedBusiness(number))
-            assertTrue(LocalVerifiedBusinessLookup(Optional.of(hooks(verified = number))).isVerifiedBusiness(number))
+            val business = VerifiedBusiness(number, "0b6a3c52-1f0e-4f7b-9d2a-5c1e8f3a7b10", "Example Bank", null, null, null)
+            val empty = BusinessDirectory { AppResult.Success(null) }
+            assertNull(LocalVerifiedBusinessLookup(empty, Optional.empty()).find(number))
+            assertEquals(business, LocalVerifiedBusinessLookup({ AppResult.Success(business) }, Optional.empty()).find(number))
+            assertEquals("qa", LocalVerifiedBusinessLookup(empty, Optional.of(hooks(verified = number))).find(number)?.businessId)
+            // A directory that can't be read stops the decision (the engine then lets the call ring).
+            val broken = LocalVerifiedBusinessLookup({ AppResult.Failure(AppError.Storage) }, Optional.empty())
+            assertTrue(runCatching { broken.find(number) }.exceptionOrNull() is ScreeningSourceException)
         }
 
     private fun hooks(

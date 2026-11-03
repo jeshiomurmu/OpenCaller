@@ -63,6 +63,33 @@ class MigrationTest {
             }
         }
 
+    // Version 3 (Phase 9): an empty verified_business table; earlier tables keep their rows.
+    @Test
+    fun migration2To3AddsTheBusinessDirectory() =
+        runTest {
+            helper.createDatabase(2).use { db ->
+                db.execSQL(
+                    "INSERT INTO number_info (e164, displayName, nameSource, spamScore, spamCategory, reportCount, " +
+                        "isBusiness, businessId, verified, logoUrl, callReason, lineType, fetchedAt, expiresAt, badge) " +
+                        "VALUES ('+12015550123', 'Asha', 'SELF_REGISTERED', NULL, NULL, 0, 0, NULL, 0, NULL, NULL, NULL, 1, 2, 'GOLD')",
+                )
+            }
+            helper.runMigrationsAndValidate(3, listOf(Migrations.MIGRATION_2_3)).use { db ->
+                db.prepare("SELECT badge FROM number_info WHERE e164 = '+12015550123'").use { row ->
+                    assertTrue(row.step())
+                    assertEquals("GOLD", row.getText(0))
+                }
+                db.execSQL(
+                    "INSERT INTO verified_business (e164, businessId, name, category, callReason, logoPath, logoFile, updatedAt) " +
+                        "VALUES ('+8801812345678', 'b1', 'Example Bank', 'bank', 'Card security', NULL, NULL, 5)",
+                )
+                db.prepare("SELECT name FROM verified_business WHERE e164 = '+8801812345678'").use { row ->
+                    assertTrue(row.step())
+                    assertEquals("Example Bank", row.getText(0))
+                }
+            }
+        }
+
     private companion object {
         const val TEST_DB = "migration-test.db"
     }

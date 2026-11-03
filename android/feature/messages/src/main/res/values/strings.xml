@@ -59,13 +59,12 @@
     <string name="messages_next">Next</string>
     <!-- One-time codes (TC-OTP-008). -->
     <string name="channel_otp">Verification codes</string>
-    <string name="channel_otp_description">One-time codes. Hidden on the lock screen when it hides sensitive content.</string>
+    <string name="channel_otp_description">One-time codes. Never shown on the lock screen.</string>
     <string name="channel_filtered">Spam and suspicious messages</string>
     <string name="channel_filtered_description">Messages sorted into Spam, shown quietly.</string>
     <string name="otp_notification_title">Verification code</string>
     <string name="otp_notification_title_from">Code from %1$s</string>
     <string name="otp_notification_expires">expires %1$s</string>
-    <string name="otp_notification_locked">Unlock to see the code</string>
     <string name="otp_notification_never_share">Never share this code with someone who calls you.</string>
     <string name="otp_copy">Copy code</string>
     <!-- Smart inbox (PRD F-SMS-03). -->

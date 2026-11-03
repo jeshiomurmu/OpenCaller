@@ -12,6 +12,7 @@ dependencies {
     api(projects.core.model)
     implementation(libs.androidx.activity.compose)
     implementation(libs.timber)
+    implementation(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.junit4)
 }

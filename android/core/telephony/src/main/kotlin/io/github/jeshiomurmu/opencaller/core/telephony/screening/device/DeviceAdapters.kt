@@ -7,12 +7,16 @@ import android.net.Uri
 import android.provider.ContactsContract
 import android.telephony.TelephonyManager
 import dagger.hilt.android.qualifiers.ApplicationContext
+import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.common.DispatcherProvider
+import io.github.jeshiomurmu.opencaller.core.data.business.BusinessDirectory
 import io.github.jeshiomurmu.opencaller.core.data.sync.CountrySource
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
+import io.github.jeshiomurmu.opencaller.core.model.VerifiedBusiness
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ContactLookup
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.EmergencyNumbers
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.HomeRegionProvider
+import io.github.jeshiomurmu.opencaller.core.telephony.screening.ScreeningSourceException
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ScreeningTestHooks
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.VerifiedBusinessLookup
 import kotlinx.coroutines.withContext
@@ -112,11 +116,31 @@ class TelephonyEmergencyNumbers
             }
     }
 
-/** Phase 3: no verified businesses yet (Phase 9), except those the debug QA script marks ([ScreeningTestHooks]). */
+/**
+ * Verified businesses from the directory the daily update keeps on the phone ([BusinessDirectory]), plus
+ * the numbers the debug QA script marks ([ScreeningTestHooks], debug builds only). A storage failure throws
+ * [ScreeningSourceException], so the engine lets the call ring instead of treating a business as a stranger.
+ */
 class LocalVerifiedBusinessLookup
     @Inject
     constructor(
+        private val directory: BusinessDirectory,
         private val testHooks: Optional<ScreeningTestHooks>,
     ) : VerifiedBusinessLookup {
-        override suspend fun isVerifiedBusiness(number: PhoneNumber): Boolean = testHooks.orElse(null)?.isVerifiedBusiness(number) ?: false
+        override suspend fun find(number: PhoneNumber): VerifiedBusiness? =
+            when (val found = directory.find(number)) {
+                is AppResult.Success -> found.value ?: qaBusiness(number)
+                is AppResult.Failure -> throw ScreeningSourceException(found.error)
+            }
+
+        private fun qaBusiness(number: PhoneNumber): VerifiedBusiness? =
+            testHooks.orElse(null)?.takeIf { it.isVerifiedBusiness(number) }?.let {
+                VerifiedBusiness(number, QA_BUSINESS_ID, name = QA_BUSINESS_NAME, category = null, callReason = null, logoPath = null)
+            }
+
+        private companion object {
+            // Debug-only QA data (the hooks are never bound in release builds).
+            const val QA_BUSINESS_ID = "qa"
+            const val QA_BUSINESS_NAME = "QA business"
+        }
     }
