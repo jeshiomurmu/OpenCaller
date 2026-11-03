@@ -35,10 +35,11 @@ app downloads public lists.
 | App activity → Other user-generated content | Yes | Optional | App functionality; Fraud prevention, security and compliance | Spam reports (number, label, category, optional comment), disputes, contact requests. |
 | App activity → Other actions | Yes | Optional | App functionality | Profile views (who viewed which profile, unless incognito); kept 90 days. |
 | Device or other IDs | Yes | Optional (with sign-in) | Account management; Fraud prevention, security and compliance | A server-generated device ID tied to the session's refresh tokens. No hardware IDs, no advertising ID. |
+| Financial info → Purchase history | Yes | Optional (play build, supporters only) | App functionality; Account management | The supporter subscription: Google Play's purchase token, base plan, state and paid-until date, checked with Google to unlock supporter features. No card or payment details (Google Play handles payment). |
 
 ## Not collected (answer "No")
 
-Location, financial info, health and fitness, messages (emails, SMS or MMS, other messages), audio, calendar,
+Location, financial info other than the supporter subscription, health and fitness, messages (emails, SMS or MMS, other messages), audio, calendar,
 contacts, app info and performance (no crash logs or diagnostics), web browsing, and the call log: none of these
 leave the phone.
 
@@ -47,6 +48,11 @@ Explain if asked:
 - **Live caller ID lookup:** only the country calling code and the first 16 bits of the number's SHA-256 hash are
   sent. That is thousands of numbers per bucket (k-anonymity), not the number.
 - **Spam list and registry updates:** downloads of public lists. They send the user's country, nothing else.
+- **Backups:** encrypted on the phone with the user's passphrase (AES-256-GCM) before they are saved to a file or to
+  the user's own Google Drive app folder (play). OpenCaller's server never receives them, and Google stores only
+  ciphertext. They hold settings, block rules, the screening log and message categories, never message bodies.
+- **Messenger caller ID:** reads WhatsApp, Telegram and Signal call notifications on the phone only, with the user's
+  notification access; nothing from them is sent anywhere.
 - **IP addresses:** used only for rate limits (kept in memory for up to an hour); not stored with the account.
 
 ## Before submitting
