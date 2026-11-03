@@ -232,7 +232,7 @@ takes it away again). Device steps (a phone with a SIM; OpenCaller set as the de
 | TC-OTP-005 | OTP during unknown call | Active call with non-contact + OTP SMS → full-screen guard within 1 s | I + U — 7b: `scripts/qa/otp.sh` on API 29 + 36 (answered call from a non-contact, `adb emu sms send` with a code: the warning raised within 1 s of the SMS reaching OpenCaller, timed from the debug log, the full-screen warning over the in-call screen, `OTP_DURING_CALL` stored, Hang up on the warning ends the call); `MessagePipelineTest`, `OtpWatchTest` (during, and up to 2 minutes after, a conversation with a stranger; a missed call is no conversation, a call the user placed is) |
 | TC-OTP-006 | OTP during contact call | No guard (just normal OTP notification) | I + U — 7b: `scripts/qa/otp.sh` (a contact's answered call: the code stored without a risk, no warning), `OtpWatchTest` |
 | TC-OTP-007 | Flash call | Missed call < 3 s from verification range during unknown call → guard | D + U — 7b: `OtpWatchTest` (a missed call ≤ 3 s from a verification range during a stranger's call warns; a longer one or one outside the ranges doesn't); device steps below |
-| TC-OTP-008 | Lock screen | OTP code hidden on lock screen notification | I + U — 7b: `scripts/qa/otp.sh` (PIN lock screen set to hide sensitive content: the public version "Unlock to see the code" shows, the code doesn't; with "Show all notification content", Android's default, the system shows the code, phase.md issue 100), `MessagingDeviceTest` (the notification private, its public version without the code, Copy) |
+| TC-OTP-008 | Lock screen | OTP code hidden on lock screen notification | I + U — 9: `scripts/qa/otp.sh` (PIN lock screen with Android's default "Show all notification content": nothing of the code's notification on the lock screen or its shade, and dumpsys shows it posted `vis=SECRET`; owner's decision, phase.md issue 100), `MessagingDeviceTest` (the notification secret, no public version, Copy) |
 | TC-OTP-009 | OTP burst | 3 OTPs, 2 brands, 10 min → alert | U — 7b: `OtpWatchTest` (3 codes from 2 conversations in 10 minutes raise the alert and `OTP_BURST`; one sender, or codes spread over more than 10 minutes, don't). The alert's notification is `OtpGuardAlarm.warnBurst` (`feature:otp`) |
 
 Where they run: unit and Robolectric tests in the `android` CI job; `scripts/qa/sms.sh` (7a) and `scripts/qa/otp.sh`
@@ -298,8 +298,8 @@ app):
 | TC-SOC-001 | Visibility change | Name disappears from buckets after next build (buckets are built per request, so at once) | I (`MeApiTest`; compose `scripts/smoke.sh` → Profiles) |
 | TC-SOC-002 | Incognito search | Target's searcher list doesn't include viewer | I (`VisitorsTest`, Testcontainers) |
 | TC-SOC-003 | Delete account | Profile gone from API immediately; purge job ≤ 30 days (daily `retention` job) | I (`DeleteAccountTest`; smoke) |
-| TC-BIZ-001 | Claim requires ownership | Claim without OTP to that number fails | U |
-| TC-BIZ-002 | Verified badge | Approved business shows badge, logo, reason on card | I |
+| TC-BIZ-001 | Claim requires ownership | Claim without OTP to that number fails | I + U — 9: `BusinessClaimsTest` (Testcontainers: no upload or submit before the code to the claimed number, 403 `number_not_verified`; a wrong code keeps it unverified; another user can't prove someone else's claim; SMS or voice code); compose `scripts/smoke.sh` → Business claims; `BusinessViewModelsTest` (the app's form → code → documents → review flow) |
+| TC-BIZ-002 | Verified badge | Approved business shows badge, logo, reason on card | I + U — 9: `BusinessPublishingTest` and `AdminWebTest` (approval in the admin web publishes the business into buckets, the directory and the profile, removes it from spam lists; revoke removes it); smoke (approve through the admin web, then directory, profile and bucket); `BusinessDirectoryTest` (Robolectric: directory and logo on the phone, removals); `ScreeningEngineTest` (the caller card names the business with its call reason and badge, block non-contacts lets it ring). The card's logo on a real call: device step below |
 | TC-UT-001 | Ghost call | Scheduled fake call appears with chosen name/photo; no real call placed | I |
 | TC-UT-002 | Announce caller | TTS speaks resolved name; "headphones only" respected | I |
 | TC-UT-003 | Backup/restore | Rules + settings restored identically on fresh install | I |
@@ -311,6 +311,21 @@ app):
 | TC-REC-001 | Recording beep | Other party hears beep; file on device; server copy deleted ≤ 1 h | D |
 | TC-AST-001 | Assistant | Forwarded unanswered call answered by agent; transcript streams | D |
 | TC-SCAN-001 | Scanner wording | Result phrased as likelihood, never certainty | U |
+
+Phase 9 device steps (a phone with a SIM, a debug build pointing at a compose stack the phone can reach, and a second
+phone or SIM whose number you can claim):
+
+1. Me → Claim your business → sign in → Claim a business number: enter the second number, names and a category; pick
+   Text message. The code arrives on the second phone (in the stack's log with the development provider); enter it.
+   Repeat with Phone call on a landline or a phone that can answer: the call reads the code out three times.
+2. Add a PDF and a logo (a large photo: it is made smaller, under 200 KB); Send for review. The claim shows "Waiting
+   for review".
+3. Approve it in the admin web (`http://127.0.0.1:8081/claims` through an SSH tunnel or `docker compose exec`).
+4. Protection tab → Update now (or wait for the daily update). Call from the second number: the caller
+   card shows the business name, the logo, "Verified business", the call reason and the badge; with "Block
+   non-contacts" on, the call still rings. Send an SMS from it: the conversation shows the name with "Verified
+   business".
+5. Revoke the business in the admin web, update again: the next call shows the number only.
 
 ## 5. Manual QA checklist (before each release)
 
