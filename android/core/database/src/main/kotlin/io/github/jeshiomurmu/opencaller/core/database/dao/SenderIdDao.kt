@@ -12,6 +12,13 @@ interface SenderIdDao {
     @Upsert
     suspend fun upsertAll(rows: List<SenderIdEntity>)
 
+    /** Removes [headers] of [countryIso] (rows the registry no longer lists). */
+    @Query("DELETE FROM sender_id WHERE countryIso = :countryIso AND header IN (:headers)")
+    suspend fun deleteAll(
+        countryIso: String,
+        headers: List<String>,
+    )
+
     /** The registry row for [header] in [countryIso], or `null`. */
     @Query("SELECT * FROM sender_id WHERE countryIso = :countryIso AND header = :header")
     suspend fun find(

@@ -27,6 +27,7 @@
     </plurals>
     <string name="search_dispute">Is this your number? Ask for a review</string>
     <string name="search_open_profile">Open profile</string>
+    <string name="search_open_business">Business profile</string>
 
     <!-- Disputes. -->
     <string name="dispute_title">Wrongly marked as spam?</string>

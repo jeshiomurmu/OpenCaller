@@ -30,6 +30,7 @@ fun AccountRoute(
     onDispute: () -> Unit,
     onProfile: () -> Unit,
     modifier: Modifier = Modifier,
+    onClaimBusiness: () -> Unit = {},
     viewModel: AccountViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -44,6 +45,7 @@ fun AccountRoute(
                 onDispute = onDispute,
                 onUnlist = { state.unlistPageUrl?.let(uri::openUri) },
                 onProfile = onProfile,
+                onClaimBusiness = onClaimBusiness,
             ),
         modifier = modifier,
     )
@@ -57,6 +59,7 @@ data class AccountActions(
     val onDispute: () -> Unit,
     val onUnlist: () -> Unit,
     val onProfile: () -> Unit,
+    val onClaimBusiness: () -> Unit = {},
 )
 
 /**
@@ -88,6 +91,11 @@ fun AccountSection(
             AccountRow(stringResource(R.string.account_search), stringResource(R.string.account_search_summary), actions.onSearch)
             AccountRow(stringResource(R.string.account_dispute), stringResource(R.string.account_dispute_summary), actions.onDispute)
             AccountRow(stringResource(R.string.account_unlist), stringResource(R.string.account_unlist_summary), actions.onUnlist)
+            AccountRow(
+                stringResource(R.string.account_claim_business),
+                stringResource(R.string.account_claim_business_summary),
+                actions.onClaimBusiness,
+            )
         }
     }
 }

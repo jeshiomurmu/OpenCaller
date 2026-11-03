@@ -8,6 +8,7 @@ import io.github.jeshiomurmu.opencaller.core.model.RuleAction
 import io.github.jeshiomurmu.opencaller.core.model.RuleTarget
 import io.github.jeshiomurmu.opencaller.core.model.RuleType
 import io.github.jeshiomurmu.opencaller.core.model.UserPreferences
+import io.github.jeshiomurmu.opencaller.core.model.VerifiedBusiness
 import kotlinx.coroutines.delay
 
 /** In-memory screening inputs; every field can be changed by a test. */
@@ -25,6 +26,9 @@ class FakeSources {
     var rulesRead = 0
     var settingsRead = 0
     var failWith: Exception? = null
+
+    /** Thrown by the verified-business lookup. */
+    var verifiedFailure: Exception? = null
 
     /** Thrown by the spam list lookup. */
     var spamListFailure: Exception? = null
@@ -66,7 +70,8 @@ class FakeSources {
             },
             verifiedBusinesses = {
                 lookupDelay()
-                it in verifiedBusinesses
+                verifiedFailure?.let { failure -> throw failure }
+                if (it in verifiedBusinesses) VerifiedBusiness(it, BUSINESS_ID, "Example Bank", null, "Card security", null) else null
             },
             spamList = {
                 lookupDelay()
@@ -92,5 +97,10 @@ class FakeSources {
         score: Float,
     ) {
         spamList[number] = SpamListHit(number, score, "Loan", 12)
+    }
+
+    companion object {
+        /** Business id of the fake verified businesses. */
+        const val BUSINESS_ID = "0b6a3c52-1f0e-4f7b-9d2a-5c1e8f3a7b10"
     }
 }

@@ -168,6 +168,92 @@ interface ProfileApi {
     ): Response<ContactRequestDecisionDto>
 }
 
+/**
+ * Business claims and verified businesses (docs/architecture.md §8, Phase 9): claims need the access token; a
+ * business's profile, logo and the per-country directory are public.
+ */
+@Suppress("TooManyFunctions") // One function per endpoint is how Retrofit describes an API.
+interface BusinessApi {
+    /** Starts a claim of a business number; the code goes to that number. */
+    @Headers("$AUTH_MODE_HEADER: $AUTH_REQUIRED")
+    @POST("v1/business/claims")
+    suspend fun startClaim(
+        @Body body: StartClaimDto,
+    ): Response<ClaimDto>
+
+    /** The signed-in user's claims, newest first. */
+    @Headers("$AUTH_MODE_HEADER: $AUTH_REQUIRED")
+    @GET("v1/business/claims")
+    suspend fun claims(): Response<ClaimsDto>
+
+    /** Proves control of the claimed number with its code. */
+    @Headers("$AUTH_MODE_HEADER: $AUTH_REQUIRED")
+    @POST("v1/business/claims/{id}/code")
+    suspend fun verify(
+        @Path("id") id: String,
+        @Body body: ClaimCodeDto,
+    ): Response<ClaimDto>
+
+    /** Sends a new code by SMS or phone call. */
+    @Headers("$AUTH_MODE_HEADER: $AUTH_REQUIRED")
+    @POST("v1/business/claims/{id}/resend")
+    suspend fun resend(
+        @Path("id") id: String,
+        @Body body: ResendCodeDto,
+    ): Response<ClaimDto>
+
+    /** A presigned upload URL for a document or the logo. */
+    @Headers("$AUTH_MODE_HEADER: $AUTH_REQUIRED")
+    @POST("v1/business/claims/{id}/uploads")
+    suspend fun uploadUrl(
+        @Path("id") id: String,
+        @Body body: ClaimUploadRequestDto,
+    ): Response<ClaimUploadDto>
+
+    /** Uploads a file to the presigned [url] (no access token; the content type is signed). */
+    @PUT
+    suspend fun upload(
+        @Url url: String,
+        @Header("Content-Type") contentType: String,
+        @Body body: RequestBody,
+    ): Response<Unit>
+
+    /** Submits the claim for review. */
+    @Headers("$AUTH_MODE_HEADER: $AUTH_REQUIRED")
+    @POST("v1/business/claims/{id}/submit")
+    suspend fun submit(
+        @Path("id") id: String,
+        @Body body: SubmitClaimDto,
+    ): Response<ClaimDto>
+
+    /** Withdraws a claim in progress (204). */
+    @Headers("$AUTH_MODE_HEADER: $AUTH_REQUIRED")
+    @DELETE("v1/business/claims/{id}")
+    suspend fun withdraw(
+        @Path("id") id: String,
+    ): Response<Unit>
+
+    /** A verified business's public profile. */
+    @GET("v1/business/{id}")
+    suspend fun business(
+        @Path("id") id: String,
+    ): Response<BusinessProfileDto>
+
+    /** A business's logo; [path] is the API path the server gave (`/v1/business/{id}/logo`). */
+    @Streaming
+    @GET
+    suspend fun logo(
+        @Url path: String,
+    ): Response<ResponseBody>
+
+    /** Verified business numbers of [countryIso] changed after [since]. */
+    @GET("v1/businesses/{countryIso}")
+    suspend fun directory(
+        @Path("countryIso") countryIso: String,
+        @Query("since") since: Long?,
+    ): Response<DirectoryDto>
+}
+
 /** The k-anonymous live lookup, on its own client with a short timeout (docs/architecture.md §4.6). */
 interface LookupApi {
     /** All entries of bucket [bucketId] (first [bits] bits of SHA-256) in country calling code [countryCode]. */

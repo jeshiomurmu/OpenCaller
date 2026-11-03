@@ -191,4 +191,56 @@ class ConfigTest {
         assertEquals("https://api.twilio.com", ok.twilio.baseUrl)
         assertTrue(!ok.twilio.toString().contains("authToken=t,"))
     }
+
+    @Test
+    fun theAdminWebIsOffUntilItsPortIsSetAndThenNeedsEverySetting() {
+        assertEquals(null, loadConfig(valid).adminWeb)
+        val partial = assertFailsWith<ConfigException> { loadConfig(valid + ("ADMIN_WEB_PORT" to "8081")) }.problems
+        assertTrue(partial.any { it.startsWith("ADMIN_WEB_USER") } && partial.any { it.startsWith("ADMIN_WEB_PASSWORD") })
+        assertTrue(partial.any { it.startsWith("ADMIN_WEB_ALLOWED_NETWORKS") })
+
+        val web =
+            valid +
+                mapOf(
+                    "ADMIN_WEB_PORT" to "8081",
+                    "ADMIN_WEB_USER" to "reviewer",
+                    "ADMIN_WEB_PASSWORD" to "w".repeat(32),
+                    "ADMIN_WEB_ALLOWED_NETWORKS" to "10.0.0.0/8, 203.0.113.7",
+                )
+        val config = loadConfig(web).adminWeb!!
+        assertEquals(8081, config.port)
+        assertTrue(config.allowedNetworks.single { it.contains("203.0.113.7") }.contains("203.0.113.7"))
+        assertTrue(!config.toString().contains("w".repeat(32)))
+
+        val bad =
+            web +
+                mapOf(
+                    "ADMIN_WEB_ALLOWED_NETWORKS" to "10.0.0.0/33,example.com",
+                    "ADMIN_WEB_PASSWORD" to "short",
+                    "ADMIN_WEB_PORT" to "8080",
+                )
+        val problems = assertFailsWith<ConfigException> { loadConfig(bad) }.problems
+        assertTrue(problems.count { it.contains("invalid CIDR block") } == 2, problems.toString())
+        assertTrue(problems.any { it.startsWith("ADMIN_WEB_PASSWORD must be at least 32") })
+        assertTrue(problems.any { it.startsWith("ADMIN_WEB_PORT must differ") })
+    }
+
+    @Test
+    fun theImportFolderAndTheVoiceSenderAreOptional() {
+        val config = loadConfig(valid + ("IMPORT_DIR" to "/var/lib/opencaller/imports"))
+        assertEquals("/var/lib/opencaller/imports", config.imports.dir)
+        assertEquals(4, config.imports.hourUtc)
+        val twilio =
+            valid +
+                mapOf(
+                    "OTP_PROVIDER" to "twilio",
+                    "TWILIO_ACCOUNT_SID" to "AC123",
+                    "TWILIO_AUTH_TOKEN" to "t",
+                    "TWILIO_FROM" to "+15005550006",
+                )
+        assertEquals(null, loadConfig(twilio).twilio!!.voiceFrom)
+        assertEquals("+15005550007", loadConfig(twilio + ("TWILIO_VOICE_FROM" to "+15005550007")).twilio!!.voiceFrom)
+        val problems = assertFailsWith<ConfigException> { loadConfig(twilio + ("TWILIO_VOICE_FROM" to "15005550007")) }.problems
+        assertTrue(problems.single().startsWith("TWILIO_VOICE_FROM"))
+    }
 }

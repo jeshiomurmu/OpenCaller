@@ -31,11 +31,13 @@ import io.github.jeshiomurmu.opencaller.core.designsystem.preview.OpenCallerPrev
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacing
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
 import io.github.jeshiomurmu.opencaller.core.model.ContactRequest
+import io.github.jeshiomurmu.opencaller.core.model.NameSource
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import io.github.jeshiomurmu.opencaller.core.model.ProfileVisit
 import io.github.jeshiomurmu.opencaller.core.model.ProfileVisits
 import io.github.jeshiomurmu.opencaller.core.model.SupporterBadge
 import io.github.jeshiomurmu.opencaller.core.model.VisitKind
+import io.github.jeshiomurmu.opencaller.core.ui.SourceChip
 import io.github.jeshiomurmu.opencaller.core.ui.SupporterBadgeLabel
 
 /** "Who viewed my profile" / "Who searched for me", wired to its view model. */
@@ -110,6 +112,7 @@ private fun VisitRow(visit: ProfileVisit) {
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(text = visit.name ?: stringResource(R.string.visitors_hidden_name), style = MaterialTheme.typography.titleMedium)
+            if (visit.name != null) SourceChip(source = NameSource.SELF_REGISTERED)
             visit.badge?.let { SupporterBadgeLabel(it) }
         }
         Text(
@@ -181,7 +184,10 @@ private fun RequestRow(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xxs)) {
         Text(text = request.requesterName ?: request.requester.e164, style = MaterialTheme.typography.titleMedium)
-        if (request.requesterName != null) Text(text = request.requester.e164, style = MaterialTheme.typography.bodyMedium)
+        if (request.requesterName != null) {
+            Text(text = request.requester.e164, style = MaterialTheme.typography.bodyMedium)
+            SourceChip(source = NameSource.SELF_REGISTERED)
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xs)) {
             Button(onClick = { onAnswer(request.id, true) }, enabled = !busy) { Text(text = stringResource(R.string.requests_approve)) }
             OutlinedButton(

@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # Smoke test of the whole API against the compose stack (docs/implementation_plan.md Phase 4), with curl + jq:
 # health, sign-in, refresh rotation, rate limits, reports, scoring, bucket lookup, search, lists, disputes,
-# unlisting (API and HTML form), sender IDs, OTP sources, profiles (Phase 8) and metrics.
+# unlisting (API and HTML form), sender IDs, OTP sources, profiles (Phase 8), business claims with the admin web
+# (Phase 9) and metrics.
 #
 #   docker compose -f infra/docker/compose.yml up -d --build --wait
 #   scripts/smoke.sh
 #
-# Needs: OTP_PROVIDER=log (the development default; codes are read from the server log) and ADMIN_TOKEN set in
-# infra/docker/.env (jobs are run on demand through the admin endpoints on the internal port). Run it once per
+# Needs: OTP_PROVIDER=log (the development default; codes are read from the server log), ADMIN_TOKEN (jobs are run
+# on demand through the admin endpoints on the internal port) and the ADMIN_WEB_* settings of .env.example (claims
+# are approved through the admin web from inside the server container) set in infra/docker/.env. Run it once per
 # stack: the sign-in rate limits (3 codes per number per hour) would refuse a second run within the hour.
 # Env: BASE_URL (default http://localhost:8080), COMPOSE_FILE (default infra/docker/compose.yml).
 set -euo pipefail
@@ -20,6 +22,7 @@ reporter="+12015550199" # signs in and uses the API
 spammer="+12025550143"  # gets reported
 unlisted="+12015550177" # is unlisted through the HTML form and the API
 profile="+12015550188"  # edits, hides and deletes its profile
+business="+12015550166" # is claimed as a business and approved
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 failures=0
@@ -227,6 +230,49 @@ expect "DELETE /v1/me" 204 "$(as_profile me_delete DELETE /v1/me)"
 expect "  GET /v1/me afterwards (TC-SOC-003)" 401 "$(as_profile me_gone GET /v1/me)"
 run_job retention
 expect "  purged by the retention job" 1 "$(jq -r .result.accountsPurged "$work/job_retention.body")"
+
+echo "== Business claims (TC-BIZ-001, TC-BIZ-002)"
+# admin_web <name> <path> [curl args…]: the admin web from inside the server container (its port, user and password
+# come from the container's environment); the status code is the first line of $work/<name>.admin, the page follows.
+admin_web() {
+  local name="$1" path="$2"
+  shift 2
+  compose exec -T server sh -c \
+    'p="$1"; shift; curl -sS -u "$ADMIN_WEB_USER:$ADMIN_WEB_PASSWORD" -o /tmp/admin.body -w "%{http_code}\n" "$@" "http://127.0.0.1:$ADMIN_WEB_PORT$p"; cat /tmp/admin.body' \
+    sh "$path" "$@" > "$work/$name.admin" || true
+}
+claim_json="{\"e164\":\"$business\",\"legalName\":\"Smoke Bank LLC\",\"displayName\":\"Smoke Bank\",\"category\":\"bank\",\"callReason\":\"Card security\"}"
+expect "POST /v1/business/claims" 201 "$(authed claim POST /v1/business/claims "$claim_json")"
+claim_id="$(field claim .id)"
+expect "  status" verifying "$(field claim .status)"
+expect "  upload before the code (TC-BIZ-001)" 403 "$(authed claim_early POST "/v1/business/claims/$claim_id/uploads" '{"kind":"document","contentType":"application/pdf"}')"
+expect "  code" number_not_verified "$(field claim_early .code)"
+claim_code="$(latest_code "$business")" || fail "no development code for $business in the server log"
+expect "  code sent to the business number" 200 "$(authed claim_code POST "/v1/business/claims/$claim_id/code" "{\"code\":\"$claim_code\"}")"
+expect "  status" verified "$(field claim_code .status)"
+expect "  document upload URL" 200 "$(authed claim_doc POST "/v1/business/claims/$claim_id/uploads" '{"kind":"document","contentType":"application/pdf"}')"
+printf '%%PDF-1.4\n%% smoke test document\n' > "$work/claim.pdf"
+expect "  upload the document (no token)" 200 "$(curl -sS -o /dev/null -w '%{http_code}' -X PUT -H 'Content-Type: application/pdf' --data-binary "@$work/claim.pdf" "$(field claim_doc .uploadUrl)")"
+expect "  submit" 200 "$(authed claim_submit POST "/v1/business/claims/$claim_id/submit" "{\"documentKeys\":[\"$(field claim_doc .key)\"]}")"
+expect "  status" submitted "$(field claim_submit .status)"
+admin_web admin_noauth / -u nobody:wrong
+expect "admin web: wrong password" 401 "$(head -1 "$work/admin_noauth.admin")"
+admin_web admin_claim "/claims/$claim_id"
+expect "admin web: the claim's page" 200 "$(head -1 "$work/admin_claim.admin")"
+csrf="$(grep -o 'name="csrf" value="[^"]*"' "$work/admin_claim.admin" | head -1 | sed 's/.*value="//; s/"$//')"
+admin_web admin_forged "/claims/$claim_id/approve" -X POST --data-urlencode "csrf=forged"
+expect "  approve without the page's token" 403 "$(head -1 "$work/admin_forged.admin")"
+admin_web admin_approve "/claims/$claim_id/approve" -X POST --data-urlencode "csrf=$csrf"
+expect "  approve (redirect)" 302 "$(head -1 "$work/admin_approve.admin")"
+expect "GET /v1/businesses/US" "Smoke Bank" "$(request directory GET /v1/businesses/US > /dev/null; jq -r --arg n "$business" '[.entries[] | select(.e164 == $n) | .name][0]' "$work/directory.body")"
+business_id="$(jq -r --arg n "$business" '[.entries[] | select(.e164 == $n) | .businessId][0]' "$work/directory.body")"
+expect "GET /v1/business/{id}" 200 "$(request business_profile GET "/v1/business/$business_id")"
+expect "  call reason" "Card security" "$(field business_profile '.numbers[0].callReason')"
+business_bucket="$(bucket_of "$business")"
+business_hash="$(hash_of "$business")"
+request business_bucket GET "/v1/lookup/buckets/1/$business_bucket" > /dev/null
+expect "  verified in the bucket (TC-BIZ-002)" "Smoke Bank" "$(jq -r --arg h "$business_hash" '[.entries[] | select(.hash == $h) | .info.business.name][0]' "$work/business_bucket.body")"
+expect "GET /v1/business/claims" approved "$(authed claims_after GET /v1/business/claims > /dev/null; field claims_after '.claims[0].status')"
 
 echo "== Metrics (internal port only)"
 expect "GET /metrics on the API port" 404 "$(request metrics_api GET /metrics)"

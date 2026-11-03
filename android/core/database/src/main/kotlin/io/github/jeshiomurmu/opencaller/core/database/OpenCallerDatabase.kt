@@ -15,6 +15,7 @@ import io.github.jeshiomurmu.opencaller.core.database.dao.ScreeningEventDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.SenderIdDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.SpamListDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.VerificationRangeDao
+import io.github.jeshiomurmu.opencaller.core.database.dao.VerifiedBusinessDao
 import io.github.jeshiomurmu.opencaller.core.database.entity.BlockRuleEntity
 import io.github.jeshiomurmu.opencaller.core.database.entity.FamilyMemberEntity
 import io.github.jeshiomurmu.opencaller.core.database.entity.LookupBucketEntity
@@ -28,6 +29,7 @@ import io.github.jeshiomurmu.opencaller.core.database.entity.ScreeningEventEntit
 import io.github.jeshiomurmu.opencaller.core.database.entity.SenderIdEntity
 import io.github.jeshiomurmu.opencaller.core.database.entity.SpamListEntry
 import io.github.jeshiomurmu.opencaller.core.database.entity.VerificationRangeEntity
+import io.github.jeshiomurmu.opencaller.core.database.entity.VerifiedBusinessEntity
 
 /**
  * The app's SQLCipher-encrypted Room database (docs/architecture.md §6). Open it through
@@ -49,8 +51,9 @@ import io.github.jeshiomurmu.opencaller.core.database.entity.VerificationRangeEn
         RecordingEntity::class,
         ScheduledSmsEntity::class,
         FamilyMemberEntity::class,
+        VerifiedBusinessEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @Suppress("TooManyFunctions") // One accessor per DAO is how Room exposes them.
@@ -93,4 +96,7 @@ abstract class OpenCallerDatabase : RoomDatabase() {
 
     /** Family group members. */
     abstract fun familyMemberDao(): FamilyMemberDao
+
+    /** Verified businesses of the phone's country. */
+    abstract fun verifiedBusinessDao(): VerifiedBusinessDao
 }

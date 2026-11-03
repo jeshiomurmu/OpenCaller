@@ -1,0 +1,28 @@
+# DRAFT for fdroiddata (metadata/io.github.jeshiomurmu.opencaller.yml); F-Droid's reviewers may change it.
+# Not verified against an fdroidserver build: run `fdroid build -v -l io.github.jeshiomurmu.opencaller` before
+# opening a merge request.
+Categories:
+  - Phone & SMS
+License: GPL-3.0-only
+AuthorName: OpenCaller contributors
+SourceCode: https://github.com/jeshiomurmu/OpenCaller
+IssueTracker: https://github.com/jeshiomurmu/OpenCaller/issues
+Changelog: https://github.com/jeshiomurmu/OpenCaller/blob/HEAD/CHANGELOG.md
+
+AutoName: OpenCaller
+
+RepoType: git
+Repo: https://github.com/jeshiomurmu/OpenCaller.git
+
+Builds:
+  - versionName: 0.5.0-beta
+    versionCode: 50040
+    commit: v0.5.0-beta
+    subdir: android/app
+    gradle:
+      - foss
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 0.5.0-beta
+CurrentVersionCode: 50040

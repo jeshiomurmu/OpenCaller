@@ -1,5 +1,6 @@
 package io.github.jeshiomurmu.opencaller.server.lookup
 
+import io.github.jeshiomurmu.opencaller.server.business.BusinessDirectory
 import io.github.jeshiomurmu.opencaller.server.db.BusinessNumbers
 import io.github.jeshiomurmu.opencaller.server.db.Businesses
 import io.github.jeshiomurmu.opencaller.server.db.NumberReputation
@@ -19,13 +20,15 @@ import org.jetbrains.exposed.v1.core.isNotNull
 import org.jetbrains.exposed.v1.jdbc.JdbcTransaction
 import org.jetbrains.exposed.v1.jdbc.select
 
-/** A verified business behind a number. */
+/** A verified business behind a number; [logoUrl] is the API path of its logo (`GET /v1/business/{id}/logo`). */
 @Serializable
 data class BusinessInfo(
     val name: String,
     val category: String? = null,
     val verified: Boolean = true,
     val callReason: String? = null,
+    val businessId: String? = null,
+    val logoUrl: String? = null,
 )
 
 /**
@@ -68,8 +71,10 @@ object NumberDirectory {
             Users.visibility,
             Users.deletedAt,
             Users.supporterTier,
+            Businesses.id,
             Businesses.displayName,
             Businesses.category,
+            Businesses.logoKey,
             Businesses.status,
             BusinessNumbers.defaultCallReason,
         )
@@ -143,7 +148,15 @@ object NumberDirectory {
             .getOrNull(Businesses.displayName)
             ?.takeIf { row.getOrNull(Businesses.status) == ReviewStatus.APPROVED }
             ?.let { name ->
-                BusinessInfo(name, row.getOrNull(Businesses.category), verified = true, row.getOrNull(BusinessNumbers.defaultCallReason))
+                val id = row.getOrNull(Businesses.id)
+                BusinessInfo(
+                    name = name,
+                    category = row.getOrNull(Businesses.category),
+                    verified = true,
+                    callReason = row.getOrNull(BusinessNumbers.defaultCallReason),
+                    businessId = id?.toString(),
+                    logoUrl = id?.takeIf { row.getOrNull(Businesses.logoKey) != null }?.let(BusinessDirectory::logoPath),
+                )
             }
 
     // Scores are REAL in the database; three decimals are plenty and avoid float noise like 0.4285714328289032.

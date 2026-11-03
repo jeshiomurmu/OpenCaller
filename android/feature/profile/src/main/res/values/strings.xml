@@ -50,6 +50,8 @@
     <string name="account_dispute_summary">Ask for a review of a number\'s spam label</string>
     <string name="account_unlist">Unlist my number</string>
     <string name="account_unlist_summary">Remove your name from OpenCaller (opens a web page)</string>
+    <string name="account_claim_business">Claim your business</string>
+    <string name="account_claim_business_summary">Show your business name and logo on customers\' phones</string>
 
     <string name="account_profile">My profile</string>
     <string name="account_profile_summary">Your name, picture, who sees them, incognito</string>

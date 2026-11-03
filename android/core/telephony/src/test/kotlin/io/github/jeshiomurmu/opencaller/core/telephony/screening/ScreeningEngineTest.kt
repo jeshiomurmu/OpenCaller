@@ -1,5 +1,6 @@
 package io.github.jeshiomurmu.opencaller.core.telephony.screening
 
+import io.github.jeshiomurmu.opencaller.core.common.AppError
 import io.github.jeshiomurmu.opencaller.core.common.DefaultDispatcherProvider
 import io.github.jeshiomurmu.opencaller.core.data.CachedReputation
 import io.github.jeshiomurmu.opencaller.core.model.CallerVerification
@@ -198,6 +199,29 @@ class ScreeningEngineTest {
             val business = engine.incoming(bd)
             assertEquals(Decision.ALLOW, business.decision)
             assertTrue(business.caller.isVerifiedBusiness)
+            // The directory on the phone names the business on the card.
+            assertEquals("Example Bank", business.caller.displayName)
+            assertEquals(NameSource.VERIFIED_BUSINESS, business.caller.nameSource)
+            assertEquals(FakeSources.BUSINESS_ID, business.caller.verifiedBusinessId)
+            assertEquals("Card security", business.caller.callReason)
+        }
+
+    @Test
+    fun anUnreadableBusinessDirectoryLetsNonContactsRing() =
+        runTest {
+            sources.prefs = sources.prefs.copy(blockNonContacts = true)
+            sources.verifiedFailure = ScreeningSourceException(AppError.Storage)
+            assertEquals(Decision.ALLOW, engine().incoming(us).decision)
+        }
+
+    @Test
+    fun aVerifiedBusinessNamesItselfBeforeTheLiveLookup() =
+        runTest {
+            sources.verifiedBusinesses += us
+            sources.network = NetworkLookup { NetworkVerdict(null, null, 0, "Someone else", NameSource.SELF_REGISTERED) }
+            val caller = engine().incoming(us).caller
+            assertEquals("Example Bank", caller.displayName)
+            assertEquals(NameSource.VERIFIED_BUSINESS, caller.nameSource)
         }
 
     @Test
@@ -449,9 +473,9 @@ class ScreeningEngineTest {
             sources.lookupDelayMillis = 100
             val result = engine().incoming(us)
             assertEquals(ScreeningReason.NO_MATCH, result.reason)
-            // Six lookups of 100 ms each: one after another they would take 600 ms. Settings, contacts and the verified
-            // business check overlap with the three database reads, which run as one chain (300 ms).
-            assertEquals(300, result.latencyMs)
+            // Six lookups of 100 ms each: one after another they would take 600 ms. Settings and contacts overlap with
+            // the four database reads (rules, verified businesses, spam list, cache), which run as one chain (400 ms).
+            assertEquals(400, result.latencyMs)
         }
 
     @Test

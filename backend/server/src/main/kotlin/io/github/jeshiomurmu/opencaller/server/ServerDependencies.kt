@@ -1,5 +1,8 @@
 package io.github.jeshiomurmu.opencaller.server
 
+import io.github.jeshiomurmu.opencaller.server.admin.web.AdminAuditLog
+import io.github.jeshiomurmu.opencaller.server.admin.web.AdminWebServices
+import io.github.jeshiomurmu.opencaller.server.admin.web.ImportTools
 import io.github.jeshiomurmu.opencaller.server.auth.AuthRepository
 import io.github.jeshiomurmu.opencaller.server.auth.AuthService
 import io.github.jeshiomurmu.opencaller.server.auth.TokenService
@@ -8,6 +11,11 @@ import io.github.jeshiomurmu.opencaller.server.auth.otp.OtpProvider
 import io.github.jeshiomurmu.opencaller.server.auth.otp.OtpService
 import io.github.jeshiomurmu.opencaller.server.auth.otp.OtpStore
 import io.github.jeshiomurmu.opencaller.server.auth.otp.TwilioOtpProvider
+import io.github.jeshiomurmu.opencaller.server.auth.otp.TwilioVoiceOtpProvider
+import io.github.jeshiomurmu.opencaller.server.business.BusinessDirectory
+import io.github.jeshiomurmu.opencaller.server.business.ClaimCodes
+import io.github.jeshiomurmu.opencaller.server.business.ClaimReview
+import io.github.jeshiomurmu.opencaller.server.business.ClaimService
 import io.github.jeshiomurmu.opencaller.server.config.AppConfig
 import io.github.jeshiomurmu.opencaller.server.config.OtpProviderKind
 import io.github.jeshiomurmu.opencaller.server.db.ServerDatabase
@@ -29,6 +37,14 @@ import io.github.jeshiomurmu.opencaller.server.profile.StoredTierEntitlements
 import io.github.jeshiomurmu.opencaller.server.profile.VisitorService
 import io.github.jeshiomurmu.opencaller.server.redis.RateLimiter
 import io.github.jeshiomurmu.opencaller.server.redis.Redis
+import io.github.jeshiomurmu.opencaller.server.registry.ImportJobResult
+import io.github.jeshiomurmu.opencaller.server.registry.ImportRunLog
+import io.github.jeshiomurmu.opencaller.server.registry.Importer
+import io.github.jeshiomurmu.opencaller.server.registry.OtpSourceCuration
+import io.github.jeshiomurmu.opencaller.server.registry.SenderIdImportJob
+import io.github.jeshiomurmu.opencaller.server.registry.SenderIdStore
+import io.github.jeshiomurmu.opencaller.server.registry.csvImportersIn
+import io.github.jeshiomurmu.opencaller.server.registry.placeholderRegistries
 import io.github.jeshiomurmu.opencaller.server.reports.ReportService
 import io.github.jeshiomurmu.opencaller.server.scoring.ScoringJob
 import io.github.jeshiomurmu.opencaller.server.scoring.ScoringResult
@@ -47,15 +63,23 @@ import java.security.SecureRandom
 import java.time.Clock
 import java.time.Duration
 
+/** How one-time codes reach a phone: [sms] always, [voice] (a call reading the code) only if configured. */
+class CodeSenders(
+    val sms: OtpProvider,
+    val voice: OtpProvider? = null,
+)
+
 /** Everything the server needs, built once in `main` (and by tests with their own clock and OTP provider). */
 class ServerDependencies(
     val config: AppConfig,
     val database: ServerDatabase,
     val redis: Redis,
-    otpProvider: OtpProvider,
+    senders: CodeSenders,
     val clock: Clock,
     val objectStore: ObjectStore = S3ObjectStore(config.minio, clock),
 ) : Closeable {
+    private val otpProvider = senders.sms
+    private val voiceProvider = senders.voice
     val meterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     private val random = SecureRandom()
     private val rateLimiter = RateLimiter(redis)
@@ -86,6 +110,32 @@ class ServerDependencies(
     val visitors = VisitorService(database, objectStore, entitlements, rateLimiter, clock)
     val contactRequests = ContactRequestService(database, rateLimiter, clock)
     val retentionJob = RetentionJob(database, objectStore, clock)
+    private val claimStore = OtpStore(redis, keyPrefix = "otp-claim:")
+    val claims =
+        ClaimService(
+            db = database,
+            codes =
+                ClaimCodes(
+                    sms = OtpService(claimStore, otpProvider, config.otp.pepper, random),
+                    voice = voiceProvider?.let { OtpService(claimStore, it, config.otp.pepper, random) },
+                ),
+            objects = objectStore,
+            rateLimiter = rateLimiter,
+            clock = clock,
+        )
+    val claimReview = ClaimReview(database, objectStore, clock)
+    val businessDirectory = BusinessDirectory(database, objectStore)
+    val otpCuration = OtpSourceCuration(database, clock)
+    val senderIdStore = SenderIdStore(database, clock)
+    val importRuns = ImportRunLog(database, clock)
+    val adminAudit = AdminAuditLog(database, clock)
+
+    /** Sender-ID importers: the CSV extracts in the import folder, then the registries without documented access. */
+    val importers: () -> List<Importer<*>> = { csvImportersIn(config.imports.dir, senderIdStore) + placeholderRegistries }
+    val importJob = SenderIdImportJob(importers, importRuns, clock)
+
+    /** What the admin web works with. */
+    val adminWeb = AdminWebServices(claimReview, otpCuration, ImportTools(senderIdStore, importRuns, importers), adminAudit, clock)
 
     val scoringJob = ScoringJob(database, config.scoring, clock)
     val listBuilder = ListBuilder(database, objectStore, config.lists, clock)
@@ -99,14 +149,19 @@ class ServerDependencies(
             LeaderJob(RetentionJob.JOB_NAME, RETENTION_LOCK) {
                 ApiJson.encodeToJsonElement(RetentionResult.serializer(), retentionJob.run())
             },
+            LeaderJob(
+                SenderIdImportJob.JOB_NAME,
+                IMPORT_LOCK,
+            ) { ApiJson.encodeToJsonElement(ImportJobResult.serializer(), importJob.run()) },
         )
 
-    /** Starts the scoring job every [ScoringConfig.intervalMinutes], and the list build and the retention job daily. */
+    /** Starts the scoring job every [ScoringConfig.intervalMinutes]; the list build, retention and sender-ID imports daily. */
     fun startJobs(scope: CoroutineScope) {
         val scheduler = JobScheduler(scope, jobRunner, clock)
         scheduler.every(Duration.ofMinutes(config.scoring.intervalMinutes.toLong()), jobs.first { it.name == ScoringJob.JOB_NAME })
         scheduler.dailyAt(config.lists.buildHourUtc, jobs.first { it.name == LISTS_JOB })
         scheduler.dailyAt(RetentionJob.HOUR_UTC, jobs.first { it.name == RetentionJob.JOB_NAME })
+        scheduler.dailyAt(config.imports.hourUtc, jobs.first { it.name == SenderIdImportJob.JOB_NAME })
     }
 
     override fun close() {
@@ -122,6 +177,7 @@ class ServerDependencies(
         private const val SCORING_LOCK = 4_000_001L
         private const val LISTS_LOCK = 4_000_002L
         private const val RETENTION_LOCK = 4_000_003L
+        private const val IMPORT_LOCK = 4_000_004L
 
         /** Connects to PostgreSQL (running migrations) and Redis, picks the OTP provider and seeds sender IDs. */
         fun create(
@@ -133,6 +189,12 @@ class ServerDependencies(
                     OtpProviderKind.LOG -> LogOtpProvider(config.environment)
                     OtpProviderKind.TWILIO -> TwilioOtpProvider(requireNotNull(config.twilio) { "TWILIO_* settings missing" })
                 }
+            // Codes by phone call: Twilio with TWILIO_VOICE_FROM set; in development the log provider stands in.
+            val voiceProvider =
+                when (config.otp.provider) {
+                    OtpProviderKind.LOG -> otpProvider
+                    OtpProviderKind.TWILIO -> config.twilio?.takeIf { it.voiceFrom != null }?.let(::TwilioVoiceOtpProvider)
+                }
             val database = ServerDatabase.connect(config.database, io)
             val redis =
                 try {
@@ -141,7 +203,7 @@ class ServerDependencies(
                     database.close()
                     throw e
                 }
-            return ServerDependencies(config, database, redis, otpProvider, Clock.systemUTC())
+            return ServerDependencies(config, database, redis, CodeSenders(otpProvider, voiceProvider), Clock.systemUTC())
         }
     }
 }

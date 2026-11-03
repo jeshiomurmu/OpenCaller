@@ -10,6 +10,8 @@ import io.github.jeshiomurmu.opencaller.core.ml.link.LinkChecker
 import io.github.jeshiomurmu.opencaller.core.ml.otp.OtpExtractor
 import io.github.jeshiomurmu.opencaller.core.ml.transaction.BankTemplates
 import io.github.jeshiomurmu.opencaller.core.ml.transaction.TransactionParser
+import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
+import io.github.jeshiomurmu.opencaller.core.model.VerifiedBusiness
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 import io.github.jeshiomurmu.opencaller.core.telephony.otp.CallActivityTracker
 import io.github.jeshiomurmu.opencaller.core.telephony.otp.OtpAlarm
@@ -26,6 +28,7 @@ internal object EmptyMlAssets : MlAssets {
 internal class FakeRegistry : SenderRegistry {
     val senders = mutableMapOf<Pair<String, String>, RegisteredSender>()
     val apps = mutableMapOf<String, String>()
+    val businesses = mutableMapOf<PhoneNumber, VerifiedBusiness>()
 
     override suspend fun sender(
         countryIso: String,
@@ -33,6 +36,8 @@ internal class FakeRegistry : SenderRegistry {
     ): RegisteredSender? = senders[countryIso to header]
 
     override suspend fun appForHash(hash: String): String? = apps[hash]
+
+    override suspend fun verifiedBusiness(number: PhoneNumber): VerifiedBusiness? = businesses[number]
 }
 
 /** Records the warnings. */

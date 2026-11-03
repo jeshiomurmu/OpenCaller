@@ -5,4 +5,5 @@ data class SearchNavigation(
     val onSignIn: () -> Unit,
     val onDispute: (e164: String) -> Unit,
     val onOpenProfile: (e164: String) -> Unit = {},
+    val onOpenBusiness: (businessId: String) -> Unit = {},
 )

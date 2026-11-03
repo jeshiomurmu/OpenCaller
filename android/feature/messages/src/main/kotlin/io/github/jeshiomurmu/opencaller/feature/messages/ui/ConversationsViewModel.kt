@@ -9,6 +9,7 @@ import io.github.jeshiomurmu.opencaller.core.common.DispatcherProvider
 import io.github.jeshiomurmu.opencaller.core.model.Conversation
 import io.github.jeshiomurmu.opencaller.core.model.MessageCategory
 import io.github.jeshiomurmu.opencaller.core.model.MessageMeta
+import io.github.jeshiomurmu.opencaller.core.model.NameSource
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.ConversationSource
 import io.github.jeshiomurmu.opencaller.feature.messages.notify.ParticipantNames
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -26,7 +27,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** One conversation in the list. [title] is the people's names (or numbers), comma-separated for a group. */
+/**
+ * One conversation in the list. [title] is the people's names (or numbers), comma-separated for a group; a
+ * one-to-one conversation's name comes with its [nameSource] (docs/prd.md F-ID-09), `null` when [title] is the
+ * number or address itself.
+ */
 data class ConversationRow(
     val threadId: Long,
     val title: String,
@@ -38,6 +43,7 @@ data class ConversationRow(
     val hasImage: Boolean,
     val category: MessageCategory = MessageCategory.PERSONAL,
     val risky: Boolean = false,
+    val nameSource: NameSource? = null,
 )
 
 /** The smart inbox: the [tab] shown with its conversations, every tab's unread count, the current code. */
@@ -190,10 +196,11 @@ class ConversationsViewModel
         private suspend fun rowOf(
             conversation: Conversation,
             facts: ThreadFacts,
-        ): ConversationRow =
-            ConversationRow(
+        ): ConversationRow {
+            val (title, source) = titleOf(conversation, facts)
+            return ConversationRow(
                 threadId = conversation.threadId,
-                title = conversation.participants.map { names.title(it) }.joinToString(", "),
+                title = title,
                 snippet = conversation.snippet,
                 atMillis = conversation.lastAtMillis,
                 unread = conversation.unreadCount,
@@ -202,7 +209,25 @@ class ConversationsViewModel
                 hasImage = conversation.lastHasImage,
                 category = facts.category,
                 risky = facts.risky,
+                nameSource = source,
             )
+        }
+
+        // One person: the contact, else the name the message pipeline found (registry, verified business, …), else
+        // the address. A group lists contact names or addresses.
+        private suspend fun titleOf(
+            conversation: Conversation,
+            facts: ThreadFacts,
+        ): Pair<String, NameSource?> {
+            val single = conversation.participants.singleOrNull()
+            val contact = single?.let { names.contactName(it) }
+            return when {
+                single == null -> conversation.participants.map { names.title(it) }.joinToString(", ") to null
+                contact != null -> contact to NameSource.CONTACT
+                facts.senderName != null -> facts.senderName to facts.senderSource
+                else -> names.address(single) to null
+            }
+        }
 
         private fun delete() {
             val row = controls.value.confirmDelete ?: return

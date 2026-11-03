@@ -118,6 +118,16 @@ data class NumberProfileRoute(
     val e164: String,
 )
 
+/** Me → Claim your business (Phase 9). */
+@Serializable
+data object BusinessClaimRoute
+
+/** A verified business's profile ([businessId] from search or a caller). */
+@Serializable
+data class VerifiedBusinessRoute(
+    val businessId: String,
+)
+
 /** Me → Settings → Quick replies. */
 @Serializable
 data object QuickRepliesSettingsRoute

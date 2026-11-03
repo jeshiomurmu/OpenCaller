@@ -32,6 +32,8 @@ data class AppConfig(
     val scoring: ScoringConfig = ScoringConfig(),
     val lists: ListConfig = ListConfig(),
     val admin: AdminConfig = AdminConfig(null),
+    val adminWeb: AdminWebConfig? = null,
+    val imports: ImportConfig = ImportConfig(),
 )
 
 /** Public API port and the internal metrics port. */
@@ -101,6 +103,25 @@ data class AdminConfig(
     override fun toString() = "AdminConfig(token=${if (token == null) "disabled" else "***"})"
 }
 
+/**
+ * The admin web (business-claim review, OTP-source curation, sender-ID imports) on its own [port], behind HTTP
+ * Basic auth ([user], [password]) and an IP allowlist ([allowedNetworks], CIDR blocks). Off when no port is set.
+ */
+data class AdminWebConfig(
+    val port: Int,
+    val user: String,
+    val password: String,
+    val allowedNetworks: List<IpNetwork>,
+) {
+    override fun toString() = "AdminWebConfig(port=$port, user=$user, password=***, allowedNetworks=$allowedNetworks)"
+}
+
+/** Scheduled sender-ID imports: CSV extracts under [dir] (`<source>/<ISO>.csv`), read daily at [hourUtc]. */
+data class ImportConfig(
+    val dir: String? = null,
+    val hourUtc: Int = 4,
+)
+
 /** Access-token signing. */
 data class JwtConfig(
     val secret: String,
@@ -118,15 +139,20 @@ data class OtpConfig(
     override fun toString() = "OtpConfig(pepper=***, provider=$provider)"
 }
 
-/** Twilio Programmable Messaging; exactly one of [from] and [messagingServiceSid] is set. */
+/**
+ * Twilio Programmable Messaging; exactly one of [from] and [messagingServiceSid] is set. [voiceFrom] (a Twilio
+ * phone number) enables codes by phone call for business claims; without it claims verify by SMS only.
+ */
 data class TwilioConfig(
     val accountSid: String,
     val authToken: String,
     val from: String?,
     val messagingServiceSid: String?,
     val baseUrl: String,
+    val voiceFrom: String? = null,
 ) {
-    override fun toString() = "TwilioConfig(accountSid=$accountSid, authToken=***, from=$from, messagingServiceSid=$messagingServiceSid)"
+    override fun toString() =
+        "TwilioConfig(accountSid=$accountSid, authToken=***, from=$from, messagingServiceSid=$messagingServiceSid, voiceFrom=$voiceFrom)"
 }
 
 /** The configuration is missing values or has invalid ones; [problems] names each environment variable. */
@@ -189,9 +215,18 @@ private class ConfigReader(
                         double("lists.minScore", "LIST_MIN_SCORE"),
                     ),
                 admin = AdminConfig(string("admin.token")?.also { checkSecretLength(it, "ADMIN_TOKEN") }),
+                adminWeb = readAdminWeb(),
+                imports = ImportConfig(string("imports.dir"), int("imports.hourUtc", "IMPORT_HOUR_UTC", 0..LAST_HOUR)),
             )
         if (result.scoring.verifiedCap >= result.lists.minScore) problems += "SCORING_VERIFIED_CAP must be below LIST_MIN_SCORE"
         if (result.http.port == result.http.metricsPort) problems += "PORT and METRICS_PORT must differ"
+        result.adminWeb?.port?.let { port ->
+            if (port == result.http.port ||
+                port == result.http.metricsPort
+            ) {
+                problems += "ADMIN_WEB_PORT must differ from PORT and METRICS_PORT"
+            }
+        }
         if (problems.isNotEmpty()) throw ConfigException(problems.toList())
         return result
     }
@@ -221,6 +256,28 @@ private class ConfigReader(
         )
     }
 
+    // The admin web is off unless ADMIN_WEB_PORT is set; then a user, a long password and an allowlist are required.
+    private fun readAdminWeb(): AdminWebConfig? {
+        if (string("adminWeb.port") == null) return null
+        val port = int("adminWeb.port", "ADMIN_WEB_PORT", 1..MAX_PORT)
+        val user = required("adminWeb.user", "ADMIN_WEB_USER")
+        if (user.isNotEmpty() &&
+            !ADMIN_USER.matches(user)
+        ) {
+            problems += "ADMIN_WEB_USER must be 1 to 32 letters, digits, dots, dashes or underscores"
+        }
+        val password = secret("adminWeb.password", "ADMIN_WEB_PASSWORD")
+        val networks =
+            required("adminWeb.allowedNetworks", "ADMIN_WEB_ALLOWED_NETWORKS")
+                .split(',')
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .mapNotNull { cidr ->
+                    IpNetwork.parse(cidr) ?: null.also { problems += "ADMIN_WEB_ALLOWED_NETWORKS has an invalid CIDR block: $cidr" }
+                }
+        return AdminWebConfig(port, user, password, networks)
+    }
+
     private fun readScoring() =
         ScoringConfig(
             intervalMinutes = int("scoring.intervalMinutes", "SCORING_INTERVAL_MINUTES", 1..MAX_INTERVAL_MINUTES),
@@ -242,6 +299,10 @@ private class ConfigReader(
             from = from,
             messagingServiceSid = service,
             baseUrl = prefixed("twilio.baseUrl", "TWILIO_BASE_URL", "https://", "http://"),
+            voiceFrom =
+                string("twilio.voiceFrom")?.also {
+                    if (!E164_NUMBER.matches(it)) problems += "TWILIO_VOICE_FROM must be an E.164 number such as +12015550100"
+                },
         )
     }
 
@@ -325,6 +386,9 @@ private class ConfigReader(
         const val MIN_PRIOR = 0.01
         const val MAX_PRIOR = 1000.0
         const val MAX_HALF_LIFE_DAYS = 3650.0
+
+        val ADMIN_USER = Regex("[A-Za-z0-9._-]{1,32}")
+        val E164_NUMBER = Regex("\\+[1-9][0-9]{6,14}")
 
         // S3 bucket naming rules: 3–63 lowercase letters, digits, dots and hyphens, starting and ending alphanumeric.
         val BUCKET_NAME = Regex("[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]")

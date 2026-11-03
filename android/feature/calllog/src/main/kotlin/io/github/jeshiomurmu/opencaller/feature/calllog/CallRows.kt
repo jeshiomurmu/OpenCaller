@@ -33,6 +33,8 @@ import io.github.jeshiomurmu.opencaller.core.designsystem.icon.OpenCallerIcons
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacing
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
 import io.github.jeshiomurmu.opencaller.core.model.CallType
+import io.github.jeshiomurmu.opencaller.core.model.NameSource
+import io.github.jeshiomurmu.opencaller.core.ui.SourceChip
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -59,7 +61,7 @@ internal fun CallRow(
     ) {
         Icon(painter = painterResource(typeIcon(row.type)), contentDescription = null, tint = typeTint(row))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            RowTitle(title = title, isContact = row.name != null)
             Text(
                 text = rowDetail(row),
                 style = MaterialTheme.typography.bodyMedium,
@@ -77,6 +79,24 @@ internal fun CallRow(
                 )
             }
         }
+    }
+}
+
+// The title with a Contact chip when it is a name: the call log names contacts only (docs/prd.md F-ID-09).
+@Composable
+private fun RowTitle(
+    title: String,
+    isContact: Boolean,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xs)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false),
+        )
+        if (isContact) SourceChip(source = NameSource.CONTACT)
     }
 }
 

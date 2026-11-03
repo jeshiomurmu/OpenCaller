@@ -1,0 +1,6 @@
+First beta.
+* Phone app: in-call screen, dialer, call log and contacts.
+* SMS app with a smart inbox and one-time-code safety warnings; codes never show on the lock screen.
+* Verified businesses: name, logo and call reason on calls and messages; businesses can claim their number.
+* Every name says where it comes from.
+* Optional profiles with name visibility and incognito.

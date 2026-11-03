@@ -3,6 +3,7 @@ package io.github.jeshiomurmu.opencaller.feature.messages.ui
 import io.github.jeshiomurmu.opencaller.core.model.MessageCategory
 import io.github.jeshiomurmu.opencaller.core.model.MessageMeta
 import io.github.jeshiomurmu.opencaller.core.model.MessageRisk
+import io.github.jeshiomurmu.opencaller.core.model.NameSource
 
 /** The smart inbox's tabs (PRD F-SMS-03) and the categories each shows. Spam is the spam folder. */
 enum class InboxTab(
@@ -43,10 +44,16 @@ data class TabSummary(
     val unread: Int,
 )
 
-/** What the inbox knows about a conversation from OpenCaller's metadata: its category and whether a message is risky. */
+/**
+ * What the inbox knows about a conversation from OpenCaller's metadata: its category, whether a message is risky,
+ * and the sender's name with its source as the newest named message had it (contacts are read again on screen, so
+ * a stored contact name is never used).
+ */
 data class ThreadFacts(
     val category: MessageCategory = MessageCategory.PERSONAL,
     val risky: Boolean = false,
+    val senderName: String? = null,
+    val senderSource: NameSource? = null,
 )
 
 /** The newest code that hasn't expired, for the OTP tab's card. */
@@ -67,9 +74,13 @@ data class OtpCardState(
 internal fun threadFacts(metas: List<MessageMeta>): Map<Long, ThreadFacts> =
     metas.groupBy { it.threadId }.mapValues { (_, rows) ->
         val risks = MessageRisk.LINK_RISKS + MessageRisk.OTP_DURING_CALL
+        val named = rows.filter { it.senderName != null && it.senderSource != null && it.senderSource != NameSource.CONTACT }
+        val newestNamed = named.maxByOrNull { it.atMillis }
         ThreadFacts(
             category = rows.maxBy { it.atMillis }.category,
             risky = rows.any { row -> MessageRisk.fromBits(row.riskFlags).any { it in risks } },
+            senderName = newestNamed?.senderName,
+            senderSource = newestNamed?.senderSource,
         )
     }
 

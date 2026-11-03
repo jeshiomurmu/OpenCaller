@@ -10,6 +10,7 @@ import io.github.jeshiomurmu.opencaller.core.model.Address
 import io.github.jeshiomurmu.opencaller.core.model.NameSource
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import io.github.jeshiomurmu.opencaller.core.model.SenderId
+import io.github.jeshiomurmu.opencaller.core.model.VerifiedBusiness
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.HomeRegionProvider
 import javax.inject.Inject
@@ -24,15 +25,22 @@ interface SenderRegistry {
 
     /** The app an SMS Retriever [hash] belongs to, or `null`. */
     suspend fun appForHash(hash: String): String?
+
+    /** The verified business behind [number] (the directory on the phone), or `null`. */
+    suspend fun verifiedBusiness(number: PhoneNumber): VerifiedBusiness?
 }
 
-/** Who sent a message, as far as the device can tell. [isContact] is true when the name comes from the contacts. */
+/**
+ * Who sent a message, as far as the device can tell. [isContact] is true when the name comes from the contacts;
+ * [verifiedBusinessId] is set for a verified business's number.
+ */
 data class ResolvedSender(
     val address: Address?,
     val name: String? = null,
     val source: NameSource? = null,
     val headerType: HeaderType? = null,
     val registryCategory: String? = null,
+    val verifiedBusinessId: String? = null,
 ) {
     /** The sender is in the user's contacts. */
     val isContact: Boolean get() = source == NameSource.CONTACT
@@ -48,11 +56,12 @@ data class TextHints(
 )
 
 /**
- * Names the sender of an SMS on the device (docs/architecture.md §4.4 step 2), in order: the user's contact, the
- * sender-ID registry (Indian `XX-HEADER-T` headers by their header part), OTP signals (the app an SMS Retriever hash
- * belongs to, the site of an origin-bound code), then template inference (a bank whose message format matched, a
- * "Brand:" prefix). Claimed businesses, self-registered names and community labels arrive with their data (Phase 8
- * and 9). Template inference is never used for phone numbers: a scammer's "Bank:" prefix must not become a name.
+ * Names the sender of an SMS on the device (docs/architecture.md §4.4 step 2), in order: the user's contact, a
+ * verified business's number (the directory on the phone), the sender-ID registry (Indian `XX-HEADER-T` headers by
+ * their header part), OTP signals (the app an SMS Retriever hash belongs to, the site of an origin-bound code), then
+ * template inference (a bank whose message format matched, a "Brand:" prefix). Self-registered names and community
+ * labels need a network lookup, which a message never triggers. Template inference is never used for phone numbers:
+ * a scammer's "Bank:" prefix must not become a name.
  */
 class SenderResolver
     @Inject
@@ -74,8 +83,24 @@ class SenderResolver
             return when {
                 contact != null -> ResolvedSender(address, contact, NameSource.CONTACT, header?.type)
                 address is SenderId -> fromBusiness(address, header, text, hints)
-                else -> fromOtpSignals(address, hints) ?: ResolvedSender(address)
+                else -> fromNumber(address as? PhoneNumber, hints)
             }
+        }
+
+        private suspend fun fromNumber(
+            number: PhoneNumber?,
+            hints: TextHints,
+        ): ResolvedSender {
+            val business = number?.let { registry.verifiedBusiness(it) }
+            return business?.let {
+                ResolvedSender(
+                    address = number,
+                    name = it.name,
+                    source = NameSource.VERIFIED_BUSINESS,
+                    registryCategory = it.category?.wire,
+                    verifiedBusinessId = it.businessId,
+                )
+            } ?: fromOtpSignals(number, hints) ?: ResolvedSender(number)
         }
 
         private suspend fun fromBusiness(

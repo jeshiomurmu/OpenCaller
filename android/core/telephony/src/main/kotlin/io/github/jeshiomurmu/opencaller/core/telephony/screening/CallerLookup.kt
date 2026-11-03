@@ -78,7 +78,7 @@ class CallerLookup(
             lists.spamList.find(number)?.let {
                 describer.verdict(it.score, it.category.ifBlank { null }, it.reportCount, prefs, VerdictSource.SPAM_LIST)
             }
-        val known = KnownCaller(verified = lists.verifiedBusinesses.isVerifiedBusiness(number), cached = lists.reputation.find(number))
+        val known = KnownCaller(business = lists.verifiedBusinesses.find(number), cached = lists.reputation.find(number))
         return describer.enrich(caller, listVerdict, network = null, prefs = prefs, known = known)
     }
 

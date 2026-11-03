@@ -393,7 +393,7 @@ CREATE TABLE list_versions (country_iso CHAR(2), version BIGINT, kind TEXT /* fu
 
 Data retention: raw reports 18 months then aggregated; profile views 90 days; recordings on server ≤ 1 h; deleted accounts purged ≤ 30 days.
 
-Later migrations (V1 stays exactly the SQL above): `V2__jobs_and_lookup_indexes.sql` adds `job_state (name TEXT PRIMARY KEY, watermark TIMESTAMPTZ NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now())` for the scoring job's progress and indexes on `reports (created_at)`, `number_reputation (updated_at)`, `number_reputation (spam_score)`, `unlist_requests (e164)`, `disputes (e164, status)` and `profile_views (viewed_user_id, at)`. `V3__profiles_and_social.sql` (Phase 8) adds `contact_requests.decided_at` with a unique `(requester_id, target_id)` index and one on `(target_id, status)`, indexes on `profile_views (viewed_user_id, kind, at)`, `(viewer_user_id)` and `(at)` for the lists, account deletion and the 90-day retention, and a partial index on `users (deleted_at)` for the purge job (ADR 0004).
+Later migrations (V1 stays exactly the SQL above): `V2__jobs_and_lookup_indexes.sql` adds `job_state (name TEXT PRIMARY KEY, watermark TIMESTAMPTZ NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now())` for the scoring job's progress and indexes on `reports (created_at)`, `number_reputation (updated_at)`, `number_reputation (spam_score)`, `unlist_requests (e164)`, `disputes (e164, status)` and `profile_views (viewed_user_id, at)`. `V3__profiles_and_social.sql` (Phase 8) adds `contact_requests.decided_at` with a unique `(requester_id, target_id)` index and one on `(target_id, status)`, indexes on `profile_views (viewed_user_id, kind, at)`, `(viewer_user_id)` and `(at)` for the lists, account deletion and the 90-day retention, and a partial index on `users (deleted_at)` for the purge job (ADR 0004). `V4__business_and_registries.sql` (Phase 9, ADR 0005) adds `businesses.hours` and `updated_at`, `business_numbers.updated_at` (the directory's `?since=`); `business_claims` (claimant, number, business details, method `sms|voice`, status `verifying|verified|submitted|approved|rejected|withdrawn`, review note; one open claim per number by a partial unique index) and `business_claim_documents` (MinIO keys; files deleted 90 days after the decision); `admin_audit` (every admin web action: admin, IP, action, target, result); `otp_app_hashes` and `verification_ranges` (curated in the admin web, replacing the seed files as the source) and `sender_ids.deleted_at` (tombstones, so `?since=` also removes rows on phones); `import_runs` (each importer run: source, country, status `ok|failed|unavailable`, counts).
 
 `number_reputation` doubles as the lookup index: every signed-up user and business number gets a row (no reports yet) so bucket lookups can find names; the scoring job adds any that are missing.
 
@@ -409,8 +409,8 @@ Later migrations (V1 stays exactly the SQL above): `V2__jobs_and_lookup_indexes.
 | `GET /v1/lookup/buckets/{cc}/{bucketId}` | optional | k-anonymous bucket (§4.6); `ETag` support |
 | `GET /v1/numbers/{e164}` | access | Explicit search; quota; records "searched" unless incognito |
 | `POST /v1/reports` | access | Batch of reports |
-| `GET /v1/sender-ids/{countryIso}?since=` | none | Sender-ID registry delta |
-| `GET /v1/otp-sources?since=` | none | App-hash table + verification-provider ranges |
+| `GET /v1/sender-ids/{countryIso}?since=` | none | Sender-ID registry delta (removed rows flagged `deleted`) |
+| `GET /v1/otp-sources?since=` | none | App-hash table + verification-provider ranges (removed rows flagged `deleted`) |
 | `GET /v1/link-prefixes` | none | Known-bad link hosts as SHA-256 hash prefixes (4 bytes; whole list), for `LinkChecker` |
 | `GET/PUT /v1/me` | access | Profile, visibility, incognito; counts of viewers, searchers and pending contact requests |
 | `POST /v1/me/avatar` | access | Pre-signed MinIO PUT for a profile picture (JPEG ≤ 1 MB); `PUT /v1/me` then sets its key |
@@ -418,7 +418,10 @@ Later migrations (V1 stays exactly the SQL above): `V2__jobs_and_lookup_indexes.
 | `GET /v1/me/viewers`, `GET /v1/me/searchers` | access + supporter | F-SO-02/03 (last 90 days; ADR 0004) |
 | `GET /v1/profiles/{e164}` | access | Another number's profile as its visibility allows; records a view unless incognito |
 | `POST /v1/contact-requests`, `GET /v1/contact-requests`, `POST /v1/contact-requests/{id}/{approve|deny}` | access | F-SO-05 (a request always answers "sent") |
-| `POST /v1/business/claims`, `GET /v1/business/{id}` | access / none | F-BZ-01/02 |
+| `POST /v1/business/claims`, `GET /v1/business/claims`, `POST /v1/business/claims/{id}/{code|resend|uploads|submit}`, `DELETE /v1/business/claims/{id}` | access | F-BZ-01: a code to the claimed number (SMS or voice) proves control; documents and logo go to pre-signed MinIO URLs (types and sizes checked on submit); review in the admin web |
+| `GET /v1/business/{id}`, `GET /v1/business/{id}/logo` | none | F-BZ-02 public profile of a verified business |
+| `GET /v1/businesses/{countryIso}?since=` | none | Verified business numbers of a country (removed ones flagged) for the directory on the phone |
+| Admin web (own port, IP allowlist + basic auth, CSRF, audit log) | admin | Claims review, revoke, OTP-source curation, sender-ID CSV import (ADR 0005) |
 | `POST /v1/disputes`, `POST /v1/unlist/start`, `POST /v1/unlist/verify` | access / none | F-PR-16/17 |
 | `GET /unlist`, `POST /unlist`, `POST /unlist/verify` | none | Unlist web form (server-rendered HTML, no app needed) |
 | `POST /v1/billing/verify` | access | Play purchase token verification |

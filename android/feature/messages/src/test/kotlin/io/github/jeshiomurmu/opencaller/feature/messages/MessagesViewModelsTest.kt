@@ -19,6 +19,7 @@ import io.github.jeshiomurmu.opencaller.core.model.MessageRisk
 import io.github.jeshiomurmu.opencaller.core.model.MessagingSim
 import io.github.jeshiomurmu.opencaller.core.model.MessagingSims
 import io.github.jeshiomurmu.opencaller.core.model.MmsDownload
+import io.github.jeshiomurmu.opencaller.core.model.NameSource
 import io.github.jeshiomurmu.opencaller.core.model.OtpInfo
 import io.github.jeshiomurmu.opencaller.core.model.PhoneLabel
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
@@ -101,6 +102,13 @@ class MessagesViewModelsTest {
         otp = otp,
         riskFlags = MessageRisk.toBits(risks),
     )
+
+    private fun named(
+        thread: Long,
+        name: String,
+        source: NameSource,
+        at: Long,
+    ) = MessageMeta(at + thread * 100, thread, MessageCategory.PERSONAL, name, source, atMillis = at)
 
     @Test
     fun tcSms004ConversationsAreSortedIntoTabsAndSpamIntoTheSpamFolder() =
@@ -281,6 +289,45 @@ class MessagesViewModelsTest {
         }
 
     @Test
+    fun aSendersNameShowsWithItsSourceUnlessTheyAreAContact() =
+        runTest {
+            val vm = conversationsVm()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+            metadata.metas.value =
+                listOf(
+                    named(thread = 1, name = "Example Bank", source = NameSource.VERIFIED_BUSINESS, at = 10),
+                    // A name stored while the sender was a contact is never reused: contacts are read again.
+                    named(thread = 2, name = "Old contact name", source = NameSource.CONTACT, at = 10),
+                    named(thread = 3, name = "Example Bank", source = NameSource.VERIFIED_BUSINESS, at = 10),
+                )
+            conversations.list.value =
+                listOf(
+                    Conversation(1, listOf(ram), "Card used", 3_000),
+                    Conversation(2, listOf(person("+12015550133")), "Hi", 2_000),
+                    Conversation(3, listOf(ana), "Hello", 1_000),
+                )
+
+            val rows = vm.uiState.value.rows
+            assertEquals(listOf("Example Bank", "(201) 555-0133", "Ana Silva"), rows.map { it.title })
+            assertEquals(listOf(NameSource.VERIFIED_BUSINESS, null, NameSource.CONTACT), rows.map { it.nameSource })
+        }
+
+    @Test
+    fun theThreadHeaderShowsTheSendersNameSourceAndNumber() =
+        runTest {
+            conversations.people[7] = listOf(ram)
+            conversations.threads.value = mapOf(7L to sixMessages())
+            metadata.metas.value = listOf(named(thread = 7, name = "Example Bank", source = NameSource.VERIFIED_BUSINESS, at = 1))
+            val vm = thread()
+            vm.onEvent(ThreadEvent.Open(7))
+
+            val state = vm.uiState.value
+            assertEquals("Example Bank", state.title)
+            assertEquals(NameSource.VERIFIED_BUSINESS, state.nameSource)
+            assertEquals("(201) 555-0122", state.address)
+        }
+
+    @Test
     fun tcSms001TheThreadShowsMessagesWithTheirStates() =
         runTest {
             conversations.people[7] = listOf(ana)
@@ -290,6 +337,8 @@ class MessagesViewModelsTest {
 
             val state = vm.uiState.value
             assertEquals("Ana Silva", state.title)
+            assertEquals(NameSource.CONTACT, state.nameSource)
+            assertNull("a contact's number isn't repeated", state.address)
             assertEquals(
                 listOf(
                     MessageStatus.NONE,

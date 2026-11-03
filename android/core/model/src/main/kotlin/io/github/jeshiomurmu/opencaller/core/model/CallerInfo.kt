@@ -8,7 +8,8 @@ package io.github.jeshiomurmu.opencaller.core.model
  * @property nameSource where [displayName] came from; `null` when there is no name.
  * @property spamVerdict spam assessment, or `null` if not checked.
  * @property verifiedBusinessId id of the verified business, or `null` if the caller is not a verified business.
- * @property logoUrl business logo URL, if any.
+ * @property logoPath the verified business's logo as a file on this phone (fetched with the directory, never during
+ *   a call), if any.
  * @property callReason business-provided reason for the call, if any.
  * @property lineType kind of line, if known.
  * @property regionCode ISO 3166-1 alpha-2 region of the number, if known.
@@ -21,7 +22,7 @@ data class CallerInfo(
     val nameSource: NameSource? = null,
     val spamVerdict: SpamVerdict? = null,
     val verifiedBusinessId: String? = null,
-    val logoUrl: String? = null,
+    val logoPath: String? = null,
     val callReason: String? = null,
     val lineType: LineType? = null,
     val regionCode: String? = null,

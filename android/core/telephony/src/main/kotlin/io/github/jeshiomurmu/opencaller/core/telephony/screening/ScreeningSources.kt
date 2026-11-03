@@ -8,6 +8,7 @@ import io.github.jeshiomurmu.opencaller.core.model.NameSource
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import io.github.jeshiomurmu.opencaller.core.model.SupporterBadge
 import io.github.jeshiomurmu.opencaller.core.model.UserPreferences
+import io.github.jeshiomurmu.opencaller.core.model.VerifiedBusiness
 
 /** The user's contacts, read on the device only. */
 interface ContactLookup {
@@ -66,10 +67,10 @@ object NoNetworkLookup : NetworkLookup {
     override suspend fun lookup(number: PhoneNumber): NetworkVerdict? = null
 }
 
-/** Whether a number belongs to a verified business (Phase 9 fills this; until then nothing is verified). */
+/** The verified business behind a number, from the directory kept on the phone (never the network). */
 fun interface VerifiedBusinessLookup {
-    /** True when [number] is a verified business. */
-    suspend fun isVerifiedBusiness(number: PhoneNumber): Boolean
+    /** The verified business behind [number], or `null`. */
+    suspend fun find(number: PhoneNumber): VerifiedBusiness?
 }
 
 /** The user's country, for national numbers and "foreign" checks. */

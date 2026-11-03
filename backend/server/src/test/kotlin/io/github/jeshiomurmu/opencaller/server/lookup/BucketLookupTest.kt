@@ -173,7 +173,7 @@ class BucketLookupTest {
     @Test
     fun verifiedBusinessesAppearWithTheirName() =
         apiTest {
-            insertBusiness("+8801712345678", "Example Bank")
+            val bankId = insertBusiness("+8801712345678", "Example Bank")
             insertBusiness("+8801812345678", "Pending Bank", ReviewStatus.PENDING)
             it.deps.scoringJob.run()
             val business =
@@ -183,7 +183,10 @@ class BucketLookupTest {
                     .entries
                     .single()
                     .info.business
-            assertEquals(BusinessInfo("Example Bank", "bank", verified = true, callReason = "Account security"), business)
+            assertEquals(
+                BusinessInfo("Example Bank", "bank", verified = true, callReason = "Account security", businessId = bankId.toString()),
+                business,
+            )
             assertTrue(
                 client
                     .getWith("/v1/lookup/buckets/880/50696")

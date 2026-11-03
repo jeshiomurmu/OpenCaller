@@ -37,6 +37,8 @@ import io.github.jeshiomurmu.opencaller.core.ui.WarningBanner
 import io.github.jeshiomurmu.opencaller.feature.blocking.BlockedLogRoute
 import io.github.jeshiomurmu.opencaller.feature.blocking.BlockingRoute
 import io.github.jeshiomurmu.opencaller.feature.blocking.RulesRoute
+import io.github.jeshiomurmu.opencaller.feature.business.BusinessProfileRoute
+import io.github.jeshiomurmu.opencaller.feature.business.ClaimRoute
 import io.github.jeshiomurmu.opencaller.feature.calllog.CallLogNavigation
 import io.github.jeshiomurmu.opencaller.feature.contacts.ContactDetailNavigation
 import io.github.jeshiomurmu.opencaller.feature.contacts.ContactDetailRoute
@@ -54,6 +56,7 @@ import io.github.jeshiomurmu.opencaller.feature.settings.QuickRepliesRoute
 import io.github.jeshiomurmu.opencaller.navigation.AccountSignInRoute
 import io.github.jeshiomurmu.opencaller.navigation.BlockedCallsRoute
 import io.github.jeshiomurmu.opencaller.navigation.BlockingRulesRoute
+import io.github.jeshiomurmu.opencaller.navigation.BusinessClaimRoute
 import io.github.jeshiomurmu.opencaller.navigation.CallsRoute
 import io.github.jeshiomurmu.opencaller.navigation.ComposeMessageRoute
 import io.github.jeshiomurmu.opencaller.navigation.ContactEditorRoute
@@ -74,6 +77,7 @@ import io.github.jeshiomurmu.opencaller.navigation.QuickRepliesSettingsRoute
 import io.github.jeshiomurmu.opencaller.navigation.ScreeningDebugRoute
 import io.github.jeshiomurmu.opencaller.navigation.SpamDisputeRoute
 import io.github.jeshiomurmu.opencaller.navigation.TopLevelDestination
+import io.github.jeshiomurmu.opencaller.navigation.VerifiedBusinessRoute
 
 /**
  * App shell: the degraded-mode banner when call screening is off, the bottom bar with the five tabs and a
@@ -172,6 +176,7 @@ private fun AppNavHost(
                         onSearch = { navController.navigate(NumberSearchRoute) { launchSingleTop = true } },
                         onDispute = { navController.navigate(SpamDisputeRoute()) { launchSingleTop = true } },
                         onProfile = { navController.navigate(OwnProfileRoute) { launchSingleTop = true } },
+                        onClaimBusiness = { navController.navigate(BusinessClaimRoute) { launchSingleTop = true } },
                     )
                 },
             )
@@ -217,8 +222,13 @@ private fun NavGraphBuilder.onlineRoutes(navController: NavHostController) {
                     onSignIn = signIn,
                     onDispute = { navController.navigate(SpamDisputeRoute(number = it)) { launchSingleTop = true } },
                     onOpenProfile = { navController.navigate(NumberProfileRoute(it)) { launchSingleTop = true } },
+                    onOpenBusiness = { navController.navigate(VerifiedBusinessRoute(it)) { launchSingleTop = true } },
                 ),
         )
+    }
+    composable<BusinessClaimRoute> { ClaimRoute(onSignIn = signIn) }
+    composable<VerifiedBusinessRoute> { entry ->
+        BusinessProfileRoute(businessId = entry.toRoute<VerifiedBusinessRoute>().businessId)
     }
     composable<SpamDisputeRoute> { entry ->
         DisputeRoute(
@@ -257,8 +267,9 @@ internal fun PlaceholderScreen(
     EmptyState(icon = destination.icon, message = stringResource(destination.placeholder), modifier = modifier)
 }
 
-// Permissions & roles, the debug screen, sign-in, disputes, quick replies and my profile live under the Me tab; the rules and the
-// blocked log under Protection; search (with a result's profile) and the dial pad under Calls; a contact and its editor under Contacts.
+// Permissions & roles, the debug screen, sign-in, disputes, quick replies, my profile and business claims live under the Me tab; the
+// rules and the blocked log under Protection; search (with a result's profile or business) and the dial pad under Calls; a contact and
+// its editor under Contacts.
 private fun NavDestination?.isOn(destination: TopLevelDestination): Boolean =
     this?.hierarchy?.any { node ->
         node.hasRoute(destination.route::class) || CHILDREN[destination].orEmpty().any { node.hasRoute(it) }
@@ -266,7 +277,8 @@ private fun NavDestination?.isOn(destination: TopLevelDestination): Boolean =
 
 private val CHILDREN =
     mapOf(
-        TopLevelDestination.CALLS to listOf(NumberSearchRoute::class, DialerRoute::class, NumberProfileRoute::class),
+        TopLevelDestination.CALLS to
+            listOf(NumberSearchRoute::class, DialerRoute::class, NumberProfileRoute::class, VerifiedBusinessRoute::class),
         TopLevelDestination.MESSAGES to listOf(ConversationRoute::class, ComposeMessageRoute::class),
         TopLevelDestination.CONTACTS to listOf(ContactRoute::class, ContactEditorRoute::class),
         TopLevelDestination.ME to
@@ -279,6 +291,7 @@ private val CHILDREN =
                 OwnProfileRoute::class,
                 ProfileVisitorsRoute::class,
                 ContactRequestsInboxRoute::class,
+                BusinessClaimRoute::class,
             ),
         TopLevelDestination.PROTECTION to listOf(BlockingRulesRoute::class, BlockedCallsRoute::class),
     )

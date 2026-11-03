@@ -24,8 +24,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.jeshiomurmu.opencaller.core.designsystem.preview.OpenCallerPreviews
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacing
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
+import io.github.jeshiomurmu.opencaller.core.model.NameSource
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import io.github.jeshiomurmu.opencaller.core.model.PublicProfile
+import io.github.jeshiomurmu.opencaller.core.ui.SourceChip
 import io.github.jeshiomurmu.opencaller.core.ui.SupporterBadgeLabel
 
 /** Another number's profile, wired to its view model; [e164] comes from search. */
@@ -73,6 +75,8 @@ fun PublicProfileScreen(
                     modifier = Modifier.semantics { heading() },
                 )
                 Text(text = profile.number.e164, style = MaterialTheme.typography.bodyLarge)
+                // Names on profiles are the owners' own (docs/prd.md F-ID-09).
+                if (profile.name != null) SourceChip(source = NameSource.SELF_REGISTERED)
                 profile.badge?.let { SupporterBadgeLabel(it) }
                 if (profile.name == null) AskForName(state, onAskForName)
             }

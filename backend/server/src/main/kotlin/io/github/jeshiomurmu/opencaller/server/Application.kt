@@ -2,8 +2,10 @@ package io.github.jeshiomurmu.opencaller.server
 
 import com.auth0.jwt.interfaces.JWTVerifier
 import io.github.jeshiomurmu.opencaller.server.admin.adminModule
+import io.github.jeshiomurmu.opencaller.server.admin.web.adminWebModule
 import io.github.jeshiomurmu.opencaller.server.auth.TokenService
 import io.github.jeshiomurmu.opencaller.server.auth.authRoutes
+import io.github.jeshiomurmu.opencaller.server.business.businessRoutes
 import io.github.jeshiomurmu.opencaller.server.config.ConfigException
 import io.github.jeshiomurmu.opencaller.server.config.loadConfig
 import io.github.jeshiomurmu.opencaller.server.disputes.disputeRoutes
@@ -57,11 +59,16 @@ fun main() {
             exitProcess(1)
         }
     val deps = ServerDependencies.create(config, Dispatchers.IO)
-    runBlocking { deps.sync.seedSenderIds() }
+    runBlocking { deps.sync.seed() }
     val metrics =
         embeddedServer(Netty, port = config.http.metricsPort, host = "0.0.0.0") {
             metricsModule(deps.meterRegistry)
             config.admin.token?.let { adminModule(it, deps.jobRunner, deps.jobs) }
+        }
+    // The admin web listens on its own port only when configured (never published by compose; docs/rules.md §7).
+    val adminWeb =
+        config.adminWeb?.let { web ->
+            embeddedServer(Netty, port = web.port, host = "0.0.0.0") { adminWebModule(web, deps.adminWeb) }
         }
     val jobScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val api =
@@ -74,18 +81,21 @@ fun main() {
         Thread {
             jobScope.cancel()
             api.stop()
+            adminWeb?.stop()
             metrics.stop()
             deps.close()
         },
     )
     log.info(
-        "OpenCaller server {} ({}) on port {}, metrics on {}",
+        "OpenCaller server {} ({}) on port {}, metrics on {}, admin web on {}",
         config.version,
         config.environment,
         config.http.port,
         config.http.metricsPort,
+        config.adminWeb?.port ?: "off",
     )
     metrics.start(wait = false)
+    adminWeb?.start(wait = false)
     api.start(wait = true)
 }
 
@@ -109,6 +119,7 @@ fun Application.module(deps: ServerDependencies) {
         unlistRoutes(deps.unlist)
         syncRoutes(deps.sync)
         profileRoutes(deps.profiles, deps.visitors, deps.contactRequests)
+        businessRoutes(deps.claims, deps.businessDirectory)
     }
 }
 

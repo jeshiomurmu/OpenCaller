@@ -30,6 +30,7 @@ import io.github.jeshiomurmu.opencaller.feature.messages.receive.IncomingSmsRead
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -159,19 +160,15 @@ class MessagingDeviceTest {
 
             val posted = manager.activeNotifications.single { it.tag == MessageNotifier.TAG_THREAD && it.id == 9 }.notification
             assertEquals(OtpNotifications.CHANNEL_OTP, posted.channelId)
-            assertEquals(Notification.VISIBILITY_PRIVATE, posted.visibility)
+            // Secret: nothing of it on a secure lock screen, whatever the user's sensitive-content setting.
+            assertEquals(Notification.VISIBILITY_SECRET, posted.visibility)
+            assertNull(posted.publicVersion)
             assertTrue(
                 posted.extras
                     .getCharSequence(Notification.EXTRA_TEXT)
                     .toString()
                     .startsWith("482913"),
             )
-            val public = checkNotNull(posted.publicVersion)
-            val shown =
-                listOf(Notification.EXTRA_TITLE, Notification.EXTRA_TEXT, Notification.EXTRA_BIG_TEXT).map {
-                    public.extras.getCharSequence(it).toString()
-                }
-            assertTrue("the public version never shows the code", shown.none { "482913" in it })
             assertEquals(listOf("Copy code"), posted.actions.map { it.title.toString() })
         }
 

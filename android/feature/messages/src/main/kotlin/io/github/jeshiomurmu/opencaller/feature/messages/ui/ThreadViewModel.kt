@@ -15,6 +15,7 @@ import io.github.jeshiomurmu.opencaller.core.model.MessageMeta
 import io.github.jeshiomurmu.opencaller.core.model.MessageRisk
 import io.github.jeshiomurmu.opencaller.core.model.MessagingSim
 import io.github.jeshiomurmu.opencaller.core.model.MmsDownload
+import io.github.jeshiomurmu.opencaller.core.model.NameSource
 import io.github.jeshiomurmu.opencaller.core.model.Participant
 import io.github.jeshiomurmu.opencaller.core.model.ScheduledMessage
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.ConversationSource
@@ -68,11 +69,17 @@ data class ThreadItem(
     val risky: Boolean = false,
 )
 
-/** The thread screen. [simId] is the SIM the next message goes out with (`null`: the default). */
+/**
+ * The thread screen. [simId] is the SIM the next message goes out with (`null`: the default). [title] comes with its
+ * [nameSource] when it is a name (docs/prd.md F-ID-09); [address] is the number or sender ID shown under a name that
+ * isn't a contact's.
+ */
 data class ThreadUiState(
     val loading: Boolean = true,
     val canRead: Boolean = true,
     val title: String = "",
+    val nameSource: NameSource? = null,
+    val address: String? = null,
     val isGroup: Boolean = false,
     val messages: List<ThreadItem> = emptyList(),
     val draft: String = "",
@@ -181,6 +188,14 @@ private data class Header(
     val title: String,
     val recipients: List<String>,
     val isGroup: Boolean,
+    val isContact: Boolean = false,
+    val address: String? = null,
+)
+
+/** The name the message pipeline found for a one-to-one thread's sender, if any. */
+private data class SenderName(
+    val name: String,
+    val source: NameSource,
 )
 
 /**
@@ -207,11 +222,15 @@ class ThreadViewModel
         /** Screen state. */
         val uiState: StateFlow<ThreadUiState> =
             combine(threadId.filterNotNull().flatMapLatest(::messages), header, composer, sending.pending()) { loaded, head, local, later ->
+                // loaded carries the pipeline's sender name in title and nameSource (see messages()).
+                val sender = loaded.nameSource?.let { SenderName(loaded.title, it) }?.takeIf { !head.isGroup && !head.isContact }
                 local.copy(
                     loading = loaded.loading,
                     canRead = loaded.canRead,
                     messages = loaded.messages,
-                    title = head.title,
+                    title = sender?.name ?: head.title,
+                    nameSource = if (head.isContact) NameSource.CONTACT else sender?.source,
+                    address = head.address.takeIf { sender != null },
                     isGroup = head.isGroup,
                     failed = loaded.failed || local.failed,
                     scheduled = later.filter { head.recipients == listOf(it.to) },
@@ -300,7 +319,15 @@ class ThreadViewModel
                         .getOrNull()
                         .orEmpty()
                         .ifEmpty { event.recipients.map(names::participant) }
-                header.value = Header(people.map { names.title(it) }.joinToString(", "), people.map(Participant::address), people.size > 1)
+                val single = people.singleOrNull()
+                header.value =
+                    Header(
+                        title = people.map { names.title(it) }.joinToString(", "),
+                        recipients = people.map(Participant::address),
+                        isGroup = people.size > 1,
+                        isContact = single?.let { names.contactName(it) } != null,
+                        address = single?.let(names::address),
+                    )
             }
         }
 
@@ -311,8 +338,11 @@ class ThreadViewModel
                 when (result) {
                     is AppResult.Success -> {
                         val risky = riskyMessages(metas, id)
+                        val facts = threadFacts(metas.filter { it.threadId == id })[id]
                         ThreadUiState(
                             loading = false,
+                            title = facts?.senderName.orEmpty(),
+                            nameSource = facts?.senderSource?.takeIf { facts.senderName != null },
                             messages =
                                 result.value.map {
                                     it.toItem(

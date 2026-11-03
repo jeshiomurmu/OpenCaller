@@ -44,6 +44,13 @@ class RegistrySyncTest {
     private val registry = SenderRegistryRepository(DatabaseAccess { db }, RealDispatchers, prefixes)
     private val requested = java.util.Collections.synchronizedList(mutableListOf<String>())
     private var linkBody = """{"syncedAt":3,"prefixes":["0000000a","ffffffff","59fc7fae"]}"""
+    private var senderBody =
+        """{"countryIso":"IN","syncedAt":1700,"senderIds":[{"header":"HDFCBK","brandName":"HDFC Bank",""" +
+            """"category":"bank","source":"dlt","updatedAt":1700}]}"""
+    private var otpBody =
+        """{"syncedAt":900,"appHashes":[{"hash":"FA+9qCX9VSu","packageName":"org.example.pay",""" +
+            """"appName":"Example Pay","updatedAt":900}],"verificationRanges":[{"prefix":"+1555010",""" +
+            """"provider":"Example Flash","updatedAt":900}]}"""
 
     init {
         server.dispatcher =
@@ -52,20 +59,11 @@ class RegistrySyncTest {
                     requested += request.url.encodedPath + (request.url.encodedQuery?.let { "?$it" } ?: "")
                     return when (request.url.encodedPath) {
                         "/v1/sender-ids/IN" -> {
-                            jsonResponse(
-                                200,
-                                """{"countryIso":"IN","syncedAt":1700,"senderIds":[{"header":"HDFCBK","brandName":"HDFC Bank",""" +
-                                    """"category":"bank","source":"dlt","updatedAt":1700}]}""",
-                            )
+                            jsonResponse(200, senderBody)
                         }
 
                         "/v1/otp-sources" -> {
-                            jsonResponse(
-                                200,
-                                """{"syncedAt":900,"appHashes":[{"hash":"FA+9qCX9VSu","packageName":"org.example.pay",""" +
-                                    """"appName":"Example Pay","updatedAt":900}],"verificationRanges":[{"prefix":"+1555010",""" +
-                                    """"provider":"Example Flash","updatedAt":900}]}""",
-                            )
+                            jsonResponse(200, otpBody)
                         }
 
                         "/v1/link-prefixes" -> {
@@ -118,6 +116,25 @@ class RegistrySyncTest {
             assertTrue(registry.isBadHostPrefix(1))
             // The list survives a restart (a new store reading the same file).
             assertTrue(LinkPrefixStore(prefixFile, RealDispatchers).contains(1))
+        }
+
+    @Test
+    fun rowsTheServerRemovedAreRemovedOnThePhone() =
+        runBlocking {
+            repository.sync()
+            senderBody =
+                """{"countryIso":"IN","syncedAt":1800,"senderIds":[{"header":"HDFCBK","brandName":"HDFC Bank",""" +
+                """"category":"bank","source":"dlt","updatedAt":1800,"deleted":true}]}"""
+            otpBody =
+                """{"syncedAt":950,"appHashes":[{"hash":"FA+9qCX9VSu","packageName":"org.example.pay",""" +
+                """"appName":"Example Pay","updatedAt":950,"deleted":true}],"verificationRanges":[{"prefix":"+1555010",""" +
+                """"provider":"Example Flash","updatedAt":950,"deleted":true}]}"""
+            repository.sync()
+
+            assertNull(registry.sender("IN", "HDFCBK").getOrThrow())
+            assertNull(registry.appForHash("FA+9qCX9VSu").getOrThrow())
+            assertNull(registry.verificationProvider(PhoneNumber("+15550100")).getOrThrow())
+            assertEquals(1800L, stateStore.state.first().senderSince)
         }
 
     @Test

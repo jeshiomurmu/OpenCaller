@@ -9,7 +9,8 @@ info:
     Every response carries `X-Request-Id`; send your own (1–64 letters, digits, `-` or `_`) to correlate logs.
     Prometheus metrics (`GET /metrics`) and the admin endpoints (`POST /admin/jobs/{scoring|lists}` with
     `Authorization: Bearer <ADMIN_TOKEN>`; 409 `job_running` while a run holds the job's lock) are served on a
-    separate internal port and are not part of this API.
+    separate internal port and are not part of this API; neither is the admin web (business-claim review, OTP-source
+    curation, sender-ID imports), which runs on its own port behind basic auth and an IP allowlist.
 
     Privacy (docs/architecture.md §10): no endpoint accepts contacts, call logs or SMS bodies. Live caller ID uses
     k-anonymous buckets, so only explicit search sends a full number.
@@ -38,6 +39,8 @@ tags:
     description: Registries apps sync incrementally
   - name: profile
     description: Own profile, visitors and contact requests (docs/prd.md §6.4, docs/decisions/0004-viewer-searcher-logging.md)
+  - name: business
+    description: Business claims and verified businesses (docs/prd.md §6.6)
 
 paths:
   /health:
@@ -456,7 +459,8 @@ paths:
       summary: SMS sender-ID registry of a country
       description: |
         Rows updated after `since` (epoch milliseconds), oldest first, at most 5,000; pass the returned `syncedAt`
-        as `since` next time. Seeded from `backend/server/seed/sender_ids.csv` (example rows only until Phase 9).
+        as `since` next time. Removed rows come once more with `deleted: true`. Filled by the sender-ID importers
+        (CSV extracts); `backend/server/seed/sender_ids.csv` adds example rows on first start.
       operationId: getSenderIds
       parameters:
         - { $ref: "#/components/parameters/CountryIso" }
@@ -477,8 +481,8 @@ paths:
       tags: [sync]
       summary: OTP sources (SMS Retriever app hashes and flash-call ranges)
       description: |
-        Entries updated after `since` (epoch milliseconds). Seeded from `backend/server/seed/` (example rows only
-        until Phase 9).
+        Entries updated after `since` (epoch milliseconds), removed ones with `deleted: true`. Curated in the admin
+        web; `backend/server/seed/` adds example rows on first start.
       operationId: getOtpSources
       parameters:
         - { $ref: "#/components/parameters/Since" }
@@ -719,6 +723,240 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/ContactRequestNotFound" }
 
+  /v1/business/claims:
+    post:
+      tags: [business]
+      summary: Claim a business number
+      description: |
+        Starts a claim: a 6-digit code goes to the claimed number by SMS (`method: sms`) or is read aloud in a phone
+        call (`method: voice`, for landlines; 400 if the server has no voice sender). Prove control with
+        `POST …/code`, then upload documents and submit. One claim in progress per number. Limits: 5 claims a day
+        per user, 3 codes an hour per number. The number and the business's name are published once approved.
+      operationId: startClaim
+      security: [{ accessToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StartClaimRequest" }
+      responses:
+        "201":
+          description: Claim started (`status` verifying); `codeExpiresInSeconds` is set.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClaimResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/ClaimConflict" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503":
+          description: "`otp_delivery_failed`: the code could not be sent; nothing was stored."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+    get:
+      tags: [business]
+      summary: My business claims
+      description: The signed-in user's claims, newest first (at most 50). A rejected claim carries the reviewer's note.
+      operationId: getClaims
+      security: [{ accessToken: [] }]
+      responses:
+        "200":
+          description: The claims.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClaimsResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/business/claims/{id}:
+    delete:
+      tags: [business]
+      summary: Withdraw a claim
+      description: Withdraws a claim in progress; its uploaded files are deleted at once.
+      operationId: withdrawClaim
+      security: [{ accessToken: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/ClaimId" }
+      responses:
+        "204": { description: Withdrawn. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/ClaimNotFound" }
+        "409": { $ref: "#/components/responses/ClaimConflict" }
+
+  /v1/business/claims/{id}/code:
+    post:
+      tags: [business]
+      summary: Prove control of the claimed number
+      description: The code sent to the number; 5 wrong tries invalidate it. The right code moves the claim to `verified`.
+      operationId: verifyClaimCode
+      security: [{ accessToken: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/ClaimId" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClaimCodeRequest" }
+      responses:
+        "200":
+          description: The claim, now `verified`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClaimResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/ClaimNotFound" }
+        "409": { $ref: "#/components/responses/ClaimConflict" }
+
+  /v1/business/claims/{id}/resend:
+    post:
+      tags: [business]
+      summary: Send a new code
+      description: Replaces the pending code, by SMS or phone call (counts against the 3 codes an hour per number).
+      operationId: resendClaimCode
+      security: [{ accessToken: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/ClaimId" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ResendCodeRequest" }
+      responses:
+        "200":
+          description: The claim; `codeExpiresInSeconds` is set.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClaimResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/ClaimNotFound" }
+        "409": { $ref: "#/components/responses/ClaimConflict" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503":
+          description: "`otp_delivery_failed`."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+
+  /v1/business/claims/{id}/uploads:
+    post:
+      tags: [business]
+      summary: Upload URL for a claim document or logo
+      description: |
+        Only once the number is proven (403 `number_not_verified` before; TC-BIZ-001). A presigned `PUT` URL valid
+        10 minutes: upload the file with the given `Content-Type` (signed; no access token). Documents: PDF, JPEG or
+        PNG up to 10 MB, at most 5 per claim; logo: PNG or JPEG up to 200 KB. A claim gets at most 20 upload URLs.
+      operationId: claimUpload
+      security: [{ accessToken: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/ClaimId" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClaimUploadRequest" }
+      responses:
+        "200":
+          description: Where and how to upload.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClaimUploadResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/NumberNotVerified" }
+        "404": { $ref: "#/components/responses/ClaimNotFound" }
+        "409": { $ref: "#/components/responses/ClaimConflict" }
+
+  /v1/business/claims/{id}/submit:
+    post:
+      tags: [business]
+      summary: Submit a claim for review
+      description: |
+        Only once the number is proven (403 `number_not_verified` before; TC-BIZ-001). Each named upload is checked
+        (it exists, was issued for this claim, has the signed type and fits the size limit). The claim moves to
+        `submitted` and waits for a reviewer.
+      operationId: submitClaim
+      security: [{ accessToken: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/ClaimId" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SubmitClaimRequest" }
+      responses:
+        "200":
+          description: The claim, now `submitted`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClaimResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/NumberNotVerified" }
+        "404": { $ref: "#/components/responses/ClaimNotFound" }
+        "409": { $ref: "#/components/responses/ClaimConflict" }
+
+  /v1/business/{id}:
+    get:
+      tags: [business]
+      summary: A verified business's profile
+      description: Name, category, website, hours, logo and numbers with their call reasons. 404 for anything not verified.
+      operationId: getBusiness
+      parameters:
+        - { $ref: "#/components/parameters/BusinessId" }
+      responses:
+        "200":
+          description: "The profile (`Cache-Control: public, max-age=3600`)."
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BusinessProfileResponse" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "404": { $ref: "#/components/responses/BusinessNotFound" }
+
+  /v1/business/{id}/logo:
+    get:
+      tags: [business]
+      summary: A verified business's logo
+      operationId: getBusinessLogo
+      parameters:
+        - { $ref: "#/components/parameters/BusinessId" }
+      responses:
+        "200":
+          description: "The logo (`Cache-Control: public, max-age=86400`)."
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            image/png: { schema: { type: string, format: binary } }
+            image/jpeg: { schema: { type: string, format: binary } }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "404": { $ref: "#/components/responses/BusinessNotFound" }
+
+  /v1/businesses/{countryIso}:
+    get:
+      tags: [business]
+      summary: Directory of verified business numbers of a country
+      description: |
+        Business numbers changed after `since` (epoch milliseconds), oldest first, at most 5,000; pass the returned
+        `syncedAt` as `since` next time. A number whose business was revoked comes once more with `removed: true`.
+        Apps keep the directory on the phone, so verified businesses are known before any lookup and offline.
+      operationId: getBusinessDirectory
+      parameters:
+        - { $ref: "#/components/parameters/CountryIso" }
+        - { $ref: "#/components/parameters/Since" }
+      responses:
+        "200":
+          description: "Entries (`Cache-Control: public, max-age=3600`)."
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DirectoryResponse" }
+        "304": { $ref: "#/components/responses/NotModified" }
+        "400": { $ref: "#/components/responses/InvalidCountry" }
+
 components:
   securitySchemes:
     accessToken:
@@ -756,6 +994,18 @@ components:
       required: false
       description: Epoch milliseconds; only entries updated later are returned. Omit for everything.
       schema: { type: integer, minimum: 0, default: 0 }
+    ClaimId:
+      name: id
+      in: path
+      required: true
+      description: Claim ID from `POST /v1/business/claims`.
+      schema: { type: string, format: uuid }
+    BusinessId:
+      name: id
+      in: path
+      required: true
+      description: Business ID (`businessId` in lookups, search and the directory).
+      schema: { type: string, format: uuid }
     ContactRequestId:
       name: id
       in: path
@@ -807,6 +1057,28 @@ components:
           schema: { $ref: "#/components/schemas/Problem" }
     ContactRequestNotFound:
       description: "`not_found`: no pending request with this ID to the signed-in user."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    ClaimNotFound:
+      description: "`claim_not_found`: no such claim of the signed-in user."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    ClaimConflict:
+      description: |
+        `claim_open` (the number has a claim in progress), `already_verified` (it belongs to a verified business)
+        or `claim_state` (the claim isn't at this step).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    NumberNotVerified:
+      description: "`number_not_verified`: prove control of the number with its code first (TC-BIZ-001)."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    BusinessNotFound:
+      description: "`business_not_found`: no verified business with this ID (or it has no logo)."
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
@@ -913,6 +1185,8 @@ components:
         category: { type: [string, "null"] }
         verified: { type: boolean, const: true }
         callReason: { type: [string, "null"] }
+        businessId: { type: [string, "null"], format: uuid }
+        logoUrl: { type: [string, "null"], description: "API path of the logo (`/v1/business/{id}/logo`)." }
 
     NumberInfo:
       type: object
@@ -1022,6 +1296,7 @@ components:
         source: { type: string }
         businessId: { type: [string, "null"], format: uuid }
         updatedAt: { type: integer, description: Epoch milliseconds. }
+        deleted: { type: boolean, default: false, description: The row was removed; apps delete it. }
 
     SenderIdsResponse:
       type: object
@@ -1046,6 +1321,7 @@ components:
               packageName: { type: string }
               appName: { type: string }
               updatedAt: { type: integer }
+              deleted: { type: boolean, default: false }
         verificationRanges:
           type: array
           items:
@@ -1055,6 +1331,7 @@ components:
               prefix: { type: string, description: E.164 prefix used by a flash-call provider. }
               provider: { type: string }
               updatedAt: { type: integer }
+              deleted: { type: boolean, default: false }
 
     LinkPrefixesResponse:
       type: object
@@ -1165,6 +1442,118 @@ components:
         id: { type: integer }
         status: { type: string, enum: [approved, denied] }
 
+    StartClaimRequest:
+      type: object
+      required: [e164, legalName, displayName, category]
+      properties:
+        e164: { $ref: "#/components/schemas/E164" }
+        legalName: { type: string, minLength: 1, maxLength: 100 }
+        displayName: { type: string, minLength: 1, maxLength: 100, description: Shown to callers. }
+        category:
+          type: string
+          enum: [bank, finance, insurance, telecom, utility, government, healthcare, education, retail, delivery, travel, transport, food, services, other]
+        website: { type: [string, "null"], maxLength: 200, pattern: "^https://" }
+        hours: { type: [string, "null"], maxLength: 200 }
+        callReason: { type: [string, "null"], maxLength: 200, description: Why the business usually calls from this number. }
+        method: { type: string, enum: [sms, voice], default: sms }
+
+    ClaimCodeRequest:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, pattern: '^[0-9]{6}$' }
+
+    ResendCodeRequest:
+      type: object
+      properties:
+        method: { type: string, enum: [sms, voice], default: sms }
+
+    ClaimUploadRequest:
+      type: object
+      required: [kind, contentType]
+      properties:
+        kind: { type: string, enum: [document, logo] }
+        contentType: { type: string, enum: [application/pdf, image/jpeg, image/png], description: Logos are PNG or JPEG. }
+
+    ClaimUploadResponse:
+      type: object
+      required: [uploadUrl, key, contentType, maxBytes, expiresInSeconds]
+      properties:
+        uploadUrl: { type: string, format: uri }
+        key: { type: string, description: Name it in `POST …/submit`. }
+        contentType: { type: string }
+        maxBytes: { type: integer }
+        expiresInSeconds: { type: integer }
+
+    SubmitClaimRequest:
+      type: object
+      required: [documentKeys]
+      properties:
+        documentKeys: { type: array, minItems: 1, maxItems: 5, items: { type: string } }
+        logoKey: { type: [string, "null"] }
+
+    ClaimResponse:
+      type: object
+      required: [id, e164, displayName, category, method, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        e164: { $ref: "#/components/schemas/E164" }
+        displayName: { type: string }
+        category: { type: string }
+        method: { type: string, enum: [sms, voice] }
+        status: { type: string, enum: [verifying, verified, submitted, approved, rejected, withdrawn] }
+        codeExpiresInSeconds: { type: [integer, "null"] }
+        reviewNote: { type: [string, "null"], description: The reviewer's note on a rejected claim. }
+        businessId: { type: [string, "null"], format: uuid }
+        createdAt: { type: integer }
+
+    ClaimsResponse:
+      type: object
+      required: [claims]
+      properties:
+        claims: { type: array, items: { $ref: "#/components/schemas/ClaimResponse" } }
+
+    BusinessProfileResponse:
+      type: object
+      required: [id, name, verified, numbers]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        category: { type: [string, "null"] }
+        website: { type: [string, "null"] }
+        hours: { type: [string, "null"] }
+        logoUrl: { type: [string, "null"] }
+        verified: { type: boolean, const: true }
+        numbers:
+          type: array
+          items:
+            type: object
+            required: [e164]
+            properties:
+              e164: { $ref: "#/components/schemas/E164" }
+              callReason: { type: [string, "null"] }
+
+    DirectoryResponse:
+      type: object
+      required: [countryIso, syncedAt, entries]
+      properties:
+        countryIso: { type: string }
+        syncedAt: { type: integer, description: Pass as `since` next time. }
+        entries:
+          type: array
+          items:
+            type: object
+            required: [e164, businessId, name, updatedAt]
+            properties:
+              e164: { $ref: "#/components/schemas/E164" }
+              businessId: { type: string, format: uuid }
+              name: { type: string }
+              category: { type: [string, "null"] }
+              callReason: { type: [string, "null"] }
+              logoUrl: { type: [string, "null"] }
+              updatedAt: { type: integer }
+              removed: { type: boolean, default: false, description: The business was revoked; apps forget the number. }
+
     Problem:
       type: object
       description: RFC 9457 problem details.
@@ -1199,3 +1588,9 @@ components:
             - list_not_found
             - job_running
             - supporter_required
+            - claim_open
+            - already_verified
+            - claim_not_found
+            - claim_state
+            - number_not_verified
+            - business_not_found

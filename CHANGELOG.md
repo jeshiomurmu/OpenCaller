@@ -7,7 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0-beta] - 2026-11-03
+
+First beta. Like the alpha, the release build has a server only when the release workflow is given one; without it,
+the online features say "Not connected to a server" and blocking, the dialer and messages work on the phone.
+
 ### Added
+
+- Verified businesses (Phase 9): claim your business number from Me → Claim your business. A code goes to that
+  number (by text, or a phone call for landlines), then you add documents and a logo, and a person reviews them.
+  Approved businesses show with their name, logo, category and why they call, and a verified badge on calls, in
+  messages and in search; "Business profile" shows their website, hours and numbers.
+- The phone keeps the verified-business directory of its country (updated daily with the spam list), so a verified
+  business is recognised offline and before any lookup, and "Block non-contacts" lets it ring.
+- Every displayed name says where it comes from (Contact, Self-registered, Verified business, Sender registry,
+  Community label, On this phone): in conversations and threads, the call log, call waiting, profiles, visitors and
+  contact requests, as already on the caller card.
+- Server: business claims (`/v1/business/claims`), business profiles and logos (`/v1/business/{id}`), the per-country
+  directory (`/v1/businesses/{iso}`); an admin web on its own port (IP allowlist, basic auth, audit log) to review
+  claims, revoke businesses, curate SMS Retriever app hashes and flash-call ranges, and import sender-ID extracts
+  (CSV); a daily sender-ID import job with placeholders for India DLT, Singapore SSIR, Australia ACMA and Ireland
+  ComReg (no documented access yet); registry rows removed on the server are removed on phones too.
+- Releases: signed foss and play APKs with SHA-256 sums, and the play App Bundle for Google Play.
 
 - Profiles (Phase 8): sign in and add your name and a picture, and choose who sees your name: everyone, signed-in
   users only, or nobody. Incognito keeps your searches and profile visits out of other people's lists. Supporters see
@@ -61,6 +82,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   on dual-SIM phones, links from other apps (`sms:`, `smsto:`, `mms:`, `mmsto:`), and quick replies when you decline a
   call. One notification per conversation with Reply and Mark as read; on the lock screen it only says "New message".
   Messages stay in your phone's message store; OpenCaller keeps only their category and the sender's name.
+
+### Changed
+
+- One-time code notifications no longer appear on a secure lock screen at all, whatever the lock screen setting.
 
 ## [0.1.0-alpha] - 2026-10-17
 
@@ -155,5 +180,6 @@ search and spam-list updates say "Not connected to a server".
 - `infra/docker/minio/Dockerfile`: Chainguard MinIO image plus a static BusyBox for the compose healthcheck.
 - `LICENSE` (GPL-3.0), `CHANGELOG.md` and `NOTICE.md`.
 
-[Unreleased]: https://github.com/jeshiomurmu/OpenCaller/compare/v0.1.0-alpha...HEAD
+[Unreleased]: https://github.com/jeshiomurmu/OpenCaller/compare/v0.5.0-beta...HEAD
+[0.5.0-beta]: https://github.com/jeshiomurmu/OpenCaller/compare/v0.1.0-alpha...v0.5.0-beta
 [0.1.0-alpha]: https://github.com/jeshiomurmu/OpenCaller/releases/tag/v0.1.0-alpha

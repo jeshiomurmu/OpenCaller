@@ -60,7 +60,7 @@ fun CallerCard(
         verticalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xs),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.s)) {
-            CallerAvatar(state = state, name = name)
+            CallerAvatar(state = state, name = name, logoPath = caller.logoPath.takeIf { caller.isVerifiedBusiness })
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xxs)) {
                 Text(
                     text = name ?: formattedNumber ?: stringResource(state.fallbackTitle()),
@@ -158,6 +158,7 @@ private fun VerificationLine(verification: CallerVerification) {
 private fun CallerAvatar(
     state: CallerCardState,
     name: String?,
+    logoPath: String?,
 ) {
     val semantic = OpenCallerTheme.semanticColors
     val (background, content) =
@@ -173,6 +174,8 @@ private fun CallerAvatar(
         } else {
             Icon(painter = painterResource(state.icon()), contentDescription = null, tint = content)
         }
+        // A verified business's logo covers the initial once decoded (the name next to it already says who it is).
+        BusinessLogo(path = logoPath, contentDescription = null)
     }
 }
 

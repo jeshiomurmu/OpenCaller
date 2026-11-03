@@ -10,8 +10,17 @@ object Migrations {
     /** Version 2 (Phase 8): the supporter badge in the reputation cache, `number_info.badge`. */
     val MIGRATION_1_2: Migration = SqlMigration(1, 2, "ALTER TABLE `number_info` ADD COLUMN `badge` TEXT")
 
+    /** Version 3 (Phase 9): the verified-business directory of the phone's country, `verified_business`. */
+    val MIGRATION_2_3: Migration =
+        SqlMigration(
+            2,
+            3,
+            "CREATE TABLE IF NOT EXISTS `verified_business` (`e164` TEXT NOT NULL, `businessId` TEXT NOT NULL, `name` TEXT NOT NULL, " +
+                "`category` TEXT, `callReason` TEXT, `logoPath` TEXT, `logoFile` TEXT, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`e164`))",
+        )
+
     /** Every migration, in order. */
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2)
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
 }
 
 /**

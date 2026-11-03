@@ -23,6 +23,7 @@ import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerShape
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacing
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallCapability
+import io.github.jeshiomurmu.opencaller.core.ui.SourceChip
 import io.github.jeshiomurmu.opencaller.feature.incall.CallView
 import io.github.jeshiomurmu.opencaller.feature.incall.InCallEvent
 import io.github.jeshiomurmu.opencaller.feature.incall.R
@@ -84,6 +85,10 @@ internal fun WaitingCall(
         Column(modifier = Modifier.padding(OpenCallerSpacing.m), verticalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xs)) {
             Text(text = stringResource(R.string.incall_incoming), style = MaterialTheme.typography.labelLarge)
             Text(text = titleOf(view), style = MaterialTheme.typography.titleMedium)
+            view.caller
+                ?.takeIf { it.displayName != null }
+                ?.nameSource
+                ?.let { SourceChip(source = it) }
             Row(horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xs)) {
                 OutlinedButton(onClick = { onEvent(InCallEvent.Decline(view.call.id)) }) {
                     Text(stringResource(R.string.incall_decline))

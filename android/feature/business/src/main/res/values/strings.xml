@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Claim list -->
+    <string name="claim_title">Claim your business</string>
+    <string name="claim_intro">Show your business name, logo and why you call on your customers\' phones. You prove the number is yours with a code sent to it, then a person checks your documents.</string>
+    <string name="claim_sign_in">Sign in first: claims belong to your account.</string>
+    <string name="claim_sign_in_button">Sign in</string>
+    <string name="claim_not_connected">This version isn\'t connected to a server, so businesses can\'t be claimed.</string>
+    <string name="claim_new">Claim a business number</string>
+    <string name="claim_none">You have no claims yet.</string>
+    <string name="claim_continue">Continue</string>
+    <string name="claim_withdraw">Withdraw</string>
+    <string name="claim_review_note">Reviewer\'s note: %1$s</string>
+    <string name="claim_status_verifying">Waiting for the code</string>
+    <string name="claim_status_verified">Number confirmed. Add documents</string>
+    <string name="claim_status_submitted">Waiting for review</string>
+    <string name="claim_status_approved">Approved: shown as a verified business</string>
+    <string name="claim_status_rejected">Not approved</string>
+    <string name="claim_status_withdrawn">Withdrawn</string>
+    <string name="claim_back">Back</string>
+
+    <!-- Form -->
+    <string name="claim_form_title">About the business</string>
+    <string name="claim_number">Business phone number</string>
+    <string name="claim_legal_name">Legal name</string>
+    <string name="claim_display_name">Name shown to callers</string>
+    <string name="claim_category">Category</string>
+    <string name="claim_category_selected">Category: %1$s</string>
+    <string name="claim_website">Website (https://, optional)</string>
+    <string name="claim_hours">Opening hours (optional)</string>
+    <string name="claim_call_reason">Why you usually call (optional)</string>
+    <string name="claim_method">How should the code reach this number?</string>
+    <string name="claim_method_sms">Text message</string>
+    <string name="claim_method_voice">Phone call (for landlines)</string>
+    <string name="claim_send_code">Send the code</string>
+    <string name="claim_form_note">The code goes to the business number, not to you. Only someone who can answer that number can confirm the claim.</string>
+
+    <!-- Code -->
+    <string name="claim_code_title">Enter the code</string>
+    <string name="claim_code_sms">We sent a 6-digit code by text message to %1$s.</string>
+    <string name="claim_code_voice">A phone call to %1$s reads out a 6-digit code.</string>
+    <string name="claim_code">Code</string>
+    <string name="claim_verify">Confirm</string>
+    <string name="claim_resend_sms">Send a new code by text</string>
+    <string name="claim_resend_voice">Call with a new code</string>
+
+    <!-- Documents -->
+    <string name="claim_documents_title">Show it\'s your business</string>
+    <string name="claim_documents_explain">Add up to 5 documents that show the business and the number belong together, such as a registration certificate or a phone bill (PDF, JPEG or PNG, up to 10 MB each). Only the reviewers see them; they are deleted 90 days after the decision.</string>
+    <string name="claim_add_document">Add a document</string>
+    <string name="claim_remove">Remove</string>
+    <string name="claim_logo">Logo (optional)</string>
+    <string name="claim_logo_explain">A square picture works best. It is made smaller before it is sent.</string>
+    <string name="claim_add_logo">Choose a logo</string>
+    <string name="claim_change_logo">Change the logo</string>
+    <string name="claim_submit">Send for review</string>
+
+    <!-- Problems -->
+    <string name="business_problem_offline">You\'re offline. Try again when you\'re connected.</string>
+    <string name="business_problem_signed_out">You\'re signed out. Sign in again.</string>
+    <string name="business_problem_not_connected">This version isn\'t connected to a server.</string>
+    <string name="business_problem_invalid_number">That isn\'t a valid phone number.</string>
+    <string name="business_problem_invalid_field">Check the fields: names on one line, a website starting with https://.</string>
+    <string name="business_problem_wrong_code">That code isn\'t right.</string>
+    <string name="business_problem_code_expired">The code expired. Ask for a new one.</string>
+    <string name="business_problem_too_many">Too many tries. Try again later.</string>
+    <string name="business_problem_already_verified">This number already belongs to a verified business.</string>
+    <string name="business_problem_claim_open">Someone already has a claim in progress for this number.</string>
+    <string name="business_problem_file_too_large">That file is too large.</string>
+    <string name="business_problem_file_type">Use a PDF, JPEG or PNG file.</string>
+    <string name="business_problem_file_unreadable">That file couldn\'t be read.</string>
+    <string name="business_problem_not_found">This business isn\'t verified, or no longer is.</string>
+    <string name="business_problem_server">Something went wrong. Try again.</string>
+    <string name="business_dismiss">OK</string>
+
+    <!-- Profile -->
+    <string name="business_profile_title">Business profile</string>
+    <string name="business_logo">Logo of %1$s</string>
+    <string name="business_website">Website: %1$s</string>
+    <string name="business_hours">Opening hours: %1$s</string>
+    <string name="business_numbers">Numbers</string>
+    <string name="business_call_reason">Usually calls about: %1$s</string>
+    <string name="business_profile_note">This business proved it controls these numbers and was checked by a person.</string>
+
+    <!-- Categories -->
+    <string name="business_category_bank">Bank</string>
+    <string name="business_category_finance">Finance</string>
+    <string name="business_category_insurance">Insurance</string>
+    <string name="business_category_telecom">Telecom</string>
+    <string name="business_category_utility">Utility</string>
+    <string name="business_category_government">Government</string>
+    <string name="business_category_healthcare">Healthcare</string>
+    <string name="business_category_education">Education</string>
+    <string name="business_category_retail">Shop</string>
+    <string name="business_category_delivery">Delivery</string>
+    <string name="business_category_travel">Travel</string>
+    <string name="business_category_transport">Transport</string>
+    <string name="business_category_food">Food</string>
+    <string name="business_category_services">Services</string>
+    <string name="business_category_other">Other</string>
+</resources>

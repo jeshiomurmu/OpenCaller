@@ -12,6 +12,7 @@ import androidx.compose.ui.res.stringResource
 import io.github.jeshiomurmu.opencaller.core.data.lookup.SearchQuota
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacing
 import io.github.jeshiomurmu.opencaller.core.model.RiskLevel
+import io.github.jeshiomurmu.opencaller.core.model.isBusinessProfileId
 import io.github.jeshiomurmu.opencaller.core.ui.CallerCard
 import io.github.jeshiomurmu.opencaller.core.ui.CallerCardSurface
 import io.github.jeshiomurmu.opencaller.core.ui.WhyButton
@@ -45,6 +46,7 @@ internal fun SearchResultCard(
     onWhy: () -> Unit,
     onDispute: () -> Unit,
     onOpenProfile: () -> Unit = {},
+    onOpenBusiness: (businessId: String) -> Unit = {},
 ) {
     CallerCardSurface {
         Column {
@@ -65,6 +67,12 @@ internal fun SearchResultCard(
             ) {
                 TextButton(onClick = onDispute, modifier = Modifier.padding(horizontal = OpenCallerSpacing.xs)) {
                     Text(text = stringResource(R.string.search_dispute))
+                }
+            }
+            val businessId = found.caller.verifiedBusinessId?.takeIf(::isBusinessProfileId)
+            if (businessId != null) {
+                TextButton(onClick = { onOpenBusiness(businessId) }, modifier = Modifier.padding(horizontal = OpenCallerSpacing.xs)) {
+                    Text(text = stringResource(R.string.search_open_business))
                 }
             }
             if (!found.caller.isVerifiedBusiness) {

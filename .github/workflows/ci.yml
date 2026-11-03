@@ -37,15 +37,35 @@ jobs:
           spotlessCheck detekt lint
           testFossDebugUnitTest testPlayDebugUnitTest
           assembleFossDebug assemblePlayDebug
-          assembleFossRelease
+          assembleFossRelease assemblePlayRelease bundlePlayRelease
           check
 
-      # Room writes the schema while compiling; it must be committed (docs/architecture.md §6).
+      # Room writes the schema into core/database/schemas while compiling; it must be committed (docs/architecture.md
+      # §6). The newest committed schema is removed and KSP re-run without incremental processing (a cache hit or an
+      # incremental run writes nothing), so the step fails when Room wrote no schema instead of comparing the
+      # committed files with themselves (docs/phase.md issue 102).
       - name: Room schemas are committed
         run: |
+          schemas=core/database/schemas/io.github.jeshiomurmu.opencaller.core.database.OpenCallerDatabase
+          latest="$(ls "$schemas" | sort -V | tail -1)"
+          rm "$schemas/$latest"
+          ./gradlew :core:database:kspDebugKotlin --rerun -Pksp.incremental=false
+          written="$(ls "$schemas" | sort -V | tail -1)"
+          echo "Newest schema after the build: ${written:-none} (committed: $latest)"
+          if [[ ! -f "$schemas/$latest" ]]; then
+            echo "::error::Room didn't write $latest to $schemas; the committed schemas can't be checked"
+            exit 1
+          fi
+          written="$schemas/$written"
           git add --intent-to-add core/database/schemas
           if ! git diff --exit-code -- core/database/schemas; then
-            echo "::error::Room schema changed or missing: commit android/core/database/schemas (diff above)"
+            for file in $written; do
+              echo "----- BEGIN $file"
+              base64 -w 0 "$file"
+              echo
+              echo "----- END $file"
+            done
+            echo "::error::Room schema changed or missing: commit android/core/database/schemas (diff and files above)"
             exit 1
           fi
 
@@ -159,6 +179,7 @@ jobs:
               -e "s/^JWT_SECRET=.*/JWT_SECRET=$(openssl rand -hex 32)/" \
               -e "s/^OTP_PEPPER=.*/OTP_PEPPER=$(openssl rand -hex 32)/" \
               -e "s/^ADMIN_TOKEN=.*/ADMIN_TOKEN=$(openssl rand -hex 32)/" \
+              -e "s/^ADMIN_WEB_PASSWORD=.*/ADMIN_WEB_PASSWORD=$(openssl rand -hex 32)/" \
               .env.example > .env
 
       - name: Build and start the stack
@@ -212,6 +233,7 @@ jobs:
               -e "s/^JWT_SECRET=.*/JWT_SECRET=$(openssl rand -hex 32)/" \
               -e "s/^OTP_PEPPER=.*/OTP_PEPPER=$(openssl rand -hex 32)/" \
               -e "s/^ADMIN_TOKEN=.*/ADMIN_TOKEN=$(openssl rand -hex 32)/" \
+              -e "s/^ADMIN_WEB_PASSWORD=.*/ADMIN_WEB_PASSWORD=$(openssl rand -hex 32)/" \
               .env.example > .env
 
       - name: Build and start the stack

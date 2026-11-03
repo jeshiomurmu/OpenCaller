@@ -8,13 +8,17 @@ import io.github.jeshiomurmu.opencaller.core.model.SpamVerdict
 import io.github.jeshiomurmu.opencaller.core.model.SupporterBadge
 import io.github.jeshiomurmu.opencaller.core.model.UserPreferences
 import io.github.jeshiomurmu.opencaller.core.model.VerdictSource
+import io.github.jeshiomurmu.opencaller.core.model.VerifiedBusiness
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 
 /** What the device already knows about a number: verified business (step 7) and the reputation cache (step 9). */
 internal class KnownCaller(
-    val verified: Boolean,
+    val business: VerifiedBusiness?,
     val cached: CachedReputation?,
-)
+) {
+    /** True when the number belongs to a verified business. */
+    val verified: Boolean get() = business != null
+}
 
 /** A name for the card, where it came from and, for a self-registered name, the owner's supporter badge. */
 private class Named(
@@ -39,7 +43,8 @@ internal class CallerDescriber(
             }
 
     // Steps 9–11: the reputation cache, the live lookup and STIR annotate the card; the spam list verdict wins, then
-    // the stronger of the others.
+    // the stronger of the others. A verified business on the phone names itself (with its logo and call reason);
+    // otherwise the live lookup's name, then the cache's.
     fun enrich(
         caller: CallerInfo,
         found: SpamVerdict?,
@@ -53,17 +58,19 @@ internal class CallerDescriber(
                 ?: cached?.let { c ->
                     c.spamScore?.let { verdict(it, c.spamCategory, c.reportCount, prefs, VerdictSource.REPUTATION_CACHE) }
                 }
+        val business = known.business
         val named =
-            network?.let { n -> n.displayName?.let { Named(it, n.nameSource, n.badge) } }
+            business?.let { Named(it.name, NameSource.VERIFIED_BUSINESS, badge = null) }
+                ?: network?.let { n -> n.displayName?.let { Named(it, n.nameSource, n.badge) } }
                 ?: cached?.let { c -> c.displayName?.let { Named(it, c.nameSource, c.badge) } }
         return caller.copy(
             displayName = named?.name,
             nameSource = named?.source,
             badge = named?.badge,
             spamVerdict = verdict,
-            verifiedBusinessId = cached?.verifiedBusinessId ?: VERIFIED_WITHOUT_ID.takeIf { known.verified },
-            logoUrl = cached?.logoUrl,
-            callReason = cached?.callReason,
+            verifiedBusinessId = business?.businessId ?: cached?.verifiedBusinessId,
+            logoPath = business?.logoPath,
+            callReason = business?.callReason ?: cached?.callReason,
             lineType = cached?.lineType ?: caller.lineType,
         )
     }
@@ -103,9 +110,4 @@ internal class CallerDescriber(
             lineType = number?.let(normalizer::numberType),
             verification = call.verification,
         )
-
-    private companion object {
-        // Phase 9 provides business ids; until then a verified business found by the lookup has none.
-        const val VERIFIED_WITHOUT_ID = "verified"
-    }
 }
