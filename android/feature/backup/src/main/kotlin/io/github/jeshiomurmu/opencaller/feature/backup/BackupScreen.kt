@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -184,16 +185,20 @@ private fun Outcome(state: BackupUiState) {
         }
 
         is BackupNote.Restored -> {
-            Text(
-                stringResource(
-                    R.string.backup_restored,
-                    note.summary.rules,
-                    note.summary.events,
-                    note.summary.messages,
-                    note.summary.messagesNotFound,
-                ),
-                color = MaterialTheme.colorScheme.primary,
-            )
+            val summary = note.summary
+            val lines =
+                listOf(
+                    stringResource(R.string.backup_restored),
+                    pluralStringResource(R.plurals.backup_restored_rules, summary.rules, summary.rules),
+                    pluralStringResource(R.plurals.backup_restored_events, summary.events, summary.events),
+                    pluralStringResource(R.plurals.backup_restored_messages, summary.messages, summary.messages),
+                ) +
+                    listOfNotNull(
+                        summary.messagesNotFound.takeIf { it > 0 }?.let {
+                            pluralStringResource(R.plurals.backup_restored_missing, it, it)
+                        },
+                    )
+            Text(lines.joinToString("\n"), color = MaterialTheme.colorScheme.primary)
         }
 
         null -> {} // nothing done yet

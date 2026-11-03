@@ -14,7 +14,23 @@
     <string name="backup_from_drive">Restore from Google Drive</string>
     <string name="backup_restore_note">Restoring replaces your block rules and history with the backup\'s and keeps this phone\'s permissions. Restoring is free; making a backup is a supporter feature.</string>
     <string name="backup_saved">Backup saved.</string>
-    <string name="backup_restored">Restored %1$d rules and %2$d history entries; %3$d message categories found again, %4$d not found on this phone.</string>
+    <string name="backup_restored">Restored.</string>
+    <plurals name="backup_restored_rules">
+        <item quantity="one">%d block rule</item>
+        <item quantity="other">%d block rules</item>
+    </plurals>
+    <plurals name="backup_restored_events">
+        <item quantity="one">%d history entry</item>
+        <item quantity="other">%d history entries</item>
+    </plurals>
+    <plurals name="backup_restored_messages">
+        <item quantity="one">%d message category found again</item>
+        <item quantity="other">%d message categories found again</item>
+    </plurals>
+    <plurals name="backup_restored_missing">
+        <item quantity="one">%d message not on this phone</item>
+        <item quantity="other">%d messages not on this phone</item>
+    </plurals>
     <string name="backup_problem_not_entitled">Making a backup is a supporter feature.</string>
     <string name="backup_problem_short">The passphrase needs at least 8 characters.</string>
     <string name="backup_problem_differ">The two passphrases don\'t match.</string>

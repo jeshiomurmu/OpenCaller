@@ -171,6 +171,26 @@ class PhoneNumberNormalizerTest {
         }
     }
 
+    // TC-UT-004: a number written in a messenger's call notification is found; names, codes and dates are not numbers.
+    @Test
+    fun findsNumbersWrittenInText() {
+        assertEquals(listOf(PhoneNumber("+8801712345678")), normalizer.findInText("Incoming voice call from 01712-345678", "BD"))
+        assertEquals(listOf(PhoneNumber("+447911123456")), normalizer.findInText("WhatsApp call +44 7911 123456", "BD"))
+        assertEquals(
+            listOf(PhoneNumber("+8801712345678"), PhoneNumber("+12015550123")),
+            normalizer.findInText("+880 1712 345678 or +1 (201) 555-0123, again +8801712345678", "BD"),
+        )
+    }
+
+    @Test
+    fun findsNothingWithoutANumber() {
+        assertEquals(emptyList<PhoneNumber>(), normalizer.findInText("Mum", "BD"))
+        assertEquals(emptyList<PhoneNumber>(), normalizer.findInText("Incoming voice call", "BD"))
+        assertEquals(emptyList<PhoneNumber>(), normalizer.findInText("Your code is 482913", "BD"))
+        assertEquals(emptyList<PhoneNumber>(), normalizer.findInText("   ", "BD"))
+        assertEquals(emptyList<PhoneNumber>(), normalizer.findInText("01712345678 ".repeat(1_000), "BD"))
+    }
+
     /** One row of `fixtures/numbers.csv`. */
     private class NumberFixture(
         row: List<String>,
