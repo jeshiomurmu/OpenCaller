@@ -150,4 +150,7 @@
     <string name="otp_card_from">Code from %1$s</string>
     <string name="otp_card_copy">Copy</string>
     <string name="otp_card_never_share">Never share a code with someone who calls or messages you.</string>
+    <string name="supporter_feature_title">A supporter feature</string>
+    <string name="supporter_feature_body">Supporters pay for OpenCaller\'s servers and get this and other extras. On a self-hosted server everything is unlocked.</string>
+    <string name="supporter_feature_open">See supporter options</string>
 </resources>

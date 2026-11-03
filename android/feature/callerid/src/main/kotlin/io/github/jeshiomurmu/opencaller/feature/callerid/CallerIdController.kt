@@ -6,11 +6,13 @@ import io.github.jeshiomurmu.opencaller.core.common.DispatcherProvider
 import io.github.jeshiomurmu.opencaller.core.datastore.UserSettingsDataSource
 import io.github.jeshiomurmu.opencaller.core.model.AfterCallSurface
 import io.github.jeshiomurmu.opencaller.core.model.CallerIdSurface
+import io.github.jeshiomurmu.opencaller.core.model.Decision
 import io.github.jeshiomurmu.opencaller.core.telephony.AccessStatusSource
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.CallerIdListener
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.CallerIdPresenter
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ScreeningResult
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.wantsAfterCall
+import io.github.jeshiomurmu.opencaller.feature.callerid.announce.CallerAnnouncer
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -20,13 +22,14 @@ import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Where caller ID can appear, and the watch for the end of the call. */
+/** Where caller ID can appear (the card, the notification, the spoken name), and the watch for the end of the call. */
 class CallerIdSurfaces
     @Inject
     constructor(
         val overlay: CallerCardOverlay,
         val notifications: CallerIdNotifications,
         val callEnd: CallEndWatcher,
+        val announcer: CallerAnnouncer,
     )
 
 /**
@@ -52,6 +55,8 @@ class CallerIdController
         private var current: Showing? = null
 
         override fun present(result: ScreeningResult) {
+            // Announce Caller works in both modes (screening only, default phone app); silenced calls stay quiet.
+            if (result.decision == Decision.ALLOW) surfaces.announcer.announce(result.caller)
             scope.launch {
                 access.refresh()
                 val status = access.status.value
@@ -84,6 +89,7 @@ class CallerIdController
             }
 
         private fun end(callEnded: Boolean) {
+            if (callEnded) surfaces.announcer.stop()
             val showing = current ?: return
             current = null
             showing.watch?.stop()

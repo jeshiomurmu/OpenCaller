@@ -90,6 +90,31 @@ class MigrationTest {
             }
         }
 
+    // Version 4 (Phase 10): an empty spam_list_extended table; the standard spam list keeps its rows.
+    @Test
+    fun migration3To4AddsTheExtendedSpamList() =
+        runTest {
+            helper.createDatabase(3).use { db ->
+                db.execSQL(
+                    "INSERT INTO spam_list (e164, score, category, reportCount, listVersion) VALUES ('+12015550123', 0.9, 'scam', 20, 3)",
+                )
+            }
+            helper.runMigrationsAndValidate(4, listOf(Migrations.MIGRATION_3_4)).use { db ->
+                db.prepare("SELECT reportCount FROM spam_list WHERE e164 = '+12015550123'").use { row ->
+                    assertTrue(row.step())
+                    assertEquals(20L, row.getLong(0))
+                }
+                db.execSQL(
+                    "INSERT INTO spam_list_extended (e164, score, category, reportCount, listVersion) " +
+                        "VALUES ('+12015550124', 0.5, '', 1, 3)",
+                )
+                db.prepare("SELECT COUNT(*) FROM spam_list_extended").use { row ->
+                    assertTrue(row.step())
+                    assertEquals(1L, row.getLong(0))
+                }
+            }
+        }
+
     private companion object {
         const val TEST_DB = "migration-test.db"
     }

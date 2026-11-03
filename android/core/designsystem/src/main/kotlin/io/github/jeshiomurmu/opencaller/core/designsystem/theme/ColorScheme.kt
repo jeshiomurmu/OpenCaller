@@ -96,3 +96,32 @@ internal val DarkColorScheme: ColorScheme =
         surfaceContainerHigh = lerp(DarkTokens.Surface, DarkTokens.OnSurface, SURFACE_STEP * 2),
         surfaceContainerHighest = lerp(DarkTokens.Surface, DarkTokens.OnSurface, SURFACE_STEP * 3),
     )
+
+/**
+ * Gold accents (supporters, docs/prd.md F-UT-07): the light scheme with the `gold` token of docs/design.md §2 as
+ * the primary role (white on #8A6A00 is 4.8:1); everything else, including danger and safe colors, is unchanged.
+ */
+internal val LightGoldColorScheme: ColorScheme =
+    LightColorScheme.copy(
+        primary = LightTokens.Gold,
+        onPrimary = LightTokens.OnPrimary,
+        primaryContainer = lerp(LightTokens.Surface, LightTokens.Gold, CONTAINER_TINT),
+        inversePrimary = DarkTokens.Gold,
+        secondary = LightTokens.Gold,
+        onSecondary = LightTokens.OnPrimary,
+        secondaryContainer = lerp(LightTokens.Surface, LightTokens.Gold, CONTAINER_TINT),
+        surfaceTint = LightTokens.Gold,
+    )
+
+/** Dark counterpart of [LightGoldColorScheme]: #E9C46A with the dark background on it. */
+internal val DarkGoldColorScheme: ColorScheme =
+    DarkColorScheme.copy(
+        primary = DarkTokens.Gold,
+        onPrimary = DarkTokens.Background,
+        primaryContainer = lerp(DarkTokens.Surface, DarkTokens.Gold, CONTAINER_TINT),
+        inversePrimary = LightTokens.Gold,
+        secondary = DarkTokens.Gold,
+        onSecondary = DarkTokens.Background,
+        secondaryContainer = lerp(DarkTokens.Surface, DarkTokens.Gold, CONTAINER_TINT),
+        surfaceTint = DarkTokens.Gold,
+    )

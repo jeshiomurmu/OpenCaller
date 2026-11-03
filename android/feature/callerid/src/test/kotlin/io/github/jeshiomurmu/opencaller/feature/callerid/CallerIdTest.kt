@@ -11,6 +11,7 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
+import io.github.jeshiomurmu.opencaller.core.data.supporter.StaticEntitlements
 import io.github.jeshiomurmu.opencaller.core.datastore.UserSettingsDataSource
 import io.github.jeshiomurmu.opencaller.core.datastore.inMemory
 import io.github.jeshiomurmu.opencaller.core.model.AccessStatus
@@ -33,6 +34,9 @@ import io.github.jeshiomurmu.opencaller.core.telephony.AccessStatusSource
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.CallerIdListener
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ScreeningResult
 import io.github.jeshiomurmu.opencaller.core.testing.TestDispatcherProvider
+import io.github.jeshiomurmu.opencaller.feature.callerid.announce.AudioConditions
+import io.github.jeshiomurmu.opencaller.feature.callerid.announce.CallerAnnouncer
+import io.github.jeshiomurmu.opencaller.feature.callerid.announce.Speaker
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -178,11 +182,31 @@ class CallerIdTest {
             access = access,
             settings = UserSettingsDataSource.inMemory(),
             formatter = formatter,
-            surfaces = CallerIdSurfaces(CallerCardOverlay(context), notifications, watcher),
+            surfaces =
+                CallerIdSurfaces(
+                    CallerCardOverlay(context),
+                    notifications,
+                    watcher,
+                    CallerAnnouncer(
+                        context = context,
+                        settings = UserSettingsDataSource.inMemory(),
+                        entitlements = StaticEntitlements(),
+                        audio = { AudioConditions(headphones = false, ringerAudible = true, interruptionsAllowed = true) },
+                        speaker = speaker,
+                        dispatchers = TestDispatcherProvider(UnconfinedTestDispatcher()),
+                    ),
+                ),
             listeners = setOf(listener),
             dispatchers = TestDispatcherProvider(UnconfinedTestDispatcher()),
         )
     }
+
+    private val speaker =
+        object : Speaker {
+            override fun speak(text: String) = Unit
+
+            override fun stop() = Unit
+        }
 
     private fun result(
         caller: CallerInfo,

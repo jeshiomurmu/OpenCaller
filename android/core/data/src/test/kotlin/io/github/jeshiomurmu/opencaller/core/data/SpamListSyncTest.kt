@@ -3,16 +3,26 @@ package io.github.jeshiomurmu.opencaller.core.data
 import android.os.Build
 import io.github.jeshiomurmu.opencaller.core.common.AppError
 import io.github.jeshiomurmu.opencaller.core.common.AppResult
+import io.github.jeshiomurmu.opencaller.core.data.supporter.EntitlementProvider
+import io.github.jeshiomurmu.opencaller.core.data.supporter.SupporterOffer
+import io.github.jeshiomurmu.opencaller.core.data.sync.ExtendedListStateStore
+import io.github.jeshiomurmu.opencaller.core.data.sync.ExtendedSpamListSync
 import io.github.jeshiomurmu.opencaller.core.data.sync.SpamListSyncOutcome
 import io.github.jeshiomurmu.opencaller.core.data.sync.SpamListSyncRepository
 import io.github.jeshiomurmu.opencaller.core.data.sync.SpamListSyncState
 import io.github.jeshiomurmu.opencaller.core.data.sync.SpamListSyncStateStore
 import io.github.jeshiomurmu.opencaller.core.database.DatabaseAccess
 import io.github.jeshiomurmu.opencaller.core.database.entity.SpamListEntry
+import io.github.jeshiomurmu.opencaller.core.model.Entitlement
+import io.github.jeshiomurmu.opencaller.core.model.EntitlementSource
+import io.github.jeshiomurmu.opencaller.core.model.PaidTier
+import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import io.github.jeshiomurmu.opencaller.core.network.OpenCallerNetwork
 import io.github.jeshiomurmu.opencaller.core.network.ServerConfig
 import io.github.jeshiomurmu.opencaller.core.testing.FakeClock
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
@@ -36,6 +46,15 @@ class SpamListSyncTest {
     private val network = OpenCallerNetwork(ServerConfig(server.url("/").toString()), MemoryTokens(), clock)
     private val stateStore = SpamListSyncStateStore(tempPreferences("sync"))
     private var country: String? = "BD"
+    private val entitlements = MutableEntitlements()
+    private val extendedSync =
+        ExtendedSpamListSync(
+            api = network.billingApi,
+            access = DatabaseAccess { db },
+            dispatchers = RealDispatchers,
+            entitlements = entitlements,
+            state = ExtendedListStateStore(tempPreferences("extended")),
+        )
     private val repository =
         SpamListSyncRepository(
             api = network.api,
@@ -44,6 +63,7 @@ class SpamListSyncTest {
             clock = clock,
             stateStore = stateStore,
             country = { country },
+            extended = extendedSync,
         )
 
     // Files the fake server publishes, by URL path, and the paths requested.
@@ -100,9 +120,11 @@ class SpamListSyncTest {
         full: ByteArray,
         deltas: Map<Long, ByteArray> = emptyMap(),
         corruptSha: Boolean = false,
+        extended: ByteArray? = null,
     ) {
         files["/v1/lists/BD/files/$version/full"] = full
         deltas.forEach { (v, bytes) -> files["/v1/lists/BD/files/$v/delta"] = bytes }
+        extended?.let { files["/v1/lists/BD/files/$version/extended"] = it }
 
         fun ref(
             v: Long,
@@ -115,7 +137,9 @@ class SpamListSyncTest {
                 """"sha256":"$sha","createdAt":"2026-10-17T03:00:00Z"}"""
         }
         val deltaRefs = deltas.entries.sortedByDescending { it.key }.joinToString(",") { (v, bytes) -> ref(v, "delta", bytes) }
-        manifest = """{"countryIso":"BD","format":1,"version":$version,"full":${ref(version, "full", full)},"deltas":[$deltaRefs]}"""
+        val extendedRef = extended?.let { ""","extended":${ref(version, "extended", it)}""" }.orEmpty()
+        manifest =
+            """{"countryIso":"BD","format":1,"version":$version,"full":${ref(version, "full", full)},"deltas":[$deltaRefs]$extendedRef}"""
     }
 
     private suspend fun table(): List<SpamListEntry> =
@@ -211,6 +235,49 @@ class SpamListSyncTest {
         }
 
     @Test
+    fun aSupporterGetsTheExtendedListAndLookupsUseIt() =
+        runBlocking {
+            entitlements.value = SUPPORTER
+            val extended = listOf(TestEntry("+8801766666666", 51, "telemarketing", 1))
+            publish(1, TestListFiles.full("BD", 1, v1), extended = TestListFiles.extended("BD", 1, extended))
+            repository.sync()
+            assertEquals(1, db.extendedSpamListDao().count())
+            val spam = SpamListRepository(DatabaseAccess { db }, RealDispatchers, entitlements)
+            val hit = (spam.find(PhoneNumber("+8801766666666")) as AppResult.Success).value
+            assertEquals(0.51f, hit?.score)
+            assertEquals("telemarketing", hit?.category)
+            // The same version again: no second download.
+            repository.sync()
+            assertEquals(1, requested.count { it.endsWith("/extended") })
+
+            // The entitlement ends: lookups ignore the extended list at once, the next update drops it.
+            entitlements.value = Entitlement.NONE
+            assertEquals(AppResult.Success(null), spam.find(PhoneNumber("+8801766666666")))
+            repository.sync()
+            assertEquals(0, db.extendedSpamListDao().count())
+        }
+
+    @Test
+    fun withoutAnEntitlementTheExtendedListIsNeverDownloaded() =
+        runBlocking {
+            publish(1, TestListFiles.full("BD", 1, v1), extended = TestListFiles.extended("BD", 1, v2))
+            assertEquals(AppResult.Success(SpamListSyncOutcome.Updated("BD", 1, files = 1, full = true)), repository.sync())
+            assertTrue(requested.none { it.endsWith("/extended") })
+            assertEquals(0, db.extendedSpamListDao().count())
+        }
+
+    @Test
+    fun aBrokenExtendedFileKeepsTheStandardUpdate() =
+        runBlocking {
+            entitlements.value = SUPPORTER
+            // A full list served where the extended list should be: the kind doesn't match, so it is refused.
+            publish(1, TestListFiles.full("BD", 1, v1), extended = TestListFiles.full("BD", 1, v2))
+            assertEquals(AppResult.Success(SpamListSyncOutcome.Updated("BD", 1, files = 1, full = true)), repository.sync())
+            assertEquals(3, db.spamListDao().count())
+            assertEquals(0, db.extendedSpamListDao().count())
+        }
+
+    @Test
     fun offlineKeepsTheOldList() =
         runBlocking {
             publish(1, TestListFiles.full("BD", 1, v1))
@@ -219,4 +286,30 @@ class SpamListSyncTest {
             assertEquals(AppResult.Failure(AppError.Network), repository.sync())
             assertEquals(3, db.spamListDao().count())
         }
+
+    private class MutableEntitlements : EntitlementProvider {
+        var value: Entitlement = Entitlement.NONE
+        override val entitlement: Flow<Entitlement> get() = flowOf(value)
+        override val offer: Flow<SupporterOffer> = flowOf(SupporterOffer())
+
+        override suspend fun current(): Entitlement = value
+
+        override suspend fun refresh(): AppResult<Entitlement> = AppResult.Success(value)
+
+        override suspend fun verifyPurchase(
+            productId: String,
+            purchaseToken: String,
+        ): AppResult<Entitlement> = AppResult.Success(value)
+    }
+
+    private companion object {
+        val SUPPORTER =
+            Entitlement(
+                entitled = true,
+                tier = PaidTier.SUPPORTER,
+                source = EntitlementSource.BILLING,
+                expiresAtMillis =
+                    Long.MAX_VALUE / 2,
+            )
+    }
 }

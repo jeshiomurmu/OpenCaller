@@ -4,11 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jeshiomurmu.opencaller.core.common.getOrNull
+import io.github.jeshiomurmu.opencaller.core.data.supporter.EntitlementProvider
 import io.github.jeshiomurmu.opencaller.core.datastore.UserSettingsDataSource
 import io.github.jeshiomurmu.opencaller.core.model.AccessItem
 import io.github.jeshiomurmu.opencaller.core.model.AccessItemStatus
 import io.github.jeshiomurmu.opencaller.core.model.OnboardingStep
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
+import io.github.jeshiomurmu.opencaller.core.model.ThemeMode
 import io.github.jeshiomurmu.opencaller.core.telephony.AccessStatusSource
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.ConversationSource
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +28,7 @@ import javax.inject.Inject
  * @property degraded OpenCaller can't screen calls (call screening role missing): show the banner.
  * @property defaultPhoneApp status of the default phone app role when the Calls tab should offer it, else null.
  * @property defaultSmsApp status of the default SMS app role when the Messages tab should offer it, else null.
+ * @property gold the Gold accents are on (chosen, and the user is a supporter).
  */
 data class AppUiState(
     val loading: Boolean = true,
@@ -35,6 +38,8 @@ data class AppUiState(
     val isDefaultPhoneApp: Boolean = false,
     val defaultSmsApp: AccessItemStatus? = null,
     val isDefaultSmsApp: Boolean = false,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val gold: Boolean = false,
 )
 
 /** The app was opened to dial [number] (`ACTION_DIAL`; `null` opens an empty dial pad). */
@@ -57,11 +62,14 @@ class MainViewModel
         settings: UserSettingsDataSource,
         access: AccessStatusSource,
         private val conversations: ConversationSource,
+        private val entitlements: EntitlementProvider,
     ) : ViewModel() {
         /** App state. */
         val uiState: StateFlow<AppUiState> =
-            combine(settings.preferences, access.status) { preferences, status ->
+            combine(settings.preferences, access.status, entitlements.entitlement) { preferences, status, entitlement ->
                 AppUiState(
+                    themeMode = preferences.themeMode,
+                    gold = preferences.goldTheme && entitlement.entitled,
                     loading = false,
                     showOnboarding = preferences.onboardingStep != OnboardingStep.DONE,
                     degraded = status.isDegraded,
@@ -78,6 +86,11 @@ class MainViewModel
                     isDefaultSmsApp = status.statusOf(AccessItem.DEFAULT_SMS_APP) == AccessItemStatus.GRANTED,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), AppUiState())
+
+        init {
+            // Best effort: the daily update refreshes too, and the phone's copy holds offline.
+            viewModelScope.launch { entitlements.refresh() }
+        }
 
         private val report = MutableStateFlow<String?>(null)
 

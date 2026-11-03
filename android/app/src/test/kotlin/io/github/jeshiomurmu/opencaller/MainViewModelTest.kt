@@ -1,6 +1,7 @@
 package io.github.jeshiomurmu.opencaller
 
 import io.github.jeshiomurmu.opencaller.core.common.AppResult
+import io.github.jeshiomurmu.opencaller.core.data.supporter.StaticEntitlements
 import io.github.jeshiomurmu.opencaller.core.datastore.UserSettingsDataSource
 import io.github.jeshiomurmu.opencaller.core.datastore.inMemory
 import io.github.jeshiomurmu.opencaller.core.model.AccessItemStatus
@@ -37,7 +38,7 @@ class MainViewModelTest {
     fun showsOnboardingUntilItIsDone() =
         runTest {
             val settings = UserSettingsDataSource.inMemory()
-            val vm = MainViewModel(settings, access, conversations)
+            val vm = MainViewModel(settings, access, conversations, StaticEntitlements())
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
             assertFalse(vm.uiState.value.loading)
             assertTrue(vm.uiState.value.showOnboarding)
@@ -51,7 +52,12 @@ class MainViewModelTest {
         runTest {
             // TC-ONB-002 / TC-ONB-005: the banner follows the role, which is re-read on every resume.
             val vm =
-                MainViewModel(UserSettingsDataSource.inMemory(UserPreferences(onboardingStep = OnboardingStep.DONE)), access, conversations)
+                MainViewModel(
+                    UserSettingsDataSource.inMemory(UserPreferences(onboardingStep = OnboardingStep.DONE)),
+                    access,
+                    conversations,
+                    StaticEntitlements(),
+                )
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
             assertTrue(vm.uiState.value.degraded)
 
@@ -68,7 +74,7 @@ class MainViewModelTest {
     fun callsTabOffersTheDefaultPhoneAppUntilHeld() =
         runTest {
             // TC-ONB-003.
-            val vm = MainViewModel(UserSettingsDataSource.inMemory(), access, conversations)
+            val vm = MainViewModel(UserSettingsDataSource.inMemory(), access, conversations, StaticEntitlements())
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
             assertEquals(AccessItemStatus.COMING_LATER, vm.uiState.value.defaultPhoneApp)
 
@@ -92,7 +98,7 @@ class MainViewModelTest {
     @Test
     fun messagesTabOffersTheDefaultSmsAppUntilHeld() =
         runTest {
-            val vm = MainViewModel(UserSettingsDataSource.inMemory(), access, conversations)
+            val vm = MainViewModel(UserSettingsDataSource.inMemory(), access, conversations, StaticEntitlements())
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
             access.status.value =
                 access.status.value.copy(
@@ -116,7 +122,7 @@ class MainViewModelTest {
     @Test
     fun aSendToLinkOpensTheConversationWithItsText() =
         runTest {
-            val vm = MainViewModel(UserSettingsDataSource.inMemory(), access, conversations)
+            val vm = MainViewModel(UserSettingsDataSource.inMemory(), access, conversations, StaticEntitlements())
             vm.requestMessage(listOf("+15550001111", "+15550002222"), "Hi")
             assertEquals(
                 MessageRequest(threadId = 42, draft = "Hi", recipients = listOf("+15550001111", "+15550002222")),

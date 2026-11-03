@@ -116,6 +116,12 @@ object TestListFiles {
         removals: List<String>,
     ): ByteArray = encode(Header(2, country, version, base), upserts, removals)
 
+    fun extended(
+        country: String,
+        version: Long,
+        entries: List<TestEntry>,
+    ): ByteArray = encode(Header(3, country, version, 0), entries, emptyList())
+
     fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).toHexString()
 
     private class Header(

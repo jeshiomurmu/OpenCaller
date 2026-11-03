@@ -62,6 +62,7 @@ sealed interface SpamListSyncOutcome {
  * leaves the old list in place (TC-SYNC-002).
  */
 @Singleton
+@Suppress("LongParameterList") // Hilt-injected collaborators, one each; grouping them would only hide what it uses.
 class SpamListSyncRepository
     @Inject
     constructor(
@@ -71,6 +72,7 @@ class SpamListSyncRepository
         private val clock: Clock,
         private val stateStore: SpamListSyncStateStore,
         private val country: CountrySource,
+        private val extended: ExtendedSpamListSync,
     ) {
         private val storage = Storage(access, dispatchers)
 
@@ -100,7 +102,18 @@ class SpamListSyncRepository
                 }
             }
 
+        // The standard list first; then the extended list of the same version (supporters). A failure of the
+        // extended list is logged and retried at the next update; it never holds back the standard list.
         private suspend fun update(manifest: ListManifestDto): AppResult<SpamListSyncOutcome> {
+            val standard = updateStandard(manifest)
+            if (standard is AppResult.Success) {
+                val ext = extended.sync(manifest)
+                if (ext is AppResult.Failure) Timber.w("Extended spam list not updated: %s", ext.error)
+            }
+            return standard
+        }
+
+        private suspend fun updateStandard(manifest: ListManifestDto): AppResult<SpamListSyncOutcome> {
             val local = stateStore.state.first()
             val plan = manifest.updatePlan(local.country, local.version)
             if (plan == null) {

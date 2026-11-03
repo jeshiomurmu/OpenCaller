@@ -147,6 +147,24 @@ class PhoneNumberNormalizer(
         return simCode != 0 && simCode != countryCallingCode(number)
     }
 
+    /**
+     * Valid phone numbers written in [text] (e.g. a messenger's call notification), in order, as E.164; national
+     * numbers are read in [defaultRegion]. Uses libphonenumber's matcher with `Leniency.VALID`, so dates, codes and
+     * other digit runs that aren't valid numbers are skipped. Text over [MAX_TEXT_LENGTH] characters is not searched.
+     */
+    fun findInText(
+        text: String,
+        defaultRegion: String,
+    ): List<PhoneNumber> {
+        if (text.isBlank() || text.length > MAX_TEXT_LENGTH) return emptyList()
+        return util
+            .findNumbers(text, defaultRegion.uppercase(), PhoneNumberUtil.Leniency.VALID, MAX_MATCH_TRIES)
+            .map { util.format(it.number(), PhoneNumberFormat.E164) }
+            .filter(PhoneNumber::isE164)
+            .distinct()
+            .map(::PhoneNumber)
+    }
+
     private fun isGeographicRegion(region: String): Boolean = region.length == 2 && region != UNKNOWN_REGION
 
     private fun parse(number: PhoneNumber): LibPhoneNumber = util.parse(number.e164, UNKNOWN_REGION)
@@ -173,6 +191,8 @@ class PhoneNumberNormalizer(
 
     private companion object {
         const val MAX_INPUT_LENGTH = 64
+        const val MAX_TEXT_LENGTH = 1_000
+        const val MAX_MATCH_TRIES = 20L
         const val UNKNOWN_REGION = "ZZ"
         val SHORT_CODE = Regex("""^\d{3,8}$""")
         const val VISUAL_SEPARATORS = " -().\u00A0"

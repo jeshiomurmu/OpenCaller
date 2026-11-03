@@ -58,4 +58,16 @@
     <string name="debug_spam">spam score %1$s</string>
     <string name="debug_stir">STIR %1$s</string>
     <string name="debug_hidden">no number</string>
+    <string name="settings_supporter">Supporter</string>
+    <string name="settings_supporter_summary">No ads, ever. Supporters pay for the servers and get the extras.</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_appearance_summary">Light, dark or system; Gold for supporters</string>
+    <string name="settings_announce">Announce caller</string>
+    <string name="settings_announce_summary">Hear who is calling (supporters)</string>
+    <string name="settings_ghost_call">Ghost Call</string>
+    <string name="settings_ghost_call_summary">A made-up incoming call, when you need a way out (supporters)</string>
+    <string name="settings_messenger">WhatsApp, Telegram and Signal calls</string>
+    <string name="settings_messenger_summary">Caller ID when their call notification shows a number (supporters)</string>
+    <string name="settings_backup">Backup and restore</string>
+    <string name="settings_backup_summary">An encrypted copy of your settings, rules and history</string>
 </resources>

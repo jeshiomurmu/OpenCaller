@@ -26,6 +26,20 @@
             android:exported="false"
             android:launchMode="singleInstance"
             android:theme="@style/Theme.OpenCaller.AfterCall" />
+
+        <!--
+            Messenger caller ID (docs/prd.md F-ID-05): reads only WhatsApp, Telegram and Signal call notifications, and
+            only after the user turned the feature on and gave notification access in system settings.
+        -->
+        <service
+            android:name=".messenger.MessengerCallListener"
+            android:exported="true"
+            android:label="@string/messenger_listener_label"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>
