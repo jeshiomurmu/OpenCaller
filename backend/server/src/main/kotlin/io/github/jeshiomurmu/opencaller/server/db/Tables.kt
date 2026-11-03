@@ -6,7 +6,7 @@ import org.jetbrains.exposed.v1.core.java.javaUUID
 import org.jetbrains.exposed.v1.javatime.CurrentTimestampWithTimeZone
 import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
 
-// Exposed mirrors of the tables in db/migration (V1__init.sql = docs/architecture.md §7, then V2 to V4). Flyway
+// Exposed mirrors of the tables in db/migration (V1__init.sql = docs/architecture.md §7, then V2 to V5). Flyway
 // owns the schema; these objects are only used for queries. ServerSchemaTest compares them with the migrated database.
 
 internal const val COUNTRY_ISO_LENGTH = 2
@@ -189,6 +189,16 @@ object Subscriptions : Table("subscriptions") {
     val purchaseTokenHash = text("purchase_token_hash")
     val status = text("status")
     val expiresAt = timestampWithTimeZone("expires_at").nullable()
+
+    // V5: the purchase as Google reports it.
+    val purchaseToken = text("purchase_token").nullable()
+    val basePlanId = text("base_plan_id").nullable()
+    val tier = text("tier").default("none")
+    val autoRenewing = bool("auto_renewing").default(false)
+    val acknowledged = bool("acknowledged").default(false)
+    val testPurchase = bool("test_purchase").default(false)
+    val entitledUntil = timestampWithTimeZone("entitled_until").nullable()
+    val checkedAt = timestampWithTimeZone("checked_at").defaultExpression(CurrentTimestampWithTimeZone)
     override val primaryKey = PrimaryKey(userId, platform)
 }
 
@@ -227,7 +237,7 @@ object JobState : Table("job_state") {
     override val primaryKey = PrimaryKey(name)
 }
 
-/** Every table (V1, then V2 to V4), in creation order. */
+/** Every table (V1, then V2 to V5), in creation order. */
 val allTables: List<Table> =
     listOf(
         Users,

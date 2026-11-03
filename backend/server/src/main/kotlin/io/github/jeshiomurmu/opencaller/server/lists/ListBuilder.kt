@@ -26,6 +26,7 @@ data class CountryBuild(
     val entries: Int,
     val changed: Int,
     val removed: Int,
+    val extendedEntries: Int = 0,
 )
 
 /** What one list build did: new versions, and how many countries had no changes. */
@@ -37,9 +38,11 @@ data class ListBuildResult(
 
 /**
  * Builds the per-country spam lists (docs/architecture.md §4.8, §13), nightly and on demand. A number is listed
- * when its spam score is at least [ListConfig.minScore]; its country is libphonenumber's region for it. For each
- * country whose list changed it writes version N+1 as a full file and, if version N exists, a delta from N, uploads
- * both to the object store and records them in `list_versions`. Unchanged countries get no new version.
+ * when its spam score is at least [ListConfig.minScore]; its country is libphonenumber's region for it. A country's
+ * standard list keeps its [ListConfig.standardMaxEntries] most-reported numbers (then highest score, then lowest
+ * number); the rest form its extended list (F-PR-03). For each country whose lists changed it writes version N+1 as
+ * a full file, a delta from N if N exists, and an extended file if the extended list isn't empty, uploads them to
+ * the object store and records them in `list_versions`. Unchanged countries get no new version.
  */
 class ListBuilder(
     private val db: ServerDatabase,
@@ -74,25 +77,49 @@ class ListBuilder(
         previous: Published?,
         now: Instant,
     ): CountryBuild? {
-        val base = previous?.let { readPrevious(iso, it) }
-        val sorted = entries.sortedBy { it.number }
-        if (base != null && base.entries == sorted) return null
+        val (standard, extended) = split(entries)
+        val base = previous?.let { readPrevious(iso, it.objectKey, it.version) }
+        val baseExtended = previous?.let { readPrevious(iso, objectKey(iso, it.version, ListKind.EXTENDED), it.version, quiet = true) }
+        if (base != null && base.entries == standard && baseExtended?.entries.orEmpty() == extended) return null
         val version = (previous?.version ?: 0) + 1
-        val full = ListFile(ListKind.FULL, iso, version, 0, now.epochSecond, sorted)
-        val uploads = mutableListOf(ListKind.FULL to ListFormat.encode(full))
-        var changed = sorted.size
+        val uploads = mutableListOf(ListKind.FULL to ListFormat.encode(ListFile(ListKind.FULL, iso, version, 0, now.epochSecond, standard)))
+        var changed = standard.size
         var removed = 0
         if (base != null) {
             val before = base.entries.associateBy { it.number }
-            val upserts = sorted.filter { before[it.number] != it }
-            val now64 = sorted.map { it.number }.toSet()
-            val removals = base.entries.map { it.number }.filter { it !in now64 }
+            val upserts = standard.filter { before[it.number] != it }
+            val kept = standard.map { it.number }.toSet()
+            val removals = base.entries.map { it.number }.filter { it !in kept }
             changed = upserts.size
             removed = removals.size
             uploads +=
                 ListKind.DELTA to
                 ListFormat.encode(ListFile(ListKind.DELTA, iso, version, base.version, now.epochSecond, upserts, removals))
         }
+        if (extended.isNotEmpty()) {
+            uploads += ListKind.EXTENDED to ListFormat.encode(ListFile(ListKind.EXTENDED, iso, version, 0, now.epochSecond, extended))
+        }
+        publish(iso, version, uploads, now)
+        return CountryBuild(iso, version, standard.size, changed, removed, extended.size)
+    }
+
+    // The standard list keeps the most-reported numbers up to the cap; both parts are returned sorted by number.
+    private fun split(entries: List<ListEntry>): Pair<List<ListEntry>, List<ListEntry>> {
+        if (entries.size <= config.standardMaxEntries) return entries.sortedBy { it.number } to emptyList()
+        val ranked =
+            entries.sortedWith(
+                compareByDescending<ListEntry> { it.reportCount }.thenByDescending { it.scorePercent }.thenBy { it.number },
+            )
+        return ranked.take(config.standardMaxEntries).sortedBy { it.number } to
+            ranked.drop(config.standardMaxEntries).sortedBy { it.number }
+    }
+
+    private suspend fun publish(
+        iso: String,
+        version: Long,
+        uploads: List<Pair<ListKind, ByteArray>>,
+        now: Instant,
+    ) {
         val rows =
             uploads.map { (kind, bytes) ->
                 val key = objectKey(iso, version, kind)
@@ -109,23 +136,25 @@ class ListBuilder(
                 this[ListVersions.createdAt] = now.atOffset(ZoneOffset.UTC)
             }
         }
-        return CountryBuild(iso, version, sorted.size, changed, removed)
     }
 
-    // A missing or unreadable previous file means no delta this time; clients then download the full list.
+    // A missing or unreadable previous full file means no delta this time; clients then download the full list.
+    // A version without an extended file had an empty extended list ([quiet]: no warning).
     private suspend fun readPrevious(
         iso: String,
-        previous: Published,
+        key: String,
+        version: Long,
+        quiet: Boolean = false,
     ): ListFile? {
-        val bytes = store.get(previous.objectKey)
+        val bytes = store.get(key)
         if (bytes == null) {
-            log.warn("List {} v{} is missing from the object store; publishing a full list only", iso, previous.version)
+            if (!quiet) log.warn("List {} v{} is missing from the object store; publishing a full list only", iso, version)
             return null
         }
         return try {
             ListFormat.decode(bytes)
         } catch (e: ListFormatException) {
-            log.warn("List {} v{} is unreadable; publishing a full list only", iso, previous.version, e)
+            log.warn("List {} v{} ({}) is unreadable; publishing it again in full", iso, version, key, e)
             null
         }
     }
@@ -168,7 +197,10 @@ class ListBuilder(
         private const val FETCH_SIZE = 10_000
         private val log = LoggerFactory.getLogger(ListBuilder::class.java)
 
-        /** Object key of a list file, e.g. `lists/BD/3/full.ocsl` (the delta in the same folder turns v2 into v3). */
+        /**
+         * Object key of a list file, e.g. `lists/BD/3/full.ocsl` (the delta in the same folder turns v2 into v3,
+         * `extended.ocsl` is the extended list).
+         */
         fun objectKey(
             iso: String,
             version: Long,

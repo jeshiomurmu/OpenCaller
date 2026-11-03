@@ -5,6 +5,7 @@ import io.github.jeshiomurmu.opencaller.server.admin.adminModule
 import io.github.jeshiomurmu.opencaller.server.admin.web.adminWebModule
 import io.github.jeshiomurmu.opencaller.server.auth.TokenService
 import io.github.jeshiomurmu.opencaller.server.auth.authRoutes
+import io.github.jeshiomurmu.opencaller.server.billing.billingRoutes
 import io.github.jeshiomurmu.opencaller.server.business.businessRoutes
 import io.github.jeshiomurmu.opencaller.server.config.ConfigException
 import io.github.jeshiomurmu.opencaller.server.config.loadConfig
@@ -114,12 +115,13 @@ fun Application.module(deps: ServerDependencies) {
         authRoutes(deps.auth)
         reportRoutes(deps.reports)
         lookupRoutes(deps.lookup, deps.search, deps.tokens.verifier)
-        listRoutes(deps.lists)
+        listRoutes(deps.lists, deps.tokens.verifier, deps.entitlements)
         disputeRoutes(deps.disputes)
         unlistRoutes(deps.unlist)
         syncRoutes(deps.sync)
         profileRoutes(deps.profiles, deps.visitors, deps.contactRequests)
         businessRoutes(deps.claims, deps.businessDirectory)
+        billingRoutes(deps.billing)
     }
 }
 

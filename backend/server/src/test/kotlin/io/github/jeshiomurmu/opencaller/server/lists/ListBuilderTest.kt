@@ -145,7 +145,9 @@ class ListBuilderTest {
             client.getWith("/v1/lists/BD/files/9/full").assertProblem(HttpStatusCode.NotFound, "list_not_found")
             client.getWith("/v1/lists/BD/files/1/delta").assertProblem(HttpStatusCode.NotFound, "list_not_found")
             client.getWith("/v1/lists/BD/files/x/full").assertProblem(HttpStatusCode.NotFound, "list_not_found")
-            client.getWith("/v1/lists/BD/files/1/extended").assertProblem(HttpStatusCode.NotFound, "list_not_found")
+            // Extended files need a supporter's token (ExtendedListTest).
+            client.getWith("/v1/lists/BD/files/1/extended").assertProblem(HttpStatusCode.Unauthorized, "unauthorized")
+            assertNull(manifest.extended)
             client.getWith("/v1/lists/XX/manifest").assertProblem(HttpStatusCode.BadRequest, "invalid_country")
             client.getWith("/v1/lists/BGD/manifest").assertProblem(HttpStatusCode.BadRequest, "invalid_country")
         }

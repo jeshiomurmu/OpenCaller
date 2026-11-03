@@ -23,7 +23,10 @@ data class ListFileRef(
     val createdAt: String,
 )
 
-/** `GET /v1/lists/{countryIso}/manifest` response. */
+/**
+ * `GET /v1/lists/{countryIso}/manifest` response. [extended] is the extended list of [version] (supporters only),
+ * absent when that version has none.
+ */
 @Serializable
 data class ListManifest(
     val countryIso: String,
@@ -31,6 +34,7 @@ data class ListManifest(
     val version: Long,
     val full: ListFileRef,
     val deltas: List<ListFileRef>,
+    val extended: ListFileRef? = null,
 )
 
 /** A list file's bytes and checksum. */
@@ -59,7 +63,7 @@ class ListService(
                     .selectAll()
                     .where { ListVersions.countryIso eq iso }
                     .orderBy(ListVersions.version, SortOrder.DESC)
-                    .limit(2 * (MAX_DELTAS + 1))
+                    .limit(KINDS * (MAX_DELTAS + 1))
                     .toList()
             }
         val full = rows.firstOrNull { it[ListVersions.kind] == ListKind.FULL.sqlValue } ?: notFound(iso)
@@ -68,16 +72,21 @@ class ListService(
             rows
                 .filter { it[ListVersions.kind] == ListKind.DELTA.sqlValue && it[ListVersions.version] > latest - MAX_DELTAS }
                 .map { ref(iso, it[ListVersions.version], ListKind.DELTA, it[ListVersions.sha256], it[ListVersions.createdAt]) }
+        val extended =
+            rows
+                .firstOrNull { it[ListVersions.kind] == ListKind.EXTENDED.sqlValue && it[ListVersions.version] == latest }
+                ?.let { ref(iso, latest, ListKind.EXTENDED, it[ListVersions.sha256], it[ListVersions.createdAt]) }
         return ListManifest(
             countryIso = iso,
             format = ListFormat.FORMAT_VERSION,
             version = latest,
             full = ref(iso, latest, ListKind.FULL, full[ListVersions.sha256], full[ListVersions.createdAt]),
             deltas = deltas,
+            extended = extended,
         )
     }
 
-    /** The file [rawKind] (`full` or `delta`) of version [rawVersion] for [rawIso]. */
+    /** The file [rawKind] (`full`, `delta` or `extended`) of version [rawVersion] for [rawIso]. */
     suspend fun file(
         rawIso: String,
         rawVersion: String,
@@ -127,5 +136,8 @@ class ListService(
     companion object {
         /** Deltas listed in a manifest. */
         const val MAX_DELTAS = 14
+
+        // Files per version: full, delta, extended.
+        private const val KINDS = 3
     }
 }

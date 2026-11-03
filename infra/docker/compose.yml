@@ -116,6 +116,16 @@ services:
       ADMIN_WEB_ALLOWED_NETWORKS: ${ADMIN_WEB_ALLOWED_NETWORKS:-}
       # Optional: folder (inside the container) with sender-ID CSV extracts, <source>/<ISO>.csv, imported daily.
       IMPORT_DIR: ${IMPORT_DIR:-}
+      # Supporter tier: true unlocks every supporter feature for everyone on this server (self-hosting).
+      SELF_HOSTED: ${SELF_HOSTED:-false}
+      # Optional Google Play billing: a service-account key file (mount it into the container) with access to the
+      # app in Play Console, the app's package name and a 32+ character secret that binds purchases to accounts.
+      GOOGLE_PLAY_SERVICE_ACCOUNT_FILE: ${GOOGLE_PLAY_SERVICE_ACCOUNT_FILE:-}
+      GOOGLE_PLAY_PACKAGE_NAME: ${GOOGLE_PLAY_PACKAGE_NAME:-}
+      GOOGLE_PLAY_PRODUCT_ID: ${GOOGLE_PLAY_PRODUCT_ID:-opencaller_supporter}
+      BILLING_ACCOUNT_SECRET: ${BILLING_ACCOUNT_SECRET:-}
+      # A country's standard spam list keeps this many most-reported numbers; the rest is the extended list.
+      LIST_STANDARD_MAX_ENTRIES: ${LIST_STANDARD_MAX_ENTRIES:-200000}
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:
