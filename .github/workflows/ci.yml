@@ -41,20 +41,22 @@ jobs:
           check
 
       # Room writes the schema into core/database/schemas while compiling; it must be committed (docs/architecture.md
-      # §6). KSP is re-run (a build-cache hit writes nothing), and the step fails when Room wrote no schema, so it can't
-      # pass by comparing the committed files with themselves (docs/phase.md issue 102).
+      # §6). The newest committed schema is removed and KSP re-run without incremental processing (a cache hit or an
+      # incremental run writes nothing), so the step fails when Room wrote no schema instead of comparing the
+      # committed files with themselves (docs/phase.md issue 102).
       - name: Room schemas are committed
         run: |
           schemas=core/database/schemas/io.github.jeshiomurmu.opencaller.core.database.OpenCallerDatabase
-          touch "$RUNNER_TEMP/before-ksp"
-          ./gradlew :core:database:kspDebugKotlin --rerun
-          written="$(find "$schemas" -name '*.json' -newer "$RUNNER_TEMP/before-ksp" | sort)"
-          echo "Room schema files written by the build:"
-          echo "${written:-none}"
-          if [[ -z "$written" ]]; then
-            echo "::error::Room wrote no schema to $schemas; the committed schemas can't be checked"
+          latest="$(ls "$schemas" | sort -V | tail -1)"
+          rm "$schemas/$latest"
+          ./gradlew :core:database:kspDebugKotlin --rerun -Pksp.incremental=false
+          written="$(ls "$schemas" | sort -V | tail -1)"
+          echo "Newest schema after the build: ${written:-none} (committed: $latest)"
+          if [[ ! -f "$schemas/$latest" ]]; then
+            echo "::error::Room didn't write $latest to $schemas; the committed schemas can't be checked"
             exit 1
           fi
+          written="$schemas/$written"
           git add --intent-to-add core/database/schemas
           if ! git diff --exit-code -- core/database/schemas; then
             for file in $written; do
