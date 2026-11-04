@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- The call's audio; asked for when the user starts or answers an app call. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -10,14 +9,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
-    <!-- LiveKit's screen sharing is never used: no media-projection service or permission in OpenCaller. -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" tools:node="remove" />
+    <!-- Self-managed calls through Jetpack Telecom (its manifest declares it too). -->
+    <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
 
     <application>
-        <service
-            android:name="io.livekit.android.room.track.screencapture.ScreenCaptureService"
-            tools:node="remove" />
-
         <!-- Holds the app call while it rings and runs (Jetpack Telecom: a phoneCall foreground service). -->
         <service
             android:name=".VoipCallService"

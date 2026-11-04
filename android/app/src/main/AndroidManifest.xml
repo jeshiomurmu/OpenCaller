@@ -12,6 +12,9 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <!-- Spam-list updates, live lookup, reports and search (docs/architecture.md §4.6–4.8). -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- LiveKit's screen sharing is never used (app calls are audio only): its media-projection service and
+         permission are removed from the merged manifest. Builds without app calls (F-Droid) have neither. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" tools:node="remove" />
 
     <application
         android:name=".OpenCallerApplication"
@@ -69,6 +72,9 @@
                 android:value="androidx.startup"
                 tools:node="remove" />
         </provider>
+        <service
+            android:name="io.livekit.android.room.track.screencapture.ScreenCaptureService"
+            tools:node="remove" />
     </application>
 
 </manifest>

@@ -188,6 +188,7 @@ Phase 3 carry-over: measure the total screening p95 < 50 ms on a physical phone 
 134. **Hidden video clips have no review tool**, and three reports from different users hide one; a hidden clip stays hidden until its owner records a new one. ffmpeg parses untrusted uploads in the transcoder container: rebuild the image regularly for Ubuntu's security updates.
 135. **Entry points for app calls** are the other number's profile (search → profile → App call / Flash) and the Flash notification; the dial pad, call log and contacts have no "app call" action yet. App calls are not in the system call log or OpenCaller's call log.
 136. **Phase 11 app code runs only in CI** (as issues 76, 87, 99, 107, 112, 127): `feature:voip`, `feature:social`, the push services, Room v5 and `MigrationTest` 4→5 were first compiled there; `core:network` and `core:model` were tested locally. Room's own `5.json` replaces the provisional one once CI prints it (as issue 126).
+137. **FCM token API deprecated.** firebase-messaging 26.0.1 deprecates `FirebaseMessaging.getToken()` and `FirebaseMessagingService.onNewToken()`; Firebase's release notes and reference couldn't be reached from the agent sandbox, so their replacement is unverified. Both still work and are used with a documented suppression; switch when the replacement is checked.
 
 ## Verified dependency versions
 

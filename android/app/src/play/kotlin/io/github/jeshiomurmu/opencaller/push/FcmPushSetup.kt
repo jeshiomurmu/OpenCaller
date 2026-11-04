@@ -32,9 +32,11 @@ class FcmPushSetup
             activity: Activity?,
         ) {
             if (!features.fcm || !initialized()) return
-            FirebaseMessaging
-                .getInstance()
-                .token
+            // getToken() is deprecated in firebase-messaging 26 and its replacement couldn't be checked from the
+            // agent sandbox (docs/phase.md, issue 137); it still returns the registration token.
+            @Suppress("DEPRECATION")
+            val request = FirebaseMessaging.getInstance().token
+            request
                 .addOnSuccessListener { token -> startup.get().scope.launch { registrar.onNewEndpoint(PushEndpoint.Fcm(token)) } }
                 .addOnFailureListener { Timber.w(it, "No FCM token") }
         }

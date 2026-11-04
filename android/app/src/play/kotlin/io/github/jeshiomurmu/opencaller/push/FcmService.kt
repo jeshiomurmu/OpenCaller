@@ -24,6 +24,9 @@ class FcmService : FirebaseMessagingService() {
     @Inject
     lateinit var router: NotificationRouter
 
+    // Deprecated in firebase-messaging 26 (the replacement couldn't be checked from the agent sandbox, docs/phase.md
+    // issue 137); Firebase still calls it when the token changes.
+    @Suppress("OVERRIDE_DEPRECATION")
     override fun onNewToken(token: String) {
         runBlocking { withTimeoutOrNull(TIMEOUT_MILLIS) { registrar.onNewEndpoint(PushEndpoint.Fcm(token)) } }
     }
