@@ -309,7 +309,9 @@ expect "  push not delivered (no distributor)" 0 "$(field call .reachedDevices)"
 # LiveKit itself checks the token the server signed (its key, the room grant, the expiry).
 livekit_accepts() { curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:7880/rtc/validate?access_token=$1"; }
 expect "  LiveKit accepts the caller's token" 200 "$(livekit_accepts "$(field call .token)")"
-expect "  LiveKit refuses a forged token" 401 "$(livekit_accepts "$(field call .token | sed 's/.$//')x")"
+# Forged: the signature's first character changed (the last one carries padding bits a decoder may ignore).
+forge() { local t="$1" sig="${1##*.}"; local c="A"; [[ "${sig:0:1}" == A ]] && c="B"; echo "${t%.*}.$c${sig:1}"; }
+expect "  LiveKit refuses a forged token" 401 "$(livekit_accepts "$(forge "$(field call .token)")")"
 expect "GET /v1/notifications (callee)" call_invite "$(as_callee pending GET /v1/notifications > /dev/null; field pending '.[0].kind')"
 expect "  the invite" "$invite" "$(field pending '.[0].call.inviteId')"
 expect "  from the caller" "$reporter" "$(field pending '.[0].call.number')"
