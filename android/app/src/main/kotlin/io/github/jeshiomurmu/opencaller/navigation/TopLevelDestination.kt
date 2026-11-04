@@ -156,6 +156,14 @@ data object MessengerSettingsRoute
 @Serializable
 data object BackupSettingsRoute
 
+/** Me → Settings → App calls, Flash and video caller ID (Phase 11). */
+@Serializable
+data object VoipSettingsNavRoute
+
+/** Me → Settings → App calls, Flash and video caller ID → Record a clip. */
+@Serializable
+data object RecordClipNavRoute
+
 /** The five bottom-bar tabs (docs/design.md §6), in display order. */
 enum class TopLevelDestination(
     val route: Any,

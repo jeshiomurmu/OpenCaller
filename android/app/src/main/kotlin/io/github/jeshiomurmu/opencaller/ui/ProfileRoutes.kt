@@ -1,5 +1,7 @@
 package io.github.jeshiomurmu.opencaller.ui
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
@@ -10,6 +12,7 @@ import io.github.jeshiomurmu.opencaller.feature.profile.MyProfileNavigation
 import io.github.jeshiomurmu.opencaller.feature.profile.MyProfileRoute
 import io.github.jeshiomurmu.opencaller.feature.profile.PublicProfileRoute
 import io.github.jeshiomurmu.opencaller.feature.profile.VisitorsRoute
+import io.github.jeshiomurmu.opencaller.feature.social.ReachActions
 import io.github.jeshiomurmu.opencaller.navigation.ContactRequestsInboxRoute
 import io.github.jeshiomurmu.opencaller.navigation.MeRoute
 import io.github.jeshiomurmu.opencaller.navigation.NumberProfileRoute
@@ -35,5 +38,12 @@ internal fun NavGraphBuilder.profileRoutes(navController: NavHostController) {
         VisitorsRoute(kind = VisitKind.valueOf(entry.toRoute<ProfileVisitorsRoute>().kind))
     }
     composable<ContactRequestsInboxRoute> { ContactRequestsRoute() }
-    composable<NumberProfileRoute> { entry -> PublicProfileRoute(e164 = entry.toRoute<NumberProfileRoute>().e164) }
+    composable<NumberProfileRoute> { entry ->
+        val e164 = entry.toRoute<NumberProfileRoute>().e164
+        // App call and Flash (Phase 11) above the profile, when the server and this build offer them.
+        Column {
+            ReachActions(e164 = e164)
+            PublicProfileRoute(e164 = e164, modifier = Modifier.weight(1f))
+        }
+    }
 }

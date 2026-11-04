@@ -12,6 +12,11 @@ plugins {
 val releaseApiBaseUrl: Provider<String> = providers.gradleProperty("opencaller.apiBaseUrl").orElse("")
 val releaseApiPins: Provider<String> = providers.gradleProperty("opencaller.apiPins").orElse("")
 val debugApiBaseUrl: Provider<String> = providers.gradleProperty("opencaller.debugApiBaseUrl").orElse("http://10.0.2.2:8080/")
+
+// Firebase Cloud Messaging in play builds (Phase 11), from Gradle properties instead of google-services.json:
+// opencaller.firebase.appId / apiKey / projectId / senderId. Empty = no FCM (pending items are fetched on app open).
+fun firebase(name: String): Provider<String> = providers.gradleProperty("opencaller.firebase.$name").orElse("")
+
 // Where foss builds link for donations (opencaller.donationUrl; empty = no donation link).
 val donationUrl: Provider<String> = providers.gradleProperty("opencaller.donationUrl").orElse("")
 
@@ -85,6 +90,10 @@ android {
         }
         create("play") {
             dimension = "distribution"
+            buildConfigField("String", "FIREBASE_APP_ID", quoted(firebase("appId").get()))
+            buildConfigField("String", "FIREBASE_API_KEY", quoted(firebase("apiKey").get()))
+            buildConfigField("String", "FIREBASE_PROJECT_ID", quoted(firebase("projectId").get()))
+            buildConfigField("String", "FIREBASE_SENDER_ID", quoted(firebase("senderId").get()))
         }
     }
 }
