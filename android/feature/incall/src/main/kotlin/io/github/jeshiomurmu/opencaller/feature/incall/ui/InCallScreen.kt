@@ -1,5 +1,6 @@
 package io.github.jeshiomurmu.opencaller.feature.incall.ui
 
+import java.io.File
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -57,6 +58,7 @@ fun InCallRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val now by viewModel.nowMillis.collectAsStateWithLifecycle()
+    val clip by viewModel.ringingClip.collectAsStateWithLifecycle()
     val askNames = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { viewModel.onEvent(InCallEvent.Refresh) }
     LaunchedEffect(state.usesEarpiece) { callbacks.onEarpiece(state.usesEarpiece) }
     if (state.isOver) {
@@ -73,6 +75,7 @@ fun InCallRoute(
         onShowSimNames = { askNames.launch(Manifest.permission.READ_PHONE_NUMBERS) },
         modifier = modifier,
         showKeypadAtStart = showKeypadAtStart,
+        ringingClip = clip,
     )
 }
 
@@ -86,6 +89,7 @@ fun InCallScreen(
     onShowSimNames: () -> Unit,
     modifier: Modifier = Modifier,
     showKeypadAtStart: Boolean = false,
+    ringingClip: File? = null,
 ) {
     var keypadOpen by rememberSaveable { mutableStateOf(showKeypadAtStart) }
     var replying by rememberSaveable { mutableStateOf(false) }
@@ -151,7 +155,7 @@ private fun InCallContent(
             }
 
             ringing != null -> {
-                IncomingCall(view = ringing, nowMillis = nowMillis, onEvent = actions.onEvent, onReply = onReply)
+                IncomingCall(view = ringing, nowMillis = nowMillis, onEvent = actions.onEvent, onReply = onReply, clip = ringingClip)
             }
         }
     }

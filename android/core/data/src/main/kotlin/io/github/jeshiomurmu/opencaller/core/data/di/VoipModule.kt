@@ -14,6 +14,7 @@ import dagger.hilt.components.SingletonComponent
 import io.github.jeshiomurmu.opencaller.core.common.Clock
 import io.github.jeshiomurmu.opencaller.core.common.DispatcherProvider
 import io.github.jeshiomurmu.opencaller.core.data.voip.AppCallHandler
+import io.github.jeshiomurmu.opencaller.core.data.voip.CallerClips
 import io.github.jeshiomurmu.opencaller.core.data.voip.ClipNetwork
 import io.github.jeshiomurmu.opencaller.core.data.voip.ClipPrefetch
 import io.github.jeshiomurmu.opencaller.core.data.voip.VideoClips
@@ -64,6 +65,10 @@ interface VoipModule {
         /** Lookups prefetch clips into the cache. */
         @Provides
         fun clipPrefetch(clips: VideoClips): ClipPrefetch = clips
+
+        /** The in-call screens read clips from the cache. */
+        @Provides
+        fun callerClips(clips: VideoClips): CallerClips = clips
 
         private fun networkOf(context: Context): ClipNetwork {
             val connectivity = context.getSystemService(ConnectivityManager::class.java)

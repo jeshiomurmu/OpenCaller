@@ -1,5 +1,9 @@
 package io.github.jeshiomurmu.opencaller.feature.incall.ui
 
+import io.github.jeshiomurmu.opencaller.core.ui.MutedClip
+import java.io.File
+import androidx.compose.foundation.layout.height
+io.github.jeshiomurmu.opencaller.core.ui.CallRoundAction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,15 +43,24 @@ internal fun IncomingCall(
     onEvent: (InCallEvent) -> Unit,
     onReply: () -> Unit,
     modifier: Modifier = Modifier,
+    clip: File? = null,
 ) {
     Column(modifier = modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+        // The caller's video caller ID, muted (downloaded earlier on Wi-Fi with the lookup bucket; ADR 0007).
+        clip?.let {
+            MutedClip(
+                file = it,
+                contentDescription = stringResource(R.string.incall_video_caller_id),
+                modifier = Modifier.fillMaxWidth().height(OpenCallerSpacing.videoCallerId),
+            )
+        }
         CallHeader(view = view, nowMillis = nowMillis, modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()))
         Row(
             modifier = Modifier.fillMaxWidth().padding(vertical = OpenCallerSpacing.l),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.Top,
         ) {
-            RoundAction(
+            CallRoundAction(
                 icon = OpenCallerIcons.CallEnd,
                 label = stringResource(R.string.incall_decline),
                 container = OpenCallerTheme.semanticColors.danger,
@@ -55,7 +68,7 @@ internal fun IncomingCall(
                 onClick = { onEvent(InCallEvent.Decline(view.call.id)) },
             )
             if (view.call.can(CallCapability.RESPOND_VIA_TEXT)) {
-                RoundAction(
+                CallRoundAction(
                     icon = OpenCallerIcons.Message,
                     label = stringResource(R.string.incall_message),
                     container = MaterialTheme.colorScheme.surfaceVariant,
@@ -63,7 +76,7 @@ internal fun IncomingCall(
                     onClick = onReply,
                 )
             }
-            RoundAction(
+            CallRoundAction(
                 icon = OpenCallerIcons.Calls,
                 label = stringResource(R.string.incall_answer),
                 container = MaterialTheme.colorScheme.primary,

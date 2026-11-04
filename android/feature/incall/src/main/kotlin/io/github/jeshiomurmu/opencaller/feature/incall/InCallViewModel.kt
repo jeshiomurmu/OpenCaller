@@ -18,7 +18,16 @@ import io.github.jeshiomurmu.opencaller.core.telephony.incall.TrackedCall
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.mergeAction
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.swapAction
 import io.github.jeshiomurmu.opencaller.feature.incall.calls.CallerDirectory
+import io.github.jeshiomurmu.opencaller.core.data.voip.CallerClips
+import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import java.io.File
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -145,6 +154,7 @@ class InCallViewModel
         private val controller: CallController,
         templates: QuickReplyTemplates,
         clock: Clock,
+        private val clips: CallerClips,
     ) : ViewModel() {
         /** Screen state. */
         val uiState: StateFlow<InCallUiState> =
@@ -154,6 +164,28 @@ class InCallViewModel
                 templates.replies(),
             ) { calls, callers, replies -> toUi(calls, callers).copy(userReplies = replies) }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), InCallUiState())
+
+        /**
+         * The ringing caller's video caller ID, if one is downloaded (it may arrive a few seconds into the ringing, so
+         * the cache is checked again for a while).
+         */
+        @OptIn(ExperimentalCoroutinesApi::class)
+        val ringingClip: StateFlow<File?> =
+            uiState
+                .map { it.ringing?.caller?.number }
+                .distinctUntilChanged()
+                .flatMapLatest { number -> if (number == null) flowOf(null) else clipOf(number) }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
+
+        private fun clipOf(number: PhoneNumber): Flow<File?> =
+            flow {
+                repeat(CLIP_CHECKS) {
+                    val clip = clips.clipFor(number)
+                    emit(clip)
+                    if (clip != null) return@flow
+                    delay(TICK_MILLIS)
+                }
+            }
 
         /** The time, once a second while the screen shows, for the call timer (Telecom's connect time is wall clock). */
         val nowMillis: StateFlow<Long> =
@@ -242,5 +274,6 @@ class InCallViewModel
         private companion object {
             const val STOP_TIMEOUT_MILLIS = 5_000L
             const val TICK_MILLIS = 1_000L
+            const val CLIP_CHECKS = 15
         }
     }

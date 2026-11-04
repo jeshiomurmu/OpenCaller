@@ -34,6 +34,18 @@ fun interface ClipPrefetch {
     }
 }
 
+/** The downloaded video caller ID of a number's owner, for the in-call screens. */
+fun interface CallerClips {
+    /** The clip of [number]'s owner, if a lookup named one and it is downloaded. */
+    suspend fun clipFor(number: PhoneNumber): File?
+
+    /** No clips (tests, previews). */
+    companion object {
+        /** Never a clip. */
+        val NONE = CallerClips { null }
+    }
+}
+
 /** Whether the phone is on a network clips may download over now. */
 fun interface ClipNetwork {
     /** True on an unmetered network (Wi-Fi), or on any network when [mobileDataAllowed]. */
@@ -53,7 +65,8 @@ class VideoClips(
     private val clock: Clock,
     access: DatabaseAccess,
     private val dispatchers: DispatcherProvider,
-) : ClipPrefetch {
+) : ClipPrefetch,
+    CallerClips {
     private val storage = Storage(access, dispatchers)
     private val scope = CoroutineScope(SupervisorJob() + dispatchers.io + CoroutineExceptionHandler { _, e -> Timber.w(e, "Clip download failed") })
     private val lock = Mutex()
@@ -61,8 +74,7 @@ class VideoClips(
     /** The downloaded clip [videoId], if it is here. */
     fun clip(videoId: String): File? = if (isClipId(videoId)) fileOf(videoId).takeIf { it.isFile && it.length() > 0 } else null
 
-    /** The clip of [number]'s owner, if a lookup named one and it is downloaded. */
-    suspend fun clipFor(number: PhoneNumber): File? {
+    override suspend fun clipFor(number: PhoneNumber): File? {
         val id = storage.run { numberInfoDao().videoIdOf(number.e164, clock.nowMillis()) }.getOrNull() ?: return null
         return clip(id)
     }

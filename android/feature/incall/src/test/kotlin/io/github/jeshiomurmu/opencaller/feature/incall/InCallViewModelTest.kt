@@ -1,5 +1,6 @@
 package io.github.jeshiomurmu.opencaller.feature.incall
 
+import io.github.jeshiomurmu.opencaller.core.data.voip.CallerClips
 import io.github.jeshiomurmu.opencaller.core.model.CallerInfo
 import io.github.jeshiomurmu.opencaller.core.model.Direction
 import io.github.jeshiomurmu.opencaller.core.model.NameSource
@@ -122,6 +123,7 @@ class InCallViewModelTest {
             controller = controller,
             templates = { userReplies },
             clock = FakeClock(),
+            clips = CallerClips.NONE,
         )
     }
 

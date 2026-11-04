@@ -55,4 +55,5 @@
     <string name="incall_sim_names_needed">To show your SIM names, OpenCaller needs to read your phone numbers. They stay on this phone.</string>
     <string name="incall_sim_show_names">Show SIM names</string>
     <string name="incall_cancel_call">Cancel call</string>
+    <string name="incall_video_caller_id">The caller\'s video caller ID, without sound</string>
 </resources>
