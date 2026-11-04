@@ -2,7 +2,9 @@ package io.github.jeshiomurmu.opencaller.core.database
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import io.github.jeshiomurmu.opencaller.core.database.dao.BackupDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.BlockRuleDao
+import io.github.jeshiomurmu.opencaller.core.database.dao.ExtendedSpamListDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.FamilyMemberDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.LookupBucketDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.MessageMetaDao
@@ -17,6 +19,7 @@ import io.github.jeshiomurmu.opencaller.core.database.dao.SpamListDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.VerificationRangeDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.VerifiedBusinessDao
 import io.github.jeshiomurmu.opencaller.core.database.entity.BlockRuleEntity
+import io.github.jeshiomurmu.opencaller.core.database.entity.ExtendedSpamListEntry
 import io.github.jeshiomurmu.opencaller.core.database.entity.FamilyMemberEntity
 import io.github.jeshiomurmu.opencaller.core.database.entity.LookupBucketEntity
 import io.github.jeshiomurmu.opencaller.core.database.entity.MessageMetaEntity
@@ -52,14 +55,21 @@ import io.github.jeshiomurmu.opencaller.core.database.entity.VerifiedBusinessEnt
         ScheduledSmsEntity::class,
         FamilyMemberEntity::class,
         VerifiedBusinessEntity::class,
+        ExtendedSpamListEntry::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 @Suppress("TooManyFunctions") // One accessor per DAO is how Room exposes them.
 abstract class OpenCallerDatabase : RoomDatabase() {
     /** On-device spam list. */
     abstract fun spamListDao(): SpamListDao
+
+    /** The extended spam list (supporters). */
+    abstract fun extendedSpamListDao(): ExtendedSpamListDao
+
+    /** What backups read and restore. */
+    abstract fun backupDao(): BackupDao
 
     /** Reputation cache. */
     abstract fun numberInfoDao(): NumberInfoDao

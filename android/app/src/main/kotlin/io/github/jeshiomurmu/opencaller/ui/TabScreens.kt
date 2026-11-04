@@ -27,6 +27,7 @@ import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
 import io.github.jeshiomurmu.opencaller.core.model.AccessItemStatus
 import io.github.jeshiomurmu.opencaller.feature.calllog.CallLogNavigation
 import io.github.jeshiomurmu.opencaller.feature.calllog.CallLogRoute
+import io.github.jeshiomurmu.opencaller.feature.settings.SettingsLinks
 import io.github.jeshiomurmu.opencaller.feature.settings.SettingsScreen
 import io.github.jeshiomurmu.opencaller.navigation.TopLevelDestination
 
@@ -144,10 +145,8 @@ private fun DefaultAppCard(
 /** Me tab until profiles arrive (Phase 8): a profile placeholder line, the [account] section, then settings. */
 @Composable
 internal fun MeScreen(
-    onOpenPermissions: () -> Unit,
+    links: SettingsLinks,
     modifier: Modifier = Modifier,
-    onOpenDebug: () -> Unit = {},
-    onOpenQuickReplies: () -> Unit = {},
     account: @Composable () -> Unit = {},
 ) {
     Column(modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -158,12 +157,7 @@ internal fun MeScreen(
             modifier = Modifier.padding(horizontal = OpenCallerSpacing.screenPadding, vertical = OpenCallerSpacing.m),
         )
         account()
-        SettingsScreen(
-            onOpenPermissions = onOpenPermissions,
-            versionName = BuildConfig.VERSION_NAME,
-            onOpenDebug = onOpenDebug,
-            onOpenQuickReplies = onOpenQuickReplies,
-        )
+        SettingsScreen(links = links, versionName = BuildConfig.VERSION_NAME)
     }
 }
 
@@ -191,6 +185,6 @@ private fun MessagesScreenPreview() {
 @Composable
 private fun MeScreenPreview() {
     OpenCallerTheme {
-        Surface(color = MaterialTheme.colorScheme.surface) { MeScreen(onOpenPermissions = {}) }
+        Surface(color = MaterialTheme.colorScheme.surface) { MeScreen(links = SettingsLinks()) }
     }
 }

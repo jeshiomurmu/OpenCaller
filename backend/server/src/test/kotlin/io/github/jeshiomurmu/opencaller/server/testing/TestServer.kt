@@ -5,6 +5,7 @@ import io.github.jeshiomurmu.opencaller.server.ServerDependencies
 import io.github.jeshiomurmu.opencaller.server.auth.E164
 import io.github.jeshiomurmu.opencaller.server.auth.otp.OtpDeliveryException
 import io.github.jeshiomurmu.opencaller.server.auth.otp.OtpProvider
+import io.github.jeshiomurmu.opencaller.server.billing.PlaySubscriptions
 import io.github.jeshiomurmu.opencaller.server.config.AdminConfig
 import io.github.jeshiomurmu.opencaller.server.config.AppConfig
 import io.github.jeshiomurmu.opencaller.server.config.DatabaseConfig
@@ -197,13 +198,14 @@ const val TEST_ADMIN_TOKEN = "test-admin-token-with-at-least-32-chars"
 class TestServer(
     val objectStore: ObjectStore = InMemoryObjectStore(),
     config: AppConfig = testConfig(),
+    playApi: PlaySubscriptions? = null,
 ) {
     val clock = MutableClock()
     val otp = RecordingOtpProvider()
 
     /** Codes "read aloud" for business claims by phone call. */
     val voice = RecordingOtpProvider()
-    val deps = ServerDependencies(config, TestInfra.database, TestInfra.redis, CodeSenders(otp, voice), clock, objectStore)
+    val deps = ServerDependencies(config, TestInfra.database, TestInfra.redis, CodeSenders(otp, voice), clock, objectStore, playApi)
 
     /** Empties Redis and every table so tests don't see each other's codes, limits, users or reports. */
     suspend fun reset() {

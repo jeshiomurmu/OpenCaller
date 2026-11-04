@@ -167,9 +167,7 @@ private fun AppNavHost(
         protectionRoutes(navController, reportNumber, onReportShown, openPermissions)
         composable<MeRoute> {
             MeScreen(
-                onOpenPermissions = { openPermissions(null) },
-                onOpenDebug = { navController.navigate(ScreeningDebugRoute) { launchSingleTop = true } },
-                onOpenQuickReplies = { navController.navigate(QuickRepliesSettingsRoute) { launchSingleTop = true } },
+                links = settingsLinks(navController, openPermissions),
                 account = {
                     AccountRoute(
                         onSignIn = { navController.navigate(AccountSignInRoute) { launchSingleTop = true } },
@@ -183,6 +181,7 @@ private fun AppNavHost(
         }
         onlineRoutes(navController)
         profileRoutes(navController)
+        supporterRoutes(navController)
         composable<ScreeningDebugRoute> { DebugRoute() }
         composable<QuickRepliesSettingsRoute> { QuickRepliesRoute() }
         composable<PermissionsRoute> { entry ->

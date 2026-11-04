@@ -12,6 +12,8 @@ plugins {
 val releaseApiBaseUrl: Provider<String> = providers.gradleProperty("opencaller.apiBaseUrl").orElse("")
 val releaseApiPins: Provider<String> = providers.gradleProperty("opencaller.apiPins").orElse("")
 val debugApiBaseUrl: Provider<String> = providers.gradleProperty("opencaller.debugApiBaseUrl").orElse("http://10.0.2.2:8080/")
+// Where foss builds link for donations (opencaller.donationUrl; empty = no donation link).
+val donationUrl: Provider<String> = providers.gradleProperty("opencaller.donationUrl").orElse("")
 
 // Release signing comes from the environment only (the release workflow fills it from repository secrets); the
 // keystore never lives in the repository. Without it, release builds are unsigned.
@@ -31,6 +33,8 @@ android {
         // 40 + n for beta.n, 70 + n for rc.n and 99 for the final release (0.1.0-alpha → 10010, 0.1.0 → 10099).
         versionCode = 50040
         versionName = "0.5.0-beta"
+
+        buildConfigField("String", "DONATION_URL", quoted(donationUrl.get()))
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Each instrumented test starts from a fresh install state (no settings, no granted permissions).
@@ -128,6 +132,13 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.core)
     implementation(libs.timber)
+
+    // Google Play only: Play Billing for the supporter subscription, Identity Services and the Drive REST API (over
+    // OkHttp) for Drive backups. The foss build has no Google Play Services (docs/architecture.md §3).
+    "playImplementation"(libs.play.billing)
+    "playImplementation"(libs.play.services.auth)
+    "playImplementation"(libs.okhttp)
+    "playImplementation"(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit4)
     testImplementation(projects.core.testing)

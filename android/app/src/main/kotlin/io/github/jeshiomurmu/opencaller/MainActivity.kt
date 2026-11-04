@@ -8,6 +8,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
+import io.github.jeshiomurmu.opencaller.core.model.ThemeMode
 import io.github.jeshiomurmu.opencaller.core.telephony.RefreshAccessOnResume
 import io.github.jeshiomurmu.opencaller.feature.callerid.CallerIdIntents
 import io.github.jeshiomurmu.opencaller.feature.messages.MessageLinks
@@ -52,32 +54,42 @@ class MainActivity : ComponentActivity() {
             requestDialIfAsked(intent)
             requestMessageIfAsked(intent)
         }
-        setContent {
-            OpenCallerTheme {
-                val state by viewModel.uiState.collectAsStateWithLifecycle()
-                val report by viewModel.pendingReport.collectAsStateWithLifecycle()
-                val dial by viewModel.pendingDial.collectAsStateWithLifecycle()
-                val message by viewModel.pendingMessage.collectAsStateWithLifecycle()
-                when {
-                    state.loading -> {
-                        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {}
-                    }
+        setContent { Content() }
+    }
 
-                    state.showOnboarding -> {
-                        Onboarding(account)
-                    }
+    // The user's theme (system, light or dark; Gold for supporters), then onboarding or the app.
+    @Composable
+    private fun Content() {
+        val state by viewModel.uiState.collectAsStateWithLifecycle()
+        val dark =
+            when (state.themeMode) {
+                ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                ThemeMode.LIGHT -> false
+                ThemeMode.DARK -> true
+            }
+        OpenCallerTheme(darkTheme = dark, gold = state.gold) {
+            val report by viewModel.pendingReport.collectAsStateWithLifecycle()
+            val dial by viewModel.pendingDial.collectAsStateWithLifecycle()
+            val message by viewModel.pendingMessage.collectAsStateWithLifecycle()
+            when {
+                state.loading -> {
+                    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {}
+                }
 
-                    else -> {
-                        OpenCallerApp(
-                            state = state,
-                            reportNumber = report,
-                            onReportShown = viewModel::reportShown,
-                            dialRequest = dial,
-                            onDialShown = viewModel::dialShown,
-                            messageRequest = message,
-                            onMessageShown = viewModel::messageShown,
-                        )
-                    }
+                state.showOnboarding -> {
+                    Onboarding(account)
+                }
+
+                else -> {
+                    OpenCallerApp(
+                        state = state,
+                        reportNumber = report,
+                        onReportShown = viewModel::reportShown,
+                        dialRequest = dial,
+                        onDialShown = viewModel::dialShown,
+                        messageRequest = message,
+                        onMessageShown = viewModel::messageShown,
+                    )
                 }
             }
         }

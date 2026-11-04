@@ -24,4 +24,10 @@
     <string name="after_call_message">Message</string>
     <string name="after_call_message_own">Write a message</string>
     <string name="after_call_close">Close</string>
+    <string name="messenger_listener_label">OpenCaller caller ID for WhatsApp, Telegram and Signal calls</string>
+    <!-- Announce Caller (spoken; docs/prd.md F-UT-02). -->
+    <string name="announce_named">%1$s is calling</string>
+    <string name="announce_spam">Likely spam call</string>
+    <string name="announce_hidden">Call from a hidden number</string>
+    <string name="announce_unknown">Call from an unknown number</string>
 </resources>

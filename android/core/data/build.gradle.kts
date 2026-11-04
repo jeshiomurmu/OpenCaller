@@ -1,6 +1,7 @@
 plugins {
     id("opencaller.android.library")
     id("opencaller.android.hilt")
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -17,6 +18,7 @@ dependencies {
     api(libs.androidx.work.runtime)
     implementation(projects.core.database)
     implementation(projects.core.phonenumber)
+    implementation(projects.core.datastore)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.hilt.work)

@@ -1,6 +1,7 @@
 package io.github.jeshiomurmu.opencaller.core.datastore
 
 import io.github.jeshiomurmu.opencaller.core.model.AnnounceCallerMode
+import io.github.jeshiomurmu.opencaller.core.model.GhostCallSetup
 import io.github.jeshiomurmu.opencaller.core.model.OnboardingStep
 import io.github.jeshiomurmu.opencaller.core.model.SpamThreshold
 import io.github.jeshiomurmu.opencaller.core.model.ThemeMode
@@ -61,6 +62,15 @@ internal fun UserSettings.toDomain(): UserPreferences =
         listUpdatesOnMobileData = listUpdatesOnMobileData,
         quickReplies = quickRepliesList.toList(),
         otpAutoDelete = otpAutoDelete,
+        goldTheme = goldTheme,
+        messengerCallerId = messengerCallerId,
+        ghostCall =
+            GhostCallSetup(
+                callerName = ghostCallName,
+                displayNumber = ghostCallNumber,
+                delaySeconds = ghostCallDelaySeconds.takeIf { it in GhostCallSetup.DELAYS } ?: GhostCallSetup.DEFAULT_DELAY_SECONDS,
+                hasPhoto = ghostCallHasPhoto,
+            ),
     )
 
 /** Maps the domain model to its stored form. Region codes are stored sorted so equal sets serialize equally. */
@@ -80,4 +90,30 @@ internal fun UserPreferences.toProto(): UserSettings =
         .setListUpdatesOnMobileData(listUpdatesOnMobileData)
         .addAllQuickReplies(quickReplies)
         .setOtpAutoDelete(otpAutoDelete)
+        .setGoldTheme(goldTheme)
+        .setMessengerCallerId(messengerCallerId)
+        .setGhostCallName(ghostCall.callerName)
+        .setGhostCallNumber(ghostCall.displayNumber)
+        .setGhostCallDelaySeconds(ghostCall.delaySeconds)
+        .setGhostCallHasPhoto(ghostCall.hasPhoto)
         .build()
+
+/**
+ * The settings as backup bytes (docs/prd.md F-UT-05): the stored protobuf without the onboarding step, which
+ * describes this phone's roles and permissions, not the user's choices.
+ */
+fun UserPreferences.toBackupBytes(): ByteArray = copy(onboardingStep = OnboardingStep.WELCOME).toProto().toByteArray()
+
+/**
+ * Settings from [bytes] made by [toBackupBytes]; [onboardingStep] stays this phone's. Throws
+ * [IllegalArgumentException] for bytes that aren't stored settings.
+ */
+fun backupBytesToPreferences(
+    bytes: ByteArray,
+    onboardingStep: OnboardingStep,
+): UserPreferences =
+    try {
+        UserSettings.parseFrom(bytes).toDomain().copy(onboardingStep = onboardingStep)
+    } catch (e: com.google.protobuf.InvalidProtocolBufferException) {
+        throw IllegalArgumentException("not stored settings", e)
+    }

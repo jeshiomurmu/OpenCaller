@@ -132,6 +132,30 @@ data class VerifiedBusinessRoute(
 @Serializable
 data object QuickRepliesSettingsRoute
 
+/** Me → Settings → Supporter (Phase 10). */
+@Serializable
+data object SupporterPlansRoute
+
+/** Me → Settings → Appearance. */
+@Serializable
+data object AppearanceSettingsRoute
+
+/** Me → Settings → Announce caller. */
+@Serializable
+data object AnnounceSettingsRoute
+
+/** Me → Settings → Ghost Call. */
+@Serializable
+data object GhostCallSettingsRoute
+
+/** Me → Settings → WhatsApp, Telegram and Signal calls. */
+@Serializable
+data object MessengerSettingsRoute
+
+/** Me → Settings → Backup and restore. */
+@Serializable
+data object BackupSettingsRoute
+
 /** The five bottom-bar tabs (docs/design.md §6), in display order. */
 enum class TopLevelDestination(
     val route: Any,

@@ -3,6 +3,7 @@ package io.github.jeshiomurmu.opencaller.core.data
 import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.common.DispatcherProvider
 import io.github.jeshiomurmu.opencaller.core.common.map
+import io.github.jeshiomurmu.opencaller.core.data.supporter.EntitlementProvider
 import io.github.jeshiomurmu.opencaller.core.database.DatabaseAccess
 import io.github.jeshiomurmu.opencaller.core.database.entity.SpamListEntry
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
@@ -32,12 +33,21 @@ class SpamListRepository
     constructor(
         access: DatabaseAccess,
         dispatchers: DispatcherProvider,
+        private val entitlements: EntitlementProvider,
     ) {
         private val storage = Storage(access, dispatchers)
 
-        /** The entry for [number], or `null` when it isn't listed. */
-        suspend fun find(number: PhoneNumber): AppResult<SpamListHit?> =
-            storage.run { spamListDao().find(number.e164) }.map { entry -> entry?.toHit() }
+        /**
+         * The entry for [number], or `null` when it isn't listed: the standard list, then (supporters only, F-PR-03)
+         * the extended list. A lapsed entitlement stops using the extended list at once, before its next update drops it.
+         */
+        suspend fun find(number: PhoneNumber): AppResult<SpamListHit?> {
+            val standard = storage.run { spamListDao().find(number.e164) }.map { entry -> entry?.toHit() }
+            if (standard !is AppResult.Success || standard.value != null || !entitlements.current().entitled) return standard
+            return storage.run { extendedSpamListDao().find(number.e164) }.map { entry ->
+                entry?.let { SpamListEntry(it.e164, it.score, it.category, it.reportCount, it.listVersion).toHit() }
+            }
+        }
 
         /** Adds or replaces [hits] as list version [listVersion]. */
         suspend fun upsert(

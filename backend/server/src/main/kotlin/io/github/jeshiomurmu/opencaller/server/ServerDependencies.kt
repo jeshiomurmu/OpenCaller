@@ -12,6 +12,10 @@ import io.github.jeshiomurmu.opencaller.server.auth.otp.OtpService
 import io.github.jeshiomurmu.opencaller.server.auth.otp.OtpStore
 import io.github.jeshiomurmu.opencaller.server.auth.otp.TwilioOtpProvider
 import io.github.jeshiomurmu.opencaller.server.auth.otp.TwilioVoiceOtpProvider
+import io.github.jeshiomurmu.opencaller.server.billing.BillingRecheckResult
+import io.github.jeshiomurmu.opencaller.server.billing.BillingService
+import io.github.jeshiomurmu.opencaller.server.billing.GooglePlayDeveloperApi
+import io.github.jeshiomurmu.opencaller.server.billing.PlaySubscriptions
 import io.github.jeshiomurmu.opencaller.server.business.BusinessDirectory
 import io.github.jeshiomurmu.opencaller.server.business.ClaimCodes
 import io.github.jeshiomurmu.opencaller.server.business.ClaimReview
@@ -69,7 +73,11 @@ class CodeSenders(
     val voice: OtpProvider? = null,
 )
 
-/** Everything the server needs, built once in `main` (and by tests with their own clock and OTP provider). */
+/**
+ * Everything the server needs, built once in `main` (and by tests with their own clock, OTP providers, object store
+ * and Play API, hence the parameter count).
+ */
+@Suppress("LongParameterList")
 class ServerDependencies(
     val config: AppConfig,
     val database: ServerDatabase,
@@ -77,6 +85,7 @@ class ServerDependencies(
     senders: CodeSenders,
     val clock: Clock,
     val objectStore: ObjectStore = S3ObjectStore(config.minio, clock),
+    playApi: PlaySubscriptions? = null,
 ) : Closeable {
     private val otpProvider = senders.sms
     private val voiceProvider = senders.voice
@@ -105,7 +114,9 @@ class ServerDependencies(
             processedWithinMinutes = config.scoring.intervalMinutes,
         )
     val sync = SyncService(database, SeedData.load())
-    val entitlements: Entitlements = StoredTierEntitlements(database)
+    val entitlements: Entitlements = StoredTierEntitlements(database, config.billing.selfHosted)
+    private val playSubscriptions: PlaySubscriptions? = config.billing.googlePlay?.let { playApi ?: GooglePlayDeveloperApi(it, clock) }
+    val billing = BillingService(database, config.billing, playSubscriptions, rateLimiter, clock)
     val profiles = ProfileService(database, objectStore, clock)
     val visitors = VisitorService(database, objectStore, entitlements, rateLimiter, clock)
     val contactRequests = ContactRequestService(database, rateLimiter, clock)
@@ -153,15 +164,20 @@ class ServerDependencies(
                 SenderIdImportJob.JOB_NAME,
                 IMPORT_LOCK,
             ) { ApiJson.encodeToJsonElement(ImportJobResult.serializer(), importJob.run()) },
+            LeaderJob(BILLING_JOB, BILLING_LOCK) { ApiJson.encodeToJsonElement(BillingRecheckResult.serializer(), billing.recheck()) },
         )
 
-    /** Starts the scoring job every [ScoringConfig.intervalMinutes]; the list build, retention and sender-ID imports daily. */
+    /**
+     * Starts the scoring job every [ScoringConfig.intervalMinutes]; the list build, retention and sender-ID imports
+     * daily; the billing re-check hourly.
+     */
     fun startJobs(scope: CoroutineScope) {
         val scheduler = JobScheduler(scope, jobRunner, clock)
         scheduler.every(Duration.ofMinutes(config.scoring.intervalMinutes.toLong()), jobs.first { it.name == ScoringJob.JOB_NAME })
         scheduler.dailyAt(config.lists.buildHourUtc, jobs.first { it.name == LISTS_JOB })
         scheduler.dailyAt(RetentionJob.HOUR_UTC, jobs.first { it.name == RetentionJob.JOB_NAME })
         scheduler.dailyAt(config.imports.hourUtc, jobs.first { it.name == SenderIdImportJob.JOB_NAME })
+        scheduler.every(Duration.ofHours(1), jobs.first { it.name == BILLING_JOB })
     }
 
     override fun close() {
@@ -174,10 +190,14 @@ class ServerDependencies(
     companion object {
         /** Name of the list-build job. */
         const val LISTS_JOB = "lists"
+
+        /** Name of the billing re-check job. */
+        const val BILLING_JOB = "billing"
         private const val SCORING_LOCK = 4_000_001L
         private const val LISTS_LOCK = 4_000_002L
         private const val RETENTION_LOCK = 4_000_003L
         private const val IMPORT_LOCK = 4_000_004L
+        private const val BILLING_LOCK = 4_000_005L
 
         /** Connects to PostgreSQL (running migrations) and Redis, picks the OTP provider and seeds sender IDs. */
         fun create(

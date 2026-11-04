@@ -127,6 +127,7 @@ data class ListManifestDto(
     val version: Long,
     val full: ListFileRefDto,
     val deltas: List<ListFileRefDto>,
+    val extended: ListFileRefDto? = null,
 )
 
 /** `POST /v1/disputes` body. */

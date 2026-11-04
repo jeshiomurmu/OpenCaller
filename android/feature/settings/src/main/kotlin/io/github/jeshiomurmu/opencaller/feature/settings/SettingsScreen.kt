@@ -32,16 +32,14 @@ import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacin
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
 
 /**
- * Settings home (Me tab until profiles arrive): entry points to each settings page, and About with the app version.
- * Tapping the version [DEBUG_TAPS] times opens the debug screen (docs/architecture.md §12).
+ * Settings home (Me tab): entry points to each settings page, and About with the app version. Tapping the version
+ * [DEBUG_TAPS] times opens the debug screen (docs/architecture.md §12).
  */
 @Composable
 fun SettingsScreen(
-    onOpenPermissions: () -> Unit,
+    links: SettingsLinks,
     modifier: Modifier = Modifier,
     versionName: String = "",
-    onOpenDebug: () -> Unit = {},
-    onOpenQuickReplies: () -> Unit = {},
 ) {
     Column(modifier = modifier.fillMaxSize().padding(vertical = OpenCallerSpacing.m)) {
         Text(
@@ -50,18 +48,60 @@ fun SettingsScreen(
             modifier = Modifier.padding(horizontal = OpenCallerSpacing.screenPadding).semantics { heading() },
         )
         SettingsRow(
+            title = stringResource(R.string.settings_supporter),
+            summary = stringResource(R.string.settings_supporter_summary),
+            onClick = links.onOpenSupporter,
+            icon = OpenCallerIcons.Verified,
+        )
+        SettingsRow(
             title = stringResource(R.string.settings_permissions),
             summary = stringResource(R.string.settings_permissions_summary),
-            onClick = onOpenPermissions,
+            onClick = links.onOpenPermissions,
+        )
+        SettingsRow(
+            title = stringResource(R.string.settings_appearance),
+            summary = stringResource(R.string.settings_appearance_summary),
+            onClick = links.onOpenAppearance,
+            icon = OpenCallerIcons.Me,
         )
         SettingsRow(
             title = stringResource(R.string.settings_quick_replies),
             summary = stringResource(R.string.settings_quick_replies_summary),
-            onClick = onOpenQuickReplies,
+            onClick = links.onOpenQuickReplies,
             icon = OpenCallerIcons.Message,
         )
-        AboutRow(versionName = versionName, onOpenDebug = onOpenDebug)
+        SupporterRows(links)
+        AboutRow(versionName = versionName, onOpenDebug = links.onOpenDebug)
     }
+}
+
+// The supporter extras (each screen says when it needs an entitlement).
+@Composable
+private fun SupporterRows(links: SettingsLinks) {
+    SettingsRow(
+        title = stringResource(R.string.settings_announce),
+        summary = stringResource(R.string.settings_announce_summary),
+        onClick = links.onOpenAnnounceCaller,
+        icon = OpenCallerIcons.Calls,
+    )
+    SettingsRow(
+        title = stringResource(R.string.settings_ghost_call),
+        summary = stringResource(R.string.settings_ghost_call_summary),
+        onClick = links.onOpenGhostCall,
+        icon = OpenCallerIcons.Calls,
+    )
+    SettingsRow(
+        title = stringResource(R.string.settings_messenger),
+        summary = stringResource(R.string.settings_messenger_summary),
+        onClick = links.onOpenMessengerCallerId,
+        icon = OpenCallerIcons.Messages,
+    )
+    SettingsRow(
+        title = stringResource(R.string.settings_backup),
+        summary = stringResource(R.string.settings_backup_summary),
+        onClick = links.onOpenBackup,
+        icon = OpenCallerIcons.Privacy,
+    )
 }
 
 /** Number of taps on the version that open the debug screen. */
@@ -118,6 +158,6 @@ private fun SettingsRow(
 @Composable
 private fun SettingsScreenPreview() {
     OpenCallerTheme {
-        Surface(color = MaterialTheme.colorScheme.surface) { SettingsScreen(onOpenPermissions = {}, versionName = "0.0.0") }
+        Surface(color = MaterialTheme.colorScheme.surface) { SettingsScreen(links = SettingsLinks(), versionName = "0.0.0") }
     }
 }

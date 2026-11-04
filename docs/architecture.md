@@ -406,6 +406,7 @@ Later migrations (V1 stays exactly the SQL above): `V2__jobs_and_lookup_indexes.
 | `POST /v1/auth/refresh` | refresh | Rotate tokens |
 | `GET /v1/lists/{countryIso}/manifest` | optional | Latest full/delta/extended list versions + URLs + sha256 |
 | `GET /v1/lists/{countryIso}/files/{version}/{full|delta}` | none | List file (§13), immutable |
+| `GET /v1/lists/{countryIso}/files/{version}/extended` | access + entitlement (anyone when self-hosted) | Extended list: the country's listed numbers beyond `LIST_STANDARD_MAX_ENTRIES` (F-PR-03, ADR 0006) |
 | `GET /v1/lookup/buckets/{cc}/{bucketId}` | optional | k-anonymous bucket (§4.6); `ETag` support |
 | `GET /v1/numbers/{e164}` | access | Explicit search; quota; records "searched" unless incognito |
 | `POST /v1/reports` | access | Batch of reports |
@@ -424,7 +425,9 @@ Later migrations (V1 stays exactly the SQL above): `V2__jobs_and_lookup_indexes.
 | Admin web (own port, IP allowlist + basic auth, CSRF, audit log) | admin | Claims review, revoke, OTP-source curation, sender-ID CSV import (ADR 0005) |
 | `POST /v1/disputes`, `POST /v1/unlist/start`, `POST /v1/unlist/verify` | access / none | F-PR-16/17 |
 | `GET /unlist`, `POST /unlist`, `POST /unlist/verify` | none | Unlist web form (server-rendered HTML, no app needed) |
-| `POST /v1/billing/verify` | access | Play purchase token verification |
+| `GET /v1/server` | none | Whether the server is self-hosted (everything unlocked) and the Play product ID (ADR 0006) |
+| `GET /v1/entitlements` | access | The user's entitlement: tier, source (billing, granted, self-hosted), paid-until, obfuscated billing account ID |
+| `POST /v1/billing/verify` | access | Play purchase token: read with `purchases.subscriptionsv2.get`, bound to the account, acknowledged; an hourly job re-checks stored purchases (ADR 0006) |
 | `POST /v1/family`, `POST /v1/family/{id}/invite`, `POST /v1/family/alerts` | access | F-PR-14 |
 | `POST /v1/voip/token` | access | LiveKit token |
 | `POST /v1/lines/{recording|assistant|scanner}` | access + entitlement | Allocate/return line number and room |

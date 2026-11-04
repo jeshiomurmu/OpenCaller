@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="supporter_title">Supporter</string>
+    <string name="supporter_intro">OpenCaller has no ads and sells no data. Supporters pay for the servers and unlock the extras below.</string>
+    <string name="supporter_benefits_title">What supporters get</string>
+    <string name="supporter_bullet">• %1$s</string>
+    <string name="supporter_benefit_extended">The extended spam list, with numbers few people have reported yet</string>
+    <string name="supporter_benefit_ghost">Ghost Call: a made-up incoming call to get you out of a conversation</string>
+    <string name="supporter_benefit_announce">Announce Caller: hear who is calling</string>
+    <string name="supporter_benefit_backup">Encrypted backups of your settings, rules and history</string>
+    <string name="supporter_benefit_messenger">Caller ID for WhatsApp, Telegram and Signal calls</string>
+    <string name="supporter_benefit_visitors">See who viewed your profile and who searched for you</string>
+    <string name="supporter_benefit_gold">The Gold theme and a supporter badge</string>
+    <string name="supporter_status_title">Your status</string>
+    <string name="supporter_status_none">Not a supporter</string>
+    <string name="supporter_status_tier_supporter">Supporter</string>
+    <string name="supporter_status_tier_gold">Gold</string>
+    <string name="supporter_status_tier_family">Family</string>
+    <string name="supporter_status_self_hosted">Everything is unlocked: this server is self-hosted.</string>
+    <string name="supporter_status_granted">Granted by the server\'s operator.</string>
+    <string name="supporter_status_renews">Renews on %1$s</string>
+    <string name="supporter_status_ends">Ends on %1$s</string>
+    <string name="supporter_plans_title">Plans</string>
+    <string name="supporter_plan_supporter">Supporter</string>
+    <string name="supporter_plan_gold">Gold</string>
+    <string name="supporter_plan_family">Family (for up to five people once family groups arrive; for now, your account)</string>
+    <string name="supporter_plan_price">%1$s · %2$s</string>
+    <string name="supporter_period_month">every month</string>
+    <string name="supporter_period_year">every year</string>
+    <string name="supporter_period_other">billing period %1$s</string>
+    <string name="supporter_buy">Choose</string>
+    <string name="supporter_restore">Restore purchases</string>
+    <string name="supporter_manage">Manage subscription in Google Play</string>
+    <string name="supporter_donate_title">Donate</string>
+    <string name="supporter_donate_body">This build has no app store. You can support OpenCaller with a donation; supporter features unlock on a self-hosted server.</string>
+    <string name="supporter_donate">Donate</string>
+    <string name="supporter_no_donation_link">This build has no donation link.</string>
+    <string name="supporter_note_thanks">Thank you! Your supporter features are on.</string>
+    <string name="supporter_note_pending">Your payment isn\'t complete yet. Your features turn on once Google Play confirms it.</string>
+    <string name="supporter_note_nothing">No purchase found for this Google account.</string>
+    <string name="supporter_problem_offline">You\'re offline. Try again when you\'re connected.</string>
+    <string name="supporter_problem_not_connected">This build isn\'t connected to a server, so supporter features aren\'t available.</string>
+    <string name="supporter_problem_sign_in">Sign in with your number first (Me → Account). A purchase belongs to your account.</string>
+    <string name="supporter_problem_no_plans">Google Play has no plans for OpenCaller right now.</string>
+    <string name="supporter_problem_not_accepted">The server didn\'t accept this purchase. If you bought it with another number, sign in with that one.</string>
+    <string name="supporter_problem_unexpected">Something went wrong. Try again.</string>
+</resources>

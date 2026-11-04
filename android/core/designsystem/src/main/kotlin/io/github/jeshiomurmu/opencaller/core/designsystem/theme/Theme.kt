@@ -13,6 +13,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 @Composable
 fun OpenCallerTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    gold: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(
@@ -20,7 +21,13 @@ fun OpenCallerTheme(
         LocalOpenCallerExtendedTypography provides OpenCallerExtendedTypographyValues,
     ) {
         MaterialTheme(
-            colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
+            colorScheme =
+                when {
+                    gold && darkTheme -> DarkGoldColorScheme
+                    gold -> LightGoldColorScheme
+                    darkTheme -> DarkColorScheme
+                    else -> LightColorScheme
+                },
             typography = OpenCallerTypography,
             shapes = OpenCallerShapes,
             content = content,

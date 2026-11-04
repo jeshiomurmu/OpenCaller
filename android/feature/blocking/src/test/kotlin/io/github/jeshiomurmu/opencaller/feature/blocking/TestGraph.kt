@@ -9,6 +9,7 @@ import io.github.jeshiomurmu.opencaller.core.data.ReportRepository
 import io.github.jeshiomurmu.opencaller.core.data.ScreeningEventRepository
 import io.github.jeshiomurmu.opencaller.core.data.SpamListRepository
 import io.github.jeshiomurmu.opencaller.core.data.account.AccountStatus
+import io.github.jeshiomurmu.opencaller.core.data.supporter.StaticEntitlements
 import io.github.jeshiomurmu.opencaller.core.data.sync.SpamListSyncState
 import io.github.jeshiomurmu.opencaller.core.data.sync.SpamListUpdates
 import io.github.jeshiomurmu.opencaller.core.data.work.BackgroundWork
@@ -60,7 +61,7 @@ class TestGraph {
     private val access = DatabaseAccess { db }
     val rules = BlockRuleRepository(access, dispatchers, clock)
     val events = ScreeningEventRepository(access, dispatchers, clock)
-    val spam = SpamListRepository(access, dispatchers)
+    val spam = SpamListRepository(access, dispatchers, StaticEntitlements())
     val reports =
         ReportRepository(
             access,

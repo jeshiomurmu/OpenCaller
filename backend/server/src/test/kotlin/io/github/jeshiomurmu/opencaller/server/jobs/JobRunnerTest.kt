@@ -69,4 +69,33 @@ class JobRunnerTest {
         // Exactly at the hour: the next run is tomorrow.
         assertEquals(Duration.ofHours(24), scheduler.untilNext(12))
     }
+
+    // The gauge outlives the runner that registered it (Micrometer holds a gauge's value weakly by default; a
+    // collected value reads NaN, which made onlyOneInstanceRunsAJobAtATime fail in CI run 41657437827).
+    @Test
+    fun theLastSuccessGaugeKeepsItsValue() {
+        runOnceWithAThrowawayRunner()
+        repeat(GC_ROUNDS) {
+            System.gc()
+            Thread.sleep(GC_PAUSE_MILLIS)
+        }
+        assertEquals(
+            clock.now.epochSecond.toDouble(),
+            registry
+                .get("opencaller.job.last.success")
+                .tag("job", "gc")
+                .gauge()
+                .value(),
+        )
+    }
+
+    // In its own frame, so nothing on the test's stack keeps the runner reachable.
+    private fun runOnceWithAThrowawayRunner() {
+        runBlocking { JobRunner(TestInfra.database, registry, clock).runIfLeader(LeaderJob("gc", lockKey = 99_000_003L) { "ok" }) }
+    }
+
+    private companion object {
+        const val GC_ROUNDS = 5
+        const val GC_PAUSE_MILLIS = 20L
+    }
 }

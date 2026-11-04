@@ -37,7 +37,7 @@ enum class AnnounceCallerMode {
     HEADSET_ONLY,
 }
 
-/** App color theme. */
+/** App color theme (light or dark). Supporters can also turn on Gold ([UserPreferences.goldTheme]). */
 enum class ThemeMode {
     /** Follow the system setting. */
     SYSTEM,
@@ -85,6 +85,9 @@ enum class OnboardingStep {
  * @property quickReplies the user's own quick replies for declining a call with a message and for the after-call
  *   card's Message, in display order; empty means Android's built-in replies (Settings → Quick replies).
  * @property otpAutoDelete whether one-time-code messages are deleted a day after they arrive.
+ * @property goldTheme the Gold accent colors (supporters, F-UT-07).
+ * @property messengerCallerId caller ID for WhatsApp, Telegram and Signal calls from their notifications (F-ID-05).
+ * @property ghostCall the last fake call set up (F-UT-01).
  */
 data class UserPreferences(
     val blockHiddenNumbers: Boolean = false,
@@ -100,6 +103,9 @@ data class UserPreferences(
     val listUpdatesOnMobileData: Boolean = false,
     val quickReplies: List<String> = emptyList(),
     val otpAutoDelete: Boolean = false,
+    val goldTheme: Boolean = false,
+    val messengerCallerId: Boolean = false,
+    val ghostCall: GhostCallSetup = GhostCallSetup(),
 ) {
     /** Limits for [quickReplies]. */
     companion object {

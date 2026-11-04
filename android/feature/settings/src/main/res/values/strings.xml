@@ -58,4 +58,72 @@
     <string name="debug_spam">spam score %1$s</string>
     <string name="debug_stir">STIR %1$s</string>
     <string name="debug_hidden">no number</string>
+    <string name="settings_supporter">Supporter</string>
+    <string name="settings_supporter_summary">No ads, ever. Supporters pay for the servers and get the extras.</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_appearance_summary">Light, dark or system; Gold for supporters</string>
+    <string name="settings_announce">Announce caller</string>
+    <string name="settings_announce_summary">Hear who is calling (supporters)</string>
+    <string name="settings_ghost_call">Ghost Call</string>
+    <string name="settings_ghost_call_summary">A made-up incoming call, when you need a way out (supporters)</string>
+    <string name="settings_messenger">WhatsApp, Telegram and Signal calls</string>
+    <string name="settings_messenger_summary">Caller ID when their call notification shows a number (supporters)</string>
+    <string name="settings_backup">Backup and restore</string>
+    <string name="settings_backup_summary">An encrypted copy of your settings, rules and history</string>
+    <!-- Ghost Call (docs/prd.md F-UT-01) -->
+    <string name="ghost_call_title">Ghost Call</string>
+    <string name="ghost_call_explainer">A made-up incoming call, to get you out of a meeting or an awkward chat. It\'s only a screen: no call is placed and nothing shows in your call log.</string>
+    <string name="ghost_call_name">Caller name</string>
+    <string name="ghost_call_number">Number shown</string>
+    <string name="ghost_call_number_hint">Only shown on the screen, never dialled</string>
+    <string name="ghost_call_add_photo">Add a photo</string>
+    <string name="ghost_call_change_photo">Change the photo</string>
+    <string name="ghost_call_remove_photo">Remove</string>
+    <string name="ghost_call_photo_failed">That photo couldn\'t be read. Try another one.</string>
+    <string name="ghost_call_delay">Ring in</string>
+    <plurals name="ghost_call_seconds">
+        <item quantity="one">%d second</item>
+        <item quantity="other">%d seconds</item>
+    </plurals>
+    <plurals name="ghost_call_minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+    <string name="ghost_call_schedule">Schedule</string>
+    <string name="ghost_call_scheduled">Your Ghost Call rings in %1$s (it can be a few seconds late).</string>
+    <string name="ghost_call_cancel">Cancel</string>
+    <string name="ghost_call_channel">Ghost Call</string>
+    <string name="ghost_call_channel_description">The made-up incoming call you scheduled</string>
+    <string name="ghost_call_default_name">Unknown caller</string>
+    <string name="ghost_call_incoming">Incoming call</string>
+    <string name="ghost_call_answer">Answer</string>
+    <string name="ghost_call_decline">Decline</string>
+    <string name="ghost_call_hang_up">Hang up</string>
+    <string name="ghost_call_time">%1$d:%2$02d</string>
+
+    <!-- Appearance (F-UT-07) -->
+    <string name="appearance_title">Appearance</string>
+    <string name="appearance_explainer">Light, dark, or the same as your phone.</string>
+    <string name="appearance_system">Same as the phone</string>
+    <string name="appearance_light">Light</string>
+    <string name="appearance_dark">Dark</string>
+    <string name="appearance_gold_title">Gold</string>
+    <string name="appearance_gold">Gold accents (supporters)</string>
+
+    <!-- Announce caller (F-UT-02) -->
+    <string name="announce_title">Announce caller</string>
+    <string name="announce_explainer">Hear who is calling, in your phone\'s language: the name when it is known, or a spam warning.</string>
+    <string name="announce_off">Never</string>
+    <string name="announce_always">Always</string>
+    <string name="announce_headset">Only with headphones</string>
+    <string name="announce_quiet_note">Nothing is said while the phone is on silent or vibrate, in Do Not Disturb, or for calls OpenCaller blocks or silences.</string>
+
+    <!-- Messenger caller ID (F-ID-05) -->
+    <string name="messenger_title">WhatsApp, Telegram and Signal calls</string>
+    <string name="messenger_explainer">When one of these apps shows an incoming call with a phone number in its notification, OpenCaller shows what it knows about that number.</string>
+    <string name="messenger_privacy">To do this, OpenCaller needs notification access. It looks only at these three apps\' call notifications, and only at their text. Nothing is stored, and nothing is sent anywhere.</string>
+    <string name="messenger_switch">Caller ID for messenger calls (supporters)</string>
+    <string name="messenger_access_needed">Notification access is off, so nothing can be shown yet.</string>
+    <string name="messenger_open_access">Open notification access</string>
+    <string name="messenger_no_number_note">If the app shows a name instead of a number (a contact in that app), OpenCaller shows nothing.</string>
 </resources>

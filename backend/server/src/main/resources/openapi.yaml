@@ -41,6 +41,8 @@ tags:
     description: Own profile, visitors and contact requests (docs/prd.md §6.4, docs/decisions/0004-viewer-searcher-logging.md)
   - name: business
     description: Business claims and verified businesses (docs/prd.md §6.6)
+  - name: billing
+    description: Supporter tier, Play purchases and self-hosted mode (docs/prd.md F-UT-08)
 
 paths:
   /health:
@@ -265,7 +267,8 @@ paths:
         The latest full list and the deltas of the last 14 versions (`baseVersion` → `version`). An app holding
         version N downloads the deltas from N on, or the full list if it is too far behind; it checks each file's
         SHA-256 against the manifest. Lists are rebuilt nightly; a country gets a new version only when its list
-        changed.
+        changed. A country's list keeps its most-reported numbers up to a cap (`LIST_STANDARD_MAX_ENTRIES`); the rest
+        is its extended list (`extended`, supporters only, docs/prd.md F-PR-03).
       operationId: getListManifest
       security: [{}, { accessToken: [] }]
       parameters:
@@ -289,12 +292,14 @@ paths:
       summary: Download a list file
       description: |
         A list file in the binary format of docs/architecture.md §13. Files never change once published
-        (`Cache-Control: public, max-age=31536000, immutable`); the ETag is the file's SHA-256.
+        (`Cache-Control: public, max-age=31536000, immutable`); the ETag is the file's SHA-256. The `extended` file
+        needs a supporter's access token (on a self-hosted server none) and is cached privately.
       operationId: getListFile
+      security: [{}, { accessToken: [] }]
       parameters:
         - { $ref: "#/components/parameters/CountryIso" }
         - { name: version, in: path, required: true, schema: { type: integer, minimum: 1 } }
-        - { name: kind, in: path, required: true, schema: { type: string, enum: [full, delta] } }
+        - { name: kind, in: path, required: true, schema: { type: string, enum: [full, delta, extended] } }
         - { name: If-None-Match, in: header, required: false, schema: { type: string } }
       responses:
         "200":
@@ -307,6 +312,8 @@ paths:
               schema: { type: string, contentMediaType: application/octet-stream }
         "304": { $ref: "#/components/responses/NotModified" }
         "400": { $ref: "#/components/responses/InvalidCountry" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/SupporterRequired" }
         "404": { $ref: "#/components/responses/ListNotFound" }
 
   /v1/disputes:
@@ -597,7 +604,7 @@ paths:
         Profile views of the last 90 days, newest first (at most 200 listed; `total` counts all). Views by incognito
         users, of your own profile and repeats within 24 hours are never recorded. A viewer's name shows only if
         their own visibility lets signed-in users see it; their number is never shown. 403 `supporter_required`
-        for non-supporters (supporter status comes from billing in Phase 10).
+        for non-supporters (see `/v1/entitlements`).
       operationId: getViewers
       security: [{ accessToken: [] }]
       responses:
@@ -896,6 +903,89 @@ paths:
         "403": { $ref: "#/components/responses/NumberNotVerified" }
         "404": { $ref: "#/components/responses/ClaimNotFound" }
         "409": { $ref: "#/components/responses/ClaimConflict" }
+
+  /v1/server:
+    get:
+      tags: [billing]
+      summary: What this server offers
+      description: Whether it is self-hosted (every supporter feature unlocked for everyone) and which Play product it verifies.
+      operationId: getServerInfo
+      responses:
+        "200":
+          description: "Server info (`Cache-Control: no-store`)."
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServerInfo" }
+
+  /v1/entitlements:
+    get:
+      tags: [billing]
+      summary: The signed-in user's supporter status
+      description: |
+        `entitled` unlocks supporter features. `billingAccountId` (while Play billing is configured) is the
+        obfuscated account ID the app passes to Google Play with a purchase, which binds it to this account.
+      operationId: getEntitlements
+      security: [{ accessToken: [] }]
+      responses:
+        "200":
+          description: "Entitlements (`Cache-Control: no-store`)."
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Entitlements" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/billing/verify:
+    post:
+      tags: [billing]
+      summary: Verify a Google Play purchase of the supporter subscription
+      description: |
+        The server asks Google (`purchases.subscriptionsv2.get`) about the token, checks the product, the base plan
+        (its ID starts with `supporter`, `gold` or `family`) and that the purchase carries this account's
+        `billingAccountId`, stores it, acknowledges it and sets the user's tier. Sending a purchase again is
+        harmless; an expired purchase never replaces one that still gives access. Limit 30 per user per hour.
+      operationId: verifyPurchase
+      security: [{ accessToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VerifyPurchaseRequest" }
+      responses:
+        "200":
+          description: "The user's entitlements after the check (`Cache-Control: no-store`)."
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Entitlements" }
+        "400":
+          description: "`invalid_purchase` (Google doesn't know the token) or `unknown_product`."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409":
+          description: "`purchase_other_account`: the purchase belongs to another account."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "502":
+          description: "`billing_unavailable`: Google Play couldn't be reached."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "503":
+          description: "`billing_not_configured`: this server has no Play billing."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
 
   /v1/business/{id}:
     get:
@@ -1257,6 +1347,37 @@ components:
           type: array
           description: Newest first.
           items: { $ref: "#/components/schemas/ListFileRef" }
+        extended:
+          $ref: "#/components/schemas/ListFileRef"
+          description: The extended list of `version` (supporters only); absent when there is none.
+
+    ServerInfo:
+      type: object
+      required: [selfHosted, billing]
+      properties:
+        selfHosted: { type: boolean }
+        billing:
+          type: object
+          properties:
+            googlePlayProductId: { type: string, description: Set while Play billing is configured. }
+
+    Entitlements:
+      type: object
+      required: [entitled, tier, source, autoRenewing]
+      properties:
+        entitled: { type: boolean }
+        tier: { type: string, enum: [none, supporter, gold, family] }
+        source: { type: string, enum: [none, billing, granted, self_hosted] }
+        expiresAt: { type: string, format: date-time, description: End of the paid period of an active purchase. }
+        autoRenewing: { type: boolean }
+        billingAccountId: { type: string, minLength: 64, maxLength: 64 }
+
+    VerifyPurchaseRequest:
+      type: object
+      required: [productId, purchaseToken]
+      properties:
+        productId: { type: string }
+        purchaseToken: { type: string, minLength: 1, maxLength: 2048 }
 
     DisputeRequest:
       type: object
@@ -1588,6 +1709,11 @@ components:
             - list_not_found
             - job_running
             - supporter_required
+            - billing_not_configured
+            - invalid_purchase
+            - unknown_product
+            - purchase_other_account
+            - billing_unavailable
             - claim_open
             - already_verified
             - claim_not_found

@@ -6,14 +6,20 @@ import java.io.DataOutputStream
 import java.io.EOFException
 import java.security.MessageDigest
 
-/** File kinds: a full list, or a delta that turns version `baseVersion` into `version`. */
+/**
+ * File kinds: a full list, a delta that turns version `baseVersion` into `version`, or the extended list of that
+ * version (the listed numbers beyond the standard list's size cap, docs/prd.md F-PR-03; always complete, no deltas).
+ */
 enum class ListKind(
     val code: Int,
     val sqlValue: String,
 ) {
     FULL(1, "full"),
     DELTA(2, "delta"),
+    EXTENDED(EXTENDED_CODE, "extended"),
 }
+
+private const val EXTENDED_CODE = 3
 
 /**
  * One listed number. [number] is the E.164 number without `+` as an integer (`+8801712345678` → 8801712345678),

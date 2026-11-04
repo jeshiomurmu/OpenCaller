@@ -11,7 +11,12 @@ enum class SpamListKind(
 ) {
     FULL(1),
     DELTA(2),
+
+    /** The extended list of a version (supporters, docs/prd.md F-PR-03): complete, never a delta. */
+    EXTENDED(EXTENDED_CODE),
 }
+
+private const val EXTENDED_CODE = 3
 
 /**
  * One listed number.

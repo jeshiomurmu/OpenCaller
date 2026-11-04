@@ -274,3 +274,30 @@ interface AuthApi {
         @Body body: RefreshRequest,
     ): retrofit2.Call<TokenResponse>
 }
+
+/** Supporter tier (docs/architecture.md §8, Phase 10). */
+interface BillingApi {
+    /** What the server offers (self-hosted mode, the Play product it verifies). */
+    @GET("v1/server")
+    suspend fun serverInfo(): Response<ServerInfoDto>
+
+    /** The signed-in user's supporter status. */
+    @Headers("$AUTH_MODE_HEADER: $AUTH_REQUIRED")
+    @GET("v1/entitlements")
+    suspend fun entitlements(): Response<EntitlementDto>
+
+    /** Has the server verify a Play purchase. */
+    @Headers("$AUTH_MODE_HEADER: $AUTH_REQUIRED")
+    @POST("v1/billing/verify")
+    suspend fun verifyPurchase(
+        @Body body: VerifyPurchaseDto,
+    ): Response<EntitlementDto>
+
+    /** Downloads the extended spam list (a path from the manifest), which needs the access token. */
+    @Headers("$AUTH_MODE_HEADER: $AUTH_OPTIONAL")
+    @Streaming
+    @GET
+    suspend fun downloadExtended(
+        @Url path: String,
+    ): Response<ResponseBody>
+}

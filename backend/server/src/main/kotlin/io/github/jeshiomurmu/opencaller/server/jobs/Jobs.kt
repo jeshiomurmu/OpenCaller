@@ -62,7 +62,12 @@ class JobRunner(
     private fun successGauge(name: String): AtomicLong =
         lastSuccess.getOrPut(name) {
             AtomicLong(0).also { value ->
-                Gauge.builder("opencaller.job.last.success", value) { it.get().toDouble() }.tag("job", name).register(registry)
+                // Held strongly: by default Micrometer keeps only a weak reference, and a collected value reads NaN.
+                Gauge
+                    .builder("opencaller.job.last.success", value) { it.get().toDouble() }
+                    .tag("job", name)
+                    .strongReference(true)
+                    .register(registry)
             }
         }
 }

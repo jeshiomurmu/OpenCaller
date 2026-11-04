@@ -300,11 +300,11 @@ app):
 | TC-SOC-003 | Delete account | Profile gone from API immediately; purge job ≤ 30 days (daily `retention` job) | I (`DeleteAccountTest`; smoke) |
 | TC-BIZ-001 | Claim requires ownership | Claim without OTP to that number fails | I + U — 9: `BusinessClaimsTest` (Testcontainers: no upload or submit before the code to the claimed number, 403 `number_not_verified`; a wrong code keeps it unverified; another user can't prove someone else's claim; SMS or voice code); compose `scripts/smoke.sh` → Business claims; `BusinessViewModelsTest` (the app's form → code → documents → review flow) |
 | TC-BIZ-002 | Verified badge | Approved business shows badge, logo, reason on card | I + U — 9: `BusinessPublishingTest` and `AdminWebTest` (approval in the admin web publishes the business into buckets, the directory and the profile, removes it from spam lists; revoke removes it); smoke (approve through the admin web, then directory, profile and bucket); `BusinessDirectoryTest` (Robolectric: directory and logo on the phone, removals); `ScreeningEngineTest` (the caller card names the business with its call reason and badge, block non-contacts lets it ring). The card's logo on a real call: device step below |
-| TC-UT-001 | Ghost call | Scheduled fake call appears with chosen name/photo; no real call placed | I |
-| TC-UT-002 | Announce caller | TTS speaks resolved name; "headphones only" respected | I |
-| TC-UT-003 | Backup/restore | Rules + settings restored identically on fresh install | I |
-| TC-UT-004 | WhatsApp caller ID | Notification from WhatsApp incoming call with number → card | D |
-| TC-BILL-001 | Purchase | License tester buys Supporter → entitlement active after server verify | D |
+| TC-UT-001 | Ghost call | Scheduled fake call appears with chosen name/photo; no real call placed | U + R — 10: `GhostCallTest` (Robolectric: the worker posts a full-screen call notification whose intent and actions open only `GhostCallActivity`, nothing without an entitlement, no activity started); `GhostCallViewModelTest` (name, shown-only number, delay, photo, schedule for supporters only). The screen on a locked phone: device step below |
+| TC-UT-002 | Announce caller | TTS speaks resolved name; "headphones only" respected | R — 10: `AnnounceCallerTest` (modes always / headphones only / never, entitlement, silent ringer and Do Not Disturb, the sentence spoken for a name, spam, unknown and hidden callers). The voice on a phone: device step below |
+| TC-UT-003 | Backup/restore | Rules + settings restored identically on fresh install | R — 10: `BackupTest` (Robolectric, two databases: rules, settings and history identical after restore, this phone's onboarding kept, message categories found again by date and address, one-time codes never in the file; wrong passphrase and a changed byte refused; creating needs an entitlement and 8 characters). Drive: device step below |
+| TC-UT-004 | WhatsApp caller ID | Notification from WhatsApp incoming call with number → card | U + D — 10: `MessengerCallsTest` (WhatsApp, WhatsApp Business, Telegram, Signal call notifications only; a number only when the text shows one), `PhoneNumberNormalizerTest` (`findInText`). On a phone: device step below. Tested app versions: none yet |
+| TC-BILL-001 | Purchase | License tester buys Supporter → entitlement active after server verify | I + D — 10: `BillingApiTest` (Testcontainers, a fake Play API: verify binds and acknowledges, another account's token refused, states and grace, re-check job, self-hosted), `GooglePlayDeveloperApiTest` (requests and the service-account grant), `ExtendedListTest`; compose `scripts/smoke.sh` → Supporter tier. The purchase with a license tester: device step below |
 | TC-VOIP-001 | App-to-app call | Wi-Fi ↔ mobile data, setup < 3 s p95, audio both ways | D |
 | TC-FAM-001 | Consent | Member must accept on own device; admin can't add silently | I |
 | TC-FAM-002 | Family alert | Member OTP-during-call → admin notified within 10 s | E2E |
@@ -326,6 +326,25 @@ phone or SIM whose number you can claim):
    non-contacts" on, the call still rings. Send an SMS from it: the conversation shows the name with "Verified
    business".
 5. Revoke the business in the admin web, update again: the next call shows the number only.
+
+Phase 10 device steps (play build signed with the upload key, installed from the Play closed test, a license tester
+account on the phone, a server with `GOOGLE_PLAY_*` and `BILLING_ACCOUNT_SECRET` set):
+
+1. TC-BILL-001: sign in, Me → Supporter → pick Supporter and buy with the license tester's test card. The screen
+   shows "Supporter" with the renewal date; the server log shows the verify and the acknowledgement; Play Console
+   shows the order acknowledged. Cancel it in Play: after the next hourly re-check the screen shows when access ends.
+   Repeat with the test card that declines: nothing unlocks.
+2. Reinstall, sign in again, Restore purchases: the subscription comes back without paying again.
+3. TC-UT-001: Settings → Ghost Call, set a name, a number and a photo, 10 seconds, Schedule, lock the phone. The fake
+   call rings over the lock screen with the name, number and photo (ringtone only with the ringer on); Answer starts
+   a timer, End closes it. The call log and the system phone app show no call.
+4. TC-UT-002: Settings → Announce Caller → Always; call from a contact: the name is spoken over the ringtone. With
+   "Headphones only", only with headphones connected; with the ringer silent or Do Not Disturb on, nothing is said.
+5. TC-UT-003: Backup → Google Drive with a passphrase; uninstall, reinstall, Restore from Google Drive with the same
+   passphrase: rules, settings and history are back. Repeat with a file on the phone.
+6. TC-UT-004: Settings → Messenger caller ID, allow notification access. Call the phone on WhatsApp, Telegram and
+   Signal from a number that isn't saved: the caller card shows what the phone knows about the number. From a saved
+   contact (the app shows a name): no card. Write each app's version in the table above.
 
 ## 5. Manual QA checklist (before each release)
 

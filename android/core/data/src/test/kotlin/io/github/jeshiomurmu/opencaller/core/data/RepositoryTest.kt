@@ -7,6 +7,7 @@ import androidx.test.core.app.ApplicationProvider
 import io.github.jeshiomurmu.opencaller.core.common.AppError
 import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.common.getOrNull
+import io.github.jeshiomurmu.opencaller.core.data.supporter.StaticEntitlements
 import io.github.jeshiomurmu.opencaller.core.database.DatabaseAccess
 import io.github.jeshiomurmu.opencaller.core.database.OpenCallerDatabase
 import io.github.jeshiomurmu.opencaller.core.database.entity.NumberInfoEntity
@@ -147,7 +148,7 @@ class RepositoryTest {
     @Test
     fun spamListAndSeedFixture() =
         runTest {
-            val spam = SpamListRepository(access, dispatchers)
+            val spam = SpamListRepository(access, dispatchers, StaticEntitlements())
             val hits = SpamListSeedParser.parse(Fixtures.lines("spam_list_small.csv").asSequence())
             assertEquals(4, hits.size)
             spam.upsert(hits, listVersion = 1)
@@ -201,7 +202,7 @@ class RepositoryTest {
     fun storageFailuresBecomeStorageErrors() =
         runTest {
             val broken = DatabaseAccess { error("disk full") }
-            assertEquals(AppResult.Failure(AppError.Storage), SpamListRepository(broken, dispatchers).count())
+            assertEquals(AppResult.Failure(AppError.Storage), SpamListRepository(broken, dispatchers, StaticEntitlements()).count())
             val first = BlockRuleRepository(broken, dispatchers, clock).observeAll().first()
             assertTrue(first is AppResult.Failure)
         }

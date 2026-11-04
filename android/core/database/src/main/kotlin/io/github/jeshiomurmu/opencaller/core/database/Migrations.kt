@@ -19,8 +19,17 @@ object Migrations {
                 "`category` TEXT, `callReason` TEXT, `logoPath` TEXT, `logoFile` TEXT, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`e164`))",
         )
 
+    /** Version 4 (Phase 10): the extended spam list of supporters, `spam_list_extended`. */
+    val MIGRATION_3_4: Migration =
+        SqlMigration(
+            3,
+            4,
+            "CREATE TABLE IF NOT EXISTS `spam_list_extended` (`e164` TEXT NOT NULL, `score` REAL NOT NULL, `category` TEXT NOT NULL, " +
+                "`reportCount` INTEGER NOT NULL, `listVersion` INTEGER NOT NULL, PRIMARY KEY(`e164`))",
+        )
+
     /** Every migration, in order. */
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
 }
 
 /**

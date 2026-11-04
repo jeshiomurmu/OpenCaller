@@ -78,6 +78,9 @@ class OpenCallerNetwork(
     /** Business claims, verified businesses and their directory. */
     val businessApi: BusinessApi = retrofit(authed).create(BusinessApi::class.java)
 
+    /** Supporter tier: server info, entitlements, purchase verification, the extended list. */
+    val billingApi: BillingApi = retrofit(authed).create(BillingApi::class.java)
+
     /** The live lookup, cut off after the lookup timeout so a slow server never holds up a call. */
     val lookupApi: LookupApi =
         retrofit(
