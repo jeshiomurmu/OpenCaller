@@ -7,6 +7,19 @@ import kotlinx.serialization.Serializable
 data class ServerInfoDto(
     val selfHosted: Boolean = false,
     val billing: BillingInfoDto = BillingInfoDto(),
+    val features: FeaturesDto = FeaturesDto(),
+)
+
+/**
+ * Phase 11 features of the server: app calls (LiveKit and a push provider), Flash messages (a push provider), FCM,
+ * and the VAPID key a UnifiedPush registration needs. Servers before Phase 11 send nothing: everything off.
+ */
+@Serializable
+data class FeaturesDto(
+    val appCalls: Boolean = false,
+    val flash: Boolean = false,
+    val fcm: Boolean = false,
+    val webPushVapidKey: String? = null,
 )
 
 /** Purchase options of the server; [googlePlayProductId] is set while Play billing is configured. */
