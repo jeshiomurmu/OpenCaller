@@ -12,6 +12,11 @@ plugins {
 val releaseApiBaseUrl: Provider<String> = providers.gradleProperty("opencaller.apiBaseUrl").orElse("")
 val releaseApiPins: Provider<String> = providers.gradleProperty("opencaller.apiPins").orElse("")
 val debugApiBaseUrl: Provider<String> = providers.gradleProperty("opencaller.debugApiBaseUrl").orElse("http://10.0.2.2:8080/")
+
+// Firebase Cloud Messaging in play builds (Phase 11), from Gradle properties instead of google-services.json:
+// opencaller.firebase.appId / apiKey / projectId / senderId. Empty = no FCM (pending items are fetched on app open).
+fun firebase(name: String): Provider<String> = providers.gradleProperty("opencaller.firebase.$name").orElse("")
+
 // Where foss builds link for donations (opencaller.donationUrl; empty = no donation link).
 val donationUrl: Provider<String> = providers.gradleProperty("opencaller.donationUrl").orElse("")
 
@@ -85,6 +90,10 @@ android {
         }
         create("play") {
             dimension = "distribution"
+            buildConfigField("String", "FIREBASE_APP_ID", quoted(firebase("appId").get()))
+            buildConfigField("String", "FIREBASE_API_KEY", quoted(firebase("apiKey").get()))
+            buildConfigField("String", "FIREBASE_PROJECT_ID", quoted(firebase("projectId").get()))
+            buildConfigField("String", "FIREBASE_SENDER_ID", quoted(firebase("senderId").get()))
         }
     }
 }
@@ -116,7 +125,6 @@ dependencies {
     implementation(projects.feature.premium)
     implementation(projects.feature.social)
     implementation(projects.feature.backup)
-    implementation(projects.feature.voip)
     implementation(projects.feature.family)
     implementation(projects.feature.recording)
     implementation(projects.feature.assistant)
@@ -133,12 +141,24 @@ dependencies {
     implementation(libs.kotlinx.serialization.core)
     implementation(libs.timber)
 
+    // App calls (LiveKit + Jetpack Telecom) unless the build leaves them out (-Popencaller.voip=false, F-Droid).
+    if (providers.gradleProperty("opencaller.voip").getOrElse("true").toBoolean()) {
+        implementation(project(":feature:voip"))
+    }
+
     // Google Play only: Play Billing for the supporter subscription, Identity Services and the Drive REST API (over
     // OkHttp) for Drive backups. The foss build has no Google Play Services (docs/architecture.md §3).
     "playImplementation"(libs.play.billing)
     "playImplementation"(libs.play.services.auth)
     "playImplementation"(libs.okhttp)
     "playImplementation"(libs.kotlinx.serialization.json)
+    // FCM for call and Flash pushes that carry only a random id (docs/rules.md §2, ADR 0007). The Firelog upload
+    // backend (client telemetry to Google) is left out; nothing else of Firebase is used.
+    "playImplementation"(libs.firebase.messaging) {
+        exclude(group = "com.google.android.datatransport", module = "transport-backend-cct")
+    }
+    // UnifiedPush in foss builds (a distributor app of the user's choice delivers Web Push).
+    "fossImplementation"(libs.unifiedpush.connector)
 
     testImplementation(libs.junit4)
     testImplementation(projects.core.testing)
@@ -152,6 +172,20 @@ dependencies {
     androidTestImplementation(libs.androidx.test.uiautomator)
     androidTestUtil(libs.androidx.test.orchestrator)
     androidTestUtil(libs.androidx.test.services)
+}
+
+// The UnifiedPush connector asks for Tink's JVM artifact (with the full protobuf-java); Android builds use the same
+// Tink version's Android artifact, which carries its own protobuf-lite.
+configurations.configureEach {
+    resolutionStrategy.dependencySubstitution {
+        substitute(module("com.google.crypto.tink:tink")).using(
+            module(
+                libs.tink.android
+                    .get()
+                    .toString(),
+            ),
+        )
+    }
 }
 
 // Release builds: the server must use HTTPS, and play release builds must pin its key plus a backup key.

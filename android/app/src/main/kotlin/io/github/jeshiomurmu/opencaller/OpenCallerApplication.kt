@@ -15,6 +15,7 @@ import io.github.jeshiomurmu.opencaller.core.telephony.otp.OtpSafetyMonitor
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ScreeningWarmUp
 import io.github.jeshiomurmu.opencaller.feature.messages.work.ScheduledSending
 import io.github.jeshiomurmu.opencaller.logging.RedactingTree
+import io.github.jeshiomurmu.opencaller.push.VoipStartup
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -62,6 +63,9 @@ class OpenCallerApplication :
     @Inject
     lateinit var messageWork: ScheduledSending
 
+    @Inject
+    lateinit var voipStartup: VoipStartup
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
 
@@ -83,6 +87,8 @@ class OpenCallerApplication :
         // Checks a few times a day whether codes are due for auto-delete (does nothing while that setting is off).
         messageWork.scheduleCodeCleanup()
         if (server.isConfigured) {
+            // Push for app calls and Flash messages after every sign-in (Phase 11).
+            voipStartup.start()
             work.uploadReports()
             scope.launch {
                 settings.preferences

@@ -53,6 +53,9 @@ object OpenCallerSpacing {
 
     /** Keys of the dial pad and the in-call keypad. */
     val dialKey: Dp = 64.dp
+
+    /** Height of a video caller ID on the in-call screens (clips are at most 480 px wide). */
+    val videoCallerId: Dp = 200.dp
 }
 
 /** Elevation from docs/design.md §4: tonal surfaces everywhere, except the caller-card overlay. */

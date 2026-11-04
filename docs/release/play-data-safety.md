@@ -30,16 +30,19 @@ app downloads public lists.
 | Personal info → Phone number | Yes | Optional (only when the user signs in, claims a business or unlists a number) | App functionality; Account management; Fraud prevention, security and compliance | The user's own number, verified by a code, to sign in; a business number being claimed; a number being unlisted. Also the numbers a user reports, searches or disputes (they choose to send them). |
 | Personal info → Name | Yes | Optional | App functionality | The display name a user adds to their profile, shown to others only as their visibility setting allows; a claimed business's legal and display name. |
 | Photos and videos → Photos | Yes | Optional | App functionality | A profile picture (re-encoded on the phone, JPEG 512 px); a business logo. |
+| Photos and videos → Videos | Yes | Optional | App functionality | A video caller ID the user records (at most 10 s, no sound), shrunk on the server and shown to others as visible as their name, until they delete it. |
+| Messages → Other in-app messages | Yes | Optional | App functionality | Flash messages: one of six predefined pings and its recipient. Deleted from the server once the recipient's phone fetches it, at most after a day. |
+| App activity → Other actions (calls) | Yes | Optional | App functionality | App-to-app calls: who called whom, when, and the outcome, deleted after a day. The call's audio goes through the LiveKit media server and is never recorded or stored. |
 | Files and docs → Files and docs | Yes | Optional | App functionality; Fraud prevention, security and compliance | Documents a business sends with its claim (PDF, JPEG or PNG). Only reviewers see them; deleted 90 days after the decision. |
 | App activity → In-app search history | Yes | Optional | App functionality | Numbers the user searches for. A search is shown to the searched number's owner (supporters) unless the user is incognito; kept 90 days. |
 | App activity → Other user-generated content | Yes | Optional | App functionality; Fraud prevention, security and compliance | Spam reports (number, label, category, optional comment), disputes, contact requests. |
 | App activity → Other actions | Yes | Optional | App functionality | Profile views (who viewed which profile, unless incognito); kept 90 days. |
-| Device or other IDs | Yes | Optional (with sign-in) | Account management; Fraud prevention, security and compliance | A server-generated device ID tied to the session's refresh tokens. No hardware IDs, no advertising ID. |
+| Device or other IDs | Yes | Optional (with sign-in) | Account management; Fraud prevention, security and compliance; App functionality | A server-generated device ID tied to the session's refresh tokens; the device's Firebase Cloud Messaging token, to deliver call and Flash pushes (each carries only a random id). No hardware IDs, no advertising ID. |
 | Financial info → Purchase history | Yes | Optional (play build, supporters only) | App functionality; Account management | The supporter subscription: Google Play's purchase token, base plan, state and paid-until date, checked with Google to unlock supporter features. No card or payment details (Google Play handles payment). |
 
 ## Not collected (answer "No")
 
-Location, financial info other than the supporter subscription, health and fitness, messages (emails, SMS or MMS, other messages), audio, calendar,
+Location, financial info other than the supporter subscription, health and fitness, messages (emails, SMS or MMS), audio (app calls are not recorded), calendar,
 contacts, app info and performance (no crash logs or diagnostics), web browsing, and the call log: none of these
 leave the phone.
 
@@ -59,5 +62,7 @@ Explain if asked:
 
 - Play needs a **privacy policy URL** for an app with SMS and Call Log permissions. None is published yet
   (implementation plan Phase 15: privacy policy and terms); `docs/phase.md` lists it as an open issue.
-- Re-check this form if the build adds Firebase Cloud Messaging (planned for play sync pushes): that would add
-  *Device or other IDs → push token*.
+- Since Phase 11 the play build includes Firebase Cloud Messaging (only when built with `opencaller.firebase.*`):
+  the FCM token is in *Device or other IDs* above. The Firelog telemetry backend is excluded from the build.
+- Microphone and camera: the microphone only during an app call the user starts or answers; the camera only while
+  the user records their video caller ID.

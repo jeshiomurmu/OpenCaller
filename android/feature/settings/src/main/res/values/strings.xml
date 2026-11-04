@@ -70,6 +70,8 @@
     <string name="settings_messenger_summary">Caller ID when their call notification shows a number (supporters)</string>
     <string name="settings_backup">Backup and restore</string>
     <string name="settings_backup_summary">An encrypted copy of your settings, rules and history</string>
+    <string name="settings_voip">App calls, Flash and video caller ID</string>
+    <string name="settings_voip_summary">Who can reach you over OpenCaller, your video caller ID, clip downloads</string>
     <!-- Ghost Call (docs/prd.md F-UT-01) -->
     <string name="ghost_call_title">Ghost Call</string>
     <string name="ghost_call_explainer">A made-up incoming call, to get you out of a meeting or an awkward chat. It\'s only a screen: no call is placed and nothing shows in your call log.</string>

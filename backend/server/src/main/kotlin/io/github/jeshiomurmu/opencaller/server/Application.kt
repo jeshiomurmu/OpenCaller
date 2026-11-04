@@ -25,6 +25,8 @@ import io.github.jeshiomurmu.opencaller.server.profile.profileRoutes
 import io.github.jeshiomurmu.opencaller.server.reports.reportRoutes
 import io.github.jeshiomurmu.opencaller.server.sync.syncRoutes
 import io.github.jeshiomurmu.opencaller.server.unlist.unlistRoutes
+import io.github.jeshiomurmu.opencaller.server.video.runTranscoder
+import io.github.jeshiomurmu.opencaller.server.voip.voipRoutes
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
@@ -50,7 +52,7 @@ const val ACCESS_AUTH = "access"
 
 private val log = LoggerFactory.getLogger("io.github.jeshiomurmu.opencaller.server.Application")
 
-fun main() {
+fun main(args: Array<String>) {
     val config =
         try {
             loadConfig(System.getenv())
@@ -59,6 +61,8 @@ fun main() {
             log.error(e.message)
             exitProcess(1)
         }
+    // The same image runs the video caller ID transcoder (its own container) with the argument `transcoder`.
+    if (args.firstOrNull() == "transcoder") return runTranscoder(config)
     val deps = ServerDependencies.create(config, Dispatchers.IO)
     runBlocking { deps.sync.seed() }
     val metrics =
@@ -121,7 +125,8 @@ fun Application.module(deps: ServerDependencies) {
         syncRoutes(deps.sync)
         profileRoutes(deps.profiles, deps.visitors, deps.contactRequests)
         businessRoutes(deps.claims, deps.businessDirectory)
-        billingRoutes(deps.billing)
+        billingRoutes(deps.billing, deps.features)
+        voipRoutes(deps.voipRoutes)
     }
 }
 

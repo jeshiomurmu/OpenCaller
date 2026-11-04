@@ -31,6 +31,7 @@ import io.github.jeshiomurmu.opencaller.feature.onboarding.OnboardingRoute
 import io.github.jeshiomurmu.opencaller.feature.onboarding.SignInExtra
 import io.github.jeshiomurmu.opencaller.feature.profile.AccountViewModel
 import io.github.jeshiomurmu.opencaller.feature.profile.SignInRoute
+import io.github.jeshiomurmu.opencaller.push.VoipStartup
 import io.github.jeshiomurmu.opencaller.ui.OpenCallerApp
 import javax.inject.Inject
 
@@ -39,6 +40,9 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
     @Inject
     lateinit var refreshAccessOnResume: RefreshAccessOnResume
+
+    @Inject
+    lateinit var voipStartup: VoipStartup
 
     private val viewModel: MainViewModel by viewModels()
 
@@ -55,6 +59,12 @@ class MainActivity : ComponentActivity() {
             requestMessageIfAsked(intent)
         }
         setContent { Content() }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Missed app calls and Flash messages, and (foss) picking a UnifiedPush distributor.
+        voipStartup.onForeground(this)
     }
 
     // The user's theme (system, light or dark; Gold for supporters), then onboarding or the app.

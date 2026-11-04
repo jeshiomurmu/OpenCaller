@@ -2,14 +2,16 @@
 # Smoke test of the whole API against the compose stack (docs/implementation_plan.md Phase 4), with curl + jq:
 # health, sign-in, refresh rotation, rate limits, reports, scoring, bucket lookup, search, lists, disputes,
 # unlisting (API and HTML form), sender IDs, OTP sources, profiles (Phase 8), business claims with the admin web
-# (Phase 9) and metrics.
+# (Phase 9), app calls against the real LiveKit, Flash messages and video caller ID through the transcoder (Phase 11)
+# and metrics.
 #
 #   docker compose -f infra/docker/compose.yml up -d --build --wait
 #   scripts/smoke.sh
 #
 # Needs: OTP_PROVIDER=log (the development default; codes are read from the server log), ADMIN_TOKEN (jobs are run
 # on demand through the admin endpoints on the internal port) and the ADMIN_WEB_* settings of .env.example (claims
-# are approved through the admin web from inside the server container) set in infra/docker/.env. Run it once per
+# are approved through the admin web from inside the server container) and a VAPID key pair (scripts/vapid-keys.sh)
+# set in infra/docker/.env. Run it once per
 # stack: the sign-in rate limits (3 codes per number per hour) would refuse a second run within the hour.
 # Env: BASE_URL (default http://localhost:8080), COMPOSE_FILE (default infra/docker/compose.yml).
 set -euo pipefail
@@ -23,6 +25,7 @@ spammer="+12025550143"  # gets reported
 unlisted="+12015550177" # is unlisted through the HTML form and the API
 profile="+12015550188"  # edits, hides and deletes its profile
 business="+12015550166" # is claimed as a business and approved
+callee="+12015550155"   # gets an app call, a Flash message, and publishes a video caller ID
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 failures=0
@@ -286,6 +289,68 @@ business_hash="$(hash_of "$business")"
 request business_bucket GET "/v1/lookup/buckets/1/$business_bucket" > /dev/null
 expect "  verified in the bucket (TC-BIZ-002)" "Smoke Bank" "$(jq -r --arg h "$business_hash" '[.entries[] | select(.hash == $h) | .info.business.name][0]' "$work/business_bucket.body")"
 expect "GET /v1/business/claims" approved "$(authed claims_after GET /v1/business/claims > /dev/null; field claims_after '.claims[0].status')"
+
+echo "== App calls, Flash messages, video caller ID (TC-VOIP-001 server side; ADR 0007)"
+# The reporter calls and pings the callee. The callee registers a Web Push endpoint nobody listens on (development
+# allows local addresses), so pushes fail and the callee finds its items through GET /v1/notifications instead.
+expect "  features: app calls" true "$(field server_info .features.appCalls)"
+expect "  features: Flash" true "$(field server_info .features.flash)"
+expect "  VAPID key for UnifiedPush" 87 "$(field server_info '.features.webPushVapidKey | length')"
+expect "sign in the callee" 200 "$(sign_in "$callee" callee_user)"
+callee_access="$(field callee_user .accessToken)"
+as_callee() { request "$1" "$2" "$3" "${4:-}" -H "Authorization: Bearer $callee_access"; }
+b64url() { base64 -w0 | tr '+/' '-_' | tr -d '='; }
+p256dh="$(scripts/vapid-keys.sh | sed -n 's/^VAPID_PUBLIC_KEY=//p')"
+push_auth="$(openssl rand 16 | b64url)"
+expect "PUT /v1/push (webpush)" 204 "$(as_callee push PUT /v1/push "{\"type\":\"webpush\",\"endpoint\":\"http://127.0.0.1:9/up/smoke\",\"p256dh\":\"$p256dh\",\"auth\":\"$push_auth\"}")"
+expect "POST /v1/voip/calls" 200 "$(authed call POST /v1/voip/calls "{\"to\":\"$callee\"}")"
+invite="$(field call .inviteId)"
+expect "  push not delivered (no distributor)" 0 "$(field call .reachedDevices)"
+# LiveKit itself checks the token the server signed (its key, the room grant, the expiry).
+livekit_accepts() { curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:7880/rtc/validate?access_token=$1"; }
+expect "  LiveKit accepts the caller's token" 200 "$(livekit_accepts "$(field call .token)")"
+# Forged: the signature's first character changed (the last one carries padding bits a decoder may ignore).
+forge() { local t="$1" sig="${1##*.}"; local c="A"; [[ "${sig:0:1}" == A ]] && c="B"; echo "${t%.*}.$c${sig:1}"; }
+expect "  LiveKit refuses a forged token" 401 "$(livekit_accepts "$(forge "$(field call .token)")")"
+expect "GET /v1/notifications (callee)" call_invite "$(as_callee pending GET /v1/notifications > /dev/null; field pending '.[0].kind')"
+expect "  the invite" "$invite" "$(field pending '.[0].call.inviteId')"
+expect "  from the caller" "$reporter" "$(field pending '.[0].call.number')"
+expect "POST /v1/voip/token (callee)" 200 "$(as_callee room_token POST /v1/voip/token "{\"inviteId\":\"$invite\"}")"
+expect "  same room" "$(field call .room)" "$(field room_token .room)"
+expect "  LiveKit accepts the callee's token" 200 "$(livekit_accepts "$(field room_token .token)")"
+expect "  accept" accepted "$(as_callee accept POST "/v1/voip/calls/$invite/accept" > /dev/null; field accept .state)"
+expect "  hang up" ended "$(authed hangup POST "/v1/voip/calls/$invite/end" > /dev/null; field hangup .state)"
+expect "  no token after the call" 409 "$(as_callee late_token POST /v1/voip/token "{\"inviteId\":\"$invite\"}")"
+expect "POST /v1/voip/calls to a number without OpenCaller" 404 "$(authed call_nobody POST /v1/voip/calls '{"to":"+12015550111"}')"
+expect "  code" not_reachable "$(field call_nobody .code)"
+expect "POST /v1/flash" 200 "$(authed flash POST /v1/flash "{\"to\":\"$callee\",\"kind\":\"running_late\"}")"
+expect "  free text refused" 400 "$(authed flash_text POST /v1/flash "{\"to\":\"$callee\",\"kind\":\"see you at 5\"}")"
+as_callee pending_flash GET /v1/notifications > /dev/null
+expect "  the callee's phone fetches it" running_late "$(jq -r '[.[] | select(.kind == "flash") | .flash.kind][0]' "$work/pending_flash.body")"
+expect "  then it is gone from the server" 0 "$(as_callee pending_after GET /v1/notifications > /dev/null; jq '[.[] | select(.kind == "flash")] | length' "$work/pending_after.body")"
+
+# Video caller ID: a 12 s 720p test clip with sound, made by the transcoder container's own ffmpeg.
+expect "POST /v1/me/video/upload" 200 "$(as_callee video_upload POST /v1/me/video/upload)"
+compose exec -T transcoder sh -c 'ffmpeg -loglevel error -y -f lavfi -i testsrc=duration=12:size=1280x720:rate=30 \
+  -f lavfi -i sine=duration=12 -c:v libx264 -preset ultrafast -c:a aac -shortest /tmp/smoke.mp4 && cat /tmp/smoke.mp4 && rm /tmp/smoke.mp4' \
+  > "$work/clip.mp4"
+expect "  upload to the presigned URL (no token)" 200 "$(curl -sS -o /dev/null -w '%{http_code}' -X PUT -H 'Content-Type: video/mp4' --data-binary "@$work/clip.mp4" "$(field video_upload .uploadUrl)")"
+expect "  submit" queued "$(as_callee video_submit POST /v1/me/video "{\"key\":\"$(field video_upload .key)\"}" > /dev/null; field video_submit .job)"
+for _ in $(seq 1 60); do
+  as_callee my_video GET /v1/me/video > /dev/null
+  [[ "$(field my_video .job)" == none || "$(field my_video .job)" == failed ]] && break
+  sleep 1
+done
+expect "  transcoded by the worker" none "$(field my_video .job)"
+video_id="$(field my_video .clip.videoId)"
+callee_hash="$(hash_of "$callee")"
+as_callee callee_bucket GET "/v1/lookup/buckets/1/$(bucket_of "$callee")" > /dev/null
+expect "  clip id in the bucket entry" "$video_id" "$(jq -r --arg h "$callee_hash" '[.entries[] | select(.hash == $h) | .info.videoId][0]' "$work/callee_bucket.body")"
+expect "POST /v1/videos/links (no token)" 1 "$(request video_links POST /v1/videos/links "{\"ids\":[\"$video_id\"]}" > /dev/null; field video_links '.links | length')"
+curl -sS -o "$work/published.mp4" "$(field video_links '.links[0].url')"
+# ISO BMFF: bytes 4–7 of the first box are "ftyp".
+expect "  the published clip is an MP4" ftyp "$(head -c 8 "$work/published.mp4" | tail -c 4)"
+[[ "$(stat -c %s "$work/published.mp4")" -lt "$(stat -c %s "$work/clip.mp4")" ]] && pass "  smaller than the upload" || fail "  not smaller than the upload"
 
 echo "== Metrics (internal port only)"
 expect "GET /metrics on the API port" 404 "$(request metrics_api GET /metrics)"

@@ -84,6 +84,8 @@ data class NumberInfoDto(
     val notSpamCount: Int = 0,
     val lineType: String? = null,
     val business: BusinessInfoDto? = null,
+    /** The owner's video caller ID (Phase 11), as visible as [name]. */
+    val videoId: String? = null,
 )
 
 /** One bucket entry: base64 SHA-256 of the E.164 number, and its info. */

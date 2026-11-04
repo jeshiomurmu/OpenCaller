@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voip_channel_incoming">Incoming app calls</string>
+    <string name="voip_channel_incoming_description">Rings when another OpenCaller user calls you over the app</string>
+    <string name="voip_channel_ongoing">App call in progress</string>
+    <string name="voip_incoming">OpenCaller app call</string>
+    <string name="voip_ongoing">App call</string>
+    <string name="voip_answer">Answer</string>
+    <string name="voip_decline">Decline</string>
+    <string name="voip_hang_up">Hang up</string>
+    <string name="voip_mute">Mute</string>
+    <string name="voip_speaker">Speaker</string>
+    <string name="voip_connecting">Connecting…</string>
+    <string name="voip_ringing_out">Ringing…</string>
+    <string name="voip_ringing_in">Incoming app call</string>
+    <string name="voip_answering">Answering…</string>
+    <string name="voip_active">App call</string>
+    <string name="voip_ended">Call ended</string>
+    <string name="voip_declined">Call declined</string>
+    <string name="voip_missed">No answer</string>
+    <string name="voip_unreachable">This number can\'t be reached through OpenCaller.</string>
+    <string name="voip_failed">The call couldn\'t be connected. Check your connection and try again.</string>
+    <string name="voip_busy">You\'re already in a call.</string>
+    <string name="voip_microphone_needed">OpenCaller needs the microphone for app calls. The other person hears you only while the call is on.</string>
+    <string name="voip_allow_microphone">Allow microphone</string>
+    <string name="voip_video_caller_id">The caller\'s video caller ID, without sound</string>
+    <string name="voip_via_app">Through OpenCaller, not your phone plan</string>
+</resources>

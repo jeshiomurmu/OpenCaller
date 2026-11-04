@@ -28,6 +28,8 @@ import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacin
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.AudioRouteType
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallStatus
+import io.github.jeshiomurmu.opencaller.core.ui.CallControlButton
+import io.github.jeshiomurmu.opencaller.core.ui.CallRoundAction
 import io.github.jeshiomurmu.opencaller.core.ui.DialPad
 import io.github.jeshiomurmu.opencaller.feature.incall.CallView
 import io.github.jeshiomurmu.opencaller.feature.incall.InCallEvent
@@ -61,7 +63,7 @@ internal fun OngoingCall(
         } else {
             CallControls(state = state, actions = actions, modifier = Modifier.align(Alignment.CenterHorizontally))
         }
-        RoundAction(
+        CallRoundAction(
             icon = OpenCallerIcons.CallEnd,
             label = stringResource(R.string.incall_hang_up),
             container = OpenCallerTheme.semanticColors.danger,
@@ -82,14 +84,14 @@ private fun CallControls(
     val onEvent = actions.onEvent
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(OpenCallerSpacing.m)) {
         Row(horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.l)) {
-            ControlButton(
+            CallControlButton(
                 icon = OpenCallerIcons.MicOff,
                 label = stringResource(R.string.incall_mute),
                 checked = state.audio.muted,
                 enabled = state.canMute,
                 onClick = { onEvent(InCallEvent.ToggleMute) },
             )
-            ControlButton(icon = OpenCallerIcons.Dialpad, label = stringResource(R.string.incall_keypad), onClick = actions.onKeypad)
+            CallControlButton(icon = OpenCallerIcons.Dialpad, label = stringResource(R.string.incall_keypad), onClick = actions.onKeypad)
             AudioControl(state = state, onEvent = onEvent, onAudio = actions.onAudio)
         }
         CallControlsSecondRow(state = state, actions = actions)
@@ -103,20 +105,20 @@ private fun CallControlsSecondRow(
     actions: OngoingActions,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.l)) {
-        ControlButton(
+        CallControlButton(
             icon = OpenCallerIcons.Hold,
             label = stringResource(R.string.incall_hold),
             checked = state.primary?.call?.status == CallStatus.HOLDING,
             enabled = state.canHold,
             onClick = { actions.onEvent(InCallEvent.ToggleHold) },
         )
-        ControlButton(
+        CallControlButton(
             icon = OpenCallerIcons.AddCall,
             label = stringResource(R.string.incall_add_call),
             enabled = state.canAddCall,
             onClick = actions.onAddCall,
         )
-        ControlButton(
+        CallControlButton(
             icon = OpenCallerIcons.Merge,
             label = stringResource(R.string.incall_merge),
             enabled = state.merge != null,
@@ -134,12 +136,12 @@ private fun AudioControl(
 ) {
     val audio = state.audio
     if (audio.hasExternalRoutes) {
-        ControlButton(icon = routeIcon(audio.current?.type), label = stringResource(R.string.incall_audio), onClick = onAudio)
+        CallControlButton(icon = routeIcon(audio.current?.type), label = stringResource(R.string.incall_audio), onClick = onAudio)
         return
     }
     val speakerOn = audio.current?.type == AudioRouteType.SPEAKER
     val target = audio.available.firstOrNull { it.type == if (speakerOn) AudioRouteType.EARPIECE else AudioRouteType.SPEAKER }
-    ControlButton(
+    CallControlButton(
         icon = OpenCallerIcons.Speaker,
         label = stringResource(R.string.incall_speaker),
         checked = speakerOn,

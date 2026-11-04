@@ -32,6 +32,20 @@ data class EntitlementResponse(
 data class ServerInfoResponse(
     val selfHosted: Boolean,
     val billing: BillingInfo,
+    val features: FeatureInfo = FeatureInfo(),
+)
+
+/**
+ * Phase 11 features of a server: [appCalls] (LiveKit and a push provider configured), [flash] (a push provider),
+ * [fcm] (play builds can register FCM tokens) and [webPushVapidKey] (foss builds pass it to their UnifiedPush
+ * distributor; `null` when Web Push is off).
+ */
+@Serializable
+data class FeatureInfo(
+    val appCalls: Boolean = false,
+    val flash: Boolean = false,
+    val fcm: Boolean = false,
+    val webPushVapidKey: String? = null,
 )
 
 /** Purchase options of a server; [googlePlayProductId] is set while Play billing is configured. */

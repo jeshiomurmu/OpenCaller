@@ -13,8 +13,11 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 
 /** `GET /v1/server` (public), `GET /v1/entitlements` and `POST /v1/billing/verify` (access token), never cached. */
-fun Route.billingRoutes(billing: BillingService) {
-    get("/v1/server") { call.noStore().respond(billing.serverInfo()) }
+fun Route.billingRoutes(
+    billing: BillingService,
+    features: FeatureInfo = FeatureInfo(),
+) {
+    get("/v1/server") { call.noStore().respond(billing.serverInfo(features)) }
     authenticate(ACCESS_AUTH) {
         get("/v1/entitlements") { call.noStore().respond(billing.entitlements(call.userId())) }
         post("/v1/billing/verify") {

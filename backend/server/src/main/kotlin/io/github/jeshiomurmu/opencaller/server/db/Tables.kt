@@ -6,7 +6,8 @@ import org.jetbrains.exposed.v1.core.java.javaUUID
 import org.jetbrains.exposed.v1.javatime.CurrentTimestampWithTimeZone
 import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
 
-// Exposed mirrors of the tables in db/migration (V1__init.sql = docs/architecture.md §7, then V2 to V5). Flyway
+// Exposed mirrors of the tables in db/migration (V1__init.sql = docs/architecture.md §7, then V2 to V6; the Phase 11
+// tables are in VoipTables.kt). Flyway
 // owns the schema; these objects are only used for queries. ServerSchemaTest compares them with the migrated database.
 
 internal const val COUNTRY_ISO_LENGTH = 2
@@ -24,6 +25,7 @@ object Users : Table("users") {
     val supporterTier = text("supporter_tier").default("none")
     val createdAt = timestampWithTimeZone("created_at").defaultExpression(CurrentTimestampWithTimeZone)
     val deletedAt = timestampWithTimeZone("deleted_at").nullable()
+    val reachable = bool("reachable").default(true) // V6
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -36,6 +38,9 @@ object Devices : Table("devices") {
     val pushToken = text("push_token").nullable()
     val integrityLevel = short("integrity_level").default(0)
     val lastSeen = timestampWithTimeZone("last_seen").nullable()
+    val pushP256dh = text("push_p256dh").nullable() // V6
+    val pushAuth = text("push_auth").nullable() // V6
+    val pushUpdatedAt = timestampWithTimeZone("push_updated_at").nullable() // V6
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -237,7 +242,7 @@ object JobState : Table("job_state") {
     override val primaryKey = PrimaryKey(name)
 }
 
-/** Every table (V1, then V2 to V5), in creation order. */
+/** Every table (V1, then V2 to V6; the Phase 11 tables are in VoipTables.kt), in creation order. */
 val allTables: List<Table> =
     listOf(
         Users,
@@ -265,4 +270,9 @@ val allTables: List<Table> =
         OtpAppHashes,
         VerificationRanges,
         ImportRuns,
+        PushItems,
+        CallInvites,
+        FlashMessages,
+        VideoCallerIds,
+        VideoReports,
     )

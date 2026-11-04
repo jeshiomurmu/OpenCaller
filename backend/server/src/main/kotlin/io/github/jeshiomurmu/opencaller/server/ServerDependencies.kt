@@ -14,6 +14,7 @@ import io.github.jeshiomurmu.opencaller.server.auth.otp.TwilioOtpProvider
 import io.github.jeshiomurmu.opencaller.server.auth.otp.TwilioVoiceOtpProvider
 import io.github.jeshiomurmu.opencaller.server.billing.BillingRecheckResult
 import io.github.jeshiomurmu.opencaller.server.billing.BillingService
+import io.github.jeshiomurmu.opencaller.server.billing.FeatureInfo
 import io.github.jeshiomurmu.opencaller.server.billing.GooglePlayDeveloperApi
 import io.github.jeshiomurmu.opencaller.server.billing.PlaySubscriptions
 import io.github.jeshiomurmu.opencaller.server.business.BusinessDirectory
@@ -21,9 +22,11 @@ import io.github.jeshiomurmu.opencaller.server.business.ClaimCodes
 import io.github.jeshiomurmu.opencaller.server.business.ClaimReview
 import io.github.jeshiomurmu.opencaller.server.business.ClaimService
 import io.github.jeshiomurmu.opencaller.server.config.AppConfig
+import io.github.jeshiomurmu.opencaller.server.config.Environment
 import io.github.jeshiomurmu.opencaller.server.config.OtpProviderKind
 import io.github.jeshiomurmu.opencaller.server.db.ServerDatabase
 import io.github.jeshiomurmu.opencaller.server.disputes.DisputeService
+import io.github.jeshiomurmu.opencaller.server.flash.FlashService
 import io.github.jeshiomurmu.opencaller.server.http.ApiJson
 import io.github.jeshiomurmu.opencaller.server.jobs.JobRunner
 import io.github.jeshiomurmu.opencaller.server.jobs.JobScheduler
@@ -32,6 +35,7 @@ import io.github.jeshiomurmu.opencaller.server.lists.ListBuildResult
 import io.github.jeshiomurmu.opencaller.server.lists.ListBuilder
 import io.github.jeshiomurmu.opencaller.server.lists.ListService
 import io.github.jeshiomurmu.opencaller.server.lookup.LookupService
+import io.github.jeshiomurmu.opencaller.server.notifications.NotificationService
 import io.github.jeshiomurmu.opencaller.server.profile.ContactRequestService
 import io.github.jeshiomurmu.opencaller.server.profile.Entitlements
 import io.github.jeshiomurmu.opencaller.server.profile.ProfileService
@@ -39,6 +43,10 @@ import io.github.jeshiomurmu.opencaller.server.profile.RetentionJob
 import io.github.jeshiomurmu.opencaller.server.profile.RetentionResult
 import io.github.jeshiomurmu.opencaller.server.profile.StoredTierEntitlements
 import io.github.jeshiomurmu.opencaller.server.profile.VisitorService
+import io.github.jeshiomurmu.opencaller.server.push.HttpPushSender
+import io.github.jeshiomurmu.opencaller.server.push.PushEndpointPolicy
+import io.github.jeshiomurmu.opencaller.server.push.PushSender
+import io.github.jeshiomurmu.opencaller.server.push.PushService
 import io.github.jeshiomurmu.opencaller.server.redis.RateLimiter
 import io.github.jeshiomurmu.opencaller.server.redis.Redis
 import io.github.jeshiomurmu.opencaller.server.registry.ImportJobResult
@@ -58,6 +66,11 @@ import io.github.jeshiomurmu.opencaller.server.storage.S3ObjectStore
 import io.github.jeshiomurmu.opencaller.server.sync.SeedData
 import io.github.jeshiomurmu.opencaller.server.sync.SyncService
 import io.github.jeshiomurmu.opencaller.server.unlist.UnlistService
+import io.github.jeshiomurmu.opencaller.server.video.VideoCallerIdService
+import io.github.jeshiomurmu.opencaller.server.voip.VoipCleanupJob
+import io.github.jeshiomurmu.opencaller.server.voip.VoipCleanupResult
+import io.github.jeshiomurmu.opencaller.server.voip.VoipRouteServices
+import io.github.jeshiomurmu.opencaller.server.voip.VoipService
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.CoroutineDispatcher
@@ -86,6 +99,7 @@ class ServerDependencies(
     val clock: Clock,
     val objectStore: ObjectStore = S3ObjectStore(config.minio, clock),
     playApi: PlaySubscriptions? = null,
+    pushSender: PushSender? = null,
 ) : Closeable {
     private val otpProvider = senders.sms
     private val voiceProvider = senders.voice
@@ -141,6 +155,32 @@ class ServerDependencies(
     val importRuns = ImportRunLog(database, clock)
     val adminAudit = AdminAuditLog(database, clock)
 
+    // Phase 11: push, app calls, Flash messages and video caller ID (ADR 0007).
+    val push =
+        PushService(
+            db = database,
+            sender = pushSender ?: HttpPushSender(config.voip.push.fcm, config.voip.push.webPush, clock),
+            policy = PushEndpointPolicy(allowPrivate = config.environment != Environment.PRODUCTION),
+            clock = clock,
+            enabled = config.voip.push.enabled || pushSender != null,
+        )
+    val voip = VoipService(database, config.voip.liveKit, push, rateLimiter, clock, random)
+    val flash = FlashService(database, push, rateLimiter, clock)
+    val video = VideoCallerIdService(database, objectStore, rateLimiter, clock)
+    val voipRoutes = VoipRouteServices(push, NotificationService(push, voip, flash), voip, flash, video)
+    val voipCleanup = VoipCleanupJob(database, clock)
+
+    /** What `GET /v1/server` says about the Phase 11 features. */
+    val features =
+        FeatureInfo(
+            appCalls = voip.enabled,
+            flash = flash.enabled,
+            fcm = config.voip.push.fcm != null,
+            webPushVapidKey =
+                config.voip.push.webPush
+                    ?.publicKeyBase64Url,
+        )
+
     /** Sender-ID importers: the CSV extracts in the import folder, then the registries without documented access. */
     val importers: () -> List<Importer<*>> = { csvImportersIn(config.imports.dir, senderIdStore) + placeholderRegistries }
     val importJob = SenderIdImportJob(importers, importRuns, clock)
@@ -165,11 +205,14 @@ class ServerDependencies(
                 IMPORT_LOCK,
             ) { ApiJson.encodeToJsonElement(ImportJobResult.serializer(), importJob.run()) },
             LeaderJob(BILLING_JOB, BILLING_LOCK) { ApiJson.encodeToJsonElement(BillingRecheckResult.serializer(), billing.recheck()) },
+            LeaderJob(VoipCleanupJob.JOB_NAME, VOIP_CLEANUP_LOCK) {
+                ApiJson.encodeToJsonElement(VoipCleanupResult.serializer(), voipCleanup.run())
+            },
         )
 
     /**
      * Starts the scoring job every [ScoringConfig.intervalMinutes]; the list build, retention and sender-ID imports
-     * daily; the billing re-check hourly.
+     * daily; the billing re-check and the VoIP cleanup hourly.
      */
     fun startJobs(scope: CoroutineScope) {
         val scheduler = JobScheduler(scope, jobRunner, clock)
@@ -178,6 +221,7 @@ class ServerDependencies(
         scheduler.dailyAt(RetentionJob.HOUR_UTC, jobs.first { it.name == RetentionJob.JOB_NAME })
         scheduler.dailyAt(config.imports.hourUtc, jobs.first { it.name == SenderIdImportJob.JOB_NAME })
         scheduler.every(Duration.ofHours(1), jobs.first { it.name == BILLING_JOB })
+        scheduler.every(Duration.ofHours(1), jobs.first { it.name == VoipCleanupJob.JOB_NAME })
     }
 
     override fun close() {
@@ -198,6 +242,7 @@ class ServerDependencies(
         private const val RETENTION_LOCK = 4_000_003L
         private const val IMPORT_LOCK = 4_000_004L
         private const val BILLING_LOCK = 4_000_005L
+        private const val VOIP_CLEANUP_LOCK = 4_000_006L
 
         /** Connects to PostgreSQL (running migrations) and Redis, picks the OTP provider and seeds sender IDs. */
         fun create(

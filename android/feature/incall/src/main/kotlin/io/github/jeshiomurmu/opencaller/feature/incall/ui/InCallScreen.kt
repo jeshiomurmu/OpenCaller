@@ -57,6 +57,7 @@ fun InCallRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val now by viewModel.nowMillis.collectAsStateWithLifecycle()
+    val clip by viewModel.ringingClip.collectAsStateWithLifecycle()
     val askNames = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { viewModel.onEvent(InCallEvent.Refresh) }
     LaunchedEffect(state.usesEarpiece) { callbacks.onEarpiece(state.usesEarpiece) }
     if (state.isOver) {
@@ -66,7 +67,7 @@ fun InCallRoute(
         }
     }
     InCallScreen(
-        state = state,
+        state = state.copy(ringingClip = clip),
         nowMillis = now,
         onEvent = viewModel::onEvent,
         onAddCall = callbacks.onAddCall,
@@ -151,7 +152,7 @@ private fun InCallContent(
             }
 
             ringing != null -> {
-                IncomingCall(view = ringing, nowMillis = nowMillis, onEvent = actions.onEvent, onReply = onReply)
+                IncomingCall(view = ringing, nowMillis = nowMillis, onEvent = actions.onEvent, onReply = onReply, clip = state.ringingClip)
             }
         }
     }

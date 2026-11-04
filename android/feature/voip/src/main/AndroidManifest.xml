@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- The call's audio; asked for when the user starts or answers an app call. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+    <!-- Self-managed calls through Jetpack Telecom (its manifest declares it too). -->
+    <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
+
+    <application>
+        <!-- Holds the app call while it rings and runs (Jetpack Telecom: a phoneCall foreground service). -->
+        <service
+            android:name=".VoipCallService"
+            android:exported="false"
+            android:foregroundServiceType="phoneCall|microphone" />
+
+        <activity
+            android:name=".VoipCallActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:taskAffinity="io.github.jeshiomurmu.opencaller.voip">
+            <intent-filter>
+                <action android:name="io.github.jeshiomurmu.opencaller.action.APP_CALL" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

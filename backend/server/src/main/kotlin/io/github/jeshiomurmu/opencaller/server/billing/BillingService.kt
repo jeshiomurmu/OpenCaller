@@ -38,7 +38,8 @@ class BillingService(
     private val googlePlay: GooglePlayConfig? = config.googlePlay.takeIf { play != null }
 
     /** `GET /v1/server`. */
-    fun serverInfo() = ServerInfoResponse(config.selfHosted, BillingInfo(googlePlay?.productId))
+    fun serverInfo(features: FeatureInfo = FeatureInfo()) =
+        ServerInfoResponse(config.selfHosted, BillingInfo(googlePlay?.productId), features)
 
     /** `GET /v1/entitlements`. */
     suspend fun entitlements(userId: UUID): EntitlementResponse {

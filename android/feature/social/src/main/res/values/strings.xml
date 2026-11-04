@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Flash messages: predefined pings, no free text, no location. -->
+    <string name="flash_call_me">Call me</string>
+    <string name="flash_on_my_way">On my way</string>
+    <string name="flash_running_late">Running late</string>
+    <string name="flash_cant_talk">Can\'t talk now</string>
+    <string name="flash_arrived">I\'ve arrived</string>
+    <string name="flash_call_you_back">I\'ll call you back</string>
+    <string name="flash_channel">Flash messages</string>
+    <string name="flash_channel_description">Short pings from other OpenCaller users</string>
+    <string name="flash_from">Flash from %1$s</string>
+    <string name="flash_send">Flash</string>
+    <string name="flash_pick_title">Send a Flash message</string>
+    <string name="flash_sent">Flash sent</string>
+    <string name="flash_not_sent">The Flash message wasn\'t sent. %1$s</string>
+    <string name="flash_recent_title">Recent Flash messages</string>
+    <string name="flash_recent_empty">No Flash messages yet</string>
+    <string name="flash_received_line">From %1$s: %2$s</string>
+    <string name="flash_sent_line">To %1$s: %2$s</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- Reach this number (on another number's profile). -->
+    <string name="reach_app_call">App call</string>
+    <string name="reach_explanation">Calls and Flash messages go through the OpenCaller server, not your phone plan. The other person needs OpenCaller and must allow them.</string>
+    <string name="reach_not_reachable">This number can\'t be reached through OpenCaller.</string>
+
+    <!-- Settings → App calls, Flash and video caller ID. -->
+    <string name="voip_settings_title">App calls, Flash and video caller ID</string>
+    <string name="voip_settings_signed_out">Sign in to use app calls, Flash messages and a video caller ID.</string>
+    <string name="voip_reachable">Let OpenCaller users call and Flash me</string>
+    <string name="voip_reachable_summary">Anyone with your number who uses OpenCaller. When this is off, they see that your number can\'t be reached, as if you didn\'t use OpenCaller.</string>
+    <string name="voip_clips_mobile_data">Download video caller IDs on mobile data</string>
+    <string name="voip_clips_mobile_data_summary">Off: only on Wi-Fi. Clips of every number in a lookup are downloaded, so the server can\'t tell which number called.</string>
+    <string name="video_title">My video caller ID</string>
+    <string name="video_explanation">Up to 10 seconds, without sound. Others see it, muted, when you call them, as visible as your name. The server shrinks it before it is shown.</string>
+    <string name="video_none">You have no video caller ID.</string>
+    <string name="video_published">Your video caller ID is published.</string>
+    <string name="video_hidden">Your video caller ID was hidden after reports from other users.</string>
+    <string name="video_processing">Your new clip is being processed. The old one stays until it is ready.</string>
+    <string name="video_failed">The last clip wasn\'t published: %1$s</string>
+    <string name="video_record">Record a clip</string>
+    <string name="video_delete">Delete my video caller ID</string>
+    <string name="video_uploading">Uploading…</string>
+    <string name="error_network">No connection to the server.</string>
+    <string name="error_generic">Something went wrong. Try again later.</string>
+    <string name="error_rate_limited">Too many requests. Try again later.</string>
+
+    <!-- Recording. -->
+    <string name="record_title">Record your video caller ID</string>
+    <string name="record_camera_needed">OpenCaller needs the camera to record your clip. Nothing is recorded until you tap Record; there is no sound.</string>
+    <string name="record_allow_camera">Allow camera</string>
+    <string name="record_start">Record (10 s)</string>
+    <string name="record_stop">Stop</string>
+    <string name="record_recording">Recording… %1$d s</string>
+    <string name="record_upload">Use this clip</string>
+    <string name="record_again">Record again</string>
+    <string name="record_failed">The clip couldn\'t be recorded. Try again.</string>
+</resources>

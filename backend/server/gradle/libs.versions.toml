@@ -15,6 +15,8 @@ micrometer = "1.17.1"
 postgresql = "42.7.14"
 spotless = "8.10.4"
 testcontainers = "2.0.5"
+# Test only: decrypts Web Push messages with Google's implementation to check WebPushCrypto (RFC 8291).
+tink = "1.15.0"
 
 [libraries]
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
@@ -41,6 +43,7 @@ logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "lo
 micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometer" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
+tink-apps-webpush = { module = "com.google.crypto.tink:apps-webpush", version.ref = "tink" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
 
 [plugins]

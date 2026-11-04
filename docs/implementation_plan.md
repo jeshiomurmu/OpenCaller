@@ -166,13 +166,13 @@ Done in two parts: 7a (default SMS app: the four role components, provider stora
 
 ## Phase 10 — Supporter tier and utilities
 
-- [ ] `EntitlementProvider`: `play` = Play Billing (subscriptions: Supporter, Gold, Family) + server verification; `foss` = self-host flag / donation
-- [ ] Extended spam list (F-PR-03)
-- [ ] Ghost Call (full-screen intent fake incoming call UI)
-- [ ] Announce Caller (TextToSpeech, headset-only option)
-- [ ] Backup/restore: `play` Drive appDataFolder, `foss` encrypted file via SAF
-- [ ] Themes incl. Gold
-- [ ] WhatsApp/Telegram/Signal caller ID via `NotificationListenerService`
+- [x] `EntitlementProvider`: `play` = Play Billing (subscriptions: Supporter, Gold, Family) + server verification; `foss` = self-host flag / donation
+- [x] Extended spam list (F-PR-03)
+- [x] Ghost Call (full-screen intent fake incoming call UI)
+- [x] Announce Caller (TextToSpeech, headset-only option)
+- [x] Backup/restore: `play` Drive appDataFolder, `foss` encrypted file via SAF
+- [x] Themes incl. Gold
+- [x] WhatsApp/Telegram/Signal caller ID via `NotificationListenerService`
 
 **Exit:** TC-UT-*, TC-BILL-* pass (Play Billing tested with license testers).
 

@@ -1,4 +1,4 @@
-package io.github.jeshiomurmu.opencaller.feature.incall.ui
+package io.github.jeshiomurmu.opencaller.core.ui
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
@@ -27,11 +27,11 @@ import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacin
 private const val DISABLED_ALPHA = 0.38f
 
 /**
- * A large round call action with its label underneath (Answer, Decline, Hang up). The whole column is the touch
- * target, and TalkBack reads the label.
+ * A large round call action (shared by the phone-call and app-call screens) with its label underneath (Answer,
+ * Decline, Hang up). The whole column is the touch target, and TalkBack reads the label.
  */
 @Composable
-internal fun RoundAction(
+fun CallRoundAction(
     @DrawableRes icon: Int,
     label: String,
     container: Color,
@@ -59,7 +59,7 @@ internal fun RoundAction(
  * state by fill and to TalkBack; without, a plain button.
  */
 @Composable
-internal fun ControlButton(
+fun CallControlButton(
     @DrawableRes icon: Int,
     label: String,
     onClick: () -> Unit,

@@ -30,7 +30,7 @@ fun loadConfig(env: Map<String, String>): AppConfig {
 internal class ConfigReader(
     private val config: Config,
 ) {
-    private val problems = mutableListOf<String>()
+    internal val problems = mutableListOf<String>()
 
     fun read(): AppConfig {
         val environment = enumValue<Environment>("environment", "ENV")
@@ -65,6 +65,7 @@ internal class ConfigReader(
                 adminWeb = readAdminWeb(),
                 imports = ImportConfig(string("imports.dir"), int("imports.hourUtc", "IMPORT_HOUR_UTC", 0..LAST_HOUR)),
                 billing = BillingConfig(bool("billing.selfHosted", "SELF_HOSTED"), readGooglePlay(environment)),
+                voip = readVoip(environment),
             )
         if (result.scoring.verifiedCap >= result.lists.minScore) problems += "SCORING_VERIFIED_CAP must be below LIST_MIN_SCORE"
         if (result.http.port == result.http.metricsPort) problems += "PORT and METRICS_PORT must differ"
@@ -181,14 +182,14 @@ internal class ConfigReader(
     }
 
     // An unset or blank variable counts as missing.
-    private fun string(path: String): String? = if (config.hasPath(path)) config.getString(path).trim().ifEmpty { null } else null
+    internal fun string(path: String): String? = if (config.hasPath(path)) config.getString(path).trim().ifEmpty { null } else null
 
-    private fun required(
+    internal fun required(
         path: String,
         envVar: String,
     ): String = string(path) ?: "".also { problems += "$envVar is required" }
 
-    private fun secret(
+    internal fun secret(
         path: String,
         envVar: String,
     ): String = required(path, envVar).also { if (it.isNotEmpty()) checkSecretLength(it, envVar) }
@@ -200,7 +201,7 @@ internal class ConfigReader(
         if (value.length < MIN_SECRET_LENGTH) problems += "$envVar must be at least $MIN_SECRET_LENGTH characters"
     }
 
-    private fun bool(
+    internal fun bool(
         path: String,
         envVar: String,
     ): Boolean =
@@ -223,7 +224,7 @@ internal class ConfigReader(
         return value
     }
 
-    private fun prefixed(
+    internal fun prefixed(
         path: String,
         envVar: String,
         vararg prefixes: String,
@@ -235,7 +236,7 @@ internal class ConfigReader(
         return value
     }
 
-    private fun int(
+    internal fun int(
         path: String,
         envVar: String,
         range: IntRange,

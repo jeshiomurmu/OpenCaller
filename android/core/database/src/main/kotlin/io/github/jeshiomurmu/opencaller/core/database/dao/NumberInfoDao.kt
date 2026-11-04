@@ -19,6 +19,13 @@ interface NumberInfoDao {
         nowMillis: Long,
     ): NumberInfoEntity?
 
+    /** The video caller ID cached for [e164] that has not expired at [nowMillis], or `null`. */
+    @Query("SELECT videoId FROM number_info WHERE e164 = :e164 AND expiresAt > :nowMillis")
+    suspend fun videoIdOf(
+        e164: String,
+        nowMillis: Long,
+    ): String?
+
     /** Removes entries expired at [nowMillis]; returns the number removed. */
     @Query("DELETE FROM number_info WHERE expiresAt <= :nowMillis")
     suspend fun deleteExpired(nowMillis: Long): Int

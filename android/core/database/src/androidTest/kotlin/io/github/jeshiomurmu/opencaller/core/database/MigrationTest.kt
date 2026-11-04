@@ -115,6 +115,34 @@ class MigrationTest {
             }
         }
 
+    // Version 5 (Phase 11): number_info keeps its rows and gains videoId; an empty flash_message table.
+    @Test
+    fun migration4To5AddsVideoCallerIdsAndFlashMessages() =
+        runTest {
+            helper.createDatabase(4).use { db ->
+                db.execSQL(
+                    "INSERT INTO number_info (e164, displayName, nameSource, spamScore, spamCategory, reportCount, " +
+                        "isBusiness, businessId, verified, logoUrl, callReason, lineType, fetchedAt, expiresAt, badge) " +
+                        "VALUES ('+12015550123', 'Asha', 'SELF_REGISTERED', NULL, NULL, 0, 0, NULL, 0, NULL, NULL, NULL, 1, 2, NULL)",
+                )
+            }
+            helper.runMigrationsAndValidate(5, listOf(Migrations.MIGRATION_4_5)).use { db ->
+                db.prepare("SELECT displayName, videoId FROM number_info WHERE e164 = '+12015550123'").use { row ->
+                    assertTrue(row.step())
+                    assertEquals("Asha", row.getText(0))
+                    assertTrue(row.isNull(1))
+                }
+                db.execSQL(
+                    "INSERT INTO flash_message (id, kind, e164, name, atMillis, outgoing) " +
+                        "VALUES ('f1', 'call_me', '+12015550123', NULL, 5, 0)",
+                )
+                db.prepare("SELECT COUNT(*) FROM flash_message").use { row ->
+                    assertTrue(row.step())
+                    assertEquals(1L, row.getLong(0))
+                }
+            }
+        }
+
     private companion object {
         const val TEST_DB = "migration-test.db"
     }

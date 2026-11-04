@@ -5,6 +5,8 @@ import io.github.jeshiomurmu.opencaller.core.common.Clock
 import io.github.jeshiomurmu.opencaller.core.common.DispatcherProvider
 import io.github.jeshiomurmu.opencaller.core.common.getOrNull
 import io.github.jeshiomurmu.opencaller.core.data.Storage
+import io.github.jeshiomurmu.opencaller.core.data.voip.ClipPrefetch
+import io.github.jeshiomurmu.opencaller.core.data.voip.VideoClips
 import io.github.jeshiomurmu.opencaller.core.database.DatabaseAccess
 import io.github.jeshiomurmu.opencaller.core.database.entity.LookupBucketEntity
 import io.github.jeshiomurmu.opencaller.core.database.entity.NumberInfoEntity
@@ -44,7 +46,8 @@ data class LiveLookupResult(
  * (SHA-256 of the E.164 string) and asks for its 16-bit bucket only: the request carries the country calling code
  * and the bucket number, never the number (TC-LOOK-002). The full hash is matched on the phone. Answers, including
  * "nothing known", are cached for 24 h in `number_info`; the bucket fetch is recorded in `lookup_bucket`. A slow or
- * unreachable server gives no answer after [OpenCallerNetwork.DEFAULT_LOOKUP_TIMEOUT_MILLIS] (TC-LOOK-001).
+ * unreachable server gives no answer after [OpenCallerNetwork.DEFAULT_LOOKUP_TIMEOUT_MILLIS] (TC-LOOK-001). The
+ * video caller IDs a bucket names are handed to [ClipPrefetch], all of them.
  */
 @Singleton
 class LiveLookupRepository
@@ -56,6 +59,7 @@ class LiveLookupRepository
         private val clock: Clock,
         access: DatabaseAccess,
         dispatchers: DispatcherProvider,
+        private val clips: ClipPrefetch = ClipPrefetch.NONE,
     ) {
         private val storage = Storage(access, dispatchers)
         private val hasher = BucketHasher(BucketHasher.DEFAULT_BITS)
@@ -89,6 +93,8 @@ class LiveLookupRepository
                 numberInfoDao().upsert(row)
                 lookupBucketDao().upsert(LookupBucketEntity(countryCode, bucket, now, etag = null))
             }
+            // Every clip of the bucket, not just this number's: the server can't tell which number rang (ADR 0007).
+            clips.prefetch(entries.mapNotNull { it.info.videoId })
             return row.toResult().copy(fromCache = false)
         }
 
@@ -121,6 +127,7 @@ class LiveLookupRepository
                 expiresAt = now + CACHE_MILLIS,
                 // A badge belongs to a self-registered name; a business name never carries one.
                 badge = SupporterBadge.parse(this?.badge)?.takeIf { business == null && name != null }?.name,
+                videoId = this?.videoId?.takeIf(VideoClips::isClipId),
             )
         }
 

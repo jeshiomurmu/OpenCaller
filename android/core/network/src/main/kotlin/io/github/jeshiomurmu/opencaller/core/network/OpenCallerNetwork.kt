@@ -81,6 +81,9 @@ class OpenCallerNetwork(
     /** Supporter tier: server info, entitlements, purchase verification, the extended list. */
     val billingApi: BillingApi = retrofit(authed).create(BillingApi::class.java)
 
+    /** Push endpoints, notifications, app calls, Flash messages and video caller ID (Phase 11). */
+    val voipApi: VoipApi = retrofit(authed).create(VoipApi::class.java)
+
     /** The live lookup, cut off after the lookup timeout so a slow server never holds up a call. */
     val lookupApi: LookupApi =
         retrofit(

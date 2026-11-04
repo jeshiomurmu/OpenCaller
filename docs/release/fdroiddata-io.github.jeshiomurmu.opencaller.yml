@@ -21,6 +21,10 @@ Builds:
     subdir: android/app
     gradle:
       - foss
+    # Leaves out app calls: LiveKit ships prebuilt WebRTC and Rust libraries (docs/decisions/0007). Flash messages
+    # and video caller ID stay.
+    gradleprops:
+      - opencaller.voip=false
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
