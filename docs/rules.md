@@ -14,7 +14,7 @@ These rules override any default behaviour of the coding agent. When a rule conf
 ## 2. Never do
 
 - Never upload or transmit contacts, call log entries, SMS bodies, or lists of numbers the user communicated with. (Privacy invariants: `architecture.md` §10.)
-- Never add ads, ad SDKs, Firebase Analytics, Crashlytics, or any third-party tracker. FCM is allowed only in the `play` flavor and only for data-less "sync" pushes.
+- Never add ads, ad SDKs, Firebase Analytics, Crashlytics, or any third-party tracker. FCM is allowed only in the `play` flavor and only for data-less "sync" pushes or pushes that carry nothing but a random, opaque ID the app then fetches from our server (call invites and Flash messages, ADR 0007); the same holds for UnifiedPush in `foss`.
 - Never use the Accessibility API for call recording or reading other apps' screens.
 - Never use hidden/non-SDK APIs, reflection into framework classes, or root.
 - Never block outgoing calls or emergency numbers. Screening errors must **fail open** (allow the call).
