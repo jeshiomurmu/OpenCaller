@@ -174,6 +174,20 @@ dependencies {
     androidTestUtil(libs.androidx.test.services)
 }
 
+// The UnifiedPush connector asks for Tink's JVM artifact (with the full protobuf-java); Android builds use the same
+// Tink version's Android artifact, which carries its own protobuf-lite.
+configurations.configureEach {
+    resolutionStrategy.dependencySubstitution {
+        substitute(module("com.google.crypto.tink:tink")).using(
+            module(
+                libs.tink.android
+                    .get()
+                    .toString(),
+            ),
+        )
+    }
+}
+
 // Release builds: the server must use HTTPS, and play release builds must pin its key plus a backup key.
 val checkReleaseServerConfig =
     tasks.register("checkReleaseServerConfig") {

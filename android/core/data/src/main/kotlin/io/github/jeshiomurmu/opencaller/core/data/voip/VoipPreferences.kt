@@ -92,7 +92,7 @@ class VoipPreferences(
     /** File name and keys. */
     companion object {
         /** DataStore file name. */
-        const val FILE_NAME = "voip.preferences_pb"
+        const val FILE_NAME = "voip"
         private const val TYPE_FCM = "fcm"
         private const val TYPE_WEB_PUSH = "webpush"
         private val MOBILE_DATA = booleanPreferencesKey("clips_on_mobile_data")

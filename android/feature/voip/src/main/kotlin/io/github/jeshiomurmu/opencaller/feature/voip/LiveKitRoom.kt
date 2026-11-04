@@ -40,7 +40,7 @@ internal class LiveKitRoom(
                     ),
             )
         room = created
-        scope.launch { created.events.events.collect(onEvent) }
+        scope.launch { created.events.events.collect { onEvent(it) } }
         created.connect(access.url, access.token)
         created.localParticipant.setMicrophoneEnabled(true)
     }

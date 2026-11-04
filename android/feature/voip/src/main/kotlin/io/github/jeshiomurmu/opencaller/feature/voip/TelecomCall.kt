@@ -40,20 +40,22 @@ internal class TelecomCall(
         events: TelecomEvents,
     ) {
         manager.registerAppWithTelecom(CallsManager.CAPABILITY_BASELINE)
+        // Positional: display name, address, direction, call type, capabilities (core-telecom 1.0.1).
         val attributes =
             CallAttributesCompat(
-                displayName = displayName,
-                address = Uri.fromParts(SCHEME, number, null),
-                direction = if (incoming) CallAttributesCompat.DIRECTION_INCOMING else CallAttributesCompat.DIRECTION_OUTGOING,
-                callType = CallAttributesCompat.CALL_TYPE_AUDIO_CALL,
-                callCapabilities = CallAttributesCompat.SUPPORTS_SET_INACTIVE,
+                displayName,
+                Uri.fromParts(SCHEME, number, null),
+                if (incoming) CallAttributesCompat.DIRECTION_INCOMING else CallAttributesCompat.DIRECTION_OUTGOING,
+                CallAttributesCompat.CALL_TYPE_AUDIO_CALL,
+                CallAttributesCompat.SUPPORTS_SET_INACTIVE,
             )
+        // Positional: onAnswer, onDisconnect, onSetActive, onSetInactive, then the call's control block.
         manager.addCall(
             attributes,
-            onAnswer = { events.onTelecomAnswer() },
-            onDisconnect = { events.onTelecomDisconnect(it) },
-            onSetActive = {},
-            onSetInactive = {},
+            { _ -> events.onTelecomAnswer() },
+            { cause -> events.onTelecomDisconnect(cause) },
+            {},
+            {},
         ) {
             control = this
             launch { currentCallEndpoint.collect { events.onSpeakerChanged(it.type == CallEndpointCompat.TYPE_SPEAKER) } }

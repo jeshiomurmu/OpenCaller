@@ -42,7 +42,6 @@
     <string name="video_record">Record a clip</string>
     <string name="video_delete">Delete my video caller ID</string>
     <string name="video_uploading">Uploading…</string>
-    <string name="video_unavailable">Not available: %1$s</string>
     <string name="error_network">No connection to the server.</string>
     <string name="error_generic">Something went wrong. Try again later.</string>
     <string name="error_rate_limited">Too many requests. Try again later.</string>
