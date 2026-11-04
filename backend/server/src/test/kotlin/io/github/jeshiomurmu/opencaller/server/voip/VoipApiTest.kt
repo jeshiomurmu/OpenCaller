@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.JWTVerifier.BaseVerification
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.JWTVerifier
+import io.github.jeshiomurmu.opencaller.server.config.VapidConfig
 import io.github.jeshiomurmu.opencaller.server.db.Devices
 import io.github.jeshiomurmu.opencaller.server.db.Users
 import io.github.jeshiomurmu.opencaller.server.db.Visibility
@@ -36,7 +37,10 @@ import kotlinx.serialization.json.jsonPrimitive
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
+import java.security.KeyPairGenerator
+import java.security.interfaces.ECPublicKey
 import java.time.Clock
+import java.util.Base64
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -223,13 +227,21 @@ class VoipApiTest {
     fun pushRegistrationIsValidated() =
         apiTest(voipServer()) {
             val bob = signIn(it, BOB).accessToken
-            val key = "B" + "A".repeat(86) // 65 bytes, base64url
+            val point =
+                KeyPairGenerator
+                    .getInstance("EC")
+                    .apply { initialize(VapidConfig.P256) }
+                    .generateKeyPair()
+                    .public as ECPublicKey
+            val key = Base64.getUrlEncoder().withoutPadding().encodeToString(VapidConfig.uncompressed(point))
+            val offCurve = "B" + "A".repeat(86) // 04 || 0 || 0: 65 bytes, but not on the curve
             val auth = "A".repeat(22) // 16 bytes
             val good = """{"type":"webpush","endpoint":"https://push.example.org/up/1","p256dh":"$key","auth":"$auth"}"""
             assertEquals(HttpStatusCode.NoContent, client.putJson("/v1/push", good, bob).status)
             val bad =
                 listOf(
                     """{"type":"webpush","endpoint":"https://push.example.org/up/1","p256dh":"AAAA","auth":"$auth"}""",
+                    """{"type":"webpush","endpoint":"https://push.example.org/up/1","p256dh":"$offCurve","auth":"$auth"}""",
                     """{"type":"webpush","endpoint":"ftp://push.example.org/up/1","p256dh":"$key","auth":"$auth"}""",
                     """{"type":"webpush","p256dh":"$key","auth":"$auth"}""",
                     """{"type":"fcm"}""",

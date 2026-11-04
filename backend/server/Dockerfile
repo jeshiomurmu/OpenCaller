@@ -14,8 +14,8 @@ COPY src ./src
 COPY seed ./seed
 RUN ./gradlew --no-daemon installDist
 
-# ---- Runtime stage: JRE only, non-root user ----
-FROM eclipse-temurin:17-jre-noble AS runtime
+# ---- Base: JRE only, non-root user ----
+FROM eclipse-temurin:17-jre-noble AS base
 
 ARG GIT_SHA=dev
 ENV APP_VERSION=${GIT_SHA} \
@@ -27,8 +27,19 @@ RUN groupadd --system --gid 10001 opencaller \
 
 WORKDIR /app
 COPY --from=build /workspace/build/install/opencaller-server/ /app/
+ENTRYPOINT ["/app/bin/opencaller-server"]
 
+# ---- Transcoder: the same server binary with ffmpeg, run as `opencaller-server transcoder` (video caller ID) ----
+# Its own container so that ffmpeg, which parses untrusted uploads, never runs next to the API.
+FROM base AS transcoder
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+USER 10001:10001
+CMD ["transcoder"]
+
+# ---- Runtime (default target): the API server ----
+FROM base AS runtime
 USER 10001:10001
 # 8080: API; 9090: Prometheus metrics (internal, not published by compose).
 EXPOSE 8080 9090
-ENTRYPOINT ["/app/bin/opencaller-server"]

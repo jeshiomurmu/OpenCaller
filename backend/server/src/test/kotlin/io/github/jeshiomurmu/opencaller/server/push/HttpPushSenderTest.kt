@@ -137,6 +137,12 @@ class HttpPushSenderTest {
             statuses += 503
             assertEquals(PushOutcome.FAILED, sender.send(PushTarget.Fcm("t"), item, 60, urgent = true))
             assertEquals(PushOutcome.UNSUPPORTED, HttpPushSender(null, null, clock).send(PushTarget.Fcm("t"), item, 60, urgent = true))
+            // A key that is not a point on P-256 fails this push only.
+            val offCurve = byteArrayOf(4) + ByteArray(64)
+            assertEquals(
+                PushOutcome.FAILED,
+                sender.send(PushTarget.WebPush(URI("$base/up/y"), offCurve, ByteArray(16)), item, 60, urgent = true),
+            )
             assertEquals("AAEC", Base64.getUrlEncoder().withoutPadding().encodeToString(byteArrayOf(0, 1, 2)))
         }
 }

@@ -1,5 +1,6 @@
 package io.github.jeshiomurmu.opencaller.server.push
 
+import io.github.jeshiomurmu.opencaller.server.config.VapidConfig
 import io.github.jeshiomurmu.opencaller.server.http.ApiProblem
 import io.github.jeshiomurmu.opencaller.server.http.isPlainText
 import io.github.jeshiomurmu.opencaller.server.http.requireValid
@@ -33,6 +34,7 @@ internal object PushRegistrations {
             WEB_PUSH -> {
                 val uri = policy.check(registration.endpoint ?: throw invalidEndpoint("A Web Push endpoint is required."))
                 val key = decoded(registration.p256dh, P256_KEY_BYTES, "p256dh must be a 65-byte P-256 key, base64url.")
+                requireValid(isPublicKey(key)) { invalidEndpoint("p256dh is not a P-256 public key.") }
                 val auth = decoded(registration.auth, AUTH_BYTES, "auth must be 16 bytes, base64url.")
                 PushTarget.WebPush(uri, key, auth)
             }
@@ -59,4 +61,12 @@ internal object PushRegistrations {
 
     private fun invalidEndpoint(detail: String) =
         ApiProblem(HttpStatusCode.BadRequest, "invalid_push_endpoint", "Invalid push endpoint", detail)
+
+    private fun isPublicKey(bytes: ByteArray): Boolean =
+        try {
+            VapidConfig.publicKeyOf(bytes)
+            true
+        } catch (_: IllegalArgumentException) {
+            false
+        }
 }

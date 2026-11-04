@@ -86,6 +86,10 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v6
 
+      # The video caller ID tests run the real transcoder (ffmpeg and ffprobe), as the transcoder image does.
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
       - name: Check (format, static analysis, tests incl. Testcontainers PostgreSQL + Redis)
         run: ./gradlew check
 
@@ -180,7 +184,10 @@ jobs:
               -e "s/^OTP_PEPPER=.*/OTP_PEPPER=$(openssl rand -hex 32)/" \
               -e "s/^ADMIN_TOKEN=.*/ADMIN_TOKEN=$(openssl rand -hex 32)/" \
               -e "s/^ADMIN_WEB_PASSWORD=.*/ADMIN_WEB_PASSWORD=$(openssl rand -hex 32)/" \
+              -e "s/^LIVEKIT_API_SECRET=.*/LIVEKIT_API_SECRET=$(openssl rand -hex 32)/" \
               .env.example > .env
+          ../../scripts/vapid-keys.sh >> .env
+          echo "VAPID_SUBJECT=mailto:ci@example.org" >> .env
 
       - name: Build and start the stack
         run: GIT_SHA="${GITHUB_SHA::7}" docker compose -f infra/docker/compose.yml up -d --build --wait --wait-timeout 300
@@ -234,7 +241,10 @@ jobs:
               -e "s/^OTP_PEPPER=.*/OTP_PEPPER=$(openssl rand -hex 32)/" \
               -e "s/^ADMIN_TOKEN=.*/ADMIN_TOKEN=$(openssl rand -hex 32)/" \
               -e "s/^ADMIN_WEB_PASSWORD=.*/ADMIN_WEB_PASSWORD=$(openssl rand -hex 32)/" \
+              -e "s/^LIVEKIT_API_SECRET=.*/LIVEKIT_API_SECRET=$(openssl rand -hex 32)/" \
               .env.example > .env
+          ../../scripts/vapid-keys.sh >> .env
+          echo "VAPID_SUBJECT=mailto:ci@example.org" >> .env
 
       - name: Build and start the stack
         run: GIT_SHA="${GITHUB_SHA::7}" docker compose -f infra/docker/compose.yml up -d --build --wait --wait-timeout 300

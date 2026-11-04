@@ -1,11 +1,79 @@
-# Local development stack: PostgreSQL, Redis, MinIO (S3-compatible) and the OpenCaller server.
+# Local development stack: PostgreSQL, Redis, MinIO (S3-compatible), the OpenCaller server, its video transcoder and
+# LiveKit (app-to-app calls; ports and TLS in infra/docker/README.md).
 #
 #   cp infra/docker/.env.example infra/docker/.env   # then replace every value
 #   docker compose -f infra/docker/compose.yml up -d --build
 #   curl -fsS localhost:8080/health
 #
-# All ports are bound to 127.0.0.1 only. Not a production deployment (see infra/deploy, Phase 15).
+# All ports are bound to 127.0.0.1 only (LiveKit's too, unless LIVEKIT_BIND is set). Not a production deployment
+# (see infra/deploy, Phase 15).
 name: opencaller
+
+# The server's configuration, shared with the transcoder (the same binary). It is read from these variables only
+# (backend/server/src/main/resources/application.conf); the server refuses to start and lists what is missing.
+x-server-environment: &server-environment
+  ENV: ${ENV:-development}
+  PORT: "8080"
+  # Prometheus /metrics: internal port, not published (docker compose exec server curl localhost:9090/metrics).
+  METRICS_PORT: "9090"
+  DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?set POSTGRES_DB in infra/docker/.env}
+  DB_USER: ${POSTGRES_USER:?set POSTGRES_USER in infra/docker/.env}
+  # The postgres, redis and minio services already require these variables.
+  DB_PASSWORD: ${POSTGRES_PASSWORD}
+  REDIS_URL: redis://redis:6379
+  REDIS_PASSWORD: ${REDIS_PASSWORD}
+  MINIO_ENDPOINT: http://minio:9000
+  MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in infra/docker/.env}
+  MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+  JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in infra/docker/.env}
+  OTP_PEPPER: ${OTP_PEPPER:?set OTP_PEPPER in infra/docker/.env}
+  # log = codes are written to the server log (development only); twilio = real SMS (set TWILIO_*).
+  OTP_PROVIDER: ${OTP_PROVIDER:-log}
+  TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+  TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+  TWILIO_FROM: ${TWILIO_FROM:-}
+  TWILIO_MESSAGING_SERVICE_SID: ${TWILIO_MESSAGING_SERVICE_SID:-}
+  # Optional: a Twilio phone number that reads business-claim codes aloud (landlines).
+  TWILIO_VOICE_FROM: ${TWILIO_VOICE_FROM:-}
+  # Spam lists and profile pictures go to this MinIO bucket (created on first upload).
+  MINIO_BUCKET: ${MINIO_BUCKET:-opencaller}
+  # MinIO's address as apps reach it, for presigned profile-picture uploads and downloads. The default is the
+  # published port on this machine; an emulator reaches it as http://10.0.2.2:9000.
+  MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://127.0.0.1:9000}
+  # Bearer token for POST /admin/jobs/{scoring|lists} on the internal port 9090; unset = admin endpoints off.
+  ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+  # Admin web (claim review, OTP sources, sender-ID imports) on an internal port, never published here; reach it
+  # with `docker compose exec server curl -u …` or an SSH tunnel. Unset ADMIN_WEB_PORT = off.
+  ADMIN_WEB_PORT: ${ADMIN_WEB_PORT:-}
+  ADMIN_WEB_USER: ${ADMIN_WEB_USER:-}
+  ADMIN_WEB_PASSWORD: ${ADMIN_WEB_PASSWORD:-}
+  ADMIN_WEB_ALLOWED_NETWORKS: ${ADMIN_WEB_ALLOWED_NETWORKS:-}
+  # Optional: folder (inside the container) with sender-ID CSV extracts, <source>/<ISO>.csv, imported daily.
+  IMPORT_DIR: ${IMPORT_DIR:-}
+  # Supporter tier: true unlocks every supporter feature for everyone on this server (self-hosting).
+  SELF_HOSTED: ${SELF_HOSTED:-false}
+  # Optional Google Play billing: a service-account key file (mount it into the container) with access to the
+  # app in Play Console, the app's package name and a 32+ character secret that binds purchases to accounts.
+  GOOGLE_PLAY_SERVICE_ACCOUNT_FILE: ${GOOGLE_PLAY_SERVICE_ACCOUNT_FILE:-}
+  GOOGLE_PLAY_PACKAGE_NAME: ${GOOGLE_PLAY_PACKAGE_NAME:-}
+  GOOGLE_PLAY_PRODUCT_ID: ${GOOGLE_PLAY_PRODUCT_ID:-opencaller_supporter}
+  BILLING_ACCOUNT_SECRET: ${BILLING_ACCOUNT_SECRET:-}
+  # A country's standard spam list keeps this many most-reported numbers; the rest is the extended list.
+  LIST_STANDARD_MAX_ENTRIES: ${LIST_STANDARD_MAX_ENTRIES:-200000}
+  # App calls (Phase 11): the LiveKit service below. LIVEKIT_URL is how phones reach it (ws:// only on a local
+  # network; wss:// behind a TLS proxy in production); the API key and secret are shared with the livekit service.
+  # (An emulator on this machine reaches it as ws://10.0.2.2:7880, a phone on the LAN as ws://<LAN IP>:7880.)
+  LIVEKIT_URL: ${LIVEKIT_URL:-ws://127.0.0.1:7880}
+  LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-opencaller}
+  LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?set LIVEKIT_API_SECRET in infra/docker/.env}
+  # Push for call invites and Flash messages; every push carries only a random id (ADR 0007).
+  # FCM (play builds): a Firebase service-account key file mounted into the container and the Firebase project ID.
+  FCM_SERVICE_ACCOUNT_FILE: ${FCM_SERVICE_ACCOUNT_FILE:-}
+  FCM_PROJECT_ID: ${FCM_PROJECT_ID:-}
+  # Web Push / UnifiedPush (foss builds): a P-256 VAPID key pair (base64url) and a contact (mailto: or https:).
+  VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+  VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+  VAPID_SUBJECT: ${VAPID_SUBJECT:-}
 
 services:
   postgres:
@@ -71,61 +139,12 @@ services:
   server:
     build:
       context: ../../backend/server
+      target: runtime
       args:
         GIT_SHA: ${GIT_SHA:-dev}
     image: opencaller/server:dev
     restart: unless-stopped
-    # Configuration is read from these variables only (backend/server/src/main/resources/application.conf);
-    # the server refuses to start and lists what is missing or invalid.
-    environment:
-      ENV: ${ENV:-development}
-      PORT: "8080"
-      # Prometheus /metrics: internal port, not published (docker compose exec server curl localhost:9090/metrics).
-      METRICS_PORT: "9090"
-      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?set POSTGRES_DB in infra/docker/.env}
-      DB_USER: ${POSTGRES_USER:?set POSTGRES_USER in infra/docker/.env}
-      # The postgres, redis and minio services above already require these variables.
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
-      REDIS_URL: redis://redis:6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      MINIO_ENDPOINT: http://minio:9000
-      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in infra/docker/.env}
-      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in infra/docker/.env}
-      OTP_PEPPER: ${OTP_PEPPER:?set OTP_PEPPER in infra/docker/.env}
-      # log = codes are written to the server log (development only); twilio = real SMS (set TWILIO_*).
-      OTP_PROVIDER: ${OTP_PROVIDER:-log}
-      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
-      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
-      TWILIO_FROM: ${TWILIO_FROM:-}
-      TWILIO_MESSAGING_SERVICE_SID: ${TWILIO_MESSAGING_SERVICE_SID:-}
-      # Optional: a Twilio phone number that reads business-claim codes aloud (landlines).
-      TWILIO_VOICE_FROM: ${TWILIO_VOICE_FROM:-}
-      # Spam lists and profile pictures go to this MinIO bucket (created on first upload).
-      MINIO_BUCKET: ${MINIO_BUCKET:-opencaller}
-      # MinIO's address as apps reach it, for presigned profile-picture uploads and downloads. The default is the
-      # published port on this machine; an emulator reaches it as http://10.0.2.2:9000.
-      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://127.0.0.1:9000}
-      # Bearer token for POST /admin/jobs/{scoring|lists} on the internal port 9090; unset = admin endpoints off.
-      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
-      # Admin web (claim review, OTP sources, sender-ID imports) on an internal port, never published here; reach it
-      # with `docker compose exec server curl -u …` or an SSH tunnel. Unset ADMIN_WEB_PORT = off.
-      ADMIN_WEB_PORT: ${ADMIN_WEB_PORT:-}
-      ADMIN_WEB_USER: ${ADMIN_WEB_USER:-}
-      ADMIN_WEB_PASSWORD: ${ADMIN_WEB_PASSWORD:-}
-      ADMIN_WEB_ALLOWED_NETWORKS: ${ADMIN_WEB_ALLOWED_NETWORKS:-}
-      # Optional: folder (inside the container) with sender-ID CSV extracts, <source>/<ISO>.csv, imported daily.
-      IMPORT_DIR: ${IMPORT_DIR:-}
-      # Supporter tier: true unlocks every supporter feature for everyone on this server (self-hosting).
-      SELF_HOSTED: ${SELF_HOSTED:-false}
-      # Optional Google Play billing: a service-account key file (mount it into the container) with access to the
-      # app in Play Console, the app's package name and a 32+ character secret that binds purchases to accounts.
-      GOOGLE_PLAY_SERVICE_ACCOUNT_FILE: ${GOOGLE_PLAY_SERVICE_ACCOUNT_FILE:-}
-      GOOGLE_PLAY_PACKAGE_NAME: ${GOOGLE_PLAY_PACKAGE_NAME:-}
-      GOOGLE_PLAY_PRODUCT_ID: ${GOOGLE_PLAY_PRODUCT_ID:-opencaller_supporter}
-      BILLING_ACCOUNT_SECRET: ${BILLING_ACCOUNT_SECRET:-}
-      # A country's standard spam list keeps this many most-reported numbers; the rest is the extended list.
-      LIST_STANDARD_MAX_ENTRIES: ${LIST_STANDARD_MAX_ENTRIES:-200000}
+    environment: *server-environment
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:
@@ -141,6 +160,53 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+
+  # Video caller ID: transcodes uploaded clips with ffmpeg (Dockerfile target `transcoder`). It reaches only
+  # PostgreSQL and MinIO and publishes no port.
+  transcoder:
+    build:
+      context: ../../backend/server
+      target: transcoder
+      args:
+        GIT_SHA: ${GIT_SHA:-dev}
+    image: opencaller/transcoder:dev
+    restart: unless-stopped
+    environment: *server-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    # The worker only reads and writes temporary files; ffmpeg gets no network access it needs.
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+  # LiveKit (WebRTC SFU with embedded TURN) for app-to-app calls; ports and TLS: infra/docker/README.md.
+  livekit:
+    image: livekit/livekit-server:v1.13.11
+    restart: unless-stopped
+    command: ["--config", "/etc/livekit.yaml"]
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-opencaller}: ${LIVEKIT_API_SECRET:?set LIVEKIT_API_SECRET in infra/docker/.env}"
+      # The address phones use for media and TURN: this machine's LAN or public IP (127.0.0.1 = this machine only).
+      NODE_IP: ${LIVEKIT_NODE_IP:-127.0.0.1}
+    volumes:
+      - ./livekit/livekit.yaml:/etc/livekit.yaml:ro
+    # LIVEKIT_BIND=0.0.0.0 lets phones on the network connect (needed for TC-VOIP-001); the default keeps it local.
+    ports:
+      - "${LIVEKIT_BIND:-127.0.0.1}:7880:7880"
+      - "${LIVEKIT_BIND:-127.0.0.1}:7881:7881"
+      - "${LIVEKIT_BIND:-127.0.0.1}:3478:3478/udp"
+      - "${LIVEKIT_BIND:-127.0.0.1}:50000-50200:50000-50200/udp"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:7880/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
 volumes:
   postgres-data:

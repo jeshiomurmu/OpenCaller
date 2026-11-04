@@ -6,6 +6,7 @@ import java.security.KeyFactory
 import java.security.Signature
 import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
+import java.security.spec.ECFieldFp
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.ECParameterSpec
 import java.security.spec.ECPoint
@@ -118,7 +119,25 @@ class VapidConfig(
             }
             val x = BigInteger(1, bytes.copyOfRange(1, 1 + COORDINATE_BYTES))
             val y = BigInteger(1, bytes.copyOfRange(1 + COORDINATE_BYTES, UNCOMPRESSED_BYTES))
+            require(onCurve(x, y)) { "the P-256 public key is not a point on the curve" }
             return KeyFactory.getInstance("EC").generatePublic(ECPublicKeySpec(ECPoint(x, y), P256)) as ECPublicKey
+        }
+
+        // y² = x³ + ax + b (mod p): the JDK does not check this for an ECPublicKeySpec.
+        private fun onCurve(
+            x: BigInteger,
+            y: BigInteger,
+        ): Boolean {
+            val p = (P256.curve.field as ECFieldFp).p
+            if (x >= p || y >= p) return false
+            val right =
+                x
+                    .multiply(x)
+                    .multiply(x)
+                    .add(P256.curve.a.multiply(x))
+                    .add(P256.curve.b)
+                    .mod(p)
+            return y.multiply(y).mod(p) == right
         }
 
         /** `04 || x || y` with both coordinates left-padded to 32 bytes. */

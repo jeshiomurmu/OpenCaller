@@ -14,6 +14,7 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.security.GeneralSecurityException
 import java.security.SecureRandom
 import java.time.Clock
 import java.util.Base64
@@ -83,6 +84,13 @@ class HttpPushSender(
             }
         } catch (e: IOException) {
             log.warn("Push could not be sent ({})", e.javaClass.simpleName)
+            PushOutcome.FAILED
+        } catch (e: GeneralSecurityException) {
+            // A stored key the JDK refuses: this push can't be encrypted, the others still go out.
+            log.warn("Web Push could not be encrypted ({})", e.javaClass.simpleName)
+            PushOutcome.FAILED
+        } catch (e: IllegalArgumentException) {
+            log.warn("Web Push could not be encrypted: {}", e.message)
             PushOutcome.FAILED
         }
 
