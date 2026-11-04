@@ -1,5 +1,5 @@
-# Temporary (Phase 11): reads Google Maven's metadata for dependencies whose release pages the agent sandbox
-# can't reach. Removed before the Phase 11 PR.
+# Temporary (Phase 11): prints the public API of Google Maven artifacts the agent sandbox can't download
+# (dl.google.com is blocked there). Removed before the Phase 11 PR.
 name: verify deps
 
 on:
@@ -11,34 +11,44 @@ permissions:
   contents: read
 
 jobs:
-  google-maven:
+  google-maven-api:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Versions and AAR metadata on Google Maven
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: javap of the classes Phase 11 calls
         run: |
           set -uo pipefail
           base=https://dl.google.com/android/maven2
-          check() {
-            name=$(basename "$1")
-            echo "---- $1:$2"
-            if curl -fsS -o a.aar "$base/$1/$2/$name-$2.aar"; then
-              unzip -p a.aar META-INF/com/android/build/gradle/aar-metadata.properties | grep -E 'minCompileSdk=|minAndroidGradle' || echo "(no aar-metadata)"
-              unzip -p a.aar AndroidManifest.xml | grep -Eo 'android:minSdkVersion="[0-9]+"|android.permission.[A-Z_]+' | sort -u || true
-            else
-              echo "(no aar)"
-            fi
-            curl -fsS "$base/$1/$2/$name-$2.pom" | python3 -c 'import re,sys
-          for d in re.findall(r"<dependency>(.*?)</dependency>", sys.stdin.read(), re.S):
-              g = lambda t: (re.search(f"<{t}>(.*?)</{t}>", d) or [None, ""])[1]
-              print("  ", g("groupId"), g("artifactId"), g("version"), g("scope"))' || true
+          api() { # group/path artifact version class…
+            local path="$1" name="$2" version="$3"; shift 3
+            echo "======== $name:$version"
+            curl -fsS -o "$name.aar" "$base/$path/$name/$version/$name-$version.aar" || { echo "(no aar)"; return; }
+            unzip -o -q "$name.aar" classes.jar AndroidManifest.xml -d "$name"
+            echo "-- manifest"; cat "$name/AndroidManifest.xml"
+            for c in "$@"; do javap -public -cp "$name/classes.jar" "$c" || echo "(no $c)"; done
+            curl -fsS "$base/$path/$name/$version/$name-$version.pom" | grep -A3 '<dependency>' | grep -E 'artifactId|version' | paste - - || true
           }
-          for a in androidx/core/core-telecom androidx/camera/camera-core androidx/camera/camera-camera2 \
-                   androidx/camera/camera-lifecycle androidx/camera/camera-video androidx/camera/camera-view \
-                   com/google/firebase/firebase-messaging; do
-            echo "======== $a"
-            versions=$(curl -fsS "$base/$a/maven-metadata.xml" | grep -oE '<version>[^<]+' | sed 's/<version>//')
-            echo "$versions" | tail -8 | tr '\n' ' '; echo
-            stable=$(echo "$versions" | grep -viE 'alpha|beta|rc|dev' | tail -3)
-            for v in $stable; do check "$a" "$v"; done
-          done
+          api androidx/core core-telecom 1.0.1 androidx.core.telecom.CallsManager 'androidx.core.telecom.CallsManager$Companion' \
+            androidx.core.telecom.CallAttributesCompat 'androidx.core.telecom.CallAttributesCompat$Companion' \
+            androidx.core.telecom.CallControlScope androidx.core.telecom.CallControlResult \
+            'androidx.core.telecom.CallControlResult$Success' 'androidx.core.telecom.CallControlResult$Error' \
+            androidx.core.telecom.CallEndpointCompat 'androidx.core.telecom.CallEndpointCompat$Companion' androidx.core.telecom.CallException
+          api androidx/camera camera-video 1.6.2 androidx.camera.video.Recorder 'androidx.camera.video.Recorder$Builder' \
+            androidx.camera.video.VideoCapture androidx.camera.video.FileOutputOptions 'androidx.camera.video.FileOutputOptions$Builder' \
+            androidx.camera.video.OutputOptions androidx.camera.video.PendingRecording androidx.camera.video.Recording \
+            androidx.camera.video.VideoRecordEvent 'androidx.camera.video.VideoRecordEvent$Finalize' \
+            androidx.camera.video.Quality androidx.camera.video.QualitySelector androidx.camera.video.FallbackStrategy
+          api androidx/camera camera-lifecycle 1.6.2 androidx.camera.lifecycle.ProcessCameraProvider \
+            'androidx.camera.lifecycle.ProcessCameraProvider$Companion'
+          api androidx/camera camera-view 1.6.2 androidx.camera.view.PreviewView
+          api androidx/camera camera-core 1.6.2 androidx.camera.core.Preview 'androidx.camera.core.Preview$Builder' \
+            androidx.camera.core.CameraSelector androidx.camera.core.UseCaseGroup
+          api com/google/firebase firebase-messaging 26.0.1 com.google.firebase.messaging.FirebaseMessagingService \
+            com.google.firebase.messaging.RemoteMessage com.google.firebase.messaging.FirebaseMessaging
+          v=$(curl -fsS "$base/com/google/firebase/firebase-common/maven-metadata.xml" | grep -oE '<release>[^<]+' | sed 's/<release>//')
+          api com/google/firebase firebase-common "$v" com.google.firebase.FirebaseOptions 'com.google.firebase.FirebaseOptions$Builder' \
+            com.google.firebase.FirebaseApp
