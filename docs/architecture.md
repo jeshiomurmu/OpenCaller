@@ -223,7 +223,7 @@ Networking (`core:network`, a JVM module): Retrofit + OkHttp + kotlinx.serializa
 
 ### 4.9 VoIP, recording line, AI assistant, voice scanner
 
-- **VoIP (F-CM-09):** client gets LiveKit token from `/v1/voip/token`; callee notified by push; call registered with Jetpack Telecom so it appears like a phone call.
+- **VoIP (F-CM-09):** client gets LiveKit token from `/v1/voip/token`; callee notified by push; call registered with Jetpack Telecom so it appears like a phone call. Pushes carry only a random item id the phone fetches (ADR 0007); F-Droid builds leave app calls out (`-Popencaller.voip=false`).
 - **Recording line (F-UT-03):** user taps Record → app dials the user's assigned recording number and merges (conference) → LiveKit SIP room records with beep announcement → agent stores audio in MinIO → app downloads, server deletes.
 - **AI assistant (F-UT-04):** onboarding sets conditional call forwarding (no answer / busy / unreachable) to the user's assistant number using standard GSM MMI codes where supported, with carrier-specific guidance. Calls land in LiveKit SIP → Python agent (STT → LLM → TTS) → transcript streamed to app via LiveKit data channel; user actions sent back.
 - **Voice scanner (F-PR-13):** same merge flow as recording; agent samples a few seconds and runs the anti-spoofing model; returns probability.
@@ -425,13 +425,19 @@ Later migrations (V1 stays exactly the SQL above): `V2__jobs_and_lookup_indexes.
 | Admin web (own port, IP allowlist + basic auth, CSRF, audit log) | admin | Claims review, revoke, OTP-source curation, sender-ID CSV import (ADR 0005) |
 | `POST /v1/disputes`, `POST /v1/unlist/start`, `POST /v1/unlist/verify` | access / none | F-PR-16/17 |
 | `GET /unlist`, `POST /unlist`, `POST /unlist/verify` | none | Unlist web form (server-rendered HTML, no app needed) |
-| `GET /v1/server` | none | Whether the server is self-hosted (everything unlocked) and the Play product ID (ADR 0006) |
+| `GET /v1/server` | none | Whether the server is self-hosted (everything unlocked) and the Play product ID (ADR 0006); since Phase 11 its `features`: app calls, Flash, FCM, the VAPID key (ADR 0007) |
 | `GET /v1/entitlements` | access | The user's entitlement: tier, source (billing, granted, self-hosted), paid-until, obfuscated billing account ID |
 | `POST /v1/billing/verify` | access | Play purchase token: read with `purchases.subscriptionsv2.get`, bound to the account, acknowledged; an hourly job re-checks stored purchases (ADR 0006) |
 | `POST /v1/family`, `POST /v1/family/{id}/invite`, `POST /v1/family/alerts` | access | F-PR-14 |
-| `POST /v1/voip/token` | access | LiveKit token |
+| `PUT /v1/push`, `DELETE /v1/push` | access | This device's push endpoint: an FCM token (play) or a Web Push endpoint with its keys (UnifiedPush, foss); pushes carry only a random item id (ADR 0007) |
+| `GET /v1/notifications`, `GET /v1/notifications/{id}` | access | What a push stood for (a call invite or update, a Flash message), and pending items for missed pushes |
+| `POST /v1/voip/calls`, `GET /v1/voip/calls/{id}`, `POST /v1/voip/calls/{id}/{accept\|decline\|cancel\|end}` | access | App calls: the invite rings for 45 s; room = sorted pair of user IDs + nonce (F-CM-09) |
+| `POST /v1/voip/token` | access | LiveKit token for the call's room (10 minutes, audio only) |
+| `GET /v1/voip/settings`, `PUT /v1/voip/settings` | access | Whether app calls and Flash messages reach the user (on by default) |
+| `POST /v1/flash` | access | A predefined Flash message (F-CM-10); deleted once fetched |
 | `POST /v1/lines/{recording|assistant|scanner}` | access + entitlement | Allocate/return line number and room |
-| `POST /v1/media/video-caller-id` | access | Upload (pre-signed URL) |
+| `GET /v1/me/video`, `POST /v1/me/video/upload`, `POST /v1/me/video`, `DELETE /v1/me/video` | access | Video caller ID: pre-signed upload, submit for the transcoder worker (ffmpeg, ≤ 10 s, 480 px, no audio), delete (F-CM-11) |
+| `POST /v1/videos/links`, `POST /v1/videos/{id}/report` | none / access | Download links for the clip ids of a lookup bucket (all of them, ADR 0007); report a clip |
 
 Errors: RFC 9457 problem+json `{type, title, status, detail, code}`. Every endpoint has an OpenAPI description in `backend/server/src/main/resources/openapi.yaml`.
 

@@ -305,7 +305,9 @@ app):
 | TC-UT-003 | Backup/restore | Rules + settings restored identically on fresh install | R — 10: `BackupTest` (Robolectric, two databases: rules, settings and history identical after restore, this phone's onboarding kept, message categories found again by date and address, one-time codes never in the file; wrong passphrase and a changed byte refused; creating needs an entitlement and 8 characters). Drive: device step below |
 | TC-UT-004 | WhatsApp caller ID | Notification from WhatsApp incoming call with number → card | U + D — 10: `MessengerCallsTest` (WhatsApp, WhatsApp Business, Telegram, Signal call notifications only; a number only when the text shows one), `PhoneNumberNormalizerTest` (`findInText`). On a phone: device step below. Tested app versions: none yet |
 | TC-BILL-001 | Purchase | License tester buys Supporter → entitlement active after server verify | I + D — 10: `BillingApiTest` (Testcontainers, a fake Play API: verify binds and acknowledges, another account's token refused, states and grace, re-check job, self-hosted), `GooglePlayDeveloperApiTest` (requests and the service-account grant), `ExtendedListTest`; compose `scripts/smoke.sh` → Supporter tier. The purchase with a license tester: device step below |
-| TC-VOIP-001 | App-to-app call | Wi-Fi ↔ mobile data, setup < 3 s p95, audio both ways | D |
+| TC-VOIP-001 | App-to-app call | Wi-Fi ↔ mobile data, setup < 3 s p95, audio both ways | I + U + D — 11: `VoipApiTest` (Testcontainers: invite, the push carries only a random item id, both parties get tokens for the same room named after their sorted IDs plus a nonce, accept/decline/cancel/end by the right party only, missed after 45 s, every unreachable number looks the same, gone endpoints removed, cleanup after a day), `LiveKitTokensTest`, `HttpPushSenderTest` (FCM v1 body; Web Push decrypted with Tink), `WebPushCryptoTest`, `PushEndpointPolicyTest`; compose `scripts/smoke.sh` → App calls (the real LiveKit accepts the server's tokens and refuses a forged one); `VoipApiTest` + `VoipDataTest` (app: endpoints, routing of pushes, push registration), `AppCallUiTest`. Two phones on two networks: device steps below |
+| TC-VOIP-002 | Flash message | Predefined kind arrives as a notification; server copy gone once fetched; no free text | I + R — 11: `FlashApiTest` (Testcontainers: opaque push, fetched once then 404, kinds only, pair limit, expiry), `VoipDataTest` (kept once, shown once), `FlashNotifierTest` (Robolectric); smoke → Flash. On two phones: device steps below |
+| TC-VOIP-003 | Video caller ID | ≤ 10 s, no sound, ≤ 480 px; in buckets as visible as the name; downloaded on Wi-Fi only by default; muted on the in-call screens | I + R + D — 11: `VideoCallerIdTest` (Testcontainers + the real ffmpeg: a 12 s 720p clip with sound comes out ≤ 10.1 s, 480 px, H.264, no audio; old clip kept until the new one is ready; failed transcode; visibility; three reports hide it), smoke → video (the transcoder container), `VoipDataTest` (Wi-Fi only unless allowed, only valid ids, no token on downloads). Recording and playback: device steps below |
 | TC-FAM-001 | Consent | Member must accept on own device; admin can't add silently | I |
 | TC-FAM-002 | Family alert | Member OTP-during-call → admin notified within 10 s | E2E |
 | TC-REC-001 | Recording beep | Other party hears beep; file on device; server copy deleted ≤ 1 h | D |
@@ -326,6 +328,27 @@ phone or SIM whose number you can claim):
    non-contacts" on, the call still rings. Send an SMS from it: the conversation shows the name with "Verified
    business".
 5. Revoke the business in the admin web, update again: the next call shows the number only.
+
+Phase 11 device steps (TC-VOIP-001…003). Two phones with OpenCaller (a foss APK from GitHub or a play build, not
+the F-Droid build, which has no app calls), signed in with two numbers; a compose stack the phones can reach with
+LiveKit's ports open (`infra/docker/README.md` → Calling between two phones) and a push provider (foss: a UnifiedPush
+distributor app such as ntfy on each phone and `VAPID_*` set; play: `opencaller.firebase.*` and `FCM_*` set):
+
+1. Phone A on Wi-Fi, phone B on mobile data. On A, search B's number → App call. Allow the microphone. B rings
+   (over the lock screen too) within 3 s of tapping; note the time from tap to ring and from Answer to "App call"
+   with the timer (repeat 20 times for the p95 < 3 s). Speak both ways; Mute on each side; Speaker; a Bluetooth
+   headset answers and hangs up. Hang up on either side: both show "Call ended".
+2. A calls B; B declines: A shows "Call declined". A calls B; nobody answers for 45 s: A shows "No answer". B turns
+   off "Let OpenCaller users call and Flash me": A's call says the number can't be reached.
+3. During an app call, call B's phone number normally: Android offers to hold or end the app call.
+4. Swap networks (A on mobile data, B on Wi-Fi) and repeat step 1; then both behind NAT on mobile data (TURN).
+5. TC-VOIP-002: on A, B's profile → Flash → Running late. B gets "Flash from …" / "Running late"; both show it in
+   Settings → App calls, Flash and video caller ID. With B's push turned off (airplane mode), send one; open the app
+   on B later: it arrives then.
+6. TC-VOIP-003: on B, Settings → App calls, Flash and video caller ID → Record a clip (10 s; the recording stops by
+   itself), Use this clip; the status shows "processing", then "published" within a minute. A on Wi-Fi: app-call A
+   from B: A's ringing screen plays B's clip without sound. Call A's phone number from B's phone number normally:
+   after a lookup on Wi-Fi the in-call screen plays the clip muted. On mobile data with the default setting: no clip.
 
 Phase 10 device steps (play build signed with the upload key, installed from the Play closed test, a license tester
 account on the phone, a server with `GOOGLE_PLAY_*` and `BILLING_ACCOUNT_SECRET` set):
