@@ -13,6 +13,10 @@ pluginManagement {
     }
 }
 
+// App calls (LiveKit, Phase 11) are left out with -Popencaller.voip=false: the F-Droid build, because LiveKit
+// ships prebuilt WebRTC and Rust libraries. Flash messages and video caller ID stay in every build.
+val voipEnabled = providers.gradleProperty("opencaller.voip").getOrElse("true").toBoolean()
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -24,6 +28,14 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
+        if (voipEnabled) {
+            // JitPack serves exactly one module: the LiveKit SDK's audio-routing library, which is published nowhere
+            // else (owner's decision, 2026-11-04). Nothing else may resolve from it.
+            exclusiveContent {
+                forRepository { maven("https://jitpack.io") { name = "JitPack" } }
+                filter { includeModule("com.github.davidliu", "audioswitch") }
+            }
+        }
     }
 }
 
@@ -58,7 +70,7 @@ include(":feature:business")
 include(":feature:premium")
 include(":feature:social")
 include(":feature:backup")
-include(":feature:voip")
+if (voipEnabled) include(":feature:voip")
 include(":feature:family")
 include(":feature:recording")
 include(":feature:assistant")

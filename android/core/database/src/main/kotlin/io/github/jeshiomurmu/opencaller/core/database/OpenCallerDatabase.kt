@@ -6,6 +6,7 @@ import io.github.jeshiomurmu.opencaller.core.database.dao.BackupDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.BlockRuleDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.ExtendedSpamListDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.FamilyMemberDao
+import io.github.jeshiomurmu.opencaller.core.database.dao.FlashMessageDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.LookupBucketDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.MessageMetaDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.NumberInfoDao
@@ -21,6 +22,7 @@ import io.github.jeshiomurmu.opencaller.core.database.dao.VerifiedBusinessDao
 import io.github.jeshiomurmu.opencaller.core.database.entity.BlockRuleEntity
 import io.github.jeshiomurmu.opencaller.core.database.entity.ExtendedSpamListEntry
 import io.github.jeshiomurmu.opencaller.core.database.entity.FamilyMemberEntity
+import io.github.jeshiomurmu.opencaller.core.database.entity.FlashMessageEntity
 import io.github.jeshiomurmu.opencaller.core.database.entity.LookupBucketEntity
 import io.github.jeshiomurmu.opencaller.core.database.entity.MessageMetaEntity
 import io.github.jeshiomurmu.opencaller.core.database.entity.NumberInfoEntity
@@ -56,8 +58,9 @@ import io.github.jeshiomurmu.opencaller.core.database.entity.VerifiedBusinessEnt
         FamilyMemberEntity::class,
         VerifiedBusinessEntity::class,
         ExtendedSpamListEntry::class,
+        FlashMessageEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 @Suppress("TooManyFunctions") // One accessor per DAO is how Room exposes them.
@@ -109,4 +112,7 @@ abstract class OpenCallerDatabase : RoomDatabase() {
 
     /** Verified businesses of the phone's country. */
     abstract fun verifiedBusinessDao(): VerifiedBusinessDao
+
+    /** Flash messages (Phase 11). */
+    abstract fun flashMessageDao(): FlashMessageDao
 }

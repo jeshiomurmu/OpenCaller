@@ -116,7 +116,6 @@ dependencies {
     implementation(projects.feature.premium)
     implementation(projects.feature.social)
     implementation(projects.feature.backup)
-    implementation(projects.feature.voip)
     implementation(projects.feature.family)
     implementation(projects.feature.recording)
     implementation(projects.feature.assistant)
@@ -133,12 +132,24 @@ dependencies {
     implementation(libs.kotlinx.serialization.core)
     implementation(libs.timber)
 
+    // App calls (LiveKit + Jetpack Telecom) unless the build leaves them out (-Popencaller.voip=false, F-Droid).
+    if (providers.gradleProperty("opencaller.voip").getOrElse("true").toBoolean()) {
+        implementation(project(":feature:voip"))
+    }
+
     // Google Play only: Play Billing for the supporter subscription, Identity Services and the Drive REST API (over
     // OkHttp) for Drive backups. The foss build has no Google Play Services (docs/architecture.md §3).
     "playImplementation"(libs.play.billing)
     "playImplementation"(libs.play.services.auth)
     "playImplementation"(libs.okhttp)
     "playImplementation"(libs.kotlinx.serialization.json)
+    // FCM for call and Flash pushes that carry only a random id (docs/rules.md §2, ADR 0007). The Firelog upload
+    // backend (client telemetry to Google) is left out; nothing else of Firebase is used.
+    "playImplementation"(libs.firebase.messaging) {
+        exclude(group = "com.google.android.datatransport", module = "transport-backend-cct")
+    }
+    // UnifiedPush in foss builds (a distributor app of the user's choice delivers Web Push).
+    "fossImplementation"(libs.unifiedpush.connector)
 
     testImplementation(libs.junit4)
     testImplementation(projects.core.testing)

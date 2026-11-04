@@ -39,6 +39,13 @@ okhttp = "5.4.0"
 # Play flavor only (Phase 10, verified 2026-11-03 on Google Maven): Play Billing and Google Identity Services.
 playBilling = "9.1.0"
 playServicesAuth = "22.0.0"
+# Phase 11 (verified 2026-11-04; docs/phase.md): CameraX and Jetpack Telecom on Google Maven, LiveKit and the
+# UnifiedPush connector on Maven Central, Firebase Cloud Messaging (play flavor only) on Google Maven.
+camerax = "1.6.2"
+coreTelecom = "1.0.1"
+firebaseMessaging = "26.0.1"
+livekit = "2.30.0"
+unifiedpush = "3.3.5"
 protobuf = "4.36.2"
 protobufPlugin = "0.10.0"
 retrofit = "3.0.0"
@@ -93,6 +100,15 @@ libphonenumber = { group = "com.googlecode.libphonenumber", name = "libphonenumb
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 play-billing = { group = "com.android.billingclient", name = "billing", version.ref = "playBilling" }
 play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
+androidx-camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "camerax" }
+androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }
+androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
+androidx-camera-video = { group = "androidx.camera", name = "camera-video", version.ref = "camerax" }
+androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
+androidx-core-telecom = { group = "androidx.core", name = "core-telecom", version.ref = "coreTelecom" }
+firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging", version.ref = "firebaseMessaging" }
+livekit-android = { group = "io.livekit", name = "livekit-android", version.ref = "livekit" }
+unifiedpush-connector = { group = "org.unifiedpush.android", name = "connector", version.ref = "unifiedpush" }
 okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver3", version.ref = "okhttp" }
 protobuf-kotlin-lite = { group = "com.google.protobuf", name = "protobuf-kotlin-lite", version.ref = "protobuf" }
 protobuf-protoc = { group = "com.google.protobuf", name = "protoc", version.ref = "protobuf" }

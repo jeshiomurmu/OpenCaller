@@ -28,8 +28,18 @@ object Migrations {
                 "`reportCount` INTEGER NOT NULL, `listVersion` INTEGER NOT NULL, PRIMARY KEY(`e164`))",
         )
 
+    /** Version 5 (Phase 11): the owner's video caller ID in `number_info`, and Flash messages, `flash_message`. */
+    val MIGRATION_4_5: Migration =
+        SqlMigration(
+            4,
+            5,
+            "ALTER TABLE `number_info` ADD COLUMN `videoId` TEXT",
+            "CREATE TABLE IF NOT EXISTS `flash_message` (`id` TEXT NOT NULL, `kind` TEXT NOT NULL, `e164` TEXT NOT NULL, " +
+                "`name` TEXT, `atMillis` INTEGER NOT NULL, `outgoing` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        )
+
     /** Every migration, in order. */
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
 }
 
 /**

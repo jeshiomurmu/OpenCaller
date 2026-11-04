@@ -6,6 +6,7 @@ import io.github.jeshiomurmu.opencaller.core.model.NameSource
 /**
  * Cached caller information for a number (reputation cache, TTL via [expiresAt]). Times are epoch millis.
  * [badge] (`SUPPORTER` or `GOLD`, schema version 2) is the owner's supporter badge, set only with a name.
+ * [videoId] (schema version 5) is the owner's video caller ID, as visible as the name.
  */
 @Entity(tableName = "number_info", primaryKeys = ["e164"])
 data class NumberInfoEntity(
@@ -24,4 +25,5 @@ data class NumberInfoEntity(
     val fetchedAt: Long,
     val expiresAt: Long,
     val badge: String? = null,
+    val videoId: String? = null,
 )
