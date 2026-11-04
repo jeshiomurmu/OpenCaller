@@ -460,6 +460,9 @@ Implementation (Phase 4, `scoring/`): the Kotlin job runs every 15 minutes under
 3. Logs redact numbers to last 4 digits.
 4. Reports send the reported number, label, category and optional comment; no device identifiers beyond the auth token.
 5. Crash reporting is opt-in and goes to a self-hosted endpoint (or none).
+6. Pushes (FCM, UnifiedPush) carry only a random push-item id; what it stands for is fetched from our server with the access token (ADR 0007, `HttpPushSenderTest`, `VoipApiTest`).
+7. Video caller IDs of a lookup bucket are downloaded all together, so the server learns no more than the bucket; downloads run on Wi-Fi only unless the user allows mobile data (`VoipDataTest`).
+8. App-call invites are deleted a day after the call and Flash messages once fetched (at most a day); call audio is never recorded or stored on the server (`VoipApiTest`, `FlashApiTest`).
 
 ## 11. Error handling
 
