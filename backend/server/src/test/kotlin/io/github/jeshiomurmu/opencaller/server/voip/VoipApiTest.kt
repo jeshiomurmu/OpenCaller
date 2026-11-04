@@ -147,7 +147,8 @@ class VoipApiTest {
             client.postJson("/v1/voip/calls/${first.inviteId}/cancel", "", bearer(alice)).body(InviteView.serializer())
             val second = call(alice, BOB).body(CallSession.serializer())
             assertNotEquals(first.room, second.room)
-            assertEquals(first.room.substringBeforeLast('_'), second.room.substringBeforeLast('_'))
+            // "<user>_<user>_<nonce>": the nonce is base64url and may contain "_" itself.
+            assertEquals(first.room.split('_', limit = 3).take(2), second.room.split('_', limit = 3).take(2))
 
             client.getWith("/v1/voip/calls/${second.inviteId}", carol).assertProblem(HttpStatusCode.NotFound, "call_not_found")
             client
