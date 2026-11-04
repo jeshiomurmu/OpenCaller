@@ -32,7 +32,12 @@ private fun ConfigReader.readLiveKit(environment: Environment?): LiveKitConfig? 
         url = url.trimEnd('/'),
         apiKey = key,
         apiSecret = secret("voip.livekit.apiSecret", "LIVEKIT_API_SECRET"),
-        tokenTtlSeconds = int("voip.livekit.tokenTtlSeconds", "LIVEKIT_TOKEN_TTL_SECONDS", MIN_TOKEN_TTL_SECONDS..MAX_TOKEN_TTL_SECONDS).toLong(),
+        tokenTtlSeconds =
+            int(
+                "voip.livekit.tokenTtlSeconds",
+                "LIVEKIT_TOKEN_TTL_SECONDS",
+                MIN_TOKEN_TTL_SECONDS..MAX_TOKEN_TTL_SECONDS,
+            ).toLong(),
     )
 }
 
@@ -60,9 +65,8 @@ private fun ConfigReader.readVapid(): VapidConfig? {
     val public = string("voip.vapid.publicKey") ?: return null
     val private = required("voip.vapid.privateKey", "VAPID_PRIVATE_KEY")
     val subject = prefixed("voip.vapid.subject", "VAPID_SUBJECT", "mailto:", "https://")
-    if (private.isEmpty()) return null
     return try {
-        VapidConfig.parse(public, private, subject)
+        private.takeIf { it.isNotEmpty() }?.let { VapidConfig.parse(public, it, subject) }
     } catch (e: IllegalArgumentException) {
         problems += e.message ?: "VAPID keys are invalid"
         null

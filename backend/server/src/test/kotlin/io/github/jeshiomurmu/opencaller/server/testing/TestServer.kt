@@ -18,9 +18,9 @@ import io.github.jeshiomurmu.opencaller.server.config.OtpProviderKind
 import io.github.jeshiomurmu.opencaller.server.config.RedisConfig
 import io.github.jeshiomurmu.opencaller.server.db.ServerDatabase
 import io.github.jeshiomurmu.opencaller.server.db.allTables
+import io.github.jeshiomurmu.opencaller.server.push.PushSender
 import io.github.jeshiomurmu.opencaller.server.redis.Redis
 import io.github.jeshiomurmu.opencaller.server.storage.ObjectInfo
-import io.github.jeshiomurmu.opencaller.server.push.PushSender
 import io.github.jeshiomurmu.opencaller.server.storage.ObjectStore
 import kotlinx.coroutines.Dispatchers
 import org.testcontainers.containers.GenericContainer
@@ -207,7 +207,8 @@ class TestServer(
 
     /** Codes "read aloud" for business claims by phone call. */
     val voice = RecordingOtpProvider()
-    val deps = ServerDependencies(config, TestInfra.database, TestInfra.redis, CodeSenders(otp, voice), clock, objectStore, playApi, pushSender)
+    val deps =
+        ServerDependencies(config, TestInfra.database, TestInfra.redis, CodeSenders(otp, voice), clock, objectStore, playApi, pushSender)
 
     /** Empties Redis and every table so tests don't see each other's codes, limits, users or reports. */
     suspend fun reset() {

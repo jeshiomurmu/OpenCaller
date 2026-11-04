@@ -43,6 +43,8 @@ tags:
     description: Business claims and verified businesses (docs/prd.md §6.6)
   - name: billing
     description: Supporter tier, Play purchases and self-hosted mode (docs/prd.md F-UT-08)
+  - name: voip
+    description: Push endpoints, app calls, Flash messages and video caller ID (ADR 0007)
 
 paths:
   /health:
@@ -1047,6 +1049,308 @@ paths:
         "304": { $ref: "#/components/responses/NotModified" }
         "400": { $ref: "#/components/responses/InvalidCountry" }
 
+  /v1/push:
+    put:
+      tags: [voip]
+      summary: Set this device's push endpoint
+      description: |
+        `fcm` (play builds) with the FCM registration `token`, or `webpush` (UnifiedPush, foss builds) with the
+        distributor's `endpoint` and the app's `p256dh` / `auth` keys (base64url; RFC 8291). Pushes carry only a
+        random id (ADR 0007). In production a Web Push endpoint must be https on a public address.
+      operationId: putPushEndpoint
+      security: [{ accessToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PushRegistration" }
+      responses:
+        "204": { description: Stored. }
+        "400": { description: "`invalid_push_endpoint` or `invalid_request`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: "`device_not_found`: the token's device is gone.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    delete:
+      tags: [voip]
+      summary: Remove this device's push endpoint
+      operationId: deletePushEndpoint
+      security: [{ accessToken: [] }]
+      responses:
+        "204": { description: Removed. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/notifications:
+    get:
+      tags: [voip]
+      summary: Unexpired items behind pushes
+      description: For a phone whose push didn't arrive. Flash messages already fetched are left out.
+      operationId: listNotifications
+      security: [{ accessToken: [] }]
+      responses:
+        "200":
+          description: "Newest first, at most 50 (`Cache-Control: no-store`)."
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Notification" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/notifications/{id}:
+    get:
+      tags: [voip]
+      summary: The item a push stood for
+      description: A push carries only this id. Fetching a Flash message deletes it from the server.
+      operationId: getNotification
+      security: [{ accessToken: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/ItemId" }
+      responses:
+        "200":
+          description: "The item (`Cache-Control: no-store`)."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Notification" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: "`notification_not_found` (expired, fetched, or not this user's) or `not_found`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+
+  /v1/voip/calls:
+    post:
+      tags: [voip]
+      summary: Start an app call
+      description: |
+        Creates an invite that rings for 45 seconds, pushes its id to the callee's phones and returns a LiveKit
+        token for a room named after the sorted pair of user IDs plus a random nonce. Limit 30 per user per hour.
+      operationId: startCall
+      security: [{ accessToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StartCallRequest" }
+      responses:
+        "200":
+          description: "The call (`Cache-Control: no-store`)."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CallSession" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: "`not_reachable`: no OpenCaller user with a push endpoint who accepts app calls and Flash messages has this number (the same answer whatever the reason).", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503": { description: "`voip_unavailable`: this server has no LiveKit or no push provider.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+
+  /v1/voip/calls/{id}:
+    get:
+      tags: [voip]
+      summary: An app call as one of its parties sees it
+      operationId: getCall
+      security: [{ accessToken: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/ItemId" }
+      responses:
+        "200":
+          description: "The call (`Cache-Control: no-store`)."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CallInvite" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: "`call_not_found` or `not_found`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+
+  /v1/voip/calls/{id}/{action}:
+    post:
+      tags: [voip]
+      summary: Accept, decline, cancel or end an app call
+      description: The callee accepts or declines, the caller cancels; either ends an accepted call. The other party gets a push.
+      operationId: actOnCall
+      security: [{ accessToken: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/ItemId" }
+        - { name: action, in: path, required: true, schema: { type: string, enum: [accept, decline, cancel, end] } }
+      responses:
+        "200":
+          description: "The call after the action (`Cache-Control: no-store`)."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CallInvite" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: "`call_not_found` or `not_found` (also for an unknown action).", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: "`call_state`: not allowed in the call's state or for this party.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+
+  /v1/voip/token:
+    post:
+      tags: [voip]
+      summary: A LiveKit token for a call's room
+      description: While the call rings or is answered. Valid 10 minutes by default; audio only.
+      operationId: getRoomToken
+      security: [{ accessToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RoomTokenRequest" }
+      responses:
+        "200":
+          description: "The token (`Cache-Control: no-store`)."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RoomToken" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: "`call_not_found` or `not_found`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: "`call_state`: the call is over.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "503": { description: "`voip_unavailable`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+
+  /v1/voip/settings:
+    get:
+      tags: [voip]
+      summary: Whether app calls and Flash messages can reach this user
+      operationId: getVoipSettings
+      security: [{ accessToken: [] }]
+      responses:
+        "200":
+          description: "On by default (`Cache-Control: no-store`)."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VoipSettings" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    put:
+      tags: [voip]
+      summary: Turn reachability on or off
+      operationId: putVoipSettings
+      security: [{ accessToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VoipSettings" }
+      responses:
+        "200":
+          description: "Stored (`Cache-Control: no-store`)."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VoipSettings" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/flash:
+    post:
+      tags: [voip]
+      summary: Send a Flash message
+      description: |
+        A predefined ping (no free text, no location). It waits on the server until the recipient's phone fetches it,
+        at most a day. Limits: 60 per sender and 10 per pair per hour.
+      operationId: sendFlash
+      security: [{ accessToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SendFlashRequest" }
+      responses:
+        "200":
+          description: "Sent (`Cache-Control: no-store`)."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FlashSent" }
+        "400": { description: "`invalid_flash`, `invalid_phone_number` or `invalid_request`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: "`not_reachable`: no OpenCaller user with a push endpoint who accepts app calls and Flash messages has this number (the same answer whatever the reason).", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503": { description: "`flash_unavailable`: this server has no push provider.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+
+  /v1/me/video:
+    get:
+      tags: [voip]
+      summary: My video caller ID and upload state
+      operationId: getMyVideo
+      security: [{ accessToken: [] }]
+      responses:
+        "200":
+          description: "`Cache-Control: no-store`."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyVideo" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [voip]
+      summary: Submit an uploaded clip for transcoding
+      description: The transcoder cuts it to 10 s, 480 px, no sound, and publishes it under a new random id.
+      operationId: submitVideo
+      security: [{ accessToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SubmitVideoRequest" }
+      responses:
+        "200":
+          description: "Queued (`Cache-Control: no-store`)."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyVideo" }
+        "400": { description: "`invalid_video`: unknown key, not uploaded, not `video/mp4` or over 20 MiB.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    delete:
+      tags: [voip]
+      summary: Delete my video caller ID
+      operationId: deleteMyVideo
+      security: [{ accessToken: [] }]
+      responses:
+        "204": { description: Deleted. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/me/video/upload:
+    post:
+      tags: [voip]
+      summary: A pre-signed URL to upload a new clip
+      description: The current clip stays visible until the new one is published. Limit 10 per user per day.
+      operationId: createVideoUpload
+      security: [{ accessToken: [] }]
+      responses:
+        "200":
+          description: "`PUT` the MP4 to `uploadUrl` with `Content-Type: video/mp4` (`Cache-Control: no-store`)."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VideoUpload" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /v1/videos/links:
+    post:
+      tags: [voip]
+      summary: Download links for clips
+      description: |
+        For clip ids from bucket entries (`NumberInfo.videoId`) or a call invite. No sign-in, so a phone can fetch the
+        clips of a whole bucket without saying which number rang. Unknown, hidden or malformed ids are left out.
+        Limit 240 per client address per hour.
+      operationId: getVideoLinks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VideoLinksRequest" }
+      responses:
+        "200":
+          description: "Links valid 15 minutes (`Cache-Control: no-store`)."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VideoLinks" }
+        "400": { description: "`invalid_video`: 1 to 64 ids.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /v1/videos/{id}/report:
+    post:
+      tags: [voip]
+      summary: Report a clip
+      description: A clip reported by three users is hidden.
+      operationId: reportVideo
+      security: [{ accessToken: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/ItemId" }
+      responses:
+        "204": { description: Recorded. }
+        "400": { description: "`invalid_video`: your own clip.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: "`video_not_found` or `not_found`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
 components:
   securitySchemes:
     accessToken:
@@ -1072,6 +1376,12 @@ components:
       schema: { type: string }
 
   parameters:
+    ItemId:
+      name: id
+      in: path
+      required: true
+      description: A UUID; anything else is 404 `not_found`.
+      schema: { type: string, format: uuid }
     CountryIso:
       name: countryIso
       in: path
@@ -1298,6 +1608,10 @@ components:
           oneOf:
             - { $ref: "#/components/schemas/BusinessInfo" }
             - { type: "null" }
+        videoId:
+          type: [string, "null"]
+          format: uuid
+          description: The owner's video caller ID, as visible as `name` (fetch it with `POST /v1/videos/links`).
 
     BucketEntry:
       type: object
@@ -1360,6 +1674,14 @@ components:
           type: object
           properties:
             googlePlayProductId: { type: string, description: Set while Play billing is configured. }
+        features:
+          type: object
+          required: [appCalls, flash, fcm]
+          properties:
+            appCalls: { type: boolean, description: LiveKit and a push provider are configured. }
+            flash: { type: boolean, description: A push provider is configured. }
+            fcm: { type: boolean, description: FCM is configured (play builds register FCM tokens). }
+            webPushVapidKey: { type: string, description: "VAPID public key (87 characters, base64url) for UnifiedPush registration." }
 
     Entitlements:
       type: object
@@ -1675,6 +1997,162 @@ components:
               updatedAt: { type: integer }
               removed: { type: boolean, default: false, description: The business was revoked; apps forget the number. }
 
+    PushRegistration:
+      type: object
+      required: [type]
+      properties:
+        type: { type: string, enum: [fcm, webpush] }
+        token: { type: string, maxLength: 4096, description: FCM registration token (fcm). }
+        endpoint: { type: string, format: uri, maxLength: 1024, description: Web Push endpoint (webpush). }
+        p256dh: { type: string, description: "The app's P-256 public key, 65 bytes uncompressed, base64url (webpush)." }
+        auth: { type: string, description: "16-byte auth secret, base64url (webpush)." }
+
+    Notification:
+      type: object
+      required: [id, kind, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string, enum: [call_invite, call_update, flash] }
+        createdAt: { type: string, format: date-time }
+        call: { $ref: "#/components/schemas/CallInvite" }
+        flash: { $ref: "#/components/schemas/Flash" }
+
+    StartCallRequest:
+      type: object
+      required: [to]
+      properties:
+        to: { type: string, description: E.164 number to call. }
+
+    CallSession:
+      type: object
+      required: [inviteId, room, url, token, tokenExpiresAt, ringUntil, reachedDevices]
+      properties:
+        inviteId: { type: string, format: uuid }
+        room: { type: string }
+        url: { type: string, description: LiveKit URL (wss:// in production). }
+        token: { type: string, description: LiveKit access token (JWT). }
+        tokenExpiresAt: { type: string, format: date-time }
+        ringUntil: { type: string, format: date-time }
+        reachedDevices: { type: integer, description: "How many of the callee's phones the push reached." }
+
+    CallInvite:
+      type: object
+      description: "`number`, `name` and `videoId` describe the other party; `name` and `videoId` as their profile allows, `videoId` only for the callee."
+      required: [inviteId, state, role, number, ringUntil]
+      properties:
+        inviteId: { type: string, format: uuid }
+        state: { type: string, enum: [ringing, accepted, declined, cancelled, missed, ended] }
+        role: { type: string, enum: [caller, callee] }
+        number: { type: string }
+        name: { type: [string, "null"] }
+        videoId: { type: [string, "null"], format: uuid }
+        ringUntil: { type: string, format: date-time }
+
+    RoomTokenRequest:
+      type: object
+      required: [inviteId]
+      properties:
+        inviteId: { type: string, format: uuid }
+
+    RoomToken:
+      type: object
+      required: [room, url, token, expiresAt]
+      properties:
+        room: { type: string }
+        url: { type: string }
+        token: { type: string }
+        expiresAt: { type: string, format: date-time }
+
+    VoipSettings:
+      type: object
+      required: [reachable]
+      properties:
+        reachable: { type: boolean }
+
+    SendFlashRequest:
+      type: object
+      required: [to, kind]
+      properties:
+        to: { type: string, description: E.164 number. }
+        kind: { $ref: "#/components/schemas/FlashKind" }
+
+    FlashKind:
+      type: string
+      enum: [call_me, on_my_way, running_late, cant_talk, arrived, call_you_back]
+
+    FlashSent:
+      type: object
+      required: [id, reachedDevices]
+      properties:
+        id: { type: string, format: uuid }
+        reachedDevices: { type: integer }
+
+    Flash:
+      type: object
+      required: [id, kind, from, sentAt]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { $ref: "#/components/schemas/FlashKind" }
+        from: { type: string }
+        name: { type: [string, "null"] }
+        sentAt: { type: string, format: date-time }
+
+    VideoUpload:
+      type: object
+      required: [key, uploadUrl, contentType, maxBytes, expiresAt]
+      properties:
+        key: { type: string }
+        uploadUrl: { type: string, format: uri }
+        contentType: { type: string, enum: [video/mp4] }
+        maxBytes: { type: integer }
+        expiresAt: { type: string, format: date-time }
+
+    SubmitVideoRequest:
+      type: object
+      required: [key]
+      properties:
+        key: { type: string }
+
+    MyVideo:
+      type: object
+      required: [job]
+      properties:
+        clip:
+          oneOf:
+            - { $ref: "#/components/schemas/VideoClip" }
+            - { type: "null" }
+        job: { type: string, enum: [none, uploading, queued, processing, failed] }
+        error: { type: [string, "null"] }
+
+    VideoClip:
+      type: object
+      required: [videoId, url, hidden]
+      properties:
+        videoId: { type: string, format: uuid }
+        url: { type: string, format: uri, description: Pre-signed GET, 15 minutes. }
+        bytes: { type: [integer, "null"] }
+        hidden: { type: boolean, description: Hidden after reports. }
+
+    VideoLinksRequest:
+      type: object
+      required: [ids]
+      properties:
+        ids: { type: array, minItems: 1, maxItems: 64, items: { type: string } }
+
+    VideoLinks:
+      type: object
+      required: [links, expiresAt]
+      properties:
+        links:
+          type: array
+          items:
+            type: object
+            required: [id, url]
+            properties:
+              id: { type: string, format: uuid }
+              url: { type: string, format: uri }
+        expiresAt: { type: string, format: date-time }
+
     Problem:
       type: object
       description: RFC 9457 problem details.
@@ -1720,3 +2198,14 @@ components:
             - claim_state
             - number_not_verified
             - business_not_found
+            - invalid_push_endpoint
+            - device_not_found
+            - notification_not_found
+            - voip_unavailable
+            - not_reachable
+            - call_not_found
+            - call_state
+            - flash_unavailable
+            - invalid_flash
+            - invalid_video
+            - video_not_found

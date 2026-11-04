@@ -61,13 +61,13 @@ interface PushSender {
  * target whose provider is missing gets [PushOutcome.UNSUPPORTED].
  */
 class HttpPushSender(
-    private val fcm: FcmConfig?,
+    fcm: FcmConfig?,
     vapid: VapidConfig?,
     clock: Clock,
     private val random: SecureRandom = SecureRandom(),
     private val http: HttpClient = HttpClient.newBuilder().connectTimeout(TIMEOUT.toJavaDuration()).build(),
 ) : PushSender {
-    private val fcmTokens = fcm?.let { ServiceAccountTokens(it.serviceAccount, FCM_SCOPE, clock, http) }
+    private val fcmClient = fcm?.let { it to ServiceAccountTokens(it.serviceAccount, FCM_SCOPE, clock, http) }
     private val vapidSigner = vapid?.let { VapidSigner(it, clock) }
 
     override suspend fun send(
@@ -92,8 +92,7 @@ class HttpPushSender(
         ttlSeconds: Int,
         urgent: Boolean,
     ): PushOutcome {
-        val config = fcm ?: return PushOutcome.UNSUPPORTED
-        val tokens = fcmTokens ?: return PushOutcome.UNSUPPORTED
+        val (config, tokens) = fcmClient ?: return PushOutcome.UNSUPPORTED
         val body =
             buildJsonObject {
                 putJsonObject("message") {

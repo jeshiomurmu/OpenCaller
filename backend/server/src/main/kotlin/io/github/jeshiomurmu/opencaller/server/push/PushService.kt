@@ -19,6 +19,7 @@ import org.jetbrains.exposed.v1.core.isNotNull
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
+import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
@@ -69,6 +70,8 @@ class PushService(
     private val sender: PushSender,
     private val policy: PushEndpointPolicy,
     private val clock: Clock,
+    /** True when a push provider is configured (app calls and Flash messages need one). */
+    val enabled: Boolean = true,
 ) {
     /** Stores [registration] as the push endpoint of [deviceId] (one of [userId]'s devices). */
     suspend fun register(
@@ -76,21 +79,21 @@ class PushService(
         deviceId: UUID,
         registration: PushRegistration,
     ) {
-        val target = validated(registration)
+        val target = PushRegistrations.validated(registration, policy)
         val now = OffsetDateTime.now(clock)
         val updated =
             db.query {
                 Devices.update({ (Devices.id eq deviceId) and (Devices.userId eq userId) }) {
                     when (target) {
                         is PushTarget.Fcm -> {
-                            it[pushType] = FCM
+                            it[pushType] = PushRegistrations.FCM
                             it[pushToken] = target.token
                             it[pushP256dh] = null
                             it[pushAuth] = null
                         }
 
                         is PushTarget.WebPush -> {
-                            it[pushType] = WEB_PUSH
+                            it[pushType] = PushRegistrations.WEB_PUSH
                             it[pushToken] = target.endpoint.toString()
                             it[pushP256dh] = registration.p256dh
                             it[pushAuth] = registration.auth
@@ -137,7 +140,12 @@ class PushService(
             }
         val outcomes =
             withTimeoutOrNull(WAIT) {
-                coroutineScope { targets.map { (device, target) -> async { device to sender.send(target, itemId, ttlSeconds, urgent) } }.awaitAll() }
+                coroutineScope {
+                    targets
+                        .map { (device, target) ->
+                            async { device to sender.send(target, itemId, ttlSeconds, urgent) }
+                        }.awaitAll()
+                }
             }.orEmpty()
         val gone = outcomes.filter { it.second == PushOutcome.GONE }.map { it.first }
         if (gone.isNotEmpty()) db.query { gone.forEach { clearEndpoint(it, userId) } }
@@ -179,8 +187,8 @@ class PushService(
                 val token = row[Devices.pushToken] ?: return@mapNotNull null
                 val target =
                     when (row[Devices.pushType]) {
-                        FCM -> PushTarget.Fcm(token)
-                        WEB_PUSH -> webPushTarget(token, row[Devices.pushP256dh], row[Devices.pushAuth])
+                        PushRegistrations.FCM -> PushTarget.Fcm(token)
+                        PushRegistrations.WEB_PUSH -> webPushTarget(token, row[Devices.pushP256dh], row[Devices.pushAuth])
                         else -> null
                     }
                 target?.let { row[Devices.id] to it }
@@ -193,8 +201,12 @@ class PushService(
     ): PushTarget? {
         if (p256dh == null || auth == null) return null
         // Checked again before each push: the endpoint's host may resolve differently now (DNS rebinding).
-        val uri = runCatching { policy.check(endpoint) }.getOrNull() ?: return null
-        return PushTarget.WebPush(uri, HttpPushSender.base64Url(p256dh), HttpPushSender.base64Url(auth))
+        return try {
+            PushTarget.WebPush(policy.check(endpoint), HttpPushSender.base64Url(p256dh), HttpPushSender.base64Url(auth))
+        } catch (e: ApiProblem) {
+            log.info("Web Push endpoint skipped: {}", e.detail)
+            null
+        }
     }
 
     private fun clearEndpoint(
@@ -210,47 +222,9 @@ class PushService(
         }
     }
 
-    private fun validated(registration: PushRegistration): PushTarget =
-        when (registration.type) {
-            FCM -> {
-                val token = registration.token
-                requireValid(token != null && isPlainText(token, MAX_TOKEN_LENGTH) && '\n' !in token) {
-                    invalidEndpoint("An FCM registration token is required.")
-                }
-                PushTarget.Fcm(token!!)
-            }
-
-            WEB_PUSH -> {
-                val uri = policy.check(registration.endpoint ?: throw invalidEndpoint("A Web Push endpoint is required."))
-                val key = decoded(registration.p256dh, P256_KEY_BYTES, "p256dh must be a 65-byte P-256 key, base64url.")
-                val auth = decoded(registration.auth, AUTH_BYTES, "auth must be 16 bytes, base64url.")
-                PushTarget.WebPush(uri, key, auth)
-            }
-
-            else -> {
-                throw invalidEndpoint("type must be fcm or webpush.")
-            }
-        }
-
-    private fun decoded(
-        value: String?,
-        size: Int,
-        problem: String,
-    ): ByteArray {
-        val bytes = value?.let { runCatching { HttpPushSender.base64Url(it) }.getOrNull() }
-        requireValid(bytes != null && bytes.size == size) { invalidEndpoint(problem) }
-        return bytes!!
-    }
-
     private companion object {
-        const val FCM = "fcm"
-        const val WEB_PUSH = "webpush"
-        const val MAX_TOKEN_LENGTH = 4096
-        const val P256_KEY_BYTES = 65
-        const val AUTH_BYTES = 16
         const val PENDING_LIMIT = 50
         val WAIT = 3.seconds
-
-        fun invalidEndpoint(detail: String) = ApiProblem(HttpStatusCode.BadRequest, "invalid_push_endpoint", "Invalid push endpoint", detail)
+        val log = LoggerFactory.getLogger(PushService::class.java)
     }
 }

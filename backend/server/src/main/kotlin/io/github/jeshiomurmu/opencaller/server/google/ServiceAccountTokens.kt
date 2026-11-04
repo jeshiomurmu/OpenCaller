@@ -82,6 +82,17 @@ class ServiceAccountTokens(
                 .header("Accept", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(form))
                 .build()
+        val response = post(request)
+        val body =
+            try {
+                json.decodeFromString(TokenBody.serializer(), response.body())
+            } catch (e: SerializationException) {
+                throw GoogleApiException("Google's token response is unreadable", response.statusCode(), e)
+            }
+        return CachedToken(body.accessToken, now.plusSeconds(body.expiresIn))
+    }
+
+    private suspend fun post(request: HttpRequest): HttpResponse<String> {
         val response =
             try {
                 http.sendAsync(request, HttpResponse.BodyHandlers.ofString()).await()
@@ -92,13 +103,7 @@ class ServiceAccountTokens(
             log.warn("Google token request failed: HTTP {}", response.statusCode())
             throw GoogleApiException("Google's token endpoint returned HTTP ${response.statusCode()}", response.statusCode())
         }
-        val body =
-            try {
-                json.decodeFromString(TokenBody.serializer(), response.body())
-            } catch (e: SerializationException) {
-                throw GoogleApiException("Google's token response is unreadable", response.statusCode(), e)
-            }
-        return CachedToken(body.accessToken, now.plusSeconds(body.expiresIn))
+        return response
     }
 
     @Serializable

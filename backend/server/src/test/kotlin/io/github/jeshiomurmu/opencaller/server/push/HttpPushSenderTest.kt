@@ -38,7 +38,13 @@ class HttpPushSenderTest {
         HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
             createContext("/") { exchange ->
                 val body = exchange.requestBody.readBytes()
-                val headers = listOf("Authorization", "TTL", "Urgency", "Content-Encoding").associateWith { exchange.requestHeaders.getFirst(it) }
+                val headers =
+                    listOf(
+                        "Authorization",
+                        "TTL",
+                        "Urgency",
+                        "Content-Encoding",
+                    ).associateWith { exchange.requestHeaders.getFirst(it) }
                 received += Received(exchange.requestURI.rawPath, headers, body)
                 val (status, text) =
                     if (exchange.requestURI.path == "/token") {
@@ -57,7 +63,12 @@ class HttpPushSenderTest {
     private val random = SecureRandom()
     private val clock = MutableClock()
     private val rsa = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
-    private val fcm = FcmConfig("opencaller-test", ServiceAccountKey("push@test.iam.gserviceaccount.com", "k1", rsa.private as RSAPrivateKey, "$base/token"), base)
+    private val fcm =
+        FcmConfig(
+            "opencaller-test",
+            ServiceAccountKey("push@test.iam.gserviceaccount.com", "k1", rsa.private as RSAPrivateKey, "$base/token"),
+            base,
+        )
     private val vapidPair = KeyPairGenerator.getInstance("EC").apply { initialize(VapidConfig.P256, random) }.generateKeyPair()
     private val vapid = VapidConfig(vapidPair.public as ECPublicKey, vapidPair.private as ECPrivateKey, "mailto:ops@example.org")
     private val sender = HttpPushSender(fcm, vapid, clock, random)
@@ -73,7 +84,12 @@ class HttpPushSenderTest {
             val send = received.last()
             assertEquals("/v1/projects/opencaller-test/messages:send", send.path)
             assertEquals("Bearer fcm-access", send.headers["Authorization"])
-            val message = Json.parseToJsonElement(send.body.decodeToString()).jsonObject.getValue("message").jsonObject
+            val message =
+                Json
+                    .parseToJsonElement(send.body.decodeToString())
+                    .jsonObject
+                    .getValue("message")
+                    .jsonObject
             assertEquals("device-token", message.getValue("token").jsonPrimitive.content)
             // The only data is the item id (ADR 0007): no names, numbers or kinds.
             assertEquals(mapOf("id" to item.toString()), message.getValue("data").jsonObject.mapValues { it.value.jsonPrimitive.content })

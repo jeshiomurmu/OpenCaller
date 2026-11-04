@@ -6,6 +6,7 @@ import io.github.jeshiomurmu.opencaller.server.storage.ObjectStore
 import io.github.jeshiomurmu.opencaller.server.storage.ObjectStoreException
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.statements.StatementType
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
 import org.slf4j.LoggerFactory
@@ -54,7 +55,8 @@ class TranscodeWorker(
 
     private suspend fun claim(): TranscodeJob? =
         db.query {
-            exec(CLAIM_SQL) { rs ->
+            // UPDATE … RETURNING yields rows, so it runs as a query.
+            exec(CLAIM_SQL, explicitStatementType = StatementType.SELECT) { rs ->
                 if (rs.next()) TranscodeJob(UUID.fromString(rs.getString(1)), rs.getString(2)) else null
             }
         }
@@ -80,7 +82,10 @@ class TranscodeWorker(
         objects.put(key, clip, VideoCallerIdService.CONTENT_TYPE)
         val previous =
             db.query {
-                val old = VideoCallerIds.selectAll().where { VideoCallerIds.userId eq job.userId }.firstOrNull()?.get(VideoCallerIds.videoKey)
+                val old =
+                    VideoCallerIds.selectAll().where { VideoCallerIds.userId eq job.userId }.firstOrNull()?.get(
+                        VideoCallerIds.videoKey,
+                    )
                 val updated =
                     VideoCallerIds.update({ (VideoCallerIds.userId eq job.userId) and (VideoCallerIds.uploadKey eq job.uploadKey) }) {
                         it[VideoCallerIds.videoId] = videoId

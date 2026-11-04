@@ -147,9 +147,7 @@ object NumberDirectory {
     private fun visibleName(
         row: ResultRow,
         authenticated: Boolean,
-    ): String? {
-        return if (profileVisible(row, authenticated)) row.getOrNull(Users.displayName) else null
-    }
+    ): String? = if (profileVisible(row, authenticated)) row.getOrNull(Users.displayName) else null
 
     private fun profileVisible(
         row: ResultRow,

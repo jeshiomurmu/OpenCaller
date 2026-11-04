@@ -42,7 +42,12 @@ class WebPushCryptoTest {
                 .build()
         assertContentEquals(payload, decrypt.decrypt(body, null))
         // Header: 16-byte salt, record size 4096, key length 65, the server's ephemeral key.
-        assertEquals(4096, java.nio.ByteBuffer.wrap(body, 16, 4).int)
+        assertEquals(
+            4096,
+            java.nio.ByteBuffer
+                .wrap(body, 16, 4)
+                .int,
+        )
         assertEquals(65, body[20].toInt())
     }
 
@@ -59,7 +64,12 @@ class WebPushCryptoTest {
     @Test
     fun vapidHeaderCarriesASignedTokenForThePushServicesOrigin() {
         val pair = keyPair()
-        val raw = (pair.private as ECPrivateKey).s.toByteArray().dropWhile { it == 0.toByte() }.toByteArray()
+        val raw =
+            (pair.private as ECPrivateKey)
+                .s
+                .toByteArray()
+                .dropWhile { it == 0.toByte() }
+                .toByteArray()
         val privateKey = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32 - raw.size) + raw)
         val publicKey = Base64.getUrlEncoder().withoutPadding().encodeToString(VapidConfig.uncompressed(pair.public as ECPublicKey))
         val config = VapidConfig.parse(publicKey, privateKey, "mailto:ops@example.org")
@@ -78,7 +88,12 @@ class WebPushCryptoTest {
     fun vapidKeysThatDontBelongTogetherAreRefused() {
         val a = keyPair()
         val b = keyPair()
-        val raw = (b.private as ECPrivateKey).s.toByteArray().dropWhile { it == 0.toByte() }.toByteArray()
+        val raw =
+            (b.private as ECPrivateKey)
+                .s
+                .toByteArray()
+                .dropWhile { it == 0.toByte() }
+                .toByteArray()
         val privateKey = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32 - raw.size) + raw)
         val publicKey = Base64.getUrlEncoder().withoutPadding().encodeToString(VapidConfig.uncompressed(a.public as ECPublicKey))
         assertFailsWith<IllegalArgumentException> { VapidConfig.parse(publicKey, privateKey, "mailto:ops@example.org") }

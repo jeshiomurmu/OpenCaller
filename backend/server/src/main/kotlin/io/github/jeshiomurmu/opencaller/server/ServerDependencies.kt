@@ -13,20 +13,8 @@ import io.github.jeshiomurmu.opencaller.server.auth.otp.OtpStore
 import io.github.jeshiomurmu.opencaller.server.auth.otp.TwilioOtpProvider
 import io.github.jeshiomurmu.opencaller.server.auth.otp.TwilioVoiceOtpProvider
 import io.github.jeshiomurmu.opencaller.server.billing.BillingRecheckResult
-import io.github.jeshiomurmu.opencaller.server.billing.FeatureInfo
-import io.github.jeshiomurmu.opencaller.server.config.Environment
-import io.github.jeshiomurmu.opencaller.server.flash.FlashService
-import io.github.jeshiomurmu.opencaller.server.notifications.NotificationService
-import io.github.jeshiomurmu.opencaller.server.push.HttpPushSender
-import io.github.jeshiomurmu.opencaller.server.push.PushEndpointPolicy
-import io.github.jeshiomurmu.opencaller.server.push.PushSender
-import io.github.jeshiomurmu.opencaller.server.push.PushService
-import io.github.jeshiomurmu.opencaller.server.video.VideoCallerIdService
-import io.github.jeshiomurmu.opencaller.server.voip.VoipCleanupJob
-import io.github.jeshiomurmu.opencaller.server.voip.VoipCleanupResult
-import io.github.jeshiomurmu.opencaller.server.voip.VoipRouteServices
-import io.github.jeshiomurmu.opencaller.server.voip.VoipService
 import io.github.jeshiomurmu.opencaller.server.billing.BillingService
+import io.github.jeshiomurmu.opencaller.server.billing.FeatureInfo
 import io.github.jeshiomurmu.opencaller.server.billing.GooglePlayDeveloperApi
 import io.github.jeshiomurmu.opencaller.server.billing.PlaySubscriptions
 import io.github.jeshiomurmu.opencaller.server.business.BusinessDirectory
@@ -34,9 +22,11 @@ import io.github.jeshiomurmu.opencaller.server.business.ClaimCodes
 import io.github.jeshiomurmu.opencaller.server.business.ClaimReview
 import io.github.jeshiomurmu.opencaller.server.business.ClaimService
 import io.github.jeshiomurmu.opencaller.server.config.AppConfig
+import io.github.jeshiomurmu.opencaller.server.config.Environment
 import io.github.jeshiomurmu.opencaller.server.config.OtpProviderKind
 import io.github.jeshiomurmu.opencaller.server.db.ServerDatabase
 import io.github.jeshiomurmu.opencaller.server.disputes.DisputeService
+import io.github.jeshiomurmu.opencaller.server.flash.FlashService
 import io.github.jeshiomurmu.opencaller.server.http.ApiJson
 import io.github.jeshiomurmu.opencaller.server.jobs.JobRunner
 import io.github.jeshiomurmu.opencaller.server.jobs.JobScheduler
@@ -45,6 +35,7 @@ import io.github.jeshiomurmu.opencaller.server.lists.ListBuildResult
 import io.github.jeshiomurmu.opencaller.server.lists.ListBuilder
 import io.github.jeshiomurmu.opencaller.server.lists.ListService
 import io.github.jeshiomurmu.opencaller.server.lookup.LookupService
+import io.github.jeshiomurmu.opencaller.server.notifications.NotificationService
 import io.github.jeshiomurmu.opencaller.server.profile.ContactRequestService
 import io.github.jeshiomurmu.opencaller.server.profile.Entitlements
 import io.github.jeshiomurmu.opencaller.server.profile.ProfileService
@@ -52,6 +43,10 @@ import io.github.jeshiomurmu.opencaller.server.profile.RetentionJob
 import io.github.jeshiomurmu.opencaller.server.profile.RetentionResult
 import io.github.jeshiomurmu.opencaller.server.profile.StoredTierEntitlements
 import io.github.jeshiomurmu.opencaller.server.profile.VisitorService
+import io.github.jeshiomurmu.opencaller.server.push.HttpPushSender
+import io.github.jeshiomurmu.opencaller.server.push.PushEndpointPolicy
+import io.github.jeshiomurmu.opencaller.server.push.PushSender
+import io.github.jeshiomurmu.opencaller.server.push.PushService
 import io.github.jeshiomurmu.opencaller.server.redis.RateLimiter
 import io.github.jeshiomurmu.opencaller.server.redis.Redis
 import io.github.jeshiomurmu.opencaller.server.registry.ImportJobResult
@@ -71,6 +66,11 @@ import io.github.jeshiomurmu.opencaller.server.storage.S3ObjectStore
 import io.github.jeshiomurmu.opencaller.server.sync.SeedData
 import io.github.jeshiomurmu.opencaller.server.sync.SyncService
 import io.github.jeshiomurmu.opencaller.server.unlist.UnlistService
+import io.github.jeshiomurmu.opencaller.server.video.VideoCallerIdService
+import io.github.jeshiomurmu.opencaller.server.voip.VoipCleanupJob
+import io.github.jeshiomurmu.opencaller.server.voip.VoipCleanupResult
+import io.github.jeshiomurmu.opencaller.server.voip.VoipRouteServices
+import io.github.jeshiomurmu.opencaller.server.voip.VoipService
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.coroutines.CoroutineDispatcher
@@ -156,16 +156,16 @@ class ServerDependencies(
     val adminAudit = AdminAuditLog(database, clock)
 
     // Phase 11: push, app calls, Flash messages and video caller ID (ADR 0007).
-    private val pushEnabled = config.voip.push.enabled || pushSender != null
     val push =
         PushService(
             db = database,
             sender = pushSender ?: HttpPushSender(config.voip.push.fcm, config.voip.push.webPush, clock),
             policy = PushEndpointPolicy(allowPrivate = config.environment != Environment.PRODUCTION),
             clock = clock,
+            enabled = config.voip.push.enabled || pushSender != null,
         )
-    val voip = VoipService(database, config.voip.liveKit, push, pushEnabled, rateLimiter, clock, random)
-    val flash = FlashService(database, push, pushEnabled, rateLimiter, clock)
+    val voip = VoipService(database, config.voip.liveKit, push, rateLimiter, clock, random)
+    val flash = FlashService(database, push, rateLimiter, clock)
     val video = VideoCallerIdService(database, objectStore, rateLimiter, clock)
     val voipRoutes = VoipRouteServices(push, NotificationService(push, voip, flash), voip, flash, video)
     val voipCleanup = VoipCleanupJob(database, clock)
@@ -176,7 +176,9 @@ class ServerDependencies(
             appCalls = voip.enabled,
             flash = flash.enabled,
             fcm = config.voip.push.fcm != null,
-            webPushVapidKey = config.voip.push.webPush?.publicKeyBase64Url,
+            webPushVapidKey =
+                config.voip.push.webPush
+                    ?.publicKeyBase64Url,
         )
 
     /** Sender-ID importers: the CSV extracts in the import folder, then the registries without documented access. */

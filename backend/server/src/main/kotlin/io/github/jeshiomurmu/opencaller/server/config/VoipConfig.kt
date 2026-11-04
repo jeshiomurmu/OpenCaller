@@ -100,7 +100,9 @@ class VapidConfig(
             privateKey: String,
             subject: String,
         ): VapidConfig {
-            val pub = publicKeyOf(decode(publicKey, "VAPID_PUBLIC_KEY"))
+            val rawPublic = decode(publicKey, "VAPID_PUBLIC_KEY")
+            require(rawPublic.size == UNCOMPRESSED_BYTES) { "VAPID_PUBLIC_KEY must be a 65-byte uncompressed P-256 key, base64url" }
+            val pub = publicKeyOf(rawPublic)
             val rawPrivate = decode(privateKey, "VAPID_PRIVATE_KEY")
             require(rawPrivate.size == COORDINATE_BYTES) { "VAPID_PRIVATE_KEY must be 32 bytes, base64url" }
             val priv =
@@ -120,8 +122,7 @@ class VapidConfig(
         }
 
         /** `04 || x || y` with both coordinates left-padded to 32 bytes. */
-        fun uncompressed(key: ECPublicKey): ByteArray =
-            byteArrayOf(UNCOMPRESSED_PREFIX) + fixed(key.w.affineX) + fixed(key.w.affineY)
+        fun uncompressed(key: ECPublicKey): ByteArray = byteArrayOf(UNCOMPRESSED_PREFIX) + fixed(key.w.affineX) + fixed(key.w.affineY)
 
         private fun fixed(value: BigInteger): ByteArray {
             val bytes = value.toByteArray().dropWhile { it == 0.toByte() }.toByteArray()
@@ -143,11 +144,12 @@ class VapidConfig(
             priv: ECPrivateKey,
         ): Boolean {
             val probe = "opencaller-vapid-check".toByteArray()
-            val signature = Signature.getInstance("SHA256withECDSA").run {
-                initSign(priv)
-                update(probe)
-                sign()
-            }
+            val signature =
+                Signature.getInstance("SHA256withECDSA").run {
+                    initSign(priv)
+                    update(probe)
+                    sign()
+                }
             return Signature.getInstance("SHA256withECDSA").run {
                 initVerify(pub)
                 update(probe)

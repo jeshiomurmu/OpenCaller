@@ -27,15 +27,6 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import java.util.UUID
 
-/** The Phase 11 services, for [voipRoutes]. */
-class VoipRouteServices(
-    val push: PushService,
-    val notifications: NotificationService,
-    val voip: VoipService,
-    val flash: FlashService,
-    val video: VideoCallerIdService,
-)
-
 /**
  * Push endpoints, notifications, app calls, Flash messages and video caller ID (ADR 0007). Everything needs an
  * access token except `POST /v1/videos/links`, which serves the clip ids found in (public) bucket entries.

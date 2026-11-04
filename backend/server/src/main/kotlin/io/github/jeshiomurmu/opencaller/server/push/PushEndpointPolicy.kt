@@ -21,26 +21,37 @@ class PushEndpointPolicy(
 ) {
     /** The endpoint as a URI, or 400 `invalid_push_endpoint`. */
     fun check(endpoint: String): URI {
-        val uri =
-            try {
-                URI(endpoint.trim())
-            } catch (e: URISyntaxException) {
-                throw invalid("The endpoint is not a URL.", e)
-            }
-        val schemes = if (allowPrivate) setOf("https", "http") else setOf("https")
-        if (endpoint.length > MAX_LENGTH || uri.scheme?.lowercase() !in schemes || uri.host.isNullOrEmpty() || uri.rawUserInfo != null) {
-            throw invalid(if (allowPrivate) "Use an http(s) URL." else "Use an https URL.")
-        }
-        if (!allowPrivate) {
-            val addresses =
-                try {
-                    resolve(uri.host)
-                } catch (e: UnknownHostException) {
-                    throw invalid("The endpoint's host does not resolve.", e)
-                }
-            if (addresses.isEmpty() || addresses.any(::isPrivate)) throw invalid("The endpoint must be on the public internet.")
-        }
+        val uri = parse(endpoint)
+        requireShape(endpoint, uri)
+        if (!allowPrivate) requirePublic(uri.host)
         return uri
+    }
+
+    private fun parse(endpoint: String): URI =
+        try {
+            URI(endpoint.trim())
+        } catch (e: URISyntaxException) {
+            throw invalid("The endpoint is not a URL.", e)
+        }
+
+    private fun requireShape(
+        endpoint: String,
+        uri: URI,
+    ) {
+        val schemes = if (allowPrivate) setOf("https", "http") else setOf("https")
+        val schemeOk = endpoint.length <= MAX_LENGTH && uri.scheme?.lowercase() in schemes
+        val hostOk = !uri.host.isNullOrEmpty() && uri.rawUserInfo == null
+        if (!schemeOk || !hostOk) throw invalid(if (allowPrivate) "Use an http(s) URL." else "Use an https URL.")
+    }
+
+    private fun requirePublic(host: String) {
+        val addresses =
+            try {
+                resolve(host)
+            } catch (e: UnknownHostException) {
+                throw invalid("The endpoint's host does not resolve.", e)
+            }
+        if (addresses.isEmpty() || addresses.any(::isPrivate)) throw invalid("The endpoint must be on the public internet.")
     }
 
     private fun invalid(

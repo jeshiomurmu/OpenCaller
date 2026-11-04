@@ -44,7 +44,9 @@ class VideoCallerIdService(
         val key = "$UPLOAD_PREFIX$userId/${UUID.randomUUID()}.mp4"
         val now = OffsetDateTime.now(clock)
         db.query {
-            VideoCallerIds.upsert(onUpdateExclude = listOf(VideoCallerIds.videoId, VideoCallerIds.videoKey, VideoCallerIds.videoBytes, VideoCallerIds.hidden)) {
+            VideoCallerIds.upsert(
+                onUpdateExclude = listOf(VideoCallerIds.videoId, VideoCallerIds.videoKey, VideoCallerIds.videoBytes, VideoCallerIds.hidden),
+            ) {
                 it[VideoCallerIds.userId] = userId
                 it[uploadKey] = key
                 it[jobState] = UPLOADING
@@ -53,7 +55,13 @@ class VideoCallerIdService(
             }
         }
         val url = objects.presignPut(key, CONTENT_TYPE, UPLOAD_URL_SECONDS)
-        return VideoUpload(key, url.toString(), CONTENT_TYPE, MAX_UPLOAD_BYTES, now.plusSeconds(UPLOAD_URL_SECONDS.toLong()).toInstant().toString())
+        return VideoUpload(
+            key,
+            url.toString(),
+            CONTENT_TYPE,
+            MAX_UPLOAD_BYTES,
+            now.plusSeconds(UPLOAD_URL_SECONDS.toLong()).toInstant().toString(),
+        )
     }
 
     /** Queues [request]'s upload for transcoding once it is in the store, of the right type and size. */
@@ -105,7 +113,11 @@ class VideoCallerIdService(
         client: String,
     ): VideoLinks {
         requireValid(request.ids.size in 1..MAX_LINKS) { invalidVideo("Ask for 1 to $MAX_LINKS clips at a time.") }
-        val ids = request.ids.filter(UUID_PATTERN::matches).map(UUID::fromString).distinct()
+        val ids =
+            request.ids
+                .filter(UUID_PATTERN::matches)
+                .map(UUID::fromString)
+                .distinct()
         enforce(rateLimiter.hit(LINKS_PER_CLIENT, client), "Too many video requests")
         val rows =
             db.query {
@@ -120,7 +132,14 @@ class VideoCallerIdService(
                 val key = row[VideoCallerIds.videoKey] ?: return@mapNotNull null
                 VideoLink(id.toString(), objects.presignGet(key, DOWNLOAD_URL_SECONDS).toString())
             }
-        return VideoLinks(links, OffsetDateTime.now(clock).plusSeconds(DOWNLOAD_URL_SECONDS.toLong()).toInstant().toString())
+        return VideoLinks(
+            links,
+            OffsetDateTime
+                .now(clock)
+                .plusSeconds(DOWNLOAD_URL_SECONDS.toLong())
+                .toInstant()
+                .toString(),
+        )
     }
 
     /** Records [reporterId]'s report of clip [videoId]; the third reporter hides it. */

@@ -16,7 +16,13 @@ class LiveKitTokensTest {
     fun tokenJoinsOnlyItsRoomAndPublishesOnlyTheMicrophone() {
         val clock = MutableClock()
         val issued = LiveKitTokens(config, clock).issue("user-1", "a_b_nonce")
-        val jwt = (JWT.require(Algorithm.HMAC256(config.apiSecret)).withIssuer("APIkey1") as BaseVerification).build(clock).verify(issued.token)
+        val jwt =
+            (
+                JWT
+                    .require(
+                        Algorithm.HMAC256(config.apiSecret),
+                    ).withIssuer("APIkey1") as BaseVerification
+            ).build(clock).verify(issued.token)
 
         assertEquals("HS256", jwt.algorithm)
         assertEquals("user-1", jwt.subject)

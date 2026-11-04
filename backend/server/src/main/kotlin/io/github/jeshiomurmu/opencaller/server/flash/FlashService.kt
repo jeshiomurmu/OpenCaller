@@ -58,19 +58,18 @@ data class FlashView(
 class FlashService(
     private val db: ServerDatabase,
     private val push: PushService,
-    private val pushEnabled: Boolean,
     private val rateLimiter: RateLimiter,
     private val clock: Clock,
 ) {
     /** True when a push provider is configured. */
-    val enabled: Boolean get() = pushEnabled
+    val enabled: Boolean get() = push.enabled
 
     /** Sends [request] from [senderId]. */
     suspend fun send(
         senderId: UUID,
         request: SendFlashRequest,
     ): FlashSent {
-        requireValid(pushEnabled) {
+        requireValid(push.enabled) {
             ApiProblem(HttpStatusCode.ServiceUnavailable, "flash_unavailable", "Flash messages are not available on this server")
         }
         requireValid(request.kind in KINDS) {
