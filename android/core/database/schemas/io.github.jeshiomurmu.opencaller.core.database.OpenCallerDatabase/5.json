@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 5,
-    "identityHash": "09fc7f26da1b6e15fa45a95b1ab5bedf",
+    "identityHash": "77e14ac704a2c7fa78c2680df648e9a5",
     "entities": [
       {
         "tableName": "spam_list",
@@ -825,7 +825,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '09fc7f26da1b6e15fa45a95b1ab5bedf')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '77e14ac704a2c7fa78c2680df648e9a5')"
     ]
   }
 }
