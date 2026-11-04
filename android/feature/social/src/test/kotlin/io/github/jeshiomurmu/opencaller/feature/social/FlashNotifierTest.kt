@@ -24,7 +24,9 @@ class FlashNotifierTest {
 
     @Test
     fun aFlashMessageIsANotification() {
-        FlashNotifier(context).show(FlashMessage("f1", FlashKind.RUNNING_LATE, PhoneNumber("+12015550123"), "Asha", 1_000L, outgoing = false))
+        FlashNotifier(
+            context,
+        ).show(FlashMessage("f1", FlashKind.RUNNING_LATE, PhoneNumber("+12015550123"), "Asha", 1_000L, outgoing = false))
         FlashNotifier(context).show(FlashMessage("f2", FlashKind.CALL_ME, PhoneNumber("+12015550124"), null, 2_000L, outgoing = false))
         val posted = shadowOf(manager).allNotifications
         assertEquals(2, posted.size)

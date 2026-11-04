@@ -73,14 +73,7 @@ private fun Recorder(
     val recorder = remember { ClipRecorder(context) }
     val file = remember { File(context.cacheDir, "my-video-caller-id.mp4") }
     var stage by remember { mutableStateOf(RecordStage.PREVIEW) }
-    var seconds by remember { mutableIntStateOf(0) }
-    LaunchedEffect(stage) {
-        seconds = 0
-        while (stage == RecordStage.RECORDING) {
-            delay(TICK_MILLIS)
-            seconds++
-        }
-    }
+    val seconds = recordingSeconds(stage)
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(OpenCallerSpacing.s)) {
         if (stage == RecordStage.DONE) {
             MutedClip(file = file, contentDescription = stringResource(R.string.video_title), modifier = Modifier.weight(1f).fillMaxWidth())
@@ -109,6 +102,20 @@ private fun Recorder(
     }
 }
 
+// Seconds since the recording started, counted while it records.
+@Composable
+private fun recordingSeconds(stage: RecordStage): Int {
+    var seconds by remember { mutableIntStateOf(0) }
+    LaunchedEffect(stage) {
+        seconds = 0
+        while (stage == RecordStage.RECORDING) {
+            delay(TICK_MILLIS)
+            seconds++
+        }
+    }
+    return seconds
+}
+
 @Composable
 private fun RecordButtons(
     stage: RecordStage,
@@ -119,8 +126,14 @@ private fun RecordButtons(
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.s)) {
         when (stage) {
-            RecordStage.PREVIEW, RecordStage.FAILED -> Button(onClick = onStart) { Text(stringResource(R.string.record_start)) }
-            RecordStage.RECORDING -> Button(onClick = onStop) { Text(stringResource(R.string.record_stop)) }
+            RecordStage.PREVIEW, RecordStage.FAILED -> {
+                Button(onClick = onStart) { Text(stringResource(R.string.record_start)) }
+            }
+
+            RecordStage.RECORDING -> {
+                Button(onClick = onStop) { Text(stringResource(R.string.record_stop)) }
+            }
+
             RecordStage.DONE -> {
                 Button(onClick = onUse) { Text(stringResource(R.string.record_upload)) }
                 OutlinedButton(onClick = onAgain) { Text(stringResource(R.string.record_again)) }

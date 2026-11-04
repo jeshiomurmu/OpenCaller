@@ -27,8 +27,8 @@ import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacin
 private const val DISABLED_ALPHA = 0.38f
 
 /**
- * A large round call action (shared by the phone-call and app-call screens) with its label underneath (Answer, Decline, Hang up). The whole column is the touch
- * target, and TalkBack reads the label.
+ * A large round call action (shared by the phone-call and app-call screens) with its label underneath (Answer,
+ * Decline, Hang up). The whole column is the touch target, and TalkBack reads the label.
  */
 @Composable
 fun CallRoundAction(

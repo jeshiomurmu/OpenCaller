@@ -80,7 +80,12 @@ class VoipSettingsViewModel
 
         /** Screen state. */
         val uiState: StateFlow<VoipSettingsUiState> =
-            combine(local, account.signedIn, videos.clipsOnMobileData, flash.recent().map { it.getOrNull().orEmpty() }) { s, signedIn, mobile, recent ->
+            combine(
+                local,
+                account.signedIn,
+                videos.clipsOnMobileData,
+                flash.recent().map { it.getOrNull().orEmpty() },
+            ) { s, signedIn, mobile, recent ->
                 s.copy(signedIn = signedIn, clipsOnMobileData = mobile, recent = recent)
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), VoipSettingsUiState())
 

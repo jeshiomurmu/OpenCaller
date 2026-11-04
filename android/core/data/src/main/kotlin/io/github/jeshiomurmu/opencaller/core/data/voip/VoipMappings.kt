@@ -45,13 +45,18 @@ internal fun RoomTokenDto.toRoom(inviteId: String): AppCallRoom = AppCallRoom(in
 
 /** A received Flash message, or `null` for a kind or sender this app can't show. */
 internal fun FlashDto.toModel(nowMillis: Long): FlashMessage? {
-    val kind = FlashKind.parse(kind) ?: return null
-    val number = phoneNumberOrNull(from) ?: return null
-    return FlashMessage(id, kind, number, name, instantMillis(sentAt, nowMillis), outgoing = false)
+    val kind = FlashKind.parse(kind)
+    val number = phoneNumberOrNull(from)
+    return if (kind != null &&
+        number != null
+    ) {
+        FlashMessage(id, kind, number, name, instantMillis(sentAt, nowMillis), outgoing = false)
+    } else {
+        null
+    }
 }
 
-internal fun FeaturesDto.toModel(): ServerFeatures =
-    ServerFeatures(appCalls, flash, fcm, webPushVapidKey?.takeIf { VAPID_KEY.matches(it) })
+internal fun FeaturesDto.toModel(): ServerFeatures = ServerFeatures(appCalls, flash, fcm, webPushVapidKey?.takeIf { VAPID_KEY.matches(it) })
 
 // What UnifiedPush accepts: a base64url uncompressed P-256 point (87 characters).
 private val VAPID_KEY = Regex("^[A-Za-z0-9_-]{87}$")

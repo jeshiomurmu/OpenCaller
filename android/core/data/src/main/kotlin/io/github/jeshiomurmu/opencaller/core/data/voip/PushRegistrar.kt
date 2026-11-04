@@ -60,8 +60,18 @@ class PushRegistrar
             if (!account.signedIn.first()) return AppResult.Success(Unit)
             val body =
                 when (endpoint) {
-                    is PushEndpoint.Fcm -> PushRegistrationDto(type = "fcm", token = endpoint.token)
-                    is PushEndpoint.WebPush -> PushRegistrationDto("webpush", endpoint = endpoint.url, p256dh = endpoint.p256dh, auth = endpoint.auth)
+                    is PushEndpoint.Fcm -> {
+                        PushRegistrationDto(type = "fcm", token = endpoint.token)
+                    }
+
+                    is PushEndpoint.WebPush -> {
+                        PushRegistrationDto(
+                            "webpush",
+                            endpoint = endpoint.url,
+                            p256dh = endpoint.p256dh,
+                            auth = endpoint.auth,
+                        )
+                    }
                 }
             val result = apiCallNoContent { voipApi.registerPush(body) }
             if (result is AppResult.Failure && result.error !is AppError.Network) Timber.w("Push endpoint refused: %s", result.error)

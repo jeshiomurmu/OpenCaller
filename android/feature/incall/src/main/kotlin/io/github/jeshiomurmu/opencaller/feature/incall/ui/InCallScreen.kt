@@ -1,6 +1,5 @@
 package io.github.jeshiomurmu.opencaller.feature.incall.ui
 
-import java.io.File
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -68,14 +67,13 @@ fun InCallRoute(
         }
     }
     InCallScreen(
-        state = state,
+        state = state.copy(ringingClip = clip),
         nowMillis = now,
         onEvent = viewModel::onEvent,
         onAddCall = callbacks.onAddCall,
         onShowSimNames = { askNames.launch(Manifest.permission.READ_PHONE_NUMBERS) },
         modifier = modifier,
         showKeypadAtStart = showKeypadAtStart,
-        ringingClip = clip,
     )
 }
 
@@ -89,7 +87,6 @@ fun InCallScreen(
     onShowSimNames: () -> Unit,
     modifier: Modifier = Modifier,
     showKeypadAtStart: Boolean = false,
-    ringingClip: File? = null,
 ) {
     var keypadOpen by rememberSaveable { mutableStateOf(showKeypadAtStart) }
     var replying by rememberSaveable { mutableStateOf(false) }
@@ -155,7 +152,7 @@ private fun InCallContent(
             }
 
             ringing != null -> {
-                IncomingCall(view = ringing, nowMillis = nowMillis, onEvent = actions.onEvent, onReply = onReply, clip = ringingClip)
+                IncomingCall(view = ringing, nowMillis = nowMillis, onEvent = actions.onEvent, onReply = onReply, clip = state.ringingClip)
             }
         }
     }

@@ -1,14 +1,11 @@
 package io.github.jeshiomurmu.opencaller.feature.incall.ui
 
-import io.github.jeshiomurmu.opencaller.core.ui.MutedClip
-import java.io.File
-import androidx.compose.foundation.layout.height
-io.github.jeshiomurmu.opencaller.core.ui.CallRoundAction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -27,10 +24,13 @@ import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerShape
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacing
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallCapability
+import io.github.jeshiomurmu.opencaller.core.ui.CallRoundAction
+import io.github.jeshiomurmu.opencaller.core.ui.MutedClip
 import io.github.jeshiomurmu.opencaller.core.ui.SourceChip
 import io.github.jeshiomurmu.opencaller.feature.incall.CallView
 import io.github.jeshiomurmu.opencaller.feature.incall.InCallEvent
 import io.github.jeshiomurmu.opencaller.feature.incall.R
+import java.io.File
 
 /**
  * A ringing call with nothing else in progress: the caller card, then Decline, Message (when the network lets the
@@ -46,14 +46,7 @@ internal fun IncomingCall(
     clip: File? = null,
 ) {
     Column(modifier = modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
-        // The caller's video caller ID, muted (downloaded earlier on Wi-Fi with the lookup bucket; ADR 0007).
-        clip?.let {
-            MutedClip(
-                file = it,
-                contentDescription = stringResource(R.string.incall_video_caller_id),
-                modifier = Modifier.fillMaxWidth().height(OpenCallerSpacing.videoCallerId),
-            )
-        }
+        clip?.let { CallerClip(it) }
         CallHeader(view = view, nowMillis = nowMillis, modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()))
         Row(
             modifier = Modifier.fillMaxWidth().padding(vertical = OpenCallerSpacing.l),
@@ -132,4 +125,14 @@ private fun WaitingCallPreview() {
             WaitingCall(view = InCallSamples.contact, onEvent = {})
         }
     }
+}
+
+// The caller's video caller ID, muted (downloaded earlier on Wi-Fi with the lookup bucket; ADR 0007).
+@Composable
+private fun CallerClip(clip: File) {
+    MutedClip(
+        file = clip,
+        contentDescription = stringResource(R.string.incall_video_caller_id),
+        modifier = Modifier.fillMaxWidth().height(OpenCallerSpacing.videoCallerId),
+    )
 }

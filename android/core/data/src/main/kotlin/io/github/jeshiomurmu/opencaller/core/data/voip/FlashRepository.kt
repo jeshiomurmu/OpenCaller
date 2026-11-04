@@ -70,9 +70,9 @@ class FlashRepository
         private fun FlashMessage.toEntity() = FlashMessageEntity(id, kind.wireName, number.e164, name, atMillis, outgoing)
 
         private fun FlashMessageEntity.toModel(): FlashMessage? {
-            val kind = FlashKind.parse(kind) ?: return null
-            val number = phoneNumberOrNull(e164) ?: return null
-            return FlashMessage(id, kind, number, name, atMillis, outgoing)
+            val kind = FlashKind.parse(kind)
+            val number = phoneNumberOrNull(e164)
+            return if (kind != null && number != null) FlashMessage(id, kind, number, name, atMillis, outgoing) else null
         }
 
         private companion object {

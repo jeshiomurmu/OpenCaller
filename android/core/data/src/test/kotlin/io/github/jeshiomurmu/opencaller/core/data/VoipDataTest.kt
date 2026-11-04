@@ -8,6 +8,7 @@ import io.github.jeshiomurmu.opencaller.core.data.voip.FlashRepository
 import io.github.jeshiomurmu.opencaller.core.data.voip.NotificationRouter
 import io.github.jeshiomurmu.opencaller.core.data.voip.PushRegistrar
 import io.github.jeshiomurmu.opencaller.core.data.voip.VideoClips
+import io.github.jeshiomurmu.opencaller.core.data.voip.VideoIdLookup
 import io.github.jeshiomurmu.opencaller.core.data.voip.VoipPreferences
 import io.github.jeshiomurmu.opencaller.core.database.DatabaseAccess
 import io.github.jeshiomurmu.opencaller.core.model.AppCall
@@ -70,7 +71,8 @@ class VoipDataTest {
         db.close()
     }
 
-    private fun router(calls: Optional<AppCallHandler> = Optional.of(handler)) = NotificationRouter(api, calls, flash, { shown += it }, clock)
+    private fun router(calls: Optional<AppCallHandler> = Optional.of(handler)) =
+        NotificationRouter(api, calls, flash, { shown += it }, clock)
 
     private val itemId = "7b0a0c7e-1f7c-4d73-9d0e-2cbe0e6f6a10"
     private val videoId = "3f2d1c4b-5a69-4e7f-8a9b-0c1d2e3f4a5b"
@@ -88,7 +90,8 @@ class VoipDataTest {
     private fun flashItem(id: String = "f1") =
         jsonResponse(
             200,
-            """{"id":"$itemId","kind":"flash","createdAt":"x","flash":{"id":"$id","kind":"running_late","from":"+12015550123","sentAt":"2026-11-04T10:00:00Z"}}""",
+            """{"id":"$itemId","kind":"flash","createdAt":"x","flash":{"id":"$id","kind":"running_late",""" +
+                """"from":"+12015550123","sentAt":"2026-11-04T10:00:00Z"}}""",
         )
 
     @Test
@@ -156,29 +159,51 @@ class VoipDataTest {
             assertEquals("""{"type":"webpush","endpoint":"https://up.example/1","p256dh":"key","auth":"auth"}""", put.body?.utf8())
         }
 
+    private fun clips(unmetered: () -> Boolean) =
+        VideoClips(
+            createTempDirectory("clips").toFile(),
+            api,
+            preferences,
+            ClipNetwork { mobileData -> mobileData || unmetered() },
+            VideoIdLookup { null },
+            RealDispatchers,
+        )
+
     @Test
     fun clipsDownloadOnWifiOnlyByDefault() =
         runBlocking {
             var unmetered = false
-            val dir = createTempDirectory("clips").toFile()
-            val clips = VideoClips(dir, api, preferences, ClipNetwork { mobileData -> mobileData || unmetered }, clock, DatabaseAccess { db }, RealDispatchers)
+            val clips = clips { unmetered }
             clips.download(listOf(videoId))
             assertEquals(0, server.requestCount)
 
             unmetered = true
-            server.enqueue(jsonResponse(200, """{"links":[{"id":"$videoId","url":"${server.url("/clip")}"},{"id":"../x","url":"x"}],"expiresAt":"x"}"""))
-            server.enqueue(MockResponse.Builder().code(200).body(Buffer().write(ByteArray(1_000) { 7 })).build())
+            server.enqueue(
+                jsonResponse(
+                    200,
+                    """{"links":[{"id":"$videoId","url":"${server.url("/clip")}"},{"id":"../x","url":"x"}],"expiresAt":"x"}""",
+                ),
+            )
+            server.enqueue(
+                MockResponse
+                    .Builder()
+                    .code(200)
+                    .body(Buffer().write(ByteArray(1_000) { 7 }))
+                    .build(),
+            )
             clips.download(listOf(videoId))
             assertEquals(1_000L, clips.clip(videoId)?.length())
             assertNull(clips.clip("../x"))
-            val links = server.takeRequest()
-            assertNull(links.headers["Authorization"])
+            assertNull(server.takeRequest().headers["Authorization"])
             assertEquals(2, server.requestCount) // the bad id was never fetched
+        }
 
+    @Test
+    fun mobileDataCanBeAllowed() =
+        runBlocking {
             preferences.setClipsOnMobileData(true)
-            unmetered = false
             server.enqueue(jsonResponse(200, """{"links":[],"expiresAt":"x"}"""))
-            clips.download(listOf("aaaaaaaa-5a69-4e7f-8a9b-0c1d2e3f4a5b"))
-            assertEquals(3, server.requestCount)
+            clips { false }.download(listOf(videoId))
+            assertEquals(1, server.requestCount)
         }
 }

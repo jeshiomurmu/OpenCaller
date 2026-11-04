@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jeshiomurmu.opencaller.core.common.Clock
+import io.github.jeshiomurmu.opencaller.core.data.voip.CallerClips
 import io.github.jeshiomurmu.opencaller.core.model.CallerInfo
+import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import io.github.jeshiomurmu.opencaller.core.telephony.QuickReplyTemplates
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.AudioRouteType
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallAudio
@@ -18,21 +20,19 @@ import io.github.jeshiomurmu.opencaller.core.telephony.incall.TrackedCall
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.mergeAction
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.swapAction
 import io.github.jeshiomurmu.opencaller.feature.incall.calls.CallerDirectory
-import io.github.jeshiomurmu.opencaller.core.data.voip.CallerClips
-import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import java.io.File
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import java.io.File
 import javax.inject.Inject
 
 /**
@@ -57,6 +57,7 @@ data class CallView(
  * @property merge what Merge does, or `null` to hide it.
  * @property swap what Swap does, or `null` to hide it.
  * @property userReplies the user's own quick replies; empty means the system's (see [repliesFor]).
+ * @property ringingClip the ringing caller's video caller ID, when one is downloaded (see [InCallViewModel.ringingClip]).
  */
 data class InCallUiState(
     val loaded: Boolean = false,
@@ -68,6 +69,7 @@ data class InCallUiState(
     val merge: ConferenceAction? = null,
     val swap: ConferenceAction? = null,
     val userReplies: List<String> = emptyList(),
+    val ringingClip: File? = null,
 ) {
     /** The quick replies offered when declining [call] with a message: the user's own, else the system's. */
     fun repliesFor(call: TrackedCall): List<String> = userReplies.ifEmpty { call.cannedReplies }
@@ -145,6 +147,7 @@ sealed interface InCallEvent {
 
 /** The in-call screen of the default phone app: the calls, their callers, and the commands. */
 @HiltViewModel
+@Suppress("LongParameterList") // Hilt injects what the screen needs: calls, callers, numbers, controls, replies, time, clips.
 class InCallViewModel
     @Inject
     constructor(

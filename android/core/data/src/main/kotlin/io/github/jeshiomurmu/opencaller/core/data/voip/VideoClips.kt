@@ -46,6 +46,24 @@ fun interface CallerClips {
     }
 }
 
+/** The video caller ID a lookup named for a number (cached with the lookup, 24 h). */
+fun interface VideoIdLookup {
+    /** The clip id of [number]'s owner, or `null`. */
+    suspend fun videoIdOf(number: PhoneNumber): String?
+}
+
+/** Reads clip ids from the lookup cache (`number_info`). */
+internal class CachedVideoIds(
+    access: DatabaseAccess,
+    dispatchers: DispatcherProvider,
+    private val clock: Clock,
+) : VideoIdLookup {
+    private val storage = Storage(access, dispatchers)
+
+    override suspend fun videoIdOf(number: PhoneNumber): String? =
+        storage.run { numberInfoDao().videoIdOf(number.e164, clock.nowMillis()) }.getOrNull()
+}
+
 /** Whether the phone is on a network clips may download over now. */
 fun interface ClipNetwork {
     /** True on an unmetered network (Wi-Fi), or on any network when [mobileDataAllowed]. */
@@ -62,25 +80,26 @@ class VideoClips(
     private val api: VoipApi,
     private val preferences: VoipPreferences,
     private val network: ClipNetwork,
-    private val clock: Clock,
-    access: DatabaseAccess,
+    private val videoIds: VideoIdLookup,
     private val dispatchers: DispatcherProvider,
 ) : ClipPrefetch,
     CallerClips {
-    private val storage = Storage(access, dispatchers)
-    private val scope = CoroutineScope(SupervisorJob() + dispatchers.io + CoroutineExceptionHandler { _, e -> Timber.w(e, "Clip download failed") })
+    private val scope =
+        CoroutineScope(SupervisorJob() + dispatchers.io + CoroutineExceptionHandler { _, e -> Timber.w(e, "Clip download failed") })
     private val lock = Mutex()
 
     /** The downloaded clip [videoId], if it is here. */
     fun clip(videoId: String): File? = if (isClipId(videoId)) fileOf(videoId).takeIf { it.isFile && it.length() > 0 } else null
 
-    override suspend fun clipFor(number: PhoneNumber): File? {
-        val id = storage.run { numberInfoDao().videoIdOf(number.e164, clock.nowMillis()) }.getOrNull() ?: return null
-        return clip(id)
-    }
+    override suspend fun clipFor(number: PhoneNumber): File? = videoIds.videoIdOf(number)?.let(::clip)
 
     override fun prefetch(videoIds: Collection<String>) {
-        val wanted = videoIds.filter(::isClipId).distinct().filter { clip(it) == null }.take(MAX_PER_BUCKET)
+        val wanted =
+            videoIds
+                .filter(::isClipId)
+                .distinct()
+                .filter { clip(it) == null }
+                .take(MAX_PER_BUCKET)
         if (wanted.isEmpty()) return
         scope.launch { download(wanted) }
     }

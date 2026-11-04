@@ -39,7 +39,11 @@ class ReachViewModel
     ) : ViewModel() {
         /** What can be offered now. */
         val reachability: StateFlow<Reachability> =
-            availability.reachability.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), Reachability(false, false))
+            availability.reachability.stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+                Reachability(false, false),
+            )
 
         private val mutableOutcome = MutableStateFlow<FlashOutcome?>(null)
 

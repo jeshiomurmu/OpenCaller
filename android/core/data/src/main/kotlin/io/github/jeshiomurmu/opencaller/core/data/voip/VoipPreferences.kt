@@ -76,7 +76,9 @@ class VoipPreferences(
                     it[AUTH] = endpoint.auth
                 }
 
-                null -> Unit
+                null -> {
+                    Unit
+                }
             }
         }
     }

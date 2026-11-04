@@ -133,7 +133,8 @@ class MigrationTest {
                     assertTrue(row.isNull(1))
                 }
                 db.execSQL(
-                    "INSERT INTO flash_message (id, kind, e164, name, atMillis, outgoing) VALUES ('f1', 'call_me', '+12015550123', NULL, 5, 0)",
+                    "INSERT INTO flash_message (id, kind, e164, name, atMillis, outgoing) " +
+                        "VALUES ('f1', 'call_me', '+12015550123', NULL, 5, 0)",
                 )
                 db.prepare("SELECT COUNT(*) FROM flash_message").use { row ->
                     assertTrue(row.step())

@@ -55,10 +55,24 @@ class NotificationRouter
         private suspend fun route(item: NotificationDto) {
             val now = clock.nowMillis()
             when (item.kind) {
-                CALL_INVITE -> item.call?.toModel(now)?.takeIf { !it.isCaller }?.let { call -> calls.ifPresent { it.onInvite(call) } }
-                CALL_UPDATE -> item.call?.toModel(now)?.let { call -> calls.ifPresent { it.onUpdate(call) } }
-                FLASH -> item.flash?.toModel(now)?.let { message -> if (flash.keep(message)) alerts.show(message) }
-                else -> Timber.i("Unknown push item kind %s", item.kind)
+                CALL_INVITE -> {
+                    item.call
+                        ?.toModel(now)
+                        ?.takeIf { !it.isCaller }
+                        ?.let { call -> calls.ifPresent { it.onInvite(call) } }
+                }
+
+                CALL_UPDATE -> {
+                    item.call?.toModel(now)?.let { call -> calls.ifPresent { it.onUpdate(call) } }
+                }
+
+                FLASH -> {
+                    item.flash?.toModel(now)?.let { message -> if (flash.keep(message)) alerts.show(message) }
+                }
+
+                else -> {
+                    Timber.i("Unknown push item kind %s", item.kind)
+                }
             }
         }
 

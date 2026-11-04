@@ -14,6 +14,7 @@ import dagger.hilt.components.SingletonComponent
 import io.github.jeshiomurmu.opencaller.core.common.Clock
 import io.github.jeshiomurmu.opencaller.core.common.DispatcherProvider
 import io.github.jeshiomurmu.opencaller.core.data.voip.AppCallHandler
+import io.github.jeshiomurmu.opencaller.core.data.voip.CachedVideoIds
 import io.github.jeshiomurmu.opencaller.core.data.voip.CallerClips
 import io.github.jeshiomurmu.opencaller.core.data.voip.ClipNetwork
 import io.github.jeshiomurmu.opencaller.core.data.voip.ClipPrefetch
@@ -47,7 +48,8 @@ interface VoipModule {
         @Singleton
         fun voipPreferences(
             @ApplicationContext context: Context,
-        ): VoipPreferences = VoipPreferences(PreferenceDataStoreFactory.create { context.preferencesDataStoreFile(VoipPreferences.FILE_NAME) })
+        ): VoipPreferences =
+            VoipPreferences(PreferenceDataStoreFactory.create { context.preferencesDataStoreFile(VoipPreferences.FILE_NAME) })
 
         /** The clip cache (the cache directory: Android may clear it, and backups leave it out). */
         @Provides
@@ -60,7 +62,15 @@ interface VoipModule {
             clock: Clock,
             access: DatabaseAccess,
             dispatchers: DispatcherProvider,
-        ): VideoClips = VideoClips(File(context.cacheDir, "video-clips"), api, preferences, networkOf(context), clock, access, dispatchers)
+        ): VideoClips =
+            VideoClips(
+                File(context.cacheDir, "video-clips"),
+                api,
+                preferences,
+                networkOf(context),
+                CachedVideoIds(access, dispatchers, clock),
+                dispatchers,
+            )
 
         /** Lookups prefetch clips into the cache. */
         @Provides

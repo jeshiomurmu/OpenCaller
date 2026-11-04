@@ -66,7 +66,11 @@ fun VoipSettingsScreen(
         modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(OpenCallerSpacing.screenPadding),
         verticalArrangement = Arrangement.spacedBy(OpenCallerSpacing.m),
     ) {
-        Text(stringResource(R.string.voip_settings_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
+        Text(
+            stringResource(R.string.voip_settings_title),
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.semantics { heading() },
+        )
         if (!state.signedIn) {
             Text(stringResource(R.string.voip_settings_signed_out))
             return@Column
@@ -119,7 +123,11 @@ private fun MyVideoSection(
     onRecord: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xs)) {
-        Text(stringResource(R.string.video_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+        Text(
+            stringResource(R.string.video_title),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { heading() },
+        )
         Text(stringResource(R.string.video_explanation), style = MaterialTheme.typography.bodySmall)
         state.video?.let { Text(videoStatus(it)) }
         if (state.busy) {
@@ -150,7 +158,11 @@ private fun videoStatus(video: MyVideoCallerId): String =
 @Composable
 private fun RecentFlash(recent: List<FlashMessage>) {
     Column(verticalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xs)) {
-        Text(stringResource(R.string.flash_recent_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+        Text(
+            stringResource(R.string.flash_recent_title),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { heading() },
+        )
         if (recent.isEmpty()) Text(stringResource(R.string.flash_recent_empty), style = MaterialTheme.typography.bodySmall)
         recent.forEach { message ->
             val who = message.name ?: message.number.e164

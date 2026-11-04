@@ -49,7 +49,11 @@ class VoipApiTest {
             respond(204)
             respond(204)
             assertTrue(apiCallNoContent { api.registerPush(PushRegistrationDto(type = "fcm", token = "fcm-token")) } is AppResult.Success)
-            apiCallNoContent { api.registerPush(PushRegistrationDto("webpush", endpoint = "https://up.example/1", p256dh = "k", auth = "a")) }
+            apiCallNoContent {
+                api.registerPush(
+                    PushRegistrationDto("webpush", endpoint = "https://up.example/1", p256dh = "k", auth = "a"),
+                )
+            }
             val fcm = server.takeRequest()
             assertEquals("PUT", fcm.method)
             assertEquals("/v1/push", fcm.url.encodedPath)
@@ -67,7 +71,8 @@ class VoipApiTest {
             respond(
                 200,
                 """{"id":"n1","kind":"call_invite","createdAt":"2026-11-04T10:00:00Z","call":{"inviteId":"i1","state":"ringing",""" +
-                    """"role":"callee","number":"+12015550123","name":"Asha","videoId":"v1","ringUntil":"2026-11-04T10:00:45Z"},"later":1}""",
+                    """"role":"callee","number":"+12015550123","name":"Asha","videoId":"v1",""" +
+                    """"ringUntil":"2026-11-04T10:00:45Z"},"later":1}""",
             )
             val note = (apiCall { api.notification("n1") } as AppResult.Success).value
             assertEquals("/v1/notifications/n1", server.takeRequest().url.encodedPath)
@@ -81,7 +86,8 @@ class VoipApiTest {
         runBlocking {
             respond(
                 200,
-                """{"inviteId":"i1","room":"a_b_n","url":"wss://lk.example","token":"t","tokenExpiresAt":"x","ringUntil":"y","reachedDevices":2}""",
+                """{"inviteId":"i1","room":"a_b_n","url":"wss://lk.example","token":"t",""" +
+                    """"tokenExpiresAt":"x","ringUntil":"y","reachedDevices":2}""",
             )
             respond(200, """{"room":"a_b_n","url":"wss://lk.example","token":"t2","expiresAt":"x"}""")
             respond(200, """{"inviteId":"i1","state":"accepted","role":"callee","number":"+12015550123","ringUntil":"y"}""")
@@ -101,7 +107,10 @@ class VoipApiTest {
             respond(404, """{"type":"urn:opencaller:problem:not_reachable","title":"x","status":404,"code":"not_reachable"}""")
             respond(400, """{"type":"urn:opencaller:problem:invalid_flash","title":"x","status":400,"code":"invalid_flash"}""")
             assertEquals(AppError.NotFound, (apiCall { api.startCall(StartCallDto("+12015550123")) } as AppResult.Failure).error)
-            assertEquals(AppError.Validation("invalid_flash"), (apiCall { api.sendFlash(SendFlashDto("+1", "x")) } as AppResult.Failure).error)
+            assertEquals(
+                AppError.Validation("invalid_flash"),
+                (apiCall { api.sendFlash(SendFlashDto("+1", "x")) } as AppResult.Failure).error,
+            )
         }
 
     @Test
@@ -110,7 +119,13 @@ class VoipApiTest {
             respond(200, """{"links":[{"id":"v1","url":"http://objects/v1"}],"expiresAt":"x"}""")
             respond(200)
             apiCall { api.videoLinks(VideoLinksRequestDto(listOf("v1", "v2"))) }
-            apiCallNoContent { api.uploadVideo(server.url("/put").toString(), "video/mp4", byteArrayOf(1, 2).toRequestBody("video/mp4".toMediaType())) }
+            apiCallNoContent {
+                api.uploadVideo(
+                    server.url("/put").toString(),
+                    "video/mp4",
+                    byteArrayOf(1, 2).toRequestBody("video/mp4".toMediaType()),
+                )
+            }
             val links = server.takeRequest()
             assertNull(links.headers["Authorization"])
             assertEquals("""{"ids":["v1","v2"]}""", links.body?.utf8())
