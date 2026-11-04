@@ -76,9 +76,8 @@ class VoipPreferences(
                     it[AUTH] = endpoint.auth
                 }
 
-                null -> {
-                    Unit
-                }
+                // Forgotten: its keys were removed above.
+                null -> {}
             }
         }
     }
