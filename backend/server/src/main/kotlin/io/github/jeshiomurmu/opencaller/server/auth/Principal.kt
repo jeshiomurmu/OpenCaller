@@ -13,6 +13,10 @@ import java.util.UUID
 /** The signed-in user of an `authenticate(ACCESS_AUTH)` route (the token's `sub`). */
 fun ApplicationCall.userId(): UUID = UUID.fromString(checkNotNull(principal<JWTPrincipal>()).payload.subject)
 
+/** The device of an `authenticate(ACCESS_AUTH)` route (the token's device claim). */
+fun ApplicationCall.deviceId(): UUID =
+    UUID.fromString(checkNotNull(principal<JWTPrincipal>()).payload.getClaim(TokenService.DEVICE_CLAIM).asString())
+
 /**
  * For endpoints where the access token is optional (docs/architecture.md §8): the user if a valid bearer token
  * was sent, `null` if none was sent, and 401 `unauthorized` if one was sent but is invalid or expired (so an app

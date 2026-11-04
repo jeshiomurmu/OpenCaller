@@ -7,6 +7,7 @@ import io.github.jeshiomurmu.opencaller.server.db.NumberReputation
 import io.github.jeshiomurmu.opencaller.server.db.ReviewStatus
 import io.github.jeshiomurmu.opencaller.server.db.UnlistRequests
 import io.github.jeshiomurmu.opencaller.server.db.Users
+import io.github.jeshiomurmu.opencaller.server.db.VideoCallerIds
 import io.github.jeshiomurmu.opencaller.server.db.Visibility
 import io.github.jeshiomurmu.opencaller.server.profile.SupporterTier
 import io.github.jeshiomurmu.opencaller.server.scoring.SpamLabels
@@ -47,9 +48,10 @@ data class NumberInfo(
     val notSpamCount: Int = 0,
     val lineType: String? = null,
     val business: BusinessInfo? = null,
+    val videoId: String? = null,
 ) {
     /** `true` if there is nothing to tell (such numbers are left out of buckets). */
-    val isEmpty: Boolean get() = name == null && spamScore == null && business == null && lineType == null
+    val isEmpty: Boolean get() = name == null && spamScore == null && business == null && lineType == null && videoId == null
 }
 
 /**
@@ -71,6 +73,8 @@ object NumberDirectory {
             Users.visibility,
             Users.deletedAt,
             Users.supporterTier,
+            VideoCallerIds.videoId,
+            VideoCallerIds.hidden,
             Businesses.id,
             Businesses.displayName,
             Businesses.category,
@@ -87,6 +91,7 @@ object NumberDirectory {
         val rows =
             NumberReputation
                 .join(Users, JoinType.LEFT, NumberReputation.e164, Users.e164)
+                .join(VideoCallerIds, JoinType.LEFT, Users.id, VideoCallerIds.userId)
                 .join(BusinessNumbers, JoinType.LEFT, NumberReputation.e164, BusinessNumbers.e164)
                 .join(Businesses, JoinType.LEFT, BusinessNumbers.businessId, Businesses.id)
                 .select(columns)
@@ -126,21 +131,36 @@ object NumberDirectory {
             notSpamCount = notSpam,
             lineType = row[NumberReputation.lineType],
             business = if (listed) business(row) else null,
+            videoId = if (listed) visibleVideo(row, authenticated) else null,
         )
+    }
+
+    // A video caller ID follows the same visibility rule as the name (ADR 0007); a clip hidden after reports is left out.
+    private fun visibleVideo(
+        row: ResultRow,
+        authenticated: Boolean,
+    ): String? {
+        val clip = row.getOrNull(VideoCallerIds.videoId)?.takeIf { row.getOrNull(VideoCallerIds.hidden) == false } ?: return null
+        return clip.toString().takeIf { profileVisible(row, authenticated) }
     }
 
     private fun visibleName(
         row: ResultRow,
         authenticated: Boolean,
     ): String? {
-        if (row.getOrNull(Users.id) == null || row.getOrNull(Users.deletedAt) != null) return null
-        val allowed =
-            when (row.getOrNull(Users.visibility)) {
-                Visibility.EVERYONE -> true
-                Visibility.REGISTERED_ONLY -> authenticated
-                Visibility.NOBODY, null -> false
-            }
-        return if (allowed) row.getOrNull(Users.displayName) else null
+        return if (profileVisible(row, authenticated)) row.getOrNull(Users.displayName) else null
+    }
+
+    private fun profileVisible(
+        row: ResultRow,
+        authenticated: Boolean,
+    ): Boolean {
+        if (row.getOrNull(Users.id) == null || row.getOrNull(Users.deletedAt) != null) return false
+        return when (row.getOrNull(Users.visibility)) {
+            Visibility.EVERYONE -> true
+            Visibility.REGISTERED_ONLY -> authenticated
+            Visibility.NOBODY, null -> false
+        }
     }
 
     private fun business(row: ResultRow): BusinessInfo? =

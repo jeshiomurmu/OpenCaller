@@ -1,12 +1,9 @@
 package io.github.jeshiomurmu.opencaller.server.billing
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
 import io.github.jeshiomurmu.opencaller.server.config.GooglePlayConfig
+import io.github.jeshiomurmu.opencaller.server.google.GoogleApiException
+import io.github.jeshiomurmu.opencaller.server.google.ServiceAccountTokens
 import kotlinx.coroutines.future.await
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -20,7 +17,6 @@ import java.net.http.HttpResponse
 import java.time.Clock
 import java.time.Instant
 import java.time.format.DateTimeParseException
-import java.util.Date
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
@@ -48,9 +44,9 @@ data class PlaySubscription(
 /** Google answered with an error, or couldn't be reached. [status] is the HTTP status if there was one. */
 class PlayApiException(
     message: String,
-    val status: Int? = null,
+    status: Int? = null,
     cause: Throwable? = null,
-) : IOException(message, cause)
+) : GoogleApiException(message, status, cause)
 
 /** The two Play Developer API calls billing needs. */
 interface PlaySubscriptions {
@@ -69,24 +65,14 @@ interface PlaySubscriptions {
  * (`androidpublisher` v3, revision 20261102):
  * `GET androidpublisher/v3/applications/{packageName}/purchases/subscriptionsv2/tokens/{token}` and
  * `POST androidpublisher/v3/applications/{packageName}/purchases/subscriptions/{subscriptionId}/tokens/{token}:acknowledge`,
- * both with the scope `https://www.googleapis.com/auth/androidpublisher`. Access tokens come from the service
- * account's key with the JWT bearer grant (RFC 7523), as Google's `ServiceAccountCredentials` does it: an RS256 JWT
- * with `kid` = the key ID, `iss` = the account's e-mail, `aud` = its `token_uri`, `scope`, `iat` and `exp` (one hour),
- * posted as `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=…`.
+ * both with the scope `https://www.googleapis.com/auth/androidpublisher`, authorized by [ServiceAccountTokens].
  */
 class GooglePlayDeveloperApi(
     private val config: GooglePlayConfig,
     private val clock: Clock,
     private val http: HttpClient = HttpClient.newBuilder().connectTimeout(TIMEOUT.toJavaDuration()).build(),
 ) : PlaySubscriptions {
-    private val algorithm = Algorithm.RSA256(null, config.serviceAccount.privateKey)
-    private val tokenLock = Mutex()
-    private var accessToken: CachedToken? = null
-
-    private class CachedToken(
-        val value: String,
-        val expiresAt: Instant,
-    )
+    private val tokens = ServiceAccountTokens(config.serviceAccount, SCOPE, clock, http)
 
     override suspend fun subscription(purchaseToken: String): PlaySubscription? {
         val uri = URI.create("${apps()}/purchases/subscriptionsv2/tokens/${segment(purchaseToken)}")
@@ -130,44 +116,11 @@ class GooglePlayDeveloperApi(
         }
 
     private suspend fun token(refresh: Boolean): String =
-        tokenLock.withLock {
-            val now = clock.instant()
-            accessToken?.takeIf { !refresh && it.expiresAt.isAfter(now.plusSeconds(TOKEN_MARGIN_SECONDS)) }?.let { return it.value }
-            val fresh = requestToken(now)
-            accessToken = fresh
-            fresh.value
+        try {
+            tokens.token(refresh)
+        } catch (e: GoogleApiException) {
+            throw PlayApiException(e.message ?: "Google token request failed", e.status, e)
         }
-
-    private suspend fun requestToken(now: Instant): CachedToken {
-        val key = config.serviceAccount
-        val assertion =
-            JWT
-                .create()
-                .withKeyId(key.privateKeyId)
-                .withIssuer(key.clientEmail)
-                .withAudience(key.tokenUri)
-                .withClaim("scope", SCOPE)
-                .withIssuedAt(Date.from(now))
-                .withExpiresAt(Date.from(now.plusSeconds(ASSERTION_LIFETIME_SECONDS)))
-                .sign(algorithm)
-        val form = "grant_type=${URLEncoder.encode(GRANT_TYPE, Charsets.UTF_8)}&assertion=${URLEncoder.encode(assertion, Charsets.UTF_8)}"
-        val response =
-            send(
-                HttpRequest
-                    .newBuilder(URI.create(key.tokenUri))
-                    .header("Content-Type", "application/x-www-form-urlencoded")
-                    .header("Accept", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(form)),
-            )
-        if (response.statusCode() !in OK_RANGE) throw failure("token", response)
-        val body =
-            try {
-                json.decodeFromString(TokenBody.serializer(), response.body())
-            } catch (e: SerializationException) {
-                throw PlayApiException("Google's token response is unreadable", response.statusCode(), e)
-            }
-        return CachedToken(body.accessToken, now.plusSeconds(body.expiresIn))
-    }
 
     private fun parseSubscription(body: String): PlaySubscription {
         val dto =
@@ -202,12 +155,6 @@ class GooglePlayDeveloperApi(
         log.warn("Google Play {} failed: HTTP {}", call, response.statusCode())
         return PlayApiException("Google Play $call returned HTTP ${response.statusCode()}", response.statusCode())
     }
-
-    @Serializable
-    private data class TokenBody(
-        @SerialName("access_token") val accessToken: String,
-        @SerialName("expires_in") val expiresIn: Long = DEFAULT_TOKEN_SECONDS,
-    )
 
     @Serializable
     private data class SubscriptionBody(
@@ -248,10 +195,6 @@ class GooglePlayDeveloperApi(
 
     private companion object {
         const val SCOPE = "https://www.googleapis.com/auth/androidpublisher"
-        const val GRANT_TYPE = "urn:ietf:params:oauth:grant-type:jwt-bearer"
-        const val ASSERTION_LIFETIME_SECONDS = 3600L
-        const val DEFAULT_TOKEN_SECONDS = 3600L
-        const val TOKEN_MARGIN_SECONDS = 60L
         const val UNAUTHORIZED = 401
         const val NOT_FOUND = 404
         const val GONE = 410

@@ -30,6 +30,7 @@ data class AppConfig(
     val adminWeb: AdminWebConfig? = null,
     val imports: ImportConfig = ImportConfig(),
     val billing: BillingConfig = BillingConfig(),
+    val voip: VoipConfig = VoipConfig(),
 )
 
 /** Public API port and the internal metrics port. */

@@ -56,6 +56,7 @@ dependencies {
     testImplementation(libs.kotlin.test.junit)
     testImplementation(libs.testcontainers)
     testImplementation(libs.testcontainers.postgresql)
+    testImplementation(libs.tink.apps.webpush)
 }
 
 // backend/server/seed/*.csv is packaged as classpath resources under seed/ (sync/SeedData.kt).
