@@ -120,6 +120,8 @@ class AppCallController
         }
 
         private fun newSession(ui: AppCallUi): AppCallSession {
+            // The session logs each later phase; this is the first one (CONNECTING or RINGING_IN).
+            Timber.i("App call %s", ui.phase)
             mutableState.value = ui
             return AppCallSession(deps, scope, { next -> mutableState.value = next.copy(clipPath = mutableState.value?.clipPath) }, ui)
                 .also { session = it }

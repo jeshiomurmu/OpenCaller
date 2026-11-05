@@ -166,9 +166,12 @@ print(h.get("Content-Encoding"), h.get("TTL"), h.get("Urgency"), h.get("Authoriz
 diagnostics() {
   for device in "$device_a" "$device_b"; do
     adb -s "$device" logcat -d -v threadtime > "$out/logcat-$device.txt" 2> /dev/null || true
-    echo "--- $device: app call, LiveKit, Telecom and crash lines"
-    grep -E 'App call|LiveKit|livekit|Telecom|core-telecom|AndroidRuntime|FATAL|UnifiedPush|Clip|Push' "$out/logcat-$device.txt" |
-      grep -v 'chatty' | tail -n 80 || true
+    echo "--- $device: the app's call lines, LiveKit and crashes"
+    grep -E 'App call|LiveKit|livekit|AndroidRuntime|FATAL|UnifiedPush|Clip|Push|Flash' "$out/logcat-$device.txt" |
+      grep -vE 'chatty| Telecom ' | tail -n 60 || true
+    echo "--- $device: Telecom (last lines)"
+    grep -E ' Telecom ' "$out/logcat-$device.txt" | grep -vE 'CallerInfo|carmode|CarMode|isUserKeyPresent|PhoneAccountRegistrar|\tat ' |
+      tail -n 25 | cut -c1-240 || true
   done
   compose logs --no-color livekit > "$out/livekit.log" 2>&1 || true
   echo "--- LiveKit"
