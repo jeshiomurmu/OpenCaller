@@ -157,9 +157,14 @@ jobs:
           if-no-files-found: ignore
 
   e2e:
-    name: e2e (TC-E2E-001, TC-VOIP emulators)
+    name: e2e API ${{ matrix.api }} (TC-E2E-001, TC-VOIP emulators)
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        # 36: Jetpack Telecom's platform API (Android 14+); 29: its ConnectionService fallback (Android 8–13).
+        api: [29, 36]
     steps:
       - uses: actions/checkout@v7
 
@@ -210,14 +215,14 @@ jobs:
       - name: Device A reports and device B blocks; A calls B over the app, sends a Flash message and a clip
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 36
+          api-level: ${{ matrix.api }}
           target: google_apis
           arch: x86_64
           ram-size: 4096M
           disable-animations: true
           # The runner's defaults without -noaudio: app calls record from the emulated microphone.
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -camera-back none
-          script: scripts/e2e/ci.sh 36 android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/e2e
+          script: scripts/e2e/ci.sh ${{ matrix.api }} android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/e2e
 
       - name: Server logs
         if: always()
@@ -227,7 +232,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: e2e
+          name: e2e-api-${{ matrix.api }}
           path: build/e2e/
           if-no-files-found: ignore
 

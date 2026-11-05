@@ -362,4 +362,11 @@ if [[ "$failures" -gt 0 ]]; then
   exit 1
 fi
 diagnostics > /dev/null
+# Nothing failed; still worth reading: the app's warnings and errors, and LiveKit's.
+for device in "$device_a" "$device_b"; do
+  echo "--- $device: the app's warnings and errors"
+  grep -E ' [WE] OpenCaller: | E AndroidRuntime' "$out/logcat-$device.txt" | sort -u -k5 | tail -n 30 || true
+done
+echo "--- LiveKit warnings and errors"
+grep -E 'WARN|ERROR' "$out/livekit.log" | cut -c1-300 | tail -n 20 || true
 echo "TC-VOIP (emulators): all checks passed"
