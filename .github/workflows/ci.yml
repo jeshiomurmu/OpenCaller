@@ -157,7 +157,7 @@ jobs:
           if-no-files-found: ignore
 
   e2e:
-    name: e2e (TC-E2E-001)
+    name: e2e (TC-E2E-001, TC-VOIP emulators)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -188,6 +188,15 @@ jobs:
               .env.example > .env
           ../../scripts/vapid-keys.sh >> .env
           echo "VAPID_SUBJECT=mailto:ci@example.org" >> .env
+          # The emulators reach the host at 10.0.2.2: LiveKit's signalling and media, and MinIO's pre-signed links.
+          {
+            echo "LIVEKIT_URL=ws://10.0.2.2:7880"
+            echo "LIVEKIT_NODE_IP=10.0.2.2"
+            echo "MINIO_PUBLIC_ENDPOINT=http://10.0.2.2:9000"
+          } >> .env
+
+      - name: Install ffmpeg (test clip for the video caller ID)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
 
       - name: Build and start the stack
         run: GIT_SHA="${GITHUB_SHA::7}" docker compose -f infra/docker/compose.yml up -d --build --wait --wait-timeout 300
@@ -198,7 +207,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Device A reports, the server's jobs run, device B updates its list and blocks
+      - name: Device A reports and device B blocks; A calls B over the app, sends a Flash message and a clip
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 36
@@ -206,6 +215,8 @@ jobs:
           arch: x86_64
           ram-size: 4096M
           disable-animations: true
+          # The runner's defaults without -noaudio: app calls record from the emulated microphone.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -camera-back none
           script: scripts/e2e/ci.sh 36 android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/e2e
 
       - name: Server logs

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# CI wrapper for TC-E2E-001: android-emulator-runner has started device A (emulator-5554); this starts device B
-# (emulator-5556) from the same system image, runs scripts/e2e/report_to_block.sh and stops B again.
+# CI wrapper for TC-E2E-001 and the emulator run of TC-VOIP-001…003: android-emulator-runner has started device A
+# (emulator-5554); this starts device B (emulator-5556) from the same system image, runs
+# scripts/e2e/report_to_block.sh and scripts/e2e/voip.sh, and stops B again. Both emulators have audio (app calls
+# record from the emulated microphone).
 #
 # Usage: scripts/e2e/ci.sh <api-level> <debug-apk> <applicationId> <out-dir>
 set -euo pipefail
@@ -18,7 +20,7 @@ avdmanager="$(find "$sdk/cmdline-tools" -path '*/bin/avdmanager' | sort -V | tai
 [[ -x "$avdmanager" ]] || { echo "::error::avdmanager not found under $sdk/cmdline-tools"; exit 1; }
 echo no | "$avdmanager" create avd --force -n e2e-b -k "$image" > /dev/null
 
-"$sdk/emulator/emulator" -avd e2e-b -port 5556 -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim \
+"$sdk/emulator/emulator" -avd e2e-b -port 5556 -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim \
   -memory 4096 -camera-back none > "$out/emulator-b.log" 2>&1 &
 emulator_pid=$!
 trap 'adb -s "$device_b" emu kill > /dev/null 2>&1 || kill "$emulator_pid" 2> /dev/null || true' EXIT
@@ -36,4 +38,7 @@ for scale in window_animation_scale transition_animation_scale animator_duration
 done
 adb devices
 
-scripts/e2e/report_to_block.sh "$apk" "$app_id" emulator-5554 "$device_b"
+status=0
+scripts/e2e/report_to_block.sh "$apk" "$app_id" emulator-5554 "$device_b" || status=1
+scripts/e2e/voip.sh "$app_id" emulator-5554 "$device_b" "$out" || status=1
+exit "$status"

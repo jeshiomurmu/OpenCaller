@@ -51,9 +51,18 @@ class AppCallController
             scope.launch {
                 val number = call.number ?: return@launch
                 when {
-                    call.state != AppCallState.RINGING || call.ringUntilMillis <= clock.nowMillis() -> Unit
-                    session?.state?.isLive == true -> deps.calls.act(call.inviteId, AppCallAction.DECLINE)
-                    else -> ring(call, number)
+                    call.state != AppCallState.RINGING || call.ringUntilMillis <= clock.nowMillis() -> {
+                        Timber.i("App call invite no longer rings (%s)", call.state)
+                    }
+
+                    session?.state?.isLive == true -> {
+                        Timber.i("App call invite declined: already in a call")
+                        deps.calls.act(call.inviteId, AppCallAction.DECLINE)
+                    }
+
+                    else -> {
+                        ring(call, number)
+                    }
                 }
             }
         }
@@ -104,7 +113,9 @@ class AppCallController
             // The caller's clip, on Wi-Fi unless the user allows mobile data (it may arrive while it rings).
             call.videoId?.let { id ->
                 clips.download(listOf(id))
-                clips.clip(id)?.let { file -> mutableState.value = mutableState.value?.copy(clipPath = file.absolutePath) }
+                val file = clips.clip(id)
+                Timber.i("App call clip %s", if (file == null) "not downloaded" else "shown")
+                file?.let { mutableState.value = mutableState.value?.copy(clipPath = it.absolutePath) }
             }
         }
 
