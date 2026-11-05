@@ -164,7 +164,14 @@ jobs:
       fail-fast: false
       matrix:
         # 36: Jetpack Telecom's platform API (Android 14+); 29: its ConnectionService fallback (Android 8–13).
-        api: [29, 36]
+        # host: how the emulators reach the stack. The API 29 image doesn't pass TCP to the host's 10.0.2.2 (ping
+        # works, connections time out), so there the app uses 127.0.0.1 and adb reverse (scripts/e2e/ci.sh); call
+        # media then takes LiveKit's ICE-over-TCP port, as on networks that block UDP.
+        include:
+          - api: 29
+            host: 127.0.0.1
+          - api: 36
+            host: 10.0.2.2
     steps:
       - uses: actions/checkout@v7
 
@@ -177,7 +184,7 @@ jobs:
 
       - name: Assemble foss debug APK
         working-directory: android
-        run: ./gradlew assembleFossDebug
+        run: ./gradlew assembleFossDebug -Popencaller.debugApiBaseUrl=http://${{ matrix.host }}:8080/
 
       - name: Create .env with throwaway credentials
         working-directory: infra/docker
@@ -193,11 +200,11 @@ jobs:
               .env.example > .env
           ../../scripts/vapid-keys.sh >> .env
           echo "VAPID_SUBJECT=mailto:ci@example.org" >> .env
-          # The emulators reach the host at 10.0.2.2: LiveKit's signalling and media, and MinIO's pre-signed links.
+          # How the emulators reach the host: LiveKit's signalling and media, and MinIO's pre-signed links.
           {
-            echo "LIVEKIT_URL=ws://10.0.2.2:7880"
-            echo "LIVEKIT_NODE_IP=10.0.2.2"
-            echo "MINIO_PUBLIC_ENDPOINT=http://10.0.2.2:9000"
+            echo "LIVEKIT_URL=ws://${{ matrix.host }}:7880"
+            echo "LIVEKIT_NODE_IP=${{ matrix.host }}"
+            echo "MINIO_PUBLIC_ENDPOINT=http://${{ matrix.host }}:9000"
           } >> .env
 
       - name: Install ffmpeg (test clip for the video caller ID)
@@ -222,7 +229,7 @@ jobs:
           disable-animations: true
           # The runner's defaults without -noaudio: app calls record from the emulated microphone.
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -camera-back none
-          script: scripts/e2e/ci.sh ${{ matrix.api }} android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/e2e
+          script: E2E_HOST=${{ matrix.host }} scripts/e2e/ci.sh ${{ matrix.api }} android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/e2e
 
       - name: Server logs
         if: always()

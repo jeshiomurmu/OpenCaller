@@ -15,8 +15,8 @@
 #      A's number rings B as a normal phone call.
 #
 # Usage: scripts/e2e/voip.sh <applicationId> <serial-A> <serial-B> <out-dir>
-# Needs: the stack up as for scripts/e2e/report_to_block.sh, with LIVEKIT_URL=ws://10.0.2.2:7880,
-# LIVEKIT_NODE_IP=10.0.2.2 and MINIO_PUBLIC_ENDPOINT=http://10.0.2.2:9000 (how the emulators reach the host), the app
+# Needs: the stack up as for scripts/e2e/report_to_block.sh, with LIVEKIT_URL, LIVEKIT_NODE_IP and
+# MINIO_PUBLIC_ENDPOINT set to how the emulators reach the host (10.0.2.2, or 127.0.0.1 with adb reverse), the app
 # installed on both emulators (report_to_block.sh does it), ffmpeg and python3 on the host.
 set -euo pipefail
 
@@ -206,8 +206,9 @@ qa_ok "$device_b" push-endpoint --es url "http://$gateway:$sink_port/push/callee
 # B's default network decides whether clips download (Wi-Fi only unless the user allows mobile data).
 connectivity="$(adb -s "$device_b" shell dumpsys connectivity | tr -d '\r')"
 active="$(grep -oE 'Active default network: [0-9]+' <<< "$connectivity" | grep -oE '[0-9]+$' | sed -n 1p)"
-b_network="$(grep -E "NetworkAgentInfo\{.*network\{$active\}" <<< "$connectivity" | grep -oE 'type: (WIFI|MOBILE)' |
-  sed -n 1p | sed 's/type: //' | tr 'A-Z' 'a-z')"
+# The dump differs between versions ("ni{[type: WIFI[]…" on API 29, "ni{WIFI CONNECTED…" on API 36).
+b_network="$(grep -E "NetworkAgentInfo\{.*network\{$active\}" <<< "$connectivity" | grep -oE 'WIFI|MOBILE' |
+  sed -n 1p | tr 'A-Z' 'a-z' || true)"
 [[ -n "$b_network" ]] || b_network=wifi
 echo "A = $device_a ($caller), B = $device_b ($callee, on $b_network); B's push endpoint is the sink at $gateway:$sink_port"
 
