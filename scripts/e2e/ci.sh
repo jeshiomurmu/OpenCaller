@@ -49,6 +49,12 @@ network_report() {
         tr -d '\r' || true
     done
     adb -s "$device" shell dumpsys connectivity 2> /dev/null | tr -d '\r' | grep -E 'Active default network|NetworkAgentInfo\{' | head -n 3 || true
+    echo "--- $device: power and firewall"
+    adb -s "$device" shell dumpsys deviceidle 2> /dev/null | tr -d '\r' | grep -E 'mState=|mLightState=|mScreenOn|mCharging' | head -n 5 || true
+    adb -s "$device" shell dumpsys netpolicy 2> /dev/null | tr -d '\r' | grep -iE 'restrict|power save|device idle' | head -n 8 || true
+    adb -s "$device" root > /dev/null 2>&1 && sleep 2
+    adb -s "$device" shell iptables -S 2> /dev/null | tr -d '\r' | grep -E ' -j (DROP|REJECT)|^-P' | head -n 20 || true
+    adb -s "$device" shell iptables -L -v -n 2> /dev/null | tr -d '\r' | grep -E '^Chain (fw_|bw_|INPUT|OUTPUT)|DROP|REJECT' | grep -vE ' 0 +0 ' | head -n 25 || true
     echo "--- $device: the app's network warnings"
     adb -s "$device" logcat -d -v threadtime 2> /dev/null | tr -d '\r' | grep -E ' [WE] OpenCaller' | grep -A 12 'Request failed' | head -n 40 || true
   done
