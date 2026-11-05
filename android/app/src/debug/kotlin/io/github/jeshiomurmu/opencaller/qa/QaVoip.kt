@@ -54,6 +54,14 @@ class QaVoip
                 "app-call" -> number(intent) { call(it) }
                 "flash" -> number(intent) { sendFlash(it, intent.getStringExtra("kind")) }
                 "flash-count" -> flashCount()
+                else -> clips(cmd, intent)
+            }
+
+        private suspend fun clips(
+            cmd: String?,
+            intent: Intent,
+        ): String? =
+            when (cmd) {
                 "clip-upload" -> intent.getStringExtra("file")?.let { upload(it) } ?: "error file"
                 "clip-status" -> describe(videos.mine()) { "ok video=${it.videoId ?: "none"} job=${it.job} error=${it.error}" }
                 "clips-mobile" -> videos.setClipsOnMobileData(intent.getBooleanExtra("allowed", false)).let { "ok" }
