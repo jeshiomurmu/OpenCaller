@@ -44,7 +44,7 @@ network_report() {
     echo "--- $device: network"
     adb -s "$device" shell ip route 2> /dev/null | tr -d '\r' || true
     adb -s "$device" shell ping -c 1 -W 2 10.0.2.2 2> /dev/null | tr -d '\r' | grep -E 'bytes from|packet loss' || true
-    for target in 10.0.2.2:8080 10.0.2.2:8097 127.0.0.1:8080; do
+    for target in 10.0.2.2:8080 10.0.2.2:8097; do
       adb -s "$device" shell "nc -z -w 3 ${target%:*} ${target#*:} && echo '$target open' || echo '$target not reachable'" 2> /dev/null |
         tr -d '\r' || true
     done
@@ -59,14 +59,6 @@ network_report() {
     adb -s "$device" logcat -d -v threadtime 2> /dev/null | tr -d '\r' | grep -E ' [WE] OpenCaller' | grep -A 12 'Request failed' | head -n 40 || true
   done
 }
-
-# E2E_HOST=127.0.0.1: the app was built to reach the stack on its own loopback (the API 29 image doesn't pass TCP to
-# 10.0.2.2), so adb forwards the API, LiveKit's signalling and ICE-over-TCP ports, and MinIO to the host.
-if [[ "${E2E_HOST:-10.0.2.2}" == 127.0.0.1 ]]; then
-  for device in emulator-5554 "$device_b"; do
-    for port in 8080 7880 7881 9000; do adb -s "$device" reverse "tcp:$port" "tcp:$port" > /dev/null; done
-  done
-fi
 
 status=0
 scripts/e2e/report_to_block.sh "$apk" "$app_id" emulator-5554 "$device_b" || status=1
