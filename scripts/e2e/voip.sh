@@ -203,7 +203,13 @@ foreground "$device_b"
 features="$(qa_ok "$device_b" voip-features)"
 [[ "$features" == "ok appCalls=true flash=true webPush=true" ]] || die "the server doesn't offer app calls: $features"
 qa_ok "$device_b" push-endpoint --es url "http://$gateway:$sink_port/push/callee" > /dev/null
-echo "A = $device_a ($caller), B = $device_b ($callee); B's push endpoint is the sink at $gateway:$sink_port"
+# B's default network decides whether clips download (Wi-Fi only unless the user allows mobile data).
+connectivity="$(adb -s "$device_b" shell dumpsys connectivity | tr -d '\r')"
+active="$(grep -oE 'Active default network: [0-9]+' <<< "$connectivity" | grep -oE '[0-9]+$' | sed -n 1p)"
+b_network="$(grep -E "NetworkAgentInfo\{.*network\{$active\}" <<< "$connectivity" | grep -oE 'type: (WIFI|MOBILE)' |
+  sed -n 1p | sed 's/type: //' | tr 'A-Z' 'a-z')"
+[[ -n "$b_network" ]] || b_network=wifi
+echo "A = $device_a ($caller), B = $device_b ($callee, on $b_network); B's push endpoint is the sink at $gateway:$sink_port"
 
 # --- TC-VOIP-003 (upload): A's clip goes through the real transcoder ---------------------------------------------
 ffmpeg -loglevel error -y -f lavfi -i testsrc=size=640x480:rate=30 -t 4 -pix_fmt yuv420p -c:v libx264 "$out/clip.mp4"
@@ -255,11 +261,18 @@ else
   fail TC-VOIP-001 "Telecom shows no self-managed call on B"
   grep -iE "call|$app_id" <<< "$telecom" | head -n 40 || true
 fi
-if [[ -n "$video" ]]; then
+if [[ -n "$video" && "$b_network" == wifi ]]; then
   if wait_log "$device_b" 'App call clip shown' 15 > /dev/null; then
-    pass TC-VOIP-003 "B shows A's clip while the app call rings"
+    pass TC-VOIP-003 "B shows A's clip while the app call rings (Wi-Fi)"
   else
     fail TC-VOIP-003 "B didn't show A's clip while ringing"
+  fi
+elif [[ -n "$video" ]]; then
+  if wait_log "$device_b" 'App call clip (shown|not downloaded)' 15 > /dev/null &&
+    adb -s "$device_b" logcat -d | grep -q 'App call clip not downloaded'; then
+    pass TC-VOIP-003 "on mobile data B didn't download A's clip (Wi-Fi only by default)"
+  else
+    fail TC-VOIP-003 "on mobile data B downloaded A's clip although clips are Wi-Fi only by default"
   fi
 fi
 
@@ -337,6 +350,7 @@ left="$(sql "select count(*) from flash_messages")"
 
 # --- TC-VOIP-003 (normal call): A's number rings B; the private lookup brings A's clip -----------------------------
 if [[ -n "$video" ]]; then
+  if [[ "$b_network" != wifi ]]; then qa_ok "$device_b" clips-mobile --ez allowed true > /dev/null; fi
   adb -s "$device_b" shell run-as "$app_id" rm -rf cache/video-clips
   adb -s "$device_b" emu gsm call "$caller" > /dev/null
   found=""
@@ -350,7 +364,7 @@ if [[ -n "$video" ]]; then
   sleep 1
   adb -s "$device_b" emu gsm cancel "$caller" > /dev/null || true
   if [[ -n "$found" ]]; then
-    pass TC-VOIP-003 "a normal call from A's number brought A's clip to B through the bucket lookup"
+    pass TC-VOIP-003 "a normal call from A's number brought A's clip to B through the bucket lookup ($b_network)"
   else
     fail TC-VOIP-003 "B didn't fetch A's clip for a normal call from A's number"
   fi

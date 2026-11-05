@@ -51,6 +51,13 @@ network_report() {
   done
 }
 
+# The API 29 image routes through its virtual Wi-Fi by default, where the host (10.0.2.2) answers ping but not TCP
+# (seen in CI: the app's requests and `nc` timed out); its mobile-data link reaches the host as usual.
+if [[ "$api" -lt 30 ]]; then
+  for device in emulator-5554 "$device_b"; do adb -s "$device" shell svc wifi disable; done
+  sleep 5
+fi
+
 status=0
 scripts/e2e/report_to_block.sh "$apk" "$app_id" emulator-5554 "$device_b" || status=1
 scripts/e2e/voip.sh "$app_id" emulator-5554 "$device_b" "$out" || status=1

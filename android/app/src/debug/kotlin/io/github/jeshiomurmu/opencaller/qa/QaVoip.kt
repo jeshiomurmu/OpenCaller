@@ -33,6 +33,7 @@ import javax.inject.Inject
  * - `flash-count`: "ok received=N sent=M", Flash messages kept on this phone.
  * - `clip-upload --es file NAME`: uploads `files/NAME` as this user's video caller ID.
  * - `clip-status`: "ok video=<id|none> job=<state>".
+ * - `clips-mobile --ez allowed B`: whether other people's clips may download on mobile data (default: Wi-Fi only).
  */
 class QaVoip
     @Inject
@@ -55,6 +56,7 @@ class QaVoip
                 "flash-count" -> flashCount()
                 "clip-upload" -> intent.getStringExtra("file")?.let { upload(it) } ?: "error file"
                 "clip-status" -> describe(videos.mine()) { "ok video=${it.videoId ?: "none"} job=${it.job} error=${it.error}" }
+                "clips-mobile" -> videos.setClipsOnMobileData(intent.getBooleanExtra("allowed", false)).let { "ok" }
                 else -> null
             }
 
