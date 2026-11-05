@@ -38,7 +38,21 @@ for scale in window_animation_scale transition_animation_scale animator_duration
 done
 adb devices
 
+# On a failure: can each emulator reach the host, and why did the app's requests fail?
+network_report() {
+  for device in emulator-5554 "$device_b"; do
+    echo "--- $device: network"
+    adb -s "$device" shell ip route 2> /dev/null | tr -d '\r' || true
+    adb -s "$device" shell ping -c 1 -W 2 10.0.2.2 2> /dev/null | tr -d '\r' | grep -E 'bytes from|packet loss' || true
+    adb -s "$device" shell "nc -z -w 3 10.0.2.2 8080 && echo 'port 8080 open' || echo 'port 8080 not reachable'" 2> /dev/null | tr -d '\r' || true
+    adb -s "$device" shell dumpsys connectivity 2> /dev/null | tr -d '\r' | grep -E 'Active default network|NetworkAgentInfo\{' | head -n 3 || true
+    echo "--- $device: the app's network warnings"
+    adb -s "$device" logcat -d -v threadtime 2> /dev/null | tr -d '\r' | grep -E ' [WE] OpenCaller' | grep -A 12 'Request failed' | head -n 40 || true
+  done
+}
+
 status=0
 scripts/e2e/report_to_block.sh "$apk" "$app_id" emulator-5554 "$device_b" || status=1
 scripts/e2e/voip.sh "$app_id" emulator-5554 "$device_b" "$out" || status=1
+if [[ "$status" -ne 0 ]]; then network_report; fi
 exit "$status"
