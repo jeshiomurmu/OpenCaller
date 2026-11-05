@@ -46,7 +46,6 @@ die() {
   diagnostics
   exit 1
 }
-now_ms() { date +%s%3N; }
 compose() { docker compose -f "$compose_file" "$@"; }
 sql() {
   compose exec -T postgres sh -c "psql -tA -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -c \"$1\"" | tr -d '\r' | sed '/^$/d'
@@ -124,7 +123,7 @@ tap() {
 }
 
 tap_retry() {
-  for _ in $(seq 1 20); do
+  for _ in $(seq 1 "${3:-20}"); do
     if tap "$1" "$2"; then return 0; fi
     sleep 1
   done
@@ -167,8 +166,8 @@ diagnostics() {
   for device in "$device_a" "$device_b"; do
     adb -s "$device" logcat -d -v threadtime > "$out/logcat-$device.txt" 2> /dev/null || true
     echo "--- $device: the app's call lines, LiveKit and crashes"
-    grep -E 'App call|LiveKit|livekit|AndroidRuntime|FATAL|UnifiedPush|Clip|Push|Flash' "$out/logcat-$device.txt" |
-      grep -vE 'chatty| Telecom ' | tail -n 60 || true
+    grep -E ' OpenCaller: |LiveKit|livekit|FATAL EXCEPTION| E AndroidRuntime|UnifiedPush' "$out/logcat-$device.txt" |
+      tail -n 60 || true
     echo "--- $device: Telecom (last lines)"
     grep -E ' Telecom ' "$out/logcat-$device.txt" | grep -vE 'CallerInfo|carmode|CarMode|isUserKeyPresent|PhoneAccountRegistrar|\tat ' |
       tail -n 25 | cut -c1-240 || true
@@ -227,10 +226,10 @@ fi
 for device in "$device_a" "$device_b"; do adb -s "$device" logcat -c; done
 foreground "$device_a"
 adb -s "$device_b" shell input keyevent KEYCODE_HOME
-t_dial="$(now_ms)"
 qa_ok "$device_a" app-call --es number "$callee" > /dev/null
 t_out="$(wait_log "$device_a" 'App call (RINGING_OUT|ENDED)' 20)" || die "A's call didn't start"
 if adb -s "$device_a" logcat -d | grep -q 'App call ENDED'; then die "A's call ended at once"; fi
+t_dial="$(log_time "$device_a" 'App call CONNECTING')"
 pass TC-VOIP-001 "A called: invite created and A joined the room in $((t_out - t_dial)) ms"
 screenshot "$device_a" voip-a-ringing-out
 
@@ -238,10 +237,9 @@ push="$(wait_push 1)" || die "the server sent B no push for the invite"
 check_push TC-VOIP-001 "$push" 45 high
 
 # B opens the app (a missed push): the invite comes from GET /v1/notifications.
-t_open="$(now_ms)"
 foreground "$device_b"
-t_ring="$(wait_log "$device_b" 'App call RINGING_IN' 20)" || die "B didn't ring after opening the app"
-pass TC-VOIP-001 "B rang $((t_ring - t_open)) ms after opening the app"
+wait_log "$device_b" 'App call RINGING_IN' 20 > /dev/null || die "B didn't ring after opening the app"
+pass TC-VOIP-001 "B rang after opening the app"
 sleep 2
 screenshot "$device_b" voip-b-ringing
 notifications="$(adb -s "$device_b" shell dumpsys notification --noredact | tr -d '\r')"
@@ -265,15 +263,21 @@ if [[ -n "$video" ]]; then
   fi
 fi
 
-t_answer="$(now_ms)"
-if ! tap_retry "$device_b" Answer; then
-  adb -s "$device_b" shell cmd statusbar expand-notifications || true
-  tap_retry "$device_b" Answer || die "no Answer button on B"
+# The heads-up notification isn't the active window, which is all uiautomator dumps: answer from the shade.
+adb -s "$device_b" shell cmd statusbar expand-notifications
+if ! tap_retry "$device_b" Answer 8; then
+  dump "$device_b" > "$out/b-no-answer.xml" || true
+  echo "B's screen: $(grep -oE '(text|content-desc)="[^"]+"' "$out/b-no-answer.xml" | sort -u | tr '\n' ' ')"
+  die "no Answer button on B"
 fi
-t_active_b="$(wait_log "$device_b" 'App call (ACTIVE|ENDED)' 30)" || true
-t_active_a="$(wait_log "$device_a" 'App call (ACTIVE|ENDED)' 30)" || true
+wait_log "$device_b" 'App call (ACTIVE|ENDED)' 30 > /dev/null || true
+wait_log "$device_a" 'App call (ACTIVE|ENDED)' 30 > /dev/null || true
 if adb -s "$device_b" logcat -d | grep -q 'App call ACTIVE' && adb -s "$device_a" logcat -d | grep -q 'App call ACTIVE'; then
-  pass TC-VOIP-001 "connected: B $((t_active_b - t_answer)) ms and A $((t_active_a - t_answer)) ms after Answer"
+  # Each phone's own clock; A's figure compares the two emulators' clocks (both set from the host).
+  t_answer="$(log_time "$device_b" 'App call ANSWERING')"
+  t_active_b="$(log_time "$device_b" 'App call ACTIVE')"
+  t_active_a="$(log_time "$device_a" 'App call ACTIVE')"
+  pass TC-VOIP-001 "connected: B $((t_active_b - t_answer)) ms and A about $((t_active_a - t_answer)) ms after Answer"
 else
   fail TC-VOIP-001 "the call didn't connect on both phones"
 fi
