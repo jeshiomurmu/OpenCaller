@@ -29,7 +29,7 @@ data class ScamFeedCards(
 /** The scam cards for the Protection tab ([ScamFeedRepository]; a fake in tests). */
 fun interface ScamFeed {
     /** The cards of [country] for a reader of [language], fetched or from the offline copy. */
-    override suspend fun cards(
+    suspend fun cards(
         country: String,
         language: String,
     ): AppResult<ScamFeedCards>
@@ -70,7 +70,7 @@ class ScamFeedRepository(
     private suspend fun save(
         iso: String,
         feed: ScamFeedDto,
-    ) = withContext(dispatchers.io) {
+    ) = withContext<Unit>(dispatchers.io) {
         try {
             cache.directory.mkdirs()
             val file = fileOf(iso)
@@ -111,7 +111,7 @@ class ScamFeedRepository(
             feed: ScamFeedDto,
             language: String,
         ): List<ScamCard> {
-            val cards = feed.cards.map { it.toModel() }
+            val cards = feed.cards.map { it.toScamCard() }
             val reader = baseOf(language)
             val own = cards.filter { baseOf(it.language) == reader }
             return own.ifEmpty { cards.filter { baseOf(it.language) == ENGLISH } }

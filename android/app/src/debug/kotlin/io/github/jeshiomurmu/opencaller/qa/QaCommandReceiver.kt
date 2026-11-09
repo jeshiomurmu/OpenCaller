@@ -41,7 +41,7 @@ import javax.inject.Inject
  * - `role [--es role DIALER|SMS]`: "ok held=true|false" for the call screening role, or the default phone or SMS app
  *   role (`cmd role get-role-holders` doesn't exist on API 29).
  * - Sign-in, reports and the spam-list update for TC-E2E-001: see [QaOnline]. Messages for TC-SMS-001/002: see
- *   [QaMessages]. App calls, Flash messages and video caller IDs: see [QaVoip].
+ *   [QaMessages]. App calls, Flash messages and video caller IDs: see [QaVoip]. Family protection: see [QaFamily].
  */
 @AndroidEntryPoint
 class QaCommandReceiver : BroadcastReceiver() {
@@ -68,6 +68,8 @@ class QaCommandReceiver : BroadcastReceiver() {
     @Inject lateinit var messages: QaMessages
 
     @Inject lateinit var voip: QaVoip
+
+    @Inject lateinit var family: QaFamily
 
     override fun onReceive(
         context: Context,
@@ -116,7 +118,9 @@ class QaCommandReceiver : BroadcastReceiver() {
             }
 
             else -> {
-                online.run(cmd, intent) ?: messages.run(cmd, intent) ?: voip.run(cmd, intent) ?: "error unknown command $cmd"
+                // The commands of the end-to-end tests, grouped by feature.
+                listOf(online::run, messages::run, voip::run, family::run).firstNotNullOfOrNull { it(cmd, intent) }
+                    ?: "error unknown command $cmd"
             }
         }
 

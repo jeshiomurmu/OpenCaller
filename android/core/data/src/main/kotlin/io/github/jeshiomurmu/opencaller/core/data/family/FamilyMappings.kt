@@ -34,7 +34,7 @@ internal fun FamilyDto.toModel(): FamilyGroup =
         mySharing = FamilySharing(otpAlerts = me.shareOtpAlerts, dailyCounts = me.shareDailyCounts),
         consentedAtMillis = millisOf(me.consentedAt),
         members = members.map { it.toModel() },
-        alerts = alerts.mapNotNull { it.toModel() },
+        alerts = alerts.mapNotNull { it.toFamilyAlert() },
     )
 
 internal fun FamilyGroup.toMembership(): FamilyMembership = FamilyMembership(inGroup = true, isAdmin = isAdmin, sharing = mySharing)
@@ -50,7 +50,7 @@ private fun FamilyMemberDto.toModel(): FamilyMember =
     )
 
 /** An alert this app understands, or `null` for a kind a newer server added. */
-internal fun FamilyAlertViewDto.toModel(): FamilyAlert? =
+internal fun FamilyAlertViewDto.toFamilyAlert(): FamilyAlert? =
     FamilyAlertKind.parse(kind)?.let { FamilyAlert(id, memberId, memberLabel, it, millisOf(at)) }
 
 internal fun FamilyInviteDto.toModel(): FamilyInvite = FamilyInvite(code, millisOf(expiresAt))
@@ -58,4 +58,4 @@ internal fun FamilyInviteDto.toModel(): FamilyInvite = FamilyInvite(code, millis
 internal fun FamilyInvitePreviewDto.toModel(code: String): FamilyInvitePreview =
     FamilyInvitePreview(code, groupName, adminLabel, members, maxMembers, millisOf(expiresAt), consentVersion)
 
-internal fun ScamCardDto.toModel(): ScamCard = ScamCard(id, language, title, body, link, millisOf(updatedAt))
+internal fun ScamCardDto.toScamCard(): ScamCard = ScamCard(id, language, title, body, link, millisOf(updatedAt))

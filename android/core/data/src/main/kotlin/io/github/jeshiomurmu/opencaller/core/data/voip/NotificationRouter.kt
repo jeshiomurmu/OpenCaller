@@ -3,7 +3,7 @@ package io.github.jeshiomurmu.opencaller.core.data.voip
 import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.common.Clock
 import io.github.jeshiomurmu.opencaller.core.data.family.FamilyAlertNotices
-import io.github.jeshiomurmu.opencaller.core.data.family.toModel
+import io.github.jeshiomurmu.opencaller.core.data.family.toFamilyAlert
 import io.github.jeshiomurmu.opencaller.core.network.NotificationDto
 import io.github.jeshiomurmu.opencaller.core.network.VoipApi
 import io.github.jeshiomurmu.opencaller.core.network.apiCall
@@ -74,7 +74,7 @@ class NotificationRouter
                 }
 
                 FAMILY_ALERT -> {
-                    item.familyAlert?.toModel()?.let(family::show)
+                    item.familyAlert?.toFamilyAlert()?.let(family::show)
                 }
 
                 else -> {

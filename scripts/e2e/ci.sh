@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# CI wrapper for TC-E2E-001 and the emulator run of TC-VOIP-001…003: android-emulator-runner has started device A
-# (emulator-5554); this starts device B (emulator-5556) from the same system image, runs
-# scripts/e2e/report_to_block.sh and scripts/e2e/voip.sh, and stops B again. Both emulators have audio (app calls
-# record from the emulated microphone).
+# CI wrapper for TC-E2E-001 and the emulator runs of TC-VOIP-001…003 and TC-FAM-001/002: android-emulator-runner
+# has started device A (emulator-5554); this starts device B (emulator-5556) from the same system image, runs
+# scripts/e2e/report_to_block.sh, scripts/e2e/voip.sh and scripts/e2e/family.sh, and stops B again. Both emulators
+# have audio (app calls record from the emulated microphone).
 #
 # Usage: scripts/e2e/ci.sh <api-level> <debug-apk> <applicationId> <out-dir>
 set -euo pipefail
@@ -63,5 +63,6 @@ network_report() {
 status=0
 scripts/e2e/report_to_block.sh "$apk" "$app_id" emulator-5554 "$device_b" || status=1
 scripts/e2e/voip.sh "$app_id" emulator-5554 "$device_b" "$out" || status=1
+scripts/e2e/family.sh "$app_id" emulator-5554 "$device_b" "$out" || status=1
 if [[ "$status" -ne 0 ]]; then network_report; fi
 exit "$status"
