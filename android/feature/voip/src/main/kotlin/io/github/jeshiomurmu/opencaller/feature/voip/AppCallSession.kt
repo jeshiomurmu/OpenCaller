@@ -191,6 +191,8 @@ internal class AppCallSession(
     }
 
     private fun update(next: AppCallUi) {
+        // Phases only (no number or ids): what a device log needs to follow a call, also in the emulator test.
+        if (next.phase != ui.phase) Timber.i("App call %s%s", next.phase, next.end?.let { " ($it)" }.orEmpty())
         ui = next
         publish(next)
     }
