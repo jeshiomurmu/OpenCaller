@@ -189,12 +189,14 @@ Done in code (PR #16, #17); the two-phone exit test is open (`docs/phase.md` →
 
 ## Phase 12 — Family protection, scam feed, business dashboard
 
-- [ ] Family groups, invites, explicit member consent screen
-- [ ] Alerts: OTP-during-call, blocked-scam summary (counts only)
-- [ ] Scam feed cards per country (server-curated)
-- [ ] Business dashboard web (F-BZ-04): verified businesses manage profile and call reasons and see searches, reports and disputes for their numbers (server-side data only; no call-outcome telemetry)
+- [x] Family groups, invites, explicit member consent screen
+- [x] Alerts: OTP-during-call, blocked-scam summary (counts only)
+- [x] Scam feed cards per country (server-curated)
+- [x] Business dashboard web (F-BZ-04): verified businesses manage profile and call reasons and see searches, reports and disputes for their numbers (server-side data only; no call-outcome telemetry)
 
 **Exit:** TC-FAM-* pass. Tag **v1.0.0**: Play production rollout (staged 10% → 100%), F-Droid.
+Done in code (TC-FAM-001/002 pass on the server, in unit tests and on two emulators); v1.0.0 prepared, the tag waits for
+the signing secrets; the store submissions are the owner's.
 
 ## Phase 13 — Recording line, AI assistant, voice scanner
 
