@@ -41,8 +41,8 @@ Phase 9 carry-over: the v0.5.0-beta release (tag `v0.1.0-alpha` on `b623656` and
 
 ## Next step
 
-Phase 12 is done in code on `claude/vibrant-johnson-4pfw6q` (CI green, see Last green CI): server, app, TC-FAM-001/002
-on the emulators, v1.0.0 prepared. Next: the PR into `main` (when the owner asks), then the owner's steps: confirm the
+Phase 12 is done in code: PR #18 merged into `main` as `235ec27` (CI green on its head `5e98786` in both runs). Next, the
+owner's steps: confirm the
 four signing secrets so `v0.1.0-alpha`, `v0.5.0-beta` and `v1.0.0` can be tagged (the tag builds the signed APKs, the
 App Bundle and the GitHub release), the privacy policy URL (issue 110), the Play production rollout
 (`docs/release/play-staged-rollout.md`) and the F-Droid update; and the device steps of `docs/testing.md` → Phase 12
@@ -97,7 +97,7 @@ Phase 3 carry-over: measure the total screening p95 < 50 ms on a physical phone 
 29. **Regex rules on Android.** The platform regex engine (ICU) can't be interrupted, so a runaway pattern keeps one of 4 daemon threads busy until it finishes (bounded by the 16-character input); the editor rejects slow patterns and a pattern that times out twice is skipped.
 30. **"Not spam" from the after-call notification** adds an exact allow rule and queues a NOT_SPAM report. Revisit in Phase 5 once community scores exist (an allow rule also overrides the user's own later block rules for that number).
 31. **Screening log retention** is 90 days, with no "clear history" action yet.
-32. **Emulator memory.** The API 29 image ran `system_server` with a 16 MB heap and died mid-test (run 38891529407; again in run 42628889411 on `de395bb`, an `OutOfMemoryError` in a system config updater, "growth limit 16777216"). `heap-size: 512M` doesn't reach `dalvik.vm.heapsize` on that image, so since 2026-11-09 `scripts/ci/emulator-heap.sh` runs first in the emulator jobs: below 192 MB it sets `dalvik.vm.heapsize=512m` and `heapgrowthlimit=256m` as root and restarts the framework, and it prints the values before and after.
+32. **Emulator memory.** The API 29 image ran `system_server` with a 16 MB heap and died mid-test (run 38891529407; again in run 42628889411 on `de395bb`, an `OutOfMemoryError` in a system config updater, "growth limit 16777216"). `heap-size: 512M` does set `dalvik.vm.heapsize` (576m in run 42647136223), but only after zygote has started, so system_server keeps the image's 16 MB. Since 2026-11-09 `scripts/ci/emulator-heap.sh` runs first in the emulator jobs: on API 29 and lower it restarts the framework once as root (raising `heapsize`/`heapgrowthlimit` where smaller), so system_server starts with the current values; newer images only when they report less than 192 MB. The first version (`5e98786`) checked only the property and skipped the restart.
 
 33. **STIR/SHAKEN (TC-BLK-014)** is read on API 30+ and mapped to the card ("Verified by carrier" / "Possibly spoofed"). The emulator can't sign calls, so it is tested at the mapping level only (`DeviceScreeningTest`); check on a carrier that signs calls.
 34. **First calls.** libphonenumber loads each country's metadata on first use. `ScreeningWarmUp` loads the home country at app start and on a SIM change, but the first call from a rarely seen country can still take tens of ms (about 70 ms observed for a cold country before the warm-up). That stays far inside the 1,500 ms budget. Opening another encrypted database connection costs about 0.5 s (SQLCipher derives the key per connection), so the engine reads its lists one after another; a raw 256-bit key would skip the derivation (changes `core:database`, needs a decision).

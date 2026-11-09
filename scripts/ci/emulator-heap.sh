@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Gives the emulator's Java processes a real heap before the tests (issue 32). The API 29 google_apis image boots with
-# dalvik.vm.heapsize = 16m whatever the AVD's heap-size says; system_server lifts its growth limit, so 16 MB is its
-# whole heap, and it died of OutOfMemoryError mid-test twice (runs 38891529407 and 42628889411, both while a system
-# service read a file into memory), taking the instrumented tests with it.
+# Gives the emulator's Java processes a real heap before the tests (issue 32). On the API 29 google_apis image
+# system_server died of OutOfMemoryError mid-test twice (runs 38891529407 and 42628889411) with "growth limit
+# 16777216", while `getprop dalvik.vm.heapsize` reports the AVD's heap-size (576m in run 42647136223): the emulator
+# sets that property after zygote has started, so system_server keeps the image's 16 MB default.
 #
-# When the limit is below 192 MB this sets dalvik.vm.heapsize = 512m and heapgrowthlimit = 256m as root (the
-# google_apis images allow `adb root`) and restarts the Android framework, so system_server and every app start with
-# the new limit. Images that already have a larger heap are left alone.
+# So on API 29 and lower this restarts the Android framework once (as root; the google_apis images allow
+# `adb root`), and zygote and system_server start again with the current properties. It also raises
+# dalvik.vm.heapsize to 512m and dalvik.vm.heapgrowthlimit to 256m where they are smaller or unset. Newer images are
+# restarted only when they report a heap below 192 MB.
 #
 # Usage: scripts/ci/emulator-heap.sh   (with one emulator attached)
 set -euo pipefail
@@ -18,16 +19,17 @@ megabytes() {
 
 heap="$(adb shell getprop dalvik.vm.heapsize | tr -d '\r')"
 growth="$(adb shell getprop dalvik.vm.heapgrowthlimit | tr -d '\r')"
-echo "Emulator heap before: dalvik.vm.heapsize=${heap:-unset} dalvik.vm.heapgrowthlimit=${growth:-unset}"
-if [[ "$(megabytes "$heap")" -ge 192 ]]; then
+sdk="$(adb shell getprop ro.build.version.sdk | tr -d '\r')"
+echo "Emulator heap before: API $sdk, dalvik.vm.heapsize=${heap:-unset} dalvik.vm.heapgrowthlimit=${growth:-unset}"
+if [[ "$sdk" -gt 29 && "$(megabytes "$heap")" -ge 192 ]]; then
   echo "Heap is large enough; nothing to change"
   exit 0
 fi
 
 adb root > /dev/null
 adb wait-for-device
-adb shell setprop dalvik.vm.heapsize 512m
-adb shell setprop dalvik.vm.heapgrowthlimit 256m
+if [[ "$(megabytes "$heap")" -lt 512 ]]; then adb shell setprop dalvik.vm.heapsize 512m; fi
+if [[ "$(megabytes "$growth")" -lt 256 ]]; then adb shell setprop dalvik.vm.heapgrowthlimit 256m; fi
 # Restart the framework (zygote and system_server) so the new limits apply; boot completes again afterwards.
 adb shell setprop sys.boot_completed 0 || true
 adb shell stop
