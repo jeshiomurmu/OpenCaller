@@ -45,6 +45,7 @@ import io.github.jeshiomurmu.opencaller.feature.contacts.ContactDetailRoute
 import io.github.jeshiomurmu.opencaller.feature.contacts.ContactEditRoute
 import io.github.jeshiomurmu.opencaller.feature.contacts.ContactsListRoute
 import io.github.jeshiomurmu.opencaller.feature.dialer.DialPadRoute
+import io.github.jeshiomurmu.opencaller.feature.family.FamilyRoute
 import io.github.jeshiomurmu.opencaller.feature.profile.AccountRoute
 import io.github.jeshiomurmu.opencaller.feature.profile.SignInRoute
 import io.github.jeshiomurmu.opencaller.feature.search.DisputeRoute
@@ -65,6 +66,7 @@ import io.github.jeshiomurmu.opencaller.navigation.ContactRoute
 import io.github.jeshiomurmu.opencaller.navigation.ContactsRoute
 import io.github.jeshiomurmu.opencaller.navigation.ConversationRoute
 import io.github.jeshiomurmu.opencaller.navigation.DialerRoute
+import io.github.jeshiomurmu.opencaller.navigation.FamilyNavRoute
 import io.github.jeshiomurmu.opencaller.navigation.MeRoute
 import io.github.jeshiomurmu.opencaller.navigation.NEW_CONTACT
 import io.github.jeshiomurmu.opencaller.navigation.NumberProfileRoute
@@ -203,11 +205,13 @@ private fun NavGraphBuilder.protectionRoutes(
             onOpenBlockedLog = { navController.navigate(BlockedCallsRoute) { launchSingleTop = true } },
             onFixContacts = { openPermissions(AccessItem.CONTACTS) },
             reportNumber = reportNumber,
+            onOpenFamily = { navController.navigate(FamilyNavRoute) { launchSingleTop = true } },
         )
         LaunchedEffect(reportNumber) { if (reportNumber != null) onReportShown() }
     }
     composable<BlockingRulesRoute> { RulesRoute() }
     composable<BlockedCallsRoute> { BlockedLogRoute() }
+    composable<FamilyNavRoute> { FamilyRoute(onSignIn = { navController.navigate(AccountSignInRoute) { launchSingleTop = true } }) }
 }
 
 // Sign-in, search and disputes (Phase 5).

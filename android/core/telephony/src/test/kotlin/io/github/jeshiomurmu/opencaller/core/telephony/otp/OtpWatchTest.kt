@@ -1,5 +1,6 @@
 package io.github.jeshiomurmu.opencaller.core.telephony.otp
 
+import io.github.jeshiomurmu.opencaller.core.model.FamilyAlertKind
 import io.github.jeshiomurmu.opencaller.core.model.MessageRisk
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import io.github.jeshiomurmu.opencaller.core.telephony.messaging.RecordingAlarm
@@ -18,16 +19,16 @@ class OtpWatchTest {
     private val alarm = RecordingAlarm()
     private val earlier = mutableListOf<Pair<Long, String>>()
     private val range = PhoneNumber("+15550100777")
+    private val reported = mutableListOf<FamilyAlertKind>()
     private val watch =
-        otpWatch(calls, alarm, clock, recent = { since -> earlier.filter { it.first >= since } }, ranges = {
-            if (it ==
-                range
-            ) {
-                "Example Flash"
-            } else {
-                null
-            }
-        })
+        otpWatch(
+            calls,
+            alarm,
+            clock,
+            recent = { since -> earlier.filter { it.first >= since } },
+            ranges = { if (it == range) "Example Flash" else null },
+            family = { reported += it },
+        )
     private val stranger = PhoneNumber("+15550109999")
 
     private fun conversation(
@@ -44,6 +45,7 @@ class OtpWatchTest {
             conversation("c1", CallParty.CONTACT)
             assertEquals(emptySet<MessageRisk>(), watch.received("thread:1", "Bank"))
             assertTrue(alarm.duringCall.isEmpty())
+            assertTrue(reported.isEmpty()) // no warning, nothing for the family admin either
         }
 
     @Test
@@ -55,6 +57,8 @@ class OtpWatchTest {
             clock.advanceBy(OtpRules.AFTER_CALL_MILLIS)
             assertEquals(setOf(MessageRisk.OTP_DURING_CALL), watch.received("thread:1", "Bank"))
             assertEquals(listOf<Pair<String?, Boolean>>("Bank" to false), alarm.duringCall)
+            // TC-FAM-002: the warning is reported (kind only; the family reporter sends it if the member shares alerts).
+            assertEquals(listOf(FamilyAlertKind.OTP_DURING_CALL), reported)
             clock.advanceBy(1)
             assertEquals(emptySet<MessageRisk>(), watch.received("thread:1", "Bank"))
         }
@@ -79,6 +83,7 @@ class OtpWatchTest {
             assertTrue(OtpRules.isFlashCall(flash))
             watch.callEnded(flash)
             assertEquals(listOf<Pair<String?, Boolean>>("Example Flash" to true), alarm.duringCall)
+            assertEquals(listOf(FamilyAlertKind.OTP_DURING_CALL), reported)
         }
 
     @Test
@@ -103,6 +108,7 @@ class OtpWatchTest {
             earlier += (now - 4 * 60_000L) to "thread:1"
             assertEquals(setOf(MessageRisk.OTP_BURST), watch.received("thread:2", "Shop"))
             assertEquals(listOf(3), alarm.bursts)
+            assertEquals(listOf(FamilyAlertKind.OTP_BURST), reported)
         }
 
     @Test

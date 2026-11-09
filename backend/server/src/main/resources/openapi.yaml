@@ -45,6 +45,12 @@ tags:
     description: Supporter tier, Play purchases and self-hosted mode (docs/prd.md F-UT-08)
   - name: voip
     description: Push endpoints, app calls, Flash messages and video caller ID (ADR 0007)
+  - name: family
+    description: Family groups, consent, alerts and daily counts (docs/prd.md F-PR-14, ADR 0008)
+  - name: scam-feed
+    description: Admin-curated scam cards per country (docs/prd.md F-PR-15)
+  - name: portal
+    description: The business dashboard, server-rendered HTML (docs/prd.md F-BZ-04)
 
 paths:
   /health:
@@ -1351,6 +1357,272 @@ paths:
         "404": { description: "`video_not_found` or `not_found`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
         "429": { $ref: "#/components/responses/RateLimited" }
 
+  /v1/family:
+    post:
+      tags: [family]
+      summary: Create a family group
+      description: The caller becomes its admin. A person is in at most one group.
+      operationId: createFamily
+      security: [{ accessToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateFamilyRequest" }
+      responses:
+        "201": { description: "Created (`Cache-Control: no-store`).", content: { application/json: { schema: { $ref: "#/components/schemas/FamilyView" } } } }
+        "400": { $ref: "#/components/responses/FamilyInvalid" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { description: "`already_in_family`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    get:
+      tags: [family]
+      summary: The caller's group
+      description: |
+        Everyone sees the group, its admin's label and their own membership. Only the admin sees the members, the
+        counts they share (last 7 days) and the alerts (last 30 days).
+      operationId: getFamily
+      security: [{ accessToken: [] }]
+      responses:
+        "200": { description: "The group (`Cache-Control: no-store`).", content: { application/json: { schema: { $ref: "#/components/schemas/FamilyView" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotInFamily" }
+
+  /v1/family/invites:
+    post:
+      tags: [family]
+      summary: A single-use invite code (admin)
+      description: 8 characters, valid 48 hours, works once; the server keeps only its SHA-256. At most 5 open codes, 10 a day.
+      operationId: createFamilyInvite
+      security: [{ accessToken: [] }]
+      responses:
+        "201": { description: "The code (shown once).", content: { application/json: { schema: { $ref: "#/components/schemas/FamilyInvite" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { description: "`family_admin_only`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { $ref: "#/components/responses/NotInFamily" }
+        "409": { description: "`family_full` or `too_many_invites`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /v1/family/invites/{code}:
+    get:
+      tags: [family]
+      summary: What joining with a code means
+      description: For the consent screen; asking changes nothing. 20 codes an hour per user (with joins).
+      operationId: previewFamilyInvite
+      security: [{ accessToken: [] }]
+      parameters:
+        - { name: code, in: path, required: true, schema: { type: string, maxLength: 32 } }
+      responses:
+        "200": { description: "The group and the consent version (`Cache-Control: no-store`).", content: { application/json: { schema: { $ref: "#/components/schemas/FamilyInvitePreview" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: "`invite_not_found`: unknown, used and expired codes answer the same.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /v1/family/join:
+    post:
+      tags: [family]
+      summary: Join a group with consent (TC-FAM-001)
+      description: |
+        Only the joining person can make this request, on their own phone, after the consent screen: `consent` must be
+        true and `consentVersion` the wording the server expects. No endpoint adds someone else.
+      operationId: joinFamily
+      security: [{ accessToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/JoinFamilyRequest" }
+      responses:
+        "200": { description: "Joined (`Cache-Control: no-store`).", content: { application/json: { schema: { $ref: "#/components/schemas/FamilyView" } } } }
+        "400": { description: "`consent_required` or `invalid_request`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: "`invite_not_found`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: "`consent_outdated`, `already_in_family` or `family_full`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /v1/family/me:
+    put:
+      tags: [family]
+      summary: Change your label and what you share
+      description: Turning sharing off deletes the alerts or counts the server holds of you. The admin shares nothing.
+      operationId: updateFamilySharing
+      security: [{ accessToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FamilySharingRequest" }
+      responses:
+        "200": { description: "Updated.", content: { application/json: { schema: { $ref: "#/components/schemas/FamilyView" } } } }
+        "400": { $ref: "#/components/responses/FamilyInvalid" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotInFamily" }
+    delete:
+      tags: [family]
+      summary: Leave the group
+      description: What the server held about you is deleted. The admin leaving ends the group for everyone.
+      operationId: leaveFamily
+      security: [{ accessToken: [] }]
+      responses:
+        "204": { description: Left. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotInFamily" }
+
+  /v1/family/members/{id}:
+    delete:
+      tags: [family]
+      summary: Remove a member (admin)
+      operationId: removeFamilyMember
+      security: [{ accessToken: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/ItemId" }
+      responses:
+        "204": { description: "Removed, with what the server held about them." }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { description: "`family_admin_only`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: "`not_in_family` or `member_not_found`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+
+  /v1/family/alerts:
+    post:
+      tags: [family]
+      summary: Alert the admin (TC-FAM-002)
+      description: |
+        Sent by a member's phone when its OTP guard warns (a code during a call, or a burst of codes), only if the member
+        shares OTP alerts. Only the kind is sent. The admin gets a push carrying a random item id (ADR 0007). 10 an hour.
+      operationId: sendFamilyAlert
+      security: [{ accessToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FamilyAlertRequest" }
+      responses:
+        "201": { description: "Stored and pushed.", content: { application/json: { schema: { $ref: "#/components/schemas/FamilyAlertSent" } } } }
+        "400": { $ref: "#/components/responses/FamilyInvalid" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { description: "`not_shared`: the member doesn't share OTP alerts (or is the admin).", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { $ref: "#/components/responses/NotInFamily" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /v1/family/counts/{day}:
+    put:
+      tags: [family]
+      summary: Your counts for one day
+      description: Calls blocked and messages filtered as spam or scam that day; only if you share daily counts. The day may be from two days ago to tomorrow (UTC). 24 a day.
+      operationId: putFamilyCounts
+      security: [{ accessToken: [] }]
+      parameters:
+        - { name: day, in: path, required: true, schema: { type: string, format: date } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FamilyCountsRequest" }
+      responses:
+        "204": { description: Stored (replaces that day). }
+        "400": { $ref: "#/components/responses/FamilyInvalid" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { description: "`not_shared`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { $ref: "#/components/responses/NotInFamily" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /v1/scam-feed/{iso}:
+    get:
+      tags: [scam-feed]
+      summary: The scam cards of a country
+      description: Published, unexpired cards, newest first, at most 50. No sign-in; the request names only the country.
+      operationId: getScamFeed
+      parameters:
+        - { name: iso, in: path, required: true, schema: { type: string, pattern: "^[A-Za-z]{2}$" } }
+      responses:
+        "200": { description: "The cards (`Cache-Control: public, max-age=3600`).", content: { application/json: { schema: { $ref: "#/components/schemas/ScamFeed" } } } }
+        "400": { description: "`invalid_country`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+
+  /portal:
+    get:
+      tags: [portal]
+      summary: Business dashboard
+      description: |
+        Server-rendered HTML for verified businesses (no JavaScript). Without a session cookie: the sign-in form; with
+        one: the business's numbers, daily counts of explicit searches (without the searcher), spam and not-spam
+        reports for the last 30 days, and its disputes. No call-outcome data exists to show.
+      operationId: portalHome
+      responses:
+        "200": { description: A page., content: { text/html: { schema: { type: string } } } }
+
+  /portal/login:
+    post:
+      tags: [portal]
+      summary: Send a sign-in code
+      description: A code goes by SMS only to a number of an approved business; the page answers the same for any number. 3 an hour per number, 10 per IP.
+      operationId: portalLogin
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: { type: object, required: [e164], properties: { e164: { type: string, maxLength: 64 } } }
+      responses:
+        "200": { description: The code form., content: { text/html: { schema: { type: string } } } }
+        "400": { description: The number form with the problem., content: { text/html: { schema: { type: string } } } }
+        "429": { description: The number form with the problem., content: { text/html: { schema: { type: string } } } }
+
+  /portal/verify:
+    post:
+      tags: [portal]
+      summary: Check the code and sign in
+      description: Sets an HttpOnly, SameSite=Strict session cookie for `/portal` (12 hours; Secure outside development).
+      operationId: portalVerify
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: { type: object, required: [e164, code], properties: { e164: { type: string }, code: { type: string, pattern: "^[0-9]{6}$" } } }
+      responses:
+        "303": { description: "Signed in: to `/portal`." }
+        "400": { description: The code form with the problem., content: { text/html: { schema: { type: string } } } }
+
+  /portal/profile:
+    get:
+      tags: [portal]
+      summary: Website, opening hours and call reasons
+      operationId: portalProfile
+      responses:
+        "200": { description: The form., content: { text/html: { schema: { type: string } } } }
+        "302": { description: "No session: to `/portal`." }
+    post:
+      tags: [portal]
+      summary: Save the profile
+      description: Needs the session's form token (`csrf`). Name, category and logo need a new claim.
+      operationId: portalSaveProfile
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [csrf]
+              properties:
+                csrf: { type: string }
+                website: { type: string, maxLength: 200 }
+                hours: { type: string, maxLength: 200 }
+              additionalProperties: { type: string, description: "`reason:<E.164>`: the call reason for that number." }
+      responses:
+        "303": { description: "Saved: to `/portal/profile?done=saved`." }
+        "400": { description: The form with the problem., content: { text/html: { schema: { type: string } } } }
+        "403": { description: The form token is missing or wrong. }
+
+  /portal/logout:
+    post:
+      tags: [portal]
+      summary: Sign out
+      operationId: portalLogout
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema: { type: object, properties: { csrf: { type: string } } }
+      responses:
+        "303": { description: "Signed out: to `/portal`." }
+        "403": { description: The form token is wrong. }
+
 components:
   securitySchemes:
     accessToken:
@@ -1433,6 +1705,16 @@ components:
           schema: { $ref: "#/components/schemas/Problem" }
     Unauthorized:
       description: "`unauthorized`: missing, invalid or expired access token."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    NotInFamily:
+      description: "`not_in_family`: the caller is in no family group."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    FamilyInvalid:
+      description: "`invalid_request`: a name or label that isn't 1 to 40 characters on one line, an unknown alert kind, a day or count out of range."
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
@@ -2012,10 +2294,147 @@ components:
       required: [id, kind, createdAt]
       properties:
         id: { type: string, format: uuid }
-        kind: { type: string, enum: [call_invite, call_update, flash] }
+        kind: { type: string, enum: [call_invite, call_update, flash, family_alert] }
         createdAt: { type: string, format: date-time }
         call: { $ref: "#/components/schemas/CallInvite" }
         flash: { $ref: "#/components/schemas/Flash" }
+        familyAlert: { $ref: "#/components/schemas/FamilyAlert" }
+
+    CreateFamilyRequest:
+      type: object
+      required: [name, label]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 40 }
+        label: { type: string, minLength: 1, maxLength: 40, description: How members see the admin (e.g. "Mum"). }
+
+    JoinFamilyRequest:
+      type: object
+      required: [code, label, consent, consentVersion, shareOtpAlerts, shareDailyCounts]
+      properties:
+        code: { type: string, description: The invite code (spaces and dashes ignored). }
+        label: { type: string, minLength: 1, maxLength: 40 }
+        consent: { type: boolean, description: Must be true. }
+        consentVersion: { type: integer, description: The consent wording the app showed. }
+        shareOtpAlerts: { type: boolean }
+        shareDailyCounts: { type: boolean }
+
+    FamilySharingRequest:
+      type: object
+      required: [label, shareOtpAlerts, shareDailyCounts]
+      properties:
+        label: { type: string, minLength: 1, maxLength: 40 }
+        shareOtpAlerts: { type: boolean }
+        shareDailyCounts: { type: boolean }
+
+    FamilyAlertRequest:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string, enum: [otp_during_call, otp_burst] }
+
+    FamilyAlertSent:
+      type: object
+      required: [id, reachedDevices]
+      properties:
+        id: { type: string, format: uuid }
+        reachedDevices: { type: integer }
+
+    FamilyCountsRequest:
+      type: object
+      required: [blockedCalls, spamMessages]
+      properties:
+        blockedCalls: { type: integer, minimum: 0, maximum: 10000 }
+        spamMessages: { type: integer, minimum: 0, maximum: 10000 }
+
+    FamilyInvite:
+      type: object
+      required: [code, expiresAt]
+      properties:
+        code: { type: string, pattern: "^[A-HJ-NP-Z2-9]{8}$" }
+        expiresAt: { type: string, format: date-time }
+
+    FamilyInvitePreview:
+      type: object
+      required: [groupName, adminLabel, members, maxMembers, expiresAt, consentVersion]
+      properties:
+        groupName: { type: string }
+        adminLabel: { type: string }
+        members: { type: integer }
+        maxMembers: { type: integer }
+        expiresAt: { type: string, format: date-time }
+        consentVersion: { type: integer }
+
+    FamilyMe:
+      type: object
+      required: [label, role, shareOtpAlerts, shareDailyCounts, consentedAt, consentVersion]
+      properties:
+        label: { type: string }
+        role: { type: string, enum: [admin, member] }
+        shareOtpAlerts: { type: boolean }
+        shareDailyCounts: { type: boolean }
+        consentedAt: { type: string, format: date-time }
+        consentVersion: { type: integer }
+
+    FamilyDayCounts:
+      type: object
+      required: [day, blockedCalls, spamMessages]
+      properties:
+        day: { type: string, format: date }
+        blockedCalls: { type: integer }
+        spamMessages: { type: integer }
+
+    FamilyMember:
+      type: object
+      required: [id, label, role, joinedAt, shareOtpAlerts, shareDailyCounts]
+      properties:
+        id: { type: string, format: uuid }
+        label: { type: string }
+        role: { type: string, enum: [admin, member] }
+        joinedAt: { type: string, format: date-time }
+        shareOtpAlerts: { type: boolean }
+        shareDailyCounts: { type: boolean }
+        days: { type: array, items: { $ref: "#/components/schemas/FamilyDayCounts" } }
+
+    FamilyAlert:
+      type: object
+      required: [id, memberId, memberLabel, kind, at]
+      properties:
+        id: { type: string, format: uuid }
+        memberId: { type: string, format: uuid }
+        memberLabel: { type: string }
+        kind: { type: string, enum: [otp_during_call, otp_burst] }
+        at: { type: string, format: date-time }
+
+    FamilyView:
+      type: object
+      required: [id, name, adminLabel, memberCount, maxMembers, me]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        adminLabel: { type: string }
+        memberCount: { type: integer }
+        maxMembers: { type: integer }
+        me: { $ref: "#/components/schemas/FamilyMe" }
+        members: { type: array, description: Admin only., items: { $ref: "#/components/schemas/FamilyMember" } }
+        alerts: { type: array, description: Admin only (last 30 days)., items: { $ref: "#/components/schemas/FamilyAlert" } }
+
+    ScamCard:
+      type: object
+      required: [id, language, title, body, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        language: { type: string, description: "A language tag such as en, bn or pt-BR." }
+        title: { type: string, maxLength: 80 }
+        body: { type: string, maxLength: 600 }
+        link: { type: string, format: uri }
+        updatedAt: { type: string, format: date-time }
+
+    ScamFeed:
+      type: object
+      required: [country, cards]
+      properties:
+        country: { type: string, pattern: "^[A-Z]{2}$" }
+        cards: { type: array, items: { $ref: "#/components/schemas/ScamCard" } }
 
     StartCallRequest:
       type: object
@@ -2209,3 +2628,15 @@ components:
             - invalid_flash
             - invalid_video
             - video_not_found
+            - not_in_family
+            - family_admin_only
+            - already_in_family
+            - invite_not_found
+            - family_full
+            - too_many_invites
+            - consent_required
+            - consent_outdated
+            - not_shared
+            - member_not_found
+            - invalid_country
+            - not_a_business

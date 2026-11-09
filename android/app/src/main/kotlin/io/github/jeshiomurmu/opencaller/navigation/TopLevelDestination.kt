@@ -156,6 +156,10 @@ data object MessengerSettingsRoute
 @Serializable
 data object BackupSettingsRoute
 
+/** Protection → Family protection (Phase 12). */
+@Serializable
+data object FamilyNavRoute
+
 /** Me → Settings → App calls, Flash and video caller ID (Phase 11). */
 @Serializable
 data object VoipSettingsNavRoute

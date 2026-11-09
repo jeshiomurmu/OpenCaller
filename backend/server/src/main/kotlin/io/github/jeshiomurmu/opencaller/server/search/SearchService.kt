@@ -13,6 +13,7 @@ import io.github.jeshiomurmu.opencaller.server.profile.Visits.ownerOf
 import io.github.jeshiomurmu.opencaller.server.profile.Visits.record
 import io.github.jeshiomurmu.opencaller.server.redis.RateLimit
 import io.github.jeshiomurmu.opencaller.server.redis.RateLimiter
+import io.github.jeshiomurmu.opencaller.server.search.BusinessSearchCounter.countSearch
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.v1.core.eq
 import java.time.Clock
@@ -32,7 +33,8 @@ data class SearchResponse(
  * Explicit search (docs/prd.md F-ID-03, docs/architecture.md §4.6): the user typed the number, so the server sees
  * it. Limited to 50 searches a day per user (docs/rules.md §7) and recorded as a `search` visit of the number's
  * owner ("who searched for me") under the rules of [Visits]. An owner who approved the searcher's contact request
- * shows their name even when their visibility would hide it.
+ * shows their name even when their visibility would hide it. A search of a verified-business number also adds
+ * one to that number's daily count for the business dashboard ([BusinessSearchCounter]), without the searcher.
  */
 class SearchService(
     private val db: ServerDatabase,
@@ -50,7 +52,9 @@ class SearchService(
             db.query {
                 val owner = ownerOf(number.value)
                 val found = infos(NumberReputation.e164 eq number.value, authenticated = true)[number.value] ?: NumberInfo()
-                record(searcherId, owner, VisitKind.SEARCH, OffsetDateTime.now(clock).withOffsetSameInstant(ZoneOffset.UTC))
+                val now = OffsetDateTime.now(clock).withOffsetSameInstant(ZoneOffset.UTC)
+                record(searcherId, owner, VisitKind.SEARCH, now)
+                countSearch(number.value, now.toLocalDate())
                 if (found.name == null && owner?.displayName != null && approvedFor(searcherId, owner)) {
                     found.copy(name = owner.displayName, badge = owner.tier.badge)
                 } else {

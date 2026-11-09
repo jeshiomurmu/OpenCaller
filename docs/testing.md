@@ -308,8 +308,10 @@ app):
 | TC-VOIP-001 | App-to-app call | Wi-Fi ↔ mobile data, setup < 3 s p95, audio both ways | I + U + D — 11: `VoipApiTest` (Testcontainers: invite, the push carries only a random item id, both parties get tokens for the same room named after their sorted IDs plus a nonce, accept/decline/cancel/end by the right party only, missed after 45 s, every unreachable number looks the same, gone endpoints removed, cleanup after a day), `LiveKitTokensTest`, `HttpPushSenderTest` (FCM v1 body; Web Push decrypted with Tink), `WebPushCryptoTest`, `PushEndpointPolicyTest`; compose `scripts/smoke.sh` → App calls (the real LiveKit accepts the server's tokens and refuses a forged one); `VoipApiTest` + `VoipDataTest` (app: endpoints, routing of pushes, push registration), `AppCallUiTest`; e2e job → `scripts/e2e/voip.sh` (two API 36 emulators, the real LiveKit: call screen, Telecom self-managed call, Answer, both in the room with the microphone published, hang-up, invite states; the callee's push recorded by a stand-in Web Push endpoint; connected 2–3.5 s after Answer). Two phones on two networks: device steps below |
 | TC-VOIP-002 | Flash message | Predefined kind arrives as a notification; server copy gone once fetched; no free text | I + R — 11: `FlashApiTest` (Testcontainers: opaque push, fetched once then 404, kinds only, pair limit, expiry), `VoipDataTest` (kept once, shown once), `FlashNotifierTest` (Robolectric); smoke → Flash; e2e job → `scripts/e2e/voip.sh` (notification "On my way", kept once, server copy deleted). On two phones: device steps below |
 | TC-VOIP-003 | Video caller ID | ≤ 10 s, no sound, ≤ 480 px; in buckets as visible as the name; downloaded on Wi-Fi only by default; muted on the in-call screens | I + R + D — 11: `VideoCallerIdTest` (Testcontainers + the real ffmpeg: a 12 s 720p clip with sound comes out ≤ 10.1 s, 480 px, H.264, no audio; old clip kept until the new one is ready; failed transcode; visibility; three reports hide it), smoke → video (the transcoder container), `VoipDataTest` (Wi-Fi only unless allowed, only valid ids, no token on downloads); e2e job → `scripts/e2e/voip.sh` (an uploaded clip through the real transcoder; the callee gets it while the app call rings, and through the bucket lookup when the caller's number rings as a normal call). Recording with the camera and playback on screen: device steps below |
-| TC-FAM-001 | Consent | Member must accept on own device; admin can't add silently | I |
-| TC-FAM-002 | Family alert | Member OTP-during-call → admin notified within 10 s | E2E |
+| TC-FAM-001 | Consent | Member must accept on own device; admin can't add silently | I + U + E2E — 12: `FamilyApiTest` (Testcontainers: no endpoint takes a number or adds anyone; join needs `consent: true` and the current wording version, recorded with the time and the two switches; codes are single use, hashed, 48 h; 5 people at most, one group per person; switching off or leaving deletes what was shared); `FamilyDataTest` (Robolectric: the repository sends nothing without the member's tick); `FamilyViewModelTest`; emulators `scripts/e2e/family.sh` (a join without the tick sends nothing; with it the server row holds consent version 1, the time and A's switches; the code works once) |
+| TC-FAM-002 | Family alert | Member OTP-during-call → admin notified within 10 s | I + U + R + E2E — 12: `FamilyApiTest` (the alert is stored with its kind only and pushed to the admin as an opaque `family_alert` item; members who don't share alerts are refused); `OtpWatchTest` (each guard warning is reported); `FamilyDataTest` (the alert leaves the phone only while the member shares alerts, kind only; an alert older than an hour is dropped; daily counts are yesterday's two numbers); `VoipDataTest` + `FamilyAlertNotifierTest` (the admin's phone shows "Family alert: Mum" with no number); emulators `scripts/e2e/family.sh` (A's warning reaches B's push endpoint within 10 s, B shows the alert; the admin's own warnings go nowhere; counts arrive; leaving deletes them). Real push delivery: device step below |
+| TC-SCAM-001 | Scam feed | Published, unexpired cards of the phone's country in the reader's language (else English), offline copy | I + R — 12: `ScamFeedTest` (drafts and expired cards never served, country-only request, cacheable 1 h, card checks); `AdminWebTest` (drafts until published, CSRF, audit log); `FamilyDataTest` (language choice, offline copy); `ScamFeedViewModelTest` |
+| TC-BIZ-003 | Business dashboard | Verified business signs in by code to its number; edits website, hours and call reasons; sees searches, reports and disputes per day without who made them; no call outcomes | I — 12: `PortalTest` (code only for approved businesses, same page for others; session cookie and CSRF; revoked business loses its session; counts without the searcher, reporters or dispute text); smoke → Business dashboard |
 | TC-REC-001 | Recording beep | Other party hears beep; file on device; server copy deleted ≤ 1 h | D |
 | TC-AST-001 | Assistant | Forwarded unanswered call answered by agent; transcript streams | D |
 | TC-SCAN-001 | Scanner wording | Result phrased as likelihood, never certainty | U |
@@ -369,6 +371,28 @@ account on the phone, a server with `GOOGLE_PLAY_*` and `BILLING_ACCOUNT_SECRET`
    Signal from a number that isn't saved: the caller card shows what the phone knows about the number. From a saved
    contact (the app shows a name): no card. Write each app's version in the table above.
 
+Phase 12 device steps (TC-FAM-001/002, the scam feed, the business dashboard). Two phones signed in with two
+numbers, a server they can reach with a push provider (as for Phase 11):
+
+1. TC-FAM-001: on phone A, Protection → Family protection → Start a group (name, "Rafi") → Make a code. Pass the code
+   on by voice. On phone B, Protection → Family protection → Join a group → the code → Continue. Read the consent
+   screen: both switches are off, "Rafi never sees" lists numbers, messages, contacts, call history and location.
+   Join stays disabled until the box is ticked and a name is entered. Turn on Code warnings and Daily counts, tick,
+   Join. The same code on a third phone says it doesn't work.
+2. TC-FAM-002: on B, start a call with a number that isn't a contact (a third phone) and, during the call, send B a
+   message with a one-time code ("Your code is 482913"). B shows the full-screen warning; within 10 s A shows
+   "Family alert: …" ("A one-time code arrived during a call with a stranger"), with no number or code. Repeat with B
+   offline: A gets it when B is back online (within the hour). On B turn Code warnings off and repeat: A gets nothing.
+3. The next day A's group screen shows B's counts for yesterday (calls blocked, messages filtered). B leaves: A's
+   screen no longer lists B, and the counts and alerts are gone.
+4. Scam feed: in the admin web (Scam feed) add a card for the phones' country in their language and one in English,
+   publish both. Protection tab on a phone: the card in the phone's language; switch the phone's language to one
+   without a card: the English one. Airplane mode, reopen the tab: the saved copy with "Saved copy".
+5. TC-BIZ-003: open `/portal` on the API port in a browser; enter an approved business's number; the code arrives by
+   SMS; the dashboard shows the business, today's search after searching its number from a phone, reports and
+   disputes per day. Change the hours and a call reason; after the next directory update a call from that number
+   shows the new reason. Sign out. Check that the page loads no scripts (browser developer tools).
+
 ## 5. Manual QA checklist (before each release)
 
 1. Fresh install on Android 10, 13, 16 emulators and one physical phone (dual SIM preferred).
@@ -381,6 +405,12 @@ account on the phone, a server with `GOOGLE_PLAY_*` and `BILLING_ACCOUNT_SECRET`
 8. Font scale 200%: no clipped text on 10 key screens.
 9. Upgrade test from previous release (DB migration, settings kept).
 10. Network capture during calls/SMS: verify no contact, call-log or SMS body data leaves the device.
+11. Family protection (Phase 12): a member's phone sends only an alert's kind and two daily counts, and only what
+    the member switched on (network capture on the member's phone during an OTP warning and the daily worker); a
+    join without the consent tick sends nothing; leaving deletes the member's data on the server.
+12. Scam feed: the Protection tab's request names only the country (`GET /v1/scam-feed/{iso}`, no token).
+13. Business dashboard: `/portal` works without JavaScript, sets an HttpOnly, SameSite=Strict cookie limited to
+    `/portal`, and a forged form (wrong CSRF token) is refused.
 
 ## 6. Bug log
 

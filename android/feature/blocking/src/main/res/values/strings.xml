@@ -43,6 +43,11 @@
     <string name="blocking_rules">Your rules</string>
     <string name="blocking_rules_summary">Block, silence or always allow numbers</string>
     <string name="blocking_log">Blocked calls</string>
+    <string name="blocking_family">Family protection</string>
+    <string name="blocking_family_summary">Let someone you trust know when OpenCaller protects you, or look after a family member</string>
+    <string name="scam_feed_title">Scams going around</string>
+    <string name="scam_feed_offline">Saved copy: you seem to be offline.</string>
+    <string name="scam_feed_more">Learn more</string>
     <string name="blocking_log_summary">See blocked calls and undo a block</string>
 
     <string name="report_done">Reported %1$s</string>

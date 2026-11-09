@@ -178,21 +178,25 @@ Done in two parts: 7a (default SMS app: the four role components, provider stora
 
 ## Phase 11 — VoIP, Flash, video caller ID
 
-- [ ] LiveKit server + TURN in compose; `/v1/voip/token`
-- [ ] App-to-app calls with LiveKit SDK + Jetpack Telecom (`core-telecom`) integration; push-to-ring via FCM/UnifiedPush
-- [ ] Flash messages
-- [ ] Video caller ID upload (≤ 10 s, transcoded server-side) and playback in in-call UI
+- [x] LiveKit server + TURN in compose; `/v1/voip/token`
+- [x] App-to-app calls with LiveKit SDK + Jetpack Telecom (`core-telecom`) integration; push-to-ring via FCM/UnifiedPush
+- [x] Flash messages
+- [x] Video caller ID upload (≤ 10 s, transcoded server-side) and playback in in-call UI
+
+Done in code (PR #16, #17); the two-phone exit test is open (`docs/phase.md` → Phase 11 carry-over).
 
 **Exit:** TC-VOIP-* pass across two networks (Wi-Fi ↔ mobile data); call setup < 3 s p95.
 
 ## Phase 12 — Family protection, scam feed, business dashboard
 
-- [ ] Family groups, invites, explicit member consent screen
-- [ ] Alerts: OTP-during-call, blocked-scam summary (counts only)
-- [ ] Scam feed cards per country (server-curated)
-- [ ] Business dashboard web (F-BZ-04): verified businesses manage profile and call reasons and see searches, reports and disputes for their numbers (server-side data only; no call-outcome telemetry)
+- [x] Family groups, invites, explicit member consent screen
+- [x] Alerts: OTP-during-call, blocked-scam summary (counts only)
+- [x] Scam feed cards per country (server-curated)
+- [x] Business dashboard web (F-BZ-04): verified businesses manage profile and call reasons and see searches, reports and disputes for their numbers (server-side data only; no call-outcome telemetry)
 
 **Exit:** TC-FAM-* pass. Tag **v1.0.0**: Play production rollout (staged 10% → 100%), F-Droid.
+Done in code (TC-FAM-001/002 pass on the server, in unit tests and on two emulators); v1.0.0 prepared, the tag waits for
+the signing secrets; the store submissions are the owner's.
 
 ## Phase 13 — Recording line, AI assistant, voice scanner
 

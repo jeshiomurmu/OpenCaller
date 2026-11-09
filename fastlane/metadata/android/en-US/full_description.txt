@@ -20,6 +20,14 @@ OpenCaller is an open-source caller ID, spam blocker, phone app and SMS app. It 
 * If a code arrives while a stranger is on the phone with you, OpenCaller warns you not to share it.
 * Links that imitate well-known brands get a warning.
 
+<b>Family protection</b>
+* Start a group of up to 5 people and invite them with a code. Nobody can be added without their own consent on their own phone.
+* Each member chooses what their admin sees: a message when a one-time code arrives during a call with a stranger, and once a day how many calls and spam messages OpenCaller stopped. Never who called or texted, never numbers or messages.
+* Scam alerts: current scams in your country, written by OpenCaller's editors, in the Protection tab.
+
+<b>Calls and messages between OpenCaller users</b>
+* Flash messages ("Call me", "Running late") and a short video caller ID, both optional. App-to-app calls over the internet are in the GitHub and Google Play builds, not in this one (they need prebuilt calling libraries).
+
 <b>Privacy</b>
 * No ads, no trackers, no analytics.
 * Signing in is optional. Without an account, blocking works with your own rules.
@@ -27,7 +35,7 @@ OpenCaller is an open-source caller ID, spam blocker, phone app and SMS app. It 
 * A report you choose to send contains the reported number, a label and your optional comment, nothing about your contacts.
 
 <b>Businesses</b>
-Businesses can claim their number by proving they control it and sending documents for review.
+Businesses can claim their number by proving they control it and sending documents for review. Verified businesses get a web dashboard to keep their hours and call reasons up to date and see how often their numbers are searched and reported, never who searched or reported.
 
 This build has no Google services. Online features need an OpenCaller server; without one, blocking, the dialer and messages work on the phone.
 

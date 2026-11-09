@@ -1,4 +1,4 @@
-# Play Console: Data safety (v0.5.0-beta, play flavor)
+# Play Console: Data safety (v1.0.0, play flavor)
 
 Fill the form for the build you upload. The release workflow builds with a server only when the
 `OPENCALLER_API_BASE_URL` secret is set.
@@ -37,6 +37,8 @@ app downloads public lists.
 | App activity → In-app search history | Yes | Optional | App functionality | Numbers the user searches for. A search is shown to the searched number's owner (supporters) unless the user is incognito; kept 90 days. |
 | App activity → Other user-generated content | Yes | Optional | App functionality; Fraud prevention, security and compliance | Spam reports (number, label, category, optional comment), disputes, contact requests. |
 | App activity → Other actions | Yes | Optional | App functionality | Profile views (who viewed which profile, unless incognito); kept 90 days. |
+| Personal info → Other info | Yes | Optional (family protection) | App functionality | The name a family group's members know each other by ("Mum") and the group's name; who is in which group, when each member consented and which wording they saw. |
+| App activity → Other actions (family) | Yes | Optional (family protection, only what the member switches on) | App functionality | A family alert's kind ("code during a call", "many codes") and time, kept 30 days; once a day, two counts (calls blocked, messages filtered as spam), kept 8 days. Shown only to the group's admin; switching off or leaving deletes them. Never numbers, names of callers, message text, contacts or location. |
 | Device or other IDs | Yes | Optional (with sign-in) | Account management; Fraud prevention, security and compliance; App functionality | A server-generated device ID tied to the session's refresh tokens; the device's Firebase Cloud Messaging token, to deliver call and Flash pushes (each carries only a random id). No hardware IDs, no advertising ID. |
 | Financial info → Purchase history | Yes | Optional (play build, supporters only) | App functionality; Account management | The supporter subscription: Google Play's purchase token, base plan, state and paid-until date, checked with Google to unlock supporter features. No card or payment details (Google Play handles payment). |
 
@@ -64,5 +66,8 @@ Explain if asked:
   (implementation plan Phase 15: privacy policy and terms); `docs/phase.md` lists it as an open issue.
 - Since Phase 11 the play build includes Firebase Cloud Messaging (only when built with `opencaller.firebase.*`):
   the FCM token is in *Device or other IDs* above. The Firelog telemetry backend is excluded from the build.
+- Since Phase 12 (v1.0.0): family protection (the two rows above, collected only from members who switch them on)
+  and the scam feed (a public download that names only the country). Searches of verified-business numbers are also
+  counted per number and day for the business's dashboard, without the searcher (not personal data).
 - Microphone and camera: the microphone only during an app call the user starts or answers; the camera only while
   the user records their video caller ID.

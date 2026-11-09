@@ -55,9 +55,12 @@ fun BlockingRoute(
     onFixContacts: () -> Unit,
     modifier: Modifier = Modifier,
     reportNumber: String? = null,
+    onOpenFamily: (() -> Unit)? = null,
     viewModel: BlockingSettingsViewModel = hiltViewModel(),
+    scamFeedViewModel: ScamFeedViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val scamFeed = scamFeedState(scamFeedViewModel)
     LaunchedEffect(reportNumber) { reportNumber?.let(viewModel::showReport) }
     LifecycleResumeEffect(Unit) {
         viewModel.onEvent(BlockingEvent.Resumed)
@@ -78,6 +81,8 @@ fun BlockingRoute(
             onOpenRules = onOpenRules,
             onOpenBlockedLog = onOpenBlockedLog,
             onFixContacts = onFixContacts,
+            onOpenFamily = onOpenFamily,
+            scamFeed = scamFeed,
         )
         SnackbarHost(hostState = snackbar, modifier = Modifier.align(Alignment.BottomCenter))
     }
@@ -111,7 +116,10 @@ private fun messageText(message: BlockingMessage): String =
         }
     }
 
-/** Blocking settings: toggles, the spam threshold, allowed countries and links to the rules and the blocked log. */
+/**
+ * The Protection tab: toggles, the spam threshold, allowed countries, links to the rules, the blocked log and family
+ * protection, and the scam cards of the user's country.
+ */
 @Composable
 fun BlockingScreen(
     state: BlockingUiState,
@@ -120,6 +128,8 @@ fun BlockingScreen(
     onOpenBlockedLog: () -> Unit,
     onFixContacts: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenFamily: (() -> Unit)? = null,
+    scamFeed: ScamFeedUiState = ScamFeedUiState(),
 ) {
     Column(modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = OpenCallerSpacing.m)) {
         Title(stringResource(R.string.blocking_title))
@@ -132,6 +142,8 @@ fun BlockingScreen(
         }
         LinkRow(stringResource(R.string.blocking_rules), stringResource(R.string.blocking_rules_summary), onOpenRules)
         LinkRow(stringResource(R.string.blocking_log), stringResource(R.string.blocking_log_summary), onOpenBlockedLog)
+        onOpenFamily?.let { LinkRow(stringResource(R.string.blocking_family), stringResource(R.string.blocking_family_summary), it) }
+        ScamFeedSection(scamFeed)
         CallToggles(prefs = state.preferences, homeRegion = state.homeRegion, onEvent = onEvent)
         ThresholdPicker(selected = state.preferences.spamThreshold, onEvent = onEvent)
         SpamListSection(status = state.spamList, onMobileData = state.preferences.listUpdatesOnMobileData, onEvent = onEvent)

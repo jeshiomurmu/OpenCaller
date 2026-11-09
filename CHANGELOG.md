@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-09
+
+First stable release. Builds without a server work as before: blocking, the dialer and messages on the phone.
+
+### Added
+
+- Family protection (Phase 12, free for everyone signed in): start a group of up to 5 from Protection → Family
+  protection and pass on a one-time code (8 characters, 48 hours). A member joins only from their own phone, after a
+  consent screen that says in plain words what the admin will see and what they never see. Each member chooses:
+  code warnings (the admin gets "Family alert: …" when a one-time code arrives during a call with a stranger, or
+  many codes arrive at once) and daily counts (how many calls were blocked and messages filtered as spam that day;
+  the admin sees the last 7 days). No numbers, names, message text, contacts, call history or location are sent.
+  Members can switch either off or leave at any time, which deletes what the server kept; the admin can remove a
+  member or end the group.
+- Scam alerts (Phase 12): cards about current scams in the phone's country, written in the server's admin web, in the
+  Protection tab, in the reader's language when there is a card in it, else English; kept for offline use.
+- Business dashboard (Phase 12): verified businesses sign in at `/portal` on the server with a code sent to their
+  number, keep their website, opening hours and call reasons up to date, and see per day how often their numbers were
+  searched (never by whom), reported as spam or not spam, and their disputes. No JavaScript; OpenCaller never learns
+  whether people answered or declined a call.
+- App-to-app calls, Flash messages and video caller ID (Phase 11): call another OpenCaller user over the internet
+  (LiveKit, through the system's call handling; not in the F-Droid build), send one of six predefined Flash messages,
+  and record a 10-second video caller ID without sound that others see when you call, downloaded on Wi-Fi only by
+  default. Pushes (Firebase Cloud Messaging in play, UnifiedPush in foss) carry only a random id.
+- Supporter tier (Phase 10): Supporter, Gold and Family plans through Google Play (play build), or everything
+  unlocked on a self-hosted server; the extended spam list, Gold themes, Ghost Call (a fake incoming call on a timer),
+  Announce Caller (the caller's name spoken over the ringtone), caller ID for WhatsApp, Telegram and Signal calls
+  (from their notifications, on the phone only) and encrypted backups to a file or to the user's own Google Drive
+  app folder.
+- Server: family groups, invites, alerts and daily counts (`/v1/family…`), the scam feed (`/v1/scam-feed/{iso}`) and
+  its admin pages with an audit log, search counts for verified-business numbers (90 days), the business dashboard,
+  an hourly expiry job; push endpoints and items, app-call invites and LiveKit tokens, Flash messages, the video
+  transcoder; Play purchase verification and entitlements; ADRs 0006–0008.
+
+### Changed
+
+- The OTP guard tells family protection when it warned the user; the warning itself stays on the phone.
+- The Protection tab links to family protection and shows scam alerts.
+
 ## [0.5.0-beta] - 2026-11-03
 
 First beta. Like the alpha, the release build has a server only when the release workflow is given one; without it,
@@ -180,6 +219,7 @@ search and spam-list updates say "Not connected to a server".
 - `infra/docker/minio/Dockerfile`: Chainguard MinIO image plus a static BusyBox for the compose healthcheck.
 - `LICENSE` (GPL-3.0), `CHANGELOG.md` and `NOTICE.md`.
 
-[Unreleased]: https://github.com/jeshiomurmu/OpenCaller/compare/v0.5.0-beta...HEAD
+[Unreleased]: https://github.com/jeshiomurmu/OpenCaller/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/jeshiomurmu/OpenCaller/compare/v0.5.0-beta...v1.0.0
 [0.5.0-beta]: https://github.com/jeshiomurmu/OpenCaller/compare/v0.1.0-alpha...v0.5.0-beta
 [0.1.0-alpha]: https://github.com/jeshiomurmu/OpenCaller/releases/tag/v0.1.0-alpha

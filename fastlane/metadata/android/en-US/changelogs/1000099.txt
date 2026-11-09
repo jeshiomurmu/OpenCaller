@@ -1,0 +1,6 @@
+First stable release.
+* Family protection: a group of up to 5. Members choose to let their admin know when a scammer may be asking for a code during a call, and how many calls and spam messages were stopped each day. Never numbers or messages.
+* Scam alerts for your country in the Protection tab.
+* App-to-app calls, Flash messages and video caller ID.
+* Supporter tier, Ghost Call, Announce Caller, encrypted backups.
+* Business dashboard for verified businesses.
