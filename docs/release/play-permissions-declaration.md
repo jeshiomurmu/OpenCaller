@@ -1,4 +1,4 @@
-# Play Console: SMS and Call Log permissions declaration (v0.5.0-beta)
+# Play Console: SMS and Call Log permissions declaration (v1.0.0)
 
 Play Console → App content → Sensitive app permissions → **SMS and Call Log permissions**. The play build declares
 these restricted permissions (merged manifest):

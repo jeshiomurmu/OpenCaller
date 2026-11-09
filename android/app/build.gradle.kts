@@ -36,8 +36,8 @@ android {
         applicationId = "io.github.jeshiomurmu.opencaller"
         // versionCode = MAJOR * 1_000_000 + MINOR * 10_000 + PATCH * 100 + stage, where stage is 10 + n for alpha.n,
         // 40 + n for beta.n, 70 + n for rc.n and 99 for the final release (0.1.0-alpha → 10010, 0.1.0 → 10099).
-        versionCode = 50040
-        versionName = "0.5.0-beta"
+        versionCode = 1000099
+        versionName = "1.0.0"
 
         buildConfigField("String", "DONATION_URL", quoted(donationUrl.get()))
 
