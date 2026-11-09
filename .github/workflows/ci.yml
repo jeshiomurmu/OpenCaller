@@ -133,11 +133,13 @@ jobs:
           api-level: ${{ matrix.api-level }}
           target: google_apis
           arch: x86_64
-          # system_server ran out of its 16 MB heap on the API 29 image (DeadSystemException mid-test, run 38891529407).
+          # system_server ran out of its 16 MB heap on the API 29 image (DeadSystemException mid-test, runs 38891529407
+          # and 42628889411): heap-size doesn't reach dalvik.vm.heapsize there, so emulator-heap.sh sets it (issue 32).
           ram-size: 4096M
           heap-size: 512M
           disable-animations: true
           script: |
+            scripts/ci/emulator-heap.sh
             cd android && ./gradlew --continue :core:database:connectedDebugAndroidTest :app:connectedFossDebugAndroidTest || { find core/database/build/outputs/androidTest-results app/build/outputs/androidTest-results -name '*.txt' -exec cat {} +; adb logcat -d -b crash; adb logcat -d | grep -iE 'opencaller|AndroidRuntime|RoleController|Killing' | tail -n 400; echo '== Test reports (last, so they stay in the log tail)'; find core/database/build/outputs/androidTest-results app/build/outputs/androidTest-results -name '*.xml' -exec cat {} +; exit 1; }
             scripts/ci/emulator-smoke.sh android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/emulator/api-${{ matrix.api-level }}
             scripts/qa/blocking.sh android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/emulator/api-${{ matrix.api-level }}/blocking || { adb logcat -d | grep -iE 'opencaller|Telecom|CallScreen|AndroidRuntime' | tail -n 400; exit 1; }
