@@ -25,6 +25,13 @@ interface ScreeningEventDao {
     @Query("SELECT * FROM screening_event WHERE decision IN ('BLOCK', 'SILENCE') ORDER BY at DESC, id DESC LIMIT :limit")
     fun observeBlocked(limit: Int): Flow<List<ScreeningEventEntity>>
 
+    /** How many calls were blocked or silenced from [fromMillis] (inclusive) to [toMillis] (family daily counts). */
+    @Query("SELECT COUNT(*) FROM screening_event WHERE decision IN ('BLOCK', 'SILENCE') AND at >= :fromMillis AND at < :toMillis")
+    suspend fun countBlocked(
+        fromMillis: Long,
+        toMillis: Long,
+    ): Int
+
     /** The event with [id], or `null`. */
     @Query("SELECT * FROM screening_event WHERE id = :id")
     suspend fun find(id: Long): ScreeningEventEntity?

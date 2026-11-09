@@ -84,6 +84,9 @@ class OpenCallerNetwork(
     /** Push endpoints, notifications, app calls, Flash messages and video caller ID (Phase 11). */
     val voipApi: VoipApi = retrofit(authed).create(VoipApi::class.java)
 
+    /** Family protection and the scam feed (Phase 12). */
+    val familyApi: FamilyApi = retrofit(authed).create(FamilyApi::class.java)
+
     /** The live lookup, cut off after the lookup timeout so a slow server never holds up a call. */
     val lookupApi: LookupApi =
         retrofit(

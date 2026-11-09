@@ -7,6 +7,7 @@ import io.github.jeshiomurmu.opencaller.server.registry.ImportRunLog
 import io.github.jeshiomurmu.opencaller.server.registry.Importer
 import io.github.jeshiomurmu.opencaller.server.registry.OtpSourceCuration
 import io.github.jeshiomurmu.opencaller.server.registry.SenderIdStore
+import io.github.jeshiomurmu.opencaller.server.scamfeed.ScamFeedService
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -43,6 +44,7 @@ class AdminWebServices(
     val imports: ImportTools,
     val audit: AdminAuditLog,
     val clock: Clock,
+    val scamCards: ScamFeedService,
 )
 
 /** The signed-in admin of one request: who, from where, and the CSRF token their forms carry. */
@@ -115,7 +117,7 @@ class AdminGuard(
 
 /**
  * The admin web (docs/architecture.md: "Admin web (review queues)"): business-claim review, verified businesses,
- * OTP-source curation, sender-ID imports and the audit log. Served on its own port ([AdminWebConfig.port]) by
+ * OTP-source curation, sender-ID imports, the scam feed and the audit log. Served on its own port ([AdminWebConfig.port]) by
  * `main`; [remoteAddress] is the socket peer (no forwarded headers are trusted).
  */
 fun Application.adminWebModule(
@@ -129,6 +131,7 @@ fun Application.adminWebModule(
         adminGet("/audit", guard) { respondHtml(auditPage(services)) }
         claimPages(guard, services)
         registryPages(guard, services)
+        scamCardPages(guard, services)
     }
 }
 

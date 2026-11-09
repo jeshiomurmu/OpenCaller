@@ -8,8 +8,10 @@ import io.github.jeshiomurmu.opencaller.server.auth.authRoutes
 import io.github.jeshiomurmu.opencaller.server.billing.billingRoutes
 import io.github.jeshiomurmu.opencaller.server.business.businessRoutes
 import io.github.jeshiomurmu.opencaller.server.config.ConfigException
+import io.github.jeshiomurmu.opencaller.server.config.Environment
 import io.github.jeshiomurmu.opencaller.server.config.loadConfig
 import io.github.jeshiomurmu.opencaller.server.disputes.disputeRoutes
+import io.github.jeshiomurmu.opencaller.server.family.familyRoutes
 import io.github.jeshiomurmu.opencaller.server.health.configureHealthRoutes
 import io.github.jeshiomurmu.opencaller.server.http.ApiJson
 import io.github.jeshiomurmu.opencaller.server.http.ApiProblem
@@ -21,8 +23,10 @@ import io.github.jeshiomurmu.opencaller.server.http.metricsModule
 import io.github.jeshiomurmu.opencaller.server.http.respondProblem
 import io.github.jeshiomurmu.opencaller.server.lists.listRoutes
 import io.github.jeshiomurmu.opencaller.server.lookup.lookupRoutes
+import io.github.jeshiomurmu.opencaller.server.portal.portalRoutes
 import io.github.jeshiomurmu.opencaller.server.profile.profileRoutes
 import io.github.jeshiomurmu.opencaller.server.reports.reportRoutes
+import io.github.jeshiomurmu.opencaller.server.scamfeed.scamFeedRoutes
 import io.github.jeshiomurmu.opencaller.server.sync.syncRoutes
 import io.github.jeshiomurmu.opencaller.server.unlist.unlistRoutes
 import io.github.jeshiomurmu.opencaller.server.video.runTranscoder
@@ -127,6 +131,9 @@ fun Application.module(deps: ServerDependencies) {
         businessRoutes(deps.claims, deps.businessDirectory)
         billingRoutes(deps.billing, deps.features)
         voipRoutes(deps.voipRoutes)
+        familyRoutes(deps.family, deps.familyAlerts)
+        scamFeedRoutes(deps.scamFeed)
+        portalRoutes(deps.portal, secureCookie = deps.config.environment == Environment.PRODUCTION)
     }
 }
 

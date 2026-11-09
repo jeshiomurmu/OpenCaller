@@ -12,7 +12,7 @@ data class PushRegistrationDto(
     val auth: String? = null,
 )
 
-/** What a push stood for (`GET /v1/notifications/{id}`): `call_invite`, `call_update` or `flash`. */
+/** What a push stood for (`GET /v1/notifications/{id}`): `call_invite`, `call_update`, `flash` or `family_alert`. */
 @Serializable
 data class NotificationDto(
     val id: String,
@@ -20,6 +20,7 @@ data class NotificationDto(
     val createdAt: String,
     val call: CallInviteDto? = null,
     val flash: FlashDto? = null,
+    val familyAlert: FamilyAlertViewDto? = null,
 )
 
 /** An app call as one party sees it; [number], [name] and [videoId] describe the other party. */

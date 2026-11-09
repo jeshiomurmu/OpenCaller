@@ -352,6 +352,52 @@ curl -sS -o "$work/published.mp4" "$(field video_links '.links[0].url')"
 expect "  the published clip is an MP4" ftyp "$(head -c 8 "$work/published.mp4" | tail -c 4)"
 [[ "$(stat -c %s "$work/published.mp4")" -lt "$(stat -c %s "$work/clip.mp4")" ]] && pass "  smaller than the upload" || fail "  not smaller than the upload"
 
+echo "== Family protection (TC-FAM-001, TC-FAM-002 server side; ADR 0008)"
+# The reporter makes a group; the callee joins with the code after consent and raises an alert. Only the kind and the
+# member's label reach the admin.
+expect "POST /v1/family" 201 "$(authed family POST /v1/family '{"name":"Smoke family","label":"Mum"}')"
+expect "POST /v1/family/invites" 201 "$(authed family_invite POST /v1/family/invites)"
+family_code="$(field family_invite .code)"
+expect "GET /v1/family/invites/{code} (callee)" "Mum" "$(as_callee family_preview GET "/v1/family/invites/$family_code" > /dev/null; field family_preview .adminLabel)"
+expect "  join without consent" 400 "$(as_callee family_no POST /v1/family/join "{\"code\":\"$family_code\",\"label\":\"Ama\",\"consent\":false,\"consentVersion\":1,\"shareOtpAlerts\":true,\"shareDailyCounts\":true}")"
+expect "  join with consent" 200 "$(as_callee family_join POST /v1/family/join "{\"code\":\"$family_code\",\"label\":\"Ama\",\"consent\":true,\"consentVersion\":1,\"shareOtpAlerts\":true,\"shareDailyCounts\":true}")"
+expect "  the code works once" 404 "$(authed family_again GET "/v1/family/invites/$family_code")"
+expect "POST /v1/family/alerts (member)" 201 "$(as_callee family_alert POST /v1/family/alerts '{"kind":"otp_during_call"}')"
+expect "  the admin finds it" "Ama" "$(authed family_items GET /v1/notifications > /dev/null; jq -r '[.[] | select(.kind == "family_alert") | .familyAlert.memberLabel][0]' "$work/family_items.body")"
+expect "  no number in it" 0 "$(grep -c -- "$callee" "$work/family_items.body" || true)"
+today="$(date -u +%F)"
+expect "PUT /v1/family/counts/{day}" 204 "$(as_callee family_counts PUT "/v1/family/counts/$today" '{"blockedCalls":2,"spamMessages":1}')"
+expect "  the admin's summary" 2 "$(authed family_view GET /v1/family > /dev/null; jq -r '[.members[] | select(.label == "Ama") | .days[0].blockedCalls][0]' "$work/family_view.body")"
+expect "DELETE /v1/family/me (admin ends the group)" 204 "$(authed family_end DELETE /v1/family/me)"
+
+echo "== Scam feed (F-PR-15)"
+admin_web admin_cards /scam-cards
+expect "admin web: scam feed" 200 "$(head -1 "$work/admin_cards.admin")"
+cards_csrf="$(grep -o 'name="csrf" value="[^"]*"' "$work/admin_cards.admin" | head -1 | sed 's/.*value="//; s/"$//')"
+admin_web admin_card_new /scam-cards -X POST --data-urlencode "csrf=$cards_csrf" --data-urlencode "country=US" \
+  --data-urlencode "language=en" --data-urlencode "title=Fake courier calls" --data-urlencode "body=Never share the code we text you." \
+  --data-urlencode "link=" --data-urlencode "expires="
+expect "  save a card (redirect)" 302 "$(head -1 "$work/admin_card_new.admin")"
+expect "  a draft isn't served" 0 "$(request feed_draft GET /v1/scam-feed/US > /dev/null; field feed_draft '.cards | length')"
+admin_web admin_cards_list /scam-cards
+card_id="$(grep -o 'href="/scam-cards/[0-9a-f-]\{36\}"' "$work/admin_cards_list.admin" | head -1 | grep -o '[0-9a-f-]\{36\}')"
+admin_web admin_card_publish "/scam-cards/$card_id/publish" -X POST --data-urlencode "csrf=$cards_csrf"
+expect "  publish (redirect)" 302 "$(head -1 "$work/admin_card_publish.admin")"
+expect "GET /v1/scam-feed/US (no token)" "Fake courier calls" "$(request feed GET /v1/scam-feed/US > /dev/null; field feed '.cards[0].title')"
+expect "  cacheable" "public, max-age=3600" "$(header feed Cache-Control)"
+
+echo "== Business dashboard (F-BZ-04)"
+authed business_search GET "/v1/numbers/$business" > /dev/null
+portal() { curl -sS -o "$work/$1.html" -w '%{http_code}' -b "$work/portal.jar" -c "$work/portal.jar" "${@:2}"; }
+expect "GET /portal" 200 "$(portal portal_home "$base/portal")"
+expect "POST /portal/login" 200 "$(portal portal_login -X POST --data-urlencode "e164=$business" "$base/portal/login")"
+portal_code="$(latest_code "$business")" || fail "no development code for $business in the server log"
+expect "POST /portal/verify" 303 "$(portal portal_verify -X POST --data-urlencode "e164=$business" --data-urlencode "code=$portal_code" "$base/portal/verify")"
+expect "  dashboard with the session cookie" 200 "$(portal portal_dash "$base/portal")"
+grep -q "Smoke Bank" "$work/portal_dash.html" && pass "  shows the business" || fail "  the dashboard doesn't name the business"
+grep -q "<td>$today</td><td>+${business#+}</td><td>1</td>" "$work/portal_dash.html" && pass "  counts today's search" || fail "  no search counted for today"
+expect "  profile edit without the form token" 403 "$(portal portal_forged -X POST --data-urlencode "website=https://evil.example" "$base/portal/profile")"
+
 echo "== Metrics (internal port only)"
 expect "GET /metrics on the API port" 404 "$(request metrics_api GET /metrics)"
 # Read into a file first: `curl | grep -q` fails under pipefail when grep exits early.

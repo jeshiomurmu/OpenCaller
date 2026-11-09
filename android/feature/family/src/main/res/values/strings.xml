@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Family protection (docs/prd.md F-PR-14, ADR 0008). The consent texts are wording version 1
+         (FamilySharing.CONSENT_VERSION): change the version with them. -->
+    <string name="family_title">Family protection</string>
+    <string name="family_entry_summary">Let someone you trust know when OpenCaller protects you, or look after a family member</string>
+    <string name="family_signed_out">Sign in to use family protection. It is free.</string>
+    <string name="family_sign_in">Sign in</string>
+    <string name="family_intro">Family protection lets someone you trust see that OpenCaller is protecting you, and hear about it when a scammer may be asking for your one-time code during a call. Only what you choose is shared, and nobody can add you without your own code and consent.</string>
+
+    <string name="family_create_title">Start a group</string>
+    <string name="family_create_text">You become the group\'s admin. You can invite up to 4 people. As the admin you share nothing; your members choose what they share with you.</string>
+    <string name="family_group_name">Group name</string>
+    <string name="family_your_label">Your name in the group</string>
+    <string name="family_your_label_hint">For example Mum, Rafi or Grandpa</string>
+    <string name="family_create">Create group</string>
+
+    <string name="family_join_title">Join a group</string>
+    <string name="family_join_text">Enter the 8-character code the group\'s admin gave you. You will see what joining means before anything is shared.</string>
+    <string name="family_code">Invite code</string>
+    <string name="family_continue">Continue</string>
+
+    <string name="family_consent_title">Join %1$s?</string>
+    <string name="family_consent_admin">%1$s is the group\'s admin. Choose what %1$s may see:</string>
+    <string name="family_consent_alerts">Code warnings</string>
+    <string name="family_consent_alerts_text">When a one-time code arrives while you are on a call with a stranger, or many codes arrive at once, %1$s gets a message that it happened. Not the code, and not who called or texted.</string>
+    <string name="family_consent_counts">Daily counts</string>
+    <string name="family_consent_counts_text">Once a day, how many calls OpenCaller blocked and how many messages it filtered as spam or scam on your phone. Only these two numbers. %1$s sees the last 7 days.</string>
+    <string name="family_consent_never_title">%1$s never sees</string>
+    <string name="family_consent_never">Who called or texted you, any phone numbers, your messages, your contacts, your call history or where you are.</string>
+    <string name="family_consent_change">You can turn each of these off, or leave the group, at any time in Protection → Family protection. Turning something off deletes what the server kept of it.</string>
+    <string name="family_consent_check">I chose to join, and I understand what %1$s will see.</string>
+    <string name="family_consent_people">%1$d of %2$d people in this group</string>
+    <string name="family_join">Join group</string>
+    <string name="family_cancel">Cancel</string>
+
+    <string name="family_group_admin">You are the admin. %1$d of %2$d people.</string>
+    <string name="family_group_member">%1$s is the admin. You are in the group as %2$s.</string>
+    <string name="family_my_sharing">What you share with %1$s</string>
+    <string name="family_share_alerts_summary">A message when a code arrives during a call with a stranger, or many codes at once</string>
+    <string name="family_share_counts_summary">Once a day: calls blocked and messages filtered, as two numbers</string>
+    <string name="family_never_short">Never shared: who called or texted, numbers, messages, contacts, call history, location.</string>
+    <string name="family_leave">Leave group</string>
+    <string name="family_end">End group</string>
+    <string name="family_leave_confirm">Leave %1$s? Your admin will no longer see anything from you, and what the server kept is deleted.</string>
+    <string name="family_end_confirm">End %1$s? Everyone leaves the group and what the server kept is deleted.</string>
+
+    <string name="family_invite_title">Invite someone</string>
+    <string name="family_invite_text">Make a code and give it to the person yourself, for example face to face or on the phone. They enter it on their own phone and decide what to share. A code works once, for 48 hours.</string>
+    <string name="family_invite_make">Make a code</string>
+    <string name="family_invite_code">Code: %1$s</string>
+    <string name="family_invite_expires">Works once, until %1$s</string>
+    <string name="family_invite_share">Share code</string>
+    <string name="family_invite_share_text">My OpenCaller family protection code: %1$s. Open OpenCaller → Protection → Family protection → Join a group.</string>
+    <string name="family_invite_done">Done</string>
+    <string name="family_full">The group is full (5 people).</string>
+
+    <string name="family_members_title">Members</string>
+    <string name="family_member_you">%1$s (you, admin)</string>
+    <string name="family_member_shares_both">Shares code warnings and daily counts</string>
+    <string name="family_member_shares_alerts">Shares code warnings</string>
+    <string name="family_member_shares_counts">Shares daily counts</string>
+    <string name="family_member_shares_nothing">Shares nothing</string>
+    <string name="family_member_day">%1$s: calls blocked %2$d, messages filtered %3$d</string>
+    <string name="family_member_no_days">No counts yet. They arrive once a day.</string>
+    <string name="family_remove">Remove</string>
+    <string name="family_remove_confirm">Remove %1$s from the group? What the server kept of them is deleted.</string>
+
+    <string name="family_alerts_title">Alerts (last 30 days)</string>
+    <string name="family_alerts_empty">No alerts. You will get a notification when a member\'s phone warns them.</string>
+    <string name="family_alert_line">%1$s, %2$s</string>
+    <string name="family_alert_during_call">A one-time code arrived during a call with a stranger. Their phone warned them. A call to check in may help.</string>
+    <string name="family_alert_burst">Several one-time codes arrived within minutes. Someone may be trying to get into their accounts.</string>
+
+    <string name="family_channel">Family alerts</string>
+    <string name="family_channel_description">When a member of your family group is warned about a one-time code</string>
+    <string name="family_notification_title">Family alert: %1$s</string>
+
+    <string name="family_error_network">Can\'t reach the server. Check your connection and try again.</string>
+    <string name="family_error_rate_limited">Too many tries. Wait a while and try again.</string>
+    <string name="family_error_code">That code doesn\'t work. It may be mistyped, used already or expired.</string>
+    <string name="family_error_consent">Tick the box to confirm that you want to join.</string>
+    <string name="family_error_already_in">You are already in a family group. Leave it first.</string>
+    <string name="family_error_full">This group already has 5 people.</string>
+    <string name="family_error_update_app">The consent text changed. Update the app and read it again.</string>
+    <string name="family_error_too_many_invites">You have 5 open codes. Wait until one is used or expires.</string>
+    <string name="family_error_label">Names must be 1 to 40 characters on one line.</string>
+    <string name="family_error_generic">Something went wrong. Try again.</string>
+</resources>

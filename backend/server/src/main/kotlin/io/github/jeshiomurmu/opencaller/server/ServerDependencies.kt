@@ -26,6 +26,10 @@ import io.github.jeshiomurmu.opencaller.server.config.Environment
 import io.github.jeshiomurmu.opencaller.server.config.OtpProviderKind
 import io.github.jeshiomurmu.opencaller.server.db.ServerDatabase
 import io.github.jeshiomurmu.opencaller.server.disputes.DisputeService
+import io.github.jeshiomurmu.opencaller.server.family.ExpiryJob
+import io.github.jeshiomurmu.opencaller.server.family.ExpiryResult
+import io.github.jeshiomurmu.opencaller.server.family.FamilyAlertService
+import io.github.jeshiomurmu.opencaller.server.family.FamilyService
 import io.github.jeshiomurmu.opencaller.server.flash.FlashService
 import io.github.jeshiomurmu.opencaller.server.http.ApiJson
 import io.github.jeshiomurmu.opencaller.server.jobs.JobRunner
@@ -36,6 +40,7 @@ import io.github.jeshiomurmu.opencaller.server.lists.ListBuilder
 import io.github.jeshiomurmu.opencaller.server.lists.ListService
 import io.github.jeshiomurmu.opencaller.server.lookup.LookupService
 import io.github.jeshiomurmu.opencaller.server.notifications.NotificationService
+import io.github.jeshiomurmu.opencaller.server.portal.PortalService
 import io.github.jeshiomurmu.opencaller.server.profile.ContactRequestService
 import io.github.jeshiomurmu.opencaller.server.profile.Entitlements
 import io.github.jeshiomurmu.opencaller.server.profile.ProfileService
@@ -58,6 +63,7 @@ import io.github.jeshiomurmu.opencaller.server.registry.SenderIdStore
 import io.github.jeshiomurmu.opencaller.server.registry.csvImportersIn
 import io.github.jeshiomurmu.opencaller.server.registry.placeholderRegistries
 import io.github.jeshiomurmu.opencaller.server.reports.ReportService
+import io.github.jeshiomurmu.opencaller.server.scamfeed.ScamFeedService
 import io.github.jeshiomurmu.opencaller.server.scoring.ScoringJob
 import io.github.jeshiomurmu.opencaller.server.scoring.ScoringResult
 import io.github.jeshiomurmu.opencaller.server.search.SearchService
@@ -167,7 +173,22 @@ class ServerDependencies(
     val voip = VoipService(database, config.voip.liveKit, push, rateLimiter, clock, random)
     val flash = FlashService(database, push, rateLimiter, clock)
     val video = VideoCallerIdService(database, objectStore, rateLimiter, clock)
-    val voipRoutes = VoipRouteServices(push, NotificationService(push, voip, flash), voip, flash, video)
+
+    // Phase 12: family protection, the scam feed and the business dashboard (ADR 0008).
+    val family = FamilyService(database, rateLimiter, clock, random)
+    val familyAlerts = FamilyAlertService(database, push, rateLimiter, clock)
+    val scamFeed = ScamFeedService(database, clock)
+    val portal =
+        PortalService(
+            db = database,
+            otp = OtpService(OtpStore(redis, keyPrefix = "otp-portal:"), otpProvider, config.otp.pepper, random),
+            rateLimiter = rateLimiter,
+            clock = clock,
+            random = random,
+        )
+    val expiryJob = ExpiryJob(database, clock)
+
+    val voipRoutes = VoipRouteServices(push, NotificationService(push, voip, flash, familyAlerts), voip, flash, video)
     val voipCleanup = VoipCleanupJob(database, clock)
 
     /** What `GET /v1/server` says about the Phase 11 features. */
@@ -186,7 +207,8 @@ class ServerDependencies(
     val importJob = SenderIdImportJob(importers, importRuns, clock)
 
     /** What the admin web works with. */
-    val adminWeb = AdminWebServices(claimReview, otpCuration, ImportTools(senderIdStore, importRuns, importers), adminAudit, clock)
+    val adminWeb =
+        AdminWebServices(claimReview, otpCuration, ImportTools(senderIdStore, importRuns, importers), adminAudit, clock, scamFeed)
 
     val scoringJob = ScoringJob(database, config.scoring, clock)
     val listBuilder = ListBuilder(database, objectStore, config.lists, clock)
@@ -208,11 +230,12 @@ class ServerDependencies(
             LeaderJob(VoipCleanupJob.JOB_NAME, VOIP_CLEANUP_LOCK) {
                 ApiJson.encodeToJsonElement(VoipCleanupResult.serializer(), voipCleanup.run())
             },
+            LeaderJob(ExpiryJob.JOB_NAME, EXPIRY_LOCK) { ApiJson.encodeToJsonElement(ExpiryResult.serializer(), expiryJob.run()) },
         )
 
     /**
      * Starts the scoring job every [ScoringConfig.intervalMinutes]; the list build, retention and sender-ID imports
-     * daily; the billing re-check and the VoIP cleanup hourly.
+     * daily; the billing re-check, the VoIP cleanup and the Phase 12 expiry hourly.
      */
     fun startJobs(scope: CoroutineScope) {
         val scheduler = JobScheduler(scope, jobRunner, clock)
@@ -222,6 +245,7 @@ class ServerDependencies(
         scheduler.dailyAt(config.imports.hourUtc, jobs.first { it.name == SenderIdImportJob.JOB_NAME })
         scheduler.every(Duration.ofHours(1), jobs.first { it.name == BILLING_JOB })
         scheduler.every(Duration.ofHours(1), jobs.first { it.name == VoipCleanupJob.JOB_NAME })
+        scheduler.every(Duration.ofHours(1), jobs.first { it.name == ExpiryJob.JOB_NAME })
     }
 
     override fun close() {
@@ -243,6 +267,7 @@ class ServerDependencies(
         private const val IMPORT_LOCK = 4_000_004L
         private const val BILLING_LOCK = 4_000_005L
         private const val VOIP_CLEANUP_LOCK = 4_000_006L
+        private const val EXPIRY_LOCK = 4_000_007L
 
         /** Connects to PostgreSQL (running migrations) and Redis, picks the OTP provider and seeds sender IDs. */
         fun create(

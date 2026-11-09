@@ -6,8 +6,8 @@ import org.jetbrains.exposed.v1.core.java.javaUUID
 import org.jetbrains.exposed.v1.javatime.CurrentTimestampWithTimeZone
 import org.jetbrains.exposed.v1.javatime.timestampWithTimeZone
 
-// Exposed mirrors of the tables in db/migration (V1__init.sql = docs/architecture.md §7, then V2 to V6; the Phase 11
-// tables are in VoipTables.kt). Flyway
+// Exposed mirrors of the tables in db/migration (V1__init.sql = docs/architecture.md §7, then V2 to V7; the Phase 11
+// tables are in VoipTables.kt, the Phase 12 ones in FamilyTables.kt). Flyway
 // owns the schema; these objects are only used for queries. ServerSchemaTest compares them with the migrated database.
 
 internal const val COUNTRY_ISO_LENGTH = 2
@@ -207,19 +207,29 @@ object Subscriptions : Table("subscriptions") {
     override val primaryKey = PrimaryKey(userId, platform)
 }
 
-/** `family_groups`. */
+/** `family_groups`; one per admin ([ownerId], NOT NULL since V7). */
 object FamilyGroups : Table("family_groups") {
     val id = javaUUID("id")
-    val ownerId = optReference("owner_id", Users.id, onDelete = ReferenceOption.CASCADE)
+    val ownerId = reference("owner_id", Users.id, onDelete = ReferenceOption.CASCADE)
+    val name = text("name").default("Family") // V7
+    val createdAt = timestampWithTimeZone("created_at").defaultExpression(CurrentTimestampWithTimeZone) // V7
     override val primaryKey = PrimaryKey(id)
 }
 
-/** `family_members`. */
+/**
+ * `family_members`: written only by the member's own request; [consentedAt] and [consentVersion] record what they
+ * agreed to, the two switches what they share (V7). [role] is `admin` or `member`.
+ */
 object FamilyMembers : Table("family_members") {
     val groupId = reference("group_id", FamilyGroups.id, onDelete = ReferenceOption.CASCADE)
     val userId = reference("user_id", Users.id, onDelete = ReferenceOption.CASCADE)
     val role = text("role")
     val consentedAt = timestampWithTimeZone("consented_at")
+    val label = text("label") // V7
+    val consentVersion = integer("consent_version") // V7
+    val shareOtpAlerts = bool("share_otp_alerts").default(false) // V7
+    val shareDailyCounts = bool("share_daily_counts").default(false) // V7
+    val updatedAt = timestampWithTimeZone("updated_at").defaultExpression(CurrentTimestampWithTimeZone) // V7
     override val primaryKey = PrimaryKey(groupId, userId)
 }
 
@@ -242,7 +252,7 @@ object JobState : Table("job_state") {
     override val primaryKey = PrimaryKey(name)
 }
 
-/** Every table (V1, then V2 to V6; the Phase 11 tables are in VoipTables.kt), in creation order. */
+/** Every table (V1, then V2 to V7; the Phase 11 and 12 tables are in VoipTables.kt and FamilyTables.kt), in creation order. */
 val allTables: List<Table> =
     listOf(
         Users,
@@ -275,4 +285,10 @@ val allTables: List<Table> =
         FlashMessages,
         VideoCallerIds,
         VideoReports,
+        FamilyInvites,
+        FamilyAlerts,
+        FamilyDailyCounts,
+        ScamCards,
+        BusinessSearchCounts,
+        PortalSessions,
     )

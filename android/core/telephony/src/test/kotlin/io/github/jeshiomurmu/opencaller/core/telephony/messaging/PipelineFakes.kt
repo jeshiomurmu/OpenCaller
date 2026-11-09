@@ -2,6 +2,7 @@ package io.github.jeshiomurmu.opencaller.core.telephony.messaging
 
 import io.github.jeshiomurmu.opencaller.core.common.Clock
 import io.github.jeshiomurmu.opencaller.core.data.RegisteredSender
+import io.github.jeshiomurmu.opencaller.core.data.family.OtpWarningReport
 import io.github.jeshiomurmu.opencaller.core.ml.assets.MlAssets
 import io.github.jeshiomurmu.opencaller.core.ml.classify.RuleSmsClassifier
 import io.github.jeshiomurmu.opencaller.core.ml.link.BadHostPrefixes
@@ -77,4 +78,5 @@ internal fun otpWatch(
     clock: Clock,
     recent: RecentOtps = RecentOtps { emptyList() },
     ranges: VerificationRanges = VerificationRanges { null },
-) = OtpWatch(calls, recent, ranges, alarm, clock)
+    family: OtpWarningReport = OtpWarningReport { },
+) = OtpWatch(calls, recent, ranges, alarm, family, clock)

@@ -13,6 +13,8 @@ import io.github.jeshiomurmu.opencaller.core.data.voip.VoipPreferences
 import io.github.jeshiomurmu.opencaller.core.database.DatabaseAccess
 import io.github.jeshiomurmu.opencaller.core.model.AppCall
 import io.github.jeshiomurmu.opencaller.core.model.AppCallState
+import io.github.jeshiomurmu.opencaller.core.model.FamilyAlert
+import io.github.jeshiomurmu.opencaller.core.model.FamilyAlertKind
 import io.github.jeshiomurmu.opencaller.core.model.FlashKind
 import io.github.jeshiomurmu.opencaller.core.model.FlashMessage
 import io.github.jeshiomurmu.opencaller.core.model.PushEndpoint
@@ -52,6 +54,7 @@ class VoipDataTest {
     private val preferences = VoipPreferences(tempPreferences("voip"))
     private val flash = FlashRepository(api, clock, DatabaseAccess { db }, RealDispatchers)
     private val shown = mutableListOf<FlashMessage>()
+    private val familyAlerts = mutableListOf<FamilyAlert>()
     private val invites = mutableListOf<AppCall>()
     private val updates = mutableListOf<AppCall>()
     private val handler =
@@ -72,7 +75,7 @@ class VoipDataTest {
     }
 
     private fun router(calls: Optional<AppCallHandler> = Optional.of(handler)) =
-        NotificationRouter(api, calls, flash, { shown += it }, clock)
+        NotificationRouter(api, calls, flash, { shown += it }, { familyAlerts += it }, clock)
 
     private val itemId = "7b0a0c7e-1f7c-4d73-9d0e-2cbe0e6f6a10"
     private val videoId = "3f2d1c4b-5a69-4e7f-8a9b-0c1d2e3f4a5b"
@@ -129,6 +132,23 @@ class VoipDataTest {
             val kept = (flash.recent().first() as io.github.jeshiomurmu.opencaller.core.common.AppResult.Success).value
             assertEquals(listOf("f1"), kept.map { it.id })
             assertFalse(kept.single().outgoing)
+        }
+
+    @Test
+    fun aFamilyAlertIsShownToTheAdminWithoutANumber() =
+        runBlocking {
+            server.enqueue(
+                jsonResponse(
+                    200,
+                    """{"id":"$itemId","kind":"family_alert","createdAt":"2026-11-09T10:00:00Z","familyAlert":{"id":"$itemId",""" +
+                        """"memberId":"m1","memberLabel":"Mum","kind":"otp_during_call","at":"2026-11-09T10:00:00Z"}}""",
+                ),
+            )
+            assertTrue(router().onPush(itemId))
+            val alert = familyAlerts.single()
+            assertEquals(FamilyAlertKind.OTP_DURING_CALL, alert.kind)
+            assertEquals("Mum", alert.memberLabel)
+            assertEquals(1_794_218_400_000L, alert.atMillis)
         }
 
     @Test

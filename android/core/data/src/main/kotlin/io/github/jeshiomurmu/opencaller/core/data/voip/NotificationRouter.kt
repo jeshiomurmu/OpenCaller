@@ -2,6 +2,8 @@ package io.github.jeshiomurmu.opencaller.core.data.voip
 
 import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.common.Clock
+import io.github.jeshiomurmu.opencaller.core.data.family.FamilyAlertNotices
+import io.github.jeshiomurmu.opencaller.core.data.family.toModel
 import io.github.jeshiomurmu.opencaller.core.network.NotificationDto
 import io.github.jeshiomurmu.opencaller.core.network.VoipApi
 import io.github.jeshiomurmu.opencaller.core.network.apiCall
@@ -13,8 +15,8 @@ import javax.inject.Singleton
 /**
  * Turns a push into what it stands for (ADR 0007). A push carries only a random id; the phone asks the server
  * what it is (`GET /v1/notifications/{id}`) and hands app calls to [AppCallHandler] (when the build has app calls)
- * and Flash messages to [FlashRepository] and [FlashAlerts]. [catchUp] does the same for items whose push never
- * arrived.
+ * and Flash messages to [FlashRepository] and [FlashAlerts], and shows a family alert to the group's admin
+ * ([FamilyAlertNotices], ADR 0008). [catchUp] does the same for items whose push never arrived.
  */
 @Singleton
 class NotificationRouter
@@ -24,6 +26,7 @@ class NotificationRouter
         private val calls: Optional<AppCallHandler>,
         private val flash: FlashRepository,
         private val alerts: FlashAlerts,
+        private val family: FamilyAlertNotices,
         private val clock: Clock,
     ) {
         /** Handles the push that carried [itemId]; false if the item couldn't be fetched. */
@@ -70,6 +73,10 @@ class NotificationRouter
                     item.flash?.toModel(now)?.let { message -> if (flash.keep(message)) alerts.show(message) }
                 }
 
+                FAMILY_ALERT -> {
+                    item.familyAlert?.toModel()?.let(family::show)
+                }
+
                 else -> {
                     Timber.i("Unknown push item kind %s", item.kind)
                 }
@@ -80,6 +87,7 @@ class NotificationRouter
             const val CALL_INVITE = "call_invite"
             const val CALL_UPDATE = "call_update"
             const val FLASH = "flash"
+            const val FAMILY_ALERT = "family_alert"
             val ITEM_ID = Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
         }
     }

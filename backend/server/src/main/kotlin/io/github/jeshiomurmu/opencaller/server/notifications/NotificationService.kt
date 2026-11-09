@@ -1,5 +1,7 @@
 package io.github.jeshiomurmu.opencaller.server.notifications
 
+import io.github.jeshiomurmu.opencaller.server.family.FamilyAlertService
+import io.github.jeshiomurmu.opencaller.server.family.FamilyAlertView
 import io.github.jeshiomurmu.opencaller.server.flash.FlashService
 import io.github.jeshiomurmu.opencaller.server.flash.FlashView
 import io.github.jeshiomurmu.opencaller.server.http.ApiProblem
@@ -14,7 +16,8 @@ import org.slf4j.LoggerFactory
 import java.util.UUID
 
 /**
- * What a push stood for: [kind] is `call_invite`, `call_update` (with [call]) or `flash` (with [flash]).
+ * What a push stood for: [kind] is `call_invite`, `call_update` (with [call]), `flash` (with [flash]) or
+ * `family_alert` (with [familyAlert]).
  */
 @Serializable
 data class NotificationView(
@@ -23,6 +26,7 @@ data class NotificationView(
     val createdAt: String,
     val call: InviteView? = null,
     val flash: FlashView? = null,
+    val familyAlert: FamilyAlertView? = null,
 )
 
 /** `GET /v1/notifications`: the items behind pushes, for the push that just arrived or for a phone that missed some. */
@@ -30,6 +34,7 @@ class NotificationService(
     private val push: PushService,
     private val voip: VoipService,
     private val flash: FlashService,
+    private val family: FamilyAlertService,
 ) {
     /** Push item [id] of [userId], resolved; 404 `notification_not_found` if it is gone. */
     suspend fun item(
@@ -52,6 +57,10 @@ class NotificationService(
 
             PushKind.FLASH -> {
                 flash.receive(userId, item.refId)?.let { base.copy(flash = it) }
+            }
+
+            PushKind.FAMILY_ALERT -> {
+                family.alertView(userId, item.refId)?.let { base.copy(familyAlert = it) }
             }
         }
     }

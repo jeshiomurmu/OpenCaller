@@ -281,6 +281,83 @@ class AdminWebTest {
         return id
     }
 
+    private suspend fun HttpClient.newCard(token: String): HttpResponse =
+        post(
+            "/scam-cards",
+            mapOf(
+                "csrf" to token,
+                "country" to "bd",
+                "language" to "en",
+                "title" to "Fake courier calls",
+                "body" to "They ask for the code we text you. Never share it.",
+                "link" to "",
+                "expires" to "",
+            ),
+        )
+
+    @Test
+    fun scamCardsStayDraftsUntilPublished() =
+        adminTest {
+            val token = client.csrf("/scam-cards")
+            val invalid =
+                client.post(
+                    "/scam-cards",
+                    mapOf(
+                        "csrf" to token,
+                        "country" to "BD",
+                        "language" to "en",
+                        "title" to "",
+                        "body" to "x",
+                    ),
+                )
+            assertEquals(HttpStatusCode.BadRequest, invalid.status)
+            assertEquals("/scam-cards?done=saved", client.newCard(token).headers[HttpHeaders.Location])
+            val card =
+                server.deps.scamFeed
+                    .all()
+                    .single()
+            assertEquals("BD", card.country)
+            assertTrue(
+                server.deps.scamFeed
+                    .feed("BD")
+                    .cards
+                    .isEmpty(),
+            )
+
+            val published = client.post("/scam-cards/${card.id}/publish", mapOf("csrf" to token))
+            assertEquals("/scam-cards?done=published", published.headers[HttpHeaders.Location])
+            assertEquals(
+                listOf("Fake courier calls"),
+                server.deps.scamFeed
+                    .feed("BD")
+                    .cards
+                    .map { it.title },
+            )
+            assertTrue("Fake courier calls" in client.page("/scam-cards?country=BD").bodyAsText())
+        }
+
+    @Test
+    fun scamCardChangesNeedTheFormTokenAndAreAudited() =
+        adminTest {
+            val token = client.csrf("/scam-cards")
+            client.newCard(token)
+            val card =
+                server.deps.scamFeed
+                    .all()
+                    .single()
+            client.post("/scam-cards/${card.id}/publish", mapOf("csrf" to token))
+            assertEquals(HttpStatusCode.Forbidden, client.post("/scam-cards/${card.id}/delete", mapOf("csrf" to "forged")).status)
+            val deleted = client.post("/scam-cards/${card.id}/delete", mapOf("csrf" to token))
+            assertEquals("/scam-cards?done=deleted", deleted.headers[HttpHeaders.Location])
+            assertTrue(
+                server.deps.scamFeed
+                    .all()
+                    .isEmpty(),
+            )
+            val audit = client.page("/audit").bodyAsText()
+            listOf("scam-card.save", "scam-card.publish", "scam-card.delete").forEach { assertTrue(it in audit, it) }
+        }
+
     @Test
     fun theApiDoesNotServeTheAdminPages() =
         testApplication {

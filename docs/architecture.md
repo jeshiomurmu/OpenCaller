@@ -301,9 +301,14 @@ RecordingEntity(@PrimaryKey id: String, e164: String?, filePath: String, duratio
 ScheduledSmsEntity(@PrimaryKey(autoGenerate = true) id: Long, to: String, body: String, subId: Int,
   sendAt: Long, workId: String, state: SyncState)
 
-@Entity(tableName = "family_member")
+@Entity(tableName = "family_member")   // since Phase 1, unused: see the note below
 FamilyMemberEntity(@PrimaryKey userId: String, displayName: String, role: FamilyRole, joinedAt: Long)
 ```
+
+Family groups (Phase 12, ADR 0008) are not stored in Room: the group lives on the server (`GET /v1/family`), and the
+phone keeps only its own membership switches in DataStore (`FamilyPreferences`), so the OTP guard and the daily
+counts worker can check them without a network call. The `family_member` table of the Phase 1 schema stays empty and
+unused (dropping it would need a migration of its own). Scam cards are kept as the last fetched JSON file per country.
 
 Rules: SMS bodies stay in the Android Telephony provider (we don't duplicate them). Contacts stay in ContactsProvider. Every schema change bumps the DB version with an explicit `Migration` and a migration test.
 
@@ -428,9 +433,12 @@ Later migrations (V1 stays exactly the SQL above): `V2__jobs_and_lookup_indexes.
 | `GET /v1/server` | none | Whether the server is self-hosted (everything unlocked) and the Play product ID (ADR 0006); since Phase 11 its `features`: app calls, Flash, FCM, the VAPID key (ADR 0007) |
 | `GET /v1/entitlements` | access | The user's entitlement: tier, source (billing, granted, self-hosted), paid-until, obfuscated billing account ID |
 | `POST /v1/billing/verify` | access | Play purchase token: read with `purchases.subscriptionsv2.get`, bound to the account, acknowledged; an hourly job re-checks stored purchases (ADR 0006) |
-| `POST /v1/family`, `POST /v1/family/{id}/invite`, `POST /v1/family/alerts` | access | F-PR-14 |
+| `POST /v1/family`, `GET /v1/family`, `POST /v1/family/invites`, `GET /v1/family/invites/{code}`, `POST /v1/family/join`, `PUT /v1/family/me`, `DELETE /v1/family/me`, `DELETE /v1/family/members/{id}` | access | Family groups (F-PR-14, ADR 0008): up to 5 people; a member joins only by their own request with an invite code after the consent screen (consent time and wording version recorded); sharing switches; leave and remove |
+| `POST /v1/family/alerts`, `PUT /v1/family/counts/{day}` | access | What a member shares, if they chose to: an alert's kind (`otp_during_call`, `otp_burst`), pushed to the admin as an opaque item; a day's counts (calls blocked, spam messages) |
+| `GET /v1/scam-feed/{iso}` | none | Admin-curated scam cards of a country (F-PR-15), cacheable for an hour |
+| `GET /portal`, `POST /portal/login`, `POST /portal/verify`, `GET/POST /portal/profile`, `POST /portal/logout` | none / session cookie | Business dashboard (F-BZ-04): OTP to a number of an approved business, website, hours and call reasons, daily counts of searches (without the searcher), reports and disputes (server-rendered HTML, CSRF tokens) |
 | `PUT /v1/push`, `DELETE /v1/push` | access | This device's push endpoint: an FCM token (play) or a Web Push endpoint with its keys (UnifiedPush, foss); pushes carry only a random item id (ADR 0007) |
-| `GET /v1/notifications`, `GET /v1/notifications/{id}` | access | What a push stood for (a call invite or update, a Flash message), and pending items for missed pushes |
+| `GET /v1/notifications`, `GET /v1/notifications/{id}` | access | What a push stood for (a call invite or update, a Flash message, a family alert), and pending items for missed pushes |
 | `POST /v1/voip/calls`, `GET /v1/voip/calls/{id}`, `POST /v1/voip/calls/{id}/{accept\|decline\|cancel\|end}` | access | App calls: the invite rings for 45 s; room = sorted pair of user IDs + nonce (F-CM-09) |
 | `POST /v1/voip/token` | access | LiveKit token for the call's room (10 minutes, audio only) |
 | `GET /v1/voip/settings`, `PUT /v1/voip/settings` | access | Whether app calls and Flash messages reach the user (on by default) |
@@ -463,6 +471,8 @@ Implementation (Phase 4, `scoring/`): the Kotlin job runs every 15 minutes under
 6. Pushes (FCM, UnifiedPush) carry only a random push-item id; what it stands for is fetched from our server with the access token (ADR 0007, `HttpPushSenderTest`, `VoipApiTest`).
 7. Video caller IDs of a lookup bucket are downloaded all together, so the server learns no more than the bucket; downloads run on Wi-Fi only unless the user allows mobile data (`VoipDataTest`).
 8. App-call invites are deleted a day after the call and Flash messages once fetched (at most a day); call audio is never recorded or stored on the server (`VoipApiTest`, `FlashApiTest`).
+9. Family protection shares only what the member switched on, from the member to the admin: an alert's kind and time, and a day's two counts. No number, name, message text, contact or call log; nobody is added without their own request and consent; switching off or leaving deletes what the server held (`FamilyApiTest`, ADR 0008).
+10. The business dashboard shows counts of data the server already holds (explicit searches counted without the searcher, reports, disputes); apps send no call-outcome data (answered, declined) at all (`PortalTest`).
 
 ## 11. Error handling
 

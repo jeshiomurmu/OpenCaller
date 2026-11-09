@@ -178,10 +178,12 @@ Done in two parts: 7a (default SMS app: the four role components, provider stora
 
 ## Phase 11 — VoIP, Flash, video caller ID
 
-- [ ] LiveKit server + TURN in compose; `/v1/voip/token`
-- [ ] App-to-app calls with LiveKit SDK + Jetpack Telecom (`core-telecom`) integration; push-to-ring via FCM/UnifiedPush
-- [ ] Flash messages
-- [ ] Video caller ID upload (≤ 10 s, transcoded server-side) and playback in in-call UI
+- [x] LiveKit server + TURN in compose; `/v1/voip/token`
+- [x] App-to-app calls with LiveKit SDK + Jetpack Telecom (`core-telecom`) integration; push-to-ring via FCM/UnifiedPush
+- [x] Flash messages
+- [x] Video caller ID upload (≤ 10 s, transcoded server-side) and playback in in-call UI
+
+Done in code (PR #16, #17); the two-phone exit test is open (`docs/phase.md` → Phase 11 carry-over).
 
 **Exit:** TC-VOIP-* pass across two networks (Wi-Fi ↔ mobile data); call setup < 3 s p95.
 

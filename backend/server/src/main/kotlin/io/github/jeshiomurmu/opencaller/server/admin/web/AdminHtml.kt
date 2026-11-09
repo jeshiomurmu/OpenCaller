@@ -40,7 +40,8 @@ fun page(
     <style>$STYLE</style></head><body>
     <header><b>OpenCaller admin</b>
     <nav><a href="/">Overview</a><a href="/claims">Claims</a><a href="/businesses">Businesses</a>
-    <a href="/otp-sources">OTP sources</a><a href="/sender-ids">Sender IDs</a><a href="/audit">Audit log</a></nav>
+    <a href="/otp-sources">OTP sources</a><a href="/sender-ids">Sender IDs</a><a href="/scam-cards">Scam feed</a>
+    <a href="/audit">Audit log</a></nav>
     <span class="who">${esc(admin)}</span></header>
     <main><h1>${esc(title)}</h1>${notice?.let { "<p class=\"notice\">${esc(it)}</p>" }.orEmpty()}$body</main>
     </body></html>

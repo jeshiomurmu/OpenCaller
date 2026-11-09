@@ -44,6 +44,14 @@ interface MessageMetaDao {
     @Query("UPDATE message_meta SET otpCode = NULL WHERE otpCode IS NOT NULL AND at < :atMillis")
     suspend fun clearCodesBefore(atMillis: Long): Int
 
+    /** How many messages in [categories] arrived from [fromMillis] (inclusive) to [toMillis] (family daily counts). */
+    @Query("SELECT COUNT(*) FROM message_meta WHERE category IN (:categories) AND at >= :fromMillis AND at < :toMillis")
+    suspend fun count(
+        categories: List<MessageCategory>,
+        fromMillis: Long,
+        toMillis: Long,
+    ): Int
+
     /** Removes metadata for a deleted message. */
     @Query("DELETE FROM message_meta WHERE providerId = :providerId")
     suspend fun delete(providerId: Long)

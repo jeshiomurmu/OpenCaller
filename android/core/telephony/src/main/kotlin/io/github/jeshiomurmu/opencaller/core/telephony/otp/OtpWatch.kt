@@ -1,6 +1,8 @@
 package io.github.jeshiomurmu.opencaller.core.telephony.otp
 
 import io.github.jeshiomurmu.opencaller.core.common.Clock
+import io.github.jeshiomurmu.opencaller.core.data.family.OtpWarningReport
+import io.github.jeshiomurmu.opencaller.core.model.FamilyAlertKind
 import io.github.jeshiomurmu.opencaller.core.model.MessageRisk
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import javax.inject.Inject
@@ -36,7 +38,9 @@ fun interface VerificationRanges {
 /**
  * The OTP safety guard and burst alert (docs/architecture.md §4.5, PRD F-PR-11/12): a code arriving by SMS or as a
  * flash call while, or up to 2 minutes after, the user talks to a stranger raises the full-screen warning; three or
- * more codes from two or more senders in 10 minutes raise the burst alert. Everything stays on the device.
+ * more codes from two or more senders in 10 minutes raise the burst alert. Everything stays on the device, except
+ * that a family member who shares OTP alerts lets their admin know a warning was shown ([family]: the kind only, ADR
+ * 0008).
  */
 @Singleton
 class OtpWatch
@@ -46,6 +50,7 @@ class OtpWatch
         private val recent: RecentOtps,
         private val ranges: VerificationRanges,
         private val alarm: OtpAlarm,
+        private val family: OtpWarningReport,
         private val clock: Clock,
     ) {
         /**
@@ -58,10 +63,16 @@ class OtpWatch
         ): Set<MessageRisk> {
             val now = clock.nowMillis()
             val duringCall = OtpRules.riskyCall(calls.recent(), now) != null
-            if (duringCall) alarm.warnDuringCall(senderName, flashCall = false)
+            if (duringCall) {
+                alarm.warnDuringCall(senderName, flashCall = false)
+                family.warned(FamilyAlertKind.OTP_DURING_CALL)
+            }
             val codes = recent.since(now - OtpRules.BURST_WINDOW_MILLIS) + (now to senderKey)
             val burst = OtpRules.isBurst(codes, now)
-            if (burst) alarm.warnBurst(codes.size)
+            if (burst) {
+                alarm.warnBurst(codes.size)
+                family.warned(FamilyAlertKind.OTP_BURST)
+            }
             return buildSet {
                 if (duringCall) add(MessageRisk.OTP_DURING_CALL)
                 if (burst) add(MessageRisk.OTP_BURST)
@@ -75,6 +86,7 @@ class OtpWatch
             val provider = ranges.providerOf(number)
             if (provider != null && OtpRules.riskyCall(calls.recent(), clock.nowMillis()) != null) {
                 alarm.warnDuringCall(provider, flashCall = true)
+                family.warned(FamilyAlertKind.OTP_DURING_CALL)
             }
         }
     }
