@@ -353,19 +353,27 @@ left="$(sql "select count(*) from flash_messages")"
 if [[ -n "$video" ]]; then
   if [[ "$b_network" != wifi ]]; then qa_ok "$device_b" clips-mobile --ez allowed true > /dev/null; fi
   adb -s "$device_b" shell run-as "$app_id" rm -rf cache/video-clips
-  adb -s "$device_b" emu gsm call "$caller" > /dev/null
+  # A lookup that runs past its 800 ms budget is cancelled and brings no clip (issue 139); on a slow emulator the
+  # first call can hit that, so a second call follows once, and the output says so.
   found=""
-  for _ in $(seq 1 30); do
-    if adb -s "$device_b" shell run-as "$app_id" ls cache/video-clips 2> /dev/null | tr -d '\r' | grep -q "^$video.mp4$"; then
-      found=yes
-      break
-    fi
-    sleep 0.5
+  for attempt in 1 2; do
+    adb -s "$device_b" logcat -c
+    adb -s "$device_b" emu gsm call "$caller" > /dev/null
+    for _ in $(seq 1 30); do
+      if adb -s "$device_b" shell run-as "$app_id" ls cache/video-clips 2> /dev/null | tr -d '\r' | grep -q "^$video.mp4$"; then
+        found=yes
+        break
+      fi
+      sleep 0.5
+    done
+    sleep 1
+    adb -s "$device_b" emu gsm cancel "$caller" > /dev/null || true
+    sleep 2
+    if [[ -n "$found" ]] || ! adb -s "$device_b" logcat -d | grep -q 'Screening exceeded'; then break; fi
+    echo "B's screening ran past its budget (the lookup was cancelled); calling once more"
   done
-  sleep 1
-  adb -s "$device_b" emu gsm cancel "$caller" > /dev/null || true
   if [[ -n "$found" ]]; then
-    pass TC-VOIP-003 "a normal call from A's number brought A's clip to B through the bucket lookup ($b_network)"
+    pass TC-VOIP-003 "a normal call from A's number brought A's clip to B through the bucket lookup ($b_network, call $attempt)"
   else
     fail TC-VOIP-003 "B didn't fetch A's clip for a normal call from A's number"
   fi
