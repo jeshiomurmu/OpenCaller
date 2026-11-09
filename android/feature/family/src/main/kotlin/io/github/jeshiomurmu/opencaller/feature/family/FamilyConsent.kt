@@ -19,6 +19,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import io.github.jeshiomurmu.opencaller.core.designsystem.preview.OpenCallerPreviews
@@ -43,7 +44,8 @@ internal fun ConsentSection(
     var label by rememberSaveable { mutableStateOf("") }
     val admin = preview.adminLabel
     Heading(stringResource(R.string.family_consent_title, preview.groupName))
-    Text(stringResource(R.string.family_consent_people, preview.members, preview.maxMembers), style = MaterialTheme.typography.bodySmall)
+    val people = pluralStringResource(R.plurals.family_consent_people, preview.maxMembers, preview.members, preview.maxMembers)
+    Text(people, style = MaterialTheme.typography.bodySmall)
     Text(stringResource(R.string.family_consent_admin, admin))
     SharingSwitch(
         title = stringResource(R.string.family_consent_alerts),

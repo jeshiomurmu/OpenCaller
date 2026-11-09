@@ -30,11 +30,17 @@
     <string name="family_consent_never">Who called or texted you, any phone numbers, your messages, your contacts, your call history or where you are.</string>
     <string name="family_consent_change">You can turn each of these off, or leave the group, at any time in Protection → Family protection. Turning something off deletes what the server kept of it.</string>
     <string name="family_consent_check">I chose to join, and I understand what %1$s will see.</string>
-    <string name="family_consent_people">%1$d of %2$d people in this group</string>
+    <plurals name="family_consent_people">
+        <item quantity="one">%1$d of %2$d person in this group</item>
+        <item quantity="other">%1$d of %2$d people in this group</item>
+    </plurals>
     <string name="family_join">Join group</string>
     <string name="family_cancel">Cancel</string>
 
-    <string name="family_group_admin">You are the admin. %1$d of %2$d people.</string>
+    <plurals name="family_group_admin">
+        <item quantity="one">You are the admin. %1$d of %2$d person.</item>
+        <item quantity="other">You are the admin. %1$d of %2$d people.</item>
+    </plurals>
     <string name="family_group_member">%1$s is the admin. You are in the group as %2$s.</string>
     <string name="family_my_sharing">What you share with %1$s</string>
     <string name="family_share_alerts_summary">A message when a code arrives during a call with a stranger, or many codes at once</string>

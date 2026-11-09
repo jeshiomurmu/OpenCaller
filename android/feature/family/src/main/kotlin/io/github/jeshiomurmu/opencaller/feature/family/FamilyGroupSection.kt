@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import io.github.jeshiomurmu.opencaller.core.designsystem.preview.OpenCallerPreviews
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacing
@@ -42,7 +43,7 @@ internal fun GroupSection(
 ) {
     Heading(group.name)
     if (group.isAdmin) {
-        Text(stringResource(R.string.family_group_admin, group.memberCount, group.maxMembers))
+        Text(pluralStringResource(R.plurals.family_group_admin, group.maxMembers, group.memberCount, group.maxMembers))
         InviteSection(group, invite, busy, onEvent)
         HorizontalDivider()
         MembersSection(group, busy, onEvent)
