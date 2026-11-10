@@ -134,7 +134,7 @@ jobs:
           target: google_apis
           arch: x86_64
           # system_server ran out of its 16 MB heap on the API 29 image (DeadSystemException mid-test, runs 38891529407
-          # and 42628889411): heap-size doesn't reach dalvik.vm.heapsize there, so emulator-heap.sh sets it (issue 32).
+          # and 42628889411): heap-size is set after zygote started there, so emulator-heap.sh restarts the framework.
           ram-size: 4096M
           heap-size: 512M
           disable-animations: true
