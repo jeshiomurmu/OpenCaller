@@ -88,9 +88,12 @@ sign_in() {
   qa_ok "$device" signin-verify --es number "$number" --es code "$code" > /dev/null
 }
 
+# `am start -W` waits for the launch to report; once it never did and the test sat there for 19 minutes (run
+# 42790801180). Give it 30 s; the checks after it show whether the app really came up.
 foreground() {
   adb -s "$1" shell input keyevent KEYCODE_HOME
-  adb -s "$1" shell am start -W -n "$main_activity" > /dev/null
+  timeout 30 adb -s "$1" shell am start -W -n "$main_activity" > /dev/null ||
+    echo "::warning::$1: the launch of the app didn't report within 30 s"
 }
 
 # log_time <device> <pattern>: epoch milliseconds of the first log line matching <pattern> since the last `logcat -c`.
