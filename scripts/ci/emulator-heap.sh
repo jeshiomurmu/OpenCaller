@@ -26,8 +26,17 @@ if [[ "$sdk" -gt 29 && "$(megabytes "$heap")" -ge 192 ]]; then
   exit 0
 fi
 
-adb root > /dev/null
-adb wait-for-device
+# Right after boot adbd can still be restarting, and `adb root` then fails with "unable to connect for root: closed"
+# (run 42790056580). Retry until the shell is root.
+root=""
+for _ in $(seq 1 10); do
+  adb root > /dev/null 2>&1 || true
+  adb wait-for-device
+  root="$(adb shell id -u 2> /dev/null | tr -d '\r' || true)"
+  if [[ "$root" == 0 ]]; then break; fi
+  sleep 2
+done
+[[ "$root" == 0 ]] || { echo "::error::adb root didn't take on the emulator"; exit 1; }
 if [[ "$(megabytes "$heap")" -lt 512 ]]; then adb shell setprop dalvik.vm.heapsize 512m; fi
 if [[ "$(megabytes "$growth")" -lt 256 ]]; then adb shell setprop dalvik.vm.heapgrowthlimit 256m; fi
 # Restart the framework (zygote and system_server) so the new limits apply; boot completes again afterwards.
