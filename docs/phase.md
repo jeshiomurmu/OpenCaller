@@ -313,7 +313,8 @@ Phase 3 carry-over: measure the total screening p95 < 50 ms on a physical phone 
     `0c07934`) failed there honestly: B's launch didn't report, B never fetched the Flash message and TC-VOIP-002
     failed (TC-VOIP-001/003 and TC-FAM passed). `voip.sh` now wakes the phone and dismisses the keyguard before each
     launch, prints what the phone shows in front and the app's last log lines when a launch stays silent, and tries it
-    once more. Why B's launch stays silent right after an app call is still unknown; the next failure shows it.
+    once more. In both runs on `5cd09bc` (42797523785, 42797533410) every launch reported on the first try, TC-VOIP-002
+    passed and no warning was printed: the phone's screen (or keyguard) after the app call is the likely cause.
 160. **`adb root` raced adbd's restart on the API 29 emulator** (PR #20 run 42790056580 on `d21addf`, a docs-only commit):
      `scripts/ci/emulator-heap.sh` ran 4 s after boot and `adb root` answered "unable to connect for root: closed", so
      the job stopped before any test. The script now retries `adb root` (up to 10 times, 2 s apart) until
@@ -411,7 +412,7 @@ Fill as dependencies are added (the source of truth is `libs.versions.toml`; thi
 
 | Date | Phase | What changed | Verified by |
 | --- | --- | --- | --- |
-| 2026-11-10 | 13 | e2e: `voip.sh` wakes the phone before each app launch, prints the foreground window and app log when a launch stays silent, and tries once more (issue 159, run 42795311862: B's launch stayed silent after the app call and TC-VOIP-002 failed) | `bash -n`; CI: pending |
+| 2026-11-10 | 13 | e2e: `voip.sh` wakes the phone before each app launch, prints the foreground window and app log when a launch stays silent, and tries once more (issue 159, run 42795311862: B's launch stayed silent after the app call and TC-VOIP-002 failed) | `bash -n`; CI: runs 42797523785 (push) and 42797533410 (PR) on `5cd09bc`: e2e green in both (TC-E2E-001, TC-VOIP-001…003, TC-FAM-001/002, every launch reported at once), all other jobs green except emulator API 29 (PR run: the emulator died in `emulator-heap.sh` before any test; push run: total p95 105 ms > 100 ms with the app's own p95 8 ms, issue 36), both re-run once |
 | 2026-11-10 | 13 | e2e: the app launch waits (`am start -W`) give up after 30 s (issue 159, run 42790801180 hung 19 min there; the TERM trap stopped it and printed the diagnostics, and TC-FAM still ran) | `bash -n`; CI: run 42795311862 on `0c07934` ended in 15 min with the launch warning; TC-VOIP-002 failed (B's app didn't come up), every other job green |
 | 2026-11-10 | 13 | `scripts/ci/emulator-heap.sh` retries `adb root` until the shell is root (issue 160, after run 42790056580 stopped the API 29 job before any test) | `bash -n`; CI: run 42790801180 on `8ef1c07`, both emulator jobs green (API 29 passed `adb root`) |
 | 2026-11-10 | 13 | e2e harness: the push sink probes in `voip.sh` and `family.sh` get a time limit and fail with a message; `scripts/e2e/ci.sh` runs each test under `timeout` with a TERM trap that prints the diagnostics (issue 159, after PR run 42776465919 hung for an hour) | Locally: `bash -n` on the three scripts; a stand-in script under `timeout` showed the TERM trap stopping a hanging command, printing the diagnostics and running the EXIT trap (status 124). CI: runs 42784996908 (push) and 42785005495 (PR) on `a56aef1`, all 9 jobs green, e2e on the first attempt |
