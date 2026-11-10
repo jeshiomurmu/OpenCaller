@@ -88,12 +88,23 @@ sign_in() {
   qa_ok "$device" signin-verify --es number "$number" --es code "$code" > /dev/null
 }
 
-# `am start -W` waits for the launch to report; once it never did and the test sat there for 19 minutes (run
-# 42790801180). Give it 30 s; the checks after it show whether the app really came up.
+# `am start -W` waits for the launch to report. Right after an app call it twice never did (runs 42790801180 and
+# 42795311862, both on B before the Flash check), so each try gets 30 s; a silent launch prints what the phone shows
+# in front and the app's last log lines, then the launch is tried once more. The checks after it decide the test.
 foreground() {
-  adb -s "$1" shell input keyevent KEYCODE_HOME
-  timeout 30 adb -s "$1" shell am start -W -n "$main_activity" > /dev/null ||
-    echo "::warning::$1: the launch of the app didn't report within 30 s"
+  local attempt
+  for attempt in 1 2; do
+    adb -s "$1" shell input keyevent KEYCODE_WAKEUP
+    adb -s "$1" shell wm dismiss-keyguard > /dev/null 2>&1 || true
+    adb -s "$1" shell input keyevent KEYCODE_HOME
+    if timeout 30 adb -s "$1" shell am start -W -n "$main_activity" > /dev/null; then return 0; fi
+    echo "::warning::$1: the launch of the app didn't report within 30 s (try $attempt)"
+    timeout 15 adb -s "$1" shell dumpsys activity activities 2> /dev/null | tr -d '\r' |
+      grep -E 'ResumedActivity|mFocusedApp' | head -n 5 || true
+    timeout 15 adb -s "$1" shell dumpsys window 2> /dev/null | tr -d '\r' | grep -E 'mCurrentFocus' | head -n 2 || true
+    timeout 15 adb -s "$1" logcat -d -v threadtime 2> /dev/null | tr -d '\r' |
+      grep -E 'ActivityTaskManager|OpenCaller|AndroidRuntime' | tail -n 20 || true
+  done
 }
 
 # log_time <device> <pattern>: epoch milliseconds of the first log line matching <pattern> since the last `logcat -c`.
