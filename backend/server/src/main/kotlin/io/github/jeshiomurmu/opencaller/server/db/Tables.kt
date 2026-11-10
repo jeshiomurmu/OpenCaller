@@ -26,6 +26,7 @@ object Users : Table("users") {
     val createdAt = timestampWithTimeZone("created_at").defaultExpression(CurrentTimestampWithTimeZone)
     val deletedAt = timestampWithTimeZone("deleted_at").nullable()
     val reachable = bool("reachable").default(true) // V6
+    val recordingTranscripts = bool("recording_transcripts").default(false) // V8
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -291,4 +292,7 @@ val allTables: List<Table> =
         ScamCards,
         BusinessSearchCounts,
         PortalSessions,
+        RecordingCountries,
+        RecordingSessions,
+        Recordings,
     )

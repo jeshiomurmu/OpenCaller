@@ -1,0 +1,125 @@
+# Telephony overlay: the recording line (Phase 13, ADR 0009). Adds LiveKit SIP, LiveKit Egress and the recorder agent
+# to the development stack and points LiveKit at the stack's Redis. The default stack (compose.yml alone) is unchanged.
+#
+#   docker compose -f infra/docker/compose.yml -f infra/docker/compose.telephony.yml up -d --build
+#   # optional transcripts (self-hosted Whisper; downloads the model on first start):
+#   docker compose -f infra/docker/compose.yml -f infra/docker/compose.telephony.yml --profile transcripts up -d
+#
+# Setup of the SIP trunk and the dispatch rule, ports and firewall: infra/deploy/telephony.md.
+# SIP, Egress and the agents use host networking (Linux only), as LiveKit's own SIP compose file does: Docker handles
+# the 10000-20000 RTP range badly, and Egress and the agent join rooms over WebRTC at LiveKit's NODE_IP. They reach
+# LiveKit (7880), Redis (6379), MinIO (9000) and the server (8080) on 127.0.0.1, where compose.yml publishes them.
+
+x-recording-agent-environment: &recording-agent-environment
+  LIVEKIT_URL: ws://127.0.0.1:7880
+  LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-opencaller}
+  LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?set LIVEKIT_API_SECRET in infra/docker/.env}
+  OPENCALLER_API_URL: http://127.0.0.1:8080
+  RECORDING_AGENT_TOKEN: ${RECORDING_AGENT_TOKEN:?set RECORDING_AGENT_TOKEN in infra/docker/.env}
+  # Where Egress uploads recordings (MinIO as the egress service reaches it) and with which credentials. In
+  # production use a MinIO user that may only read and write the recordings/ prefix (infra/deploy/telephony.md).
+  RECORDING_S3_ENDPOINT: ${RECORDING_S3_ENDPOINT:-http://127.0.0.1:9000}
+  RECORDING_S3_BUCKET: ${MINIO_BUCKET:-opencaller}
+  RECORDING_S3_REGION: ${MINIO_REGION:-us-east-1}
+  RECORDING_S3_ACCESS_KEY: ${RECORDING_S3_ACCESS_KEY:-${MINIO_ROOT_USER:?set MINIO_ROOT_USER in infra/docker/.env}}
+  RECORDING_S3_SECRET_KEY: ${RECORDING_S3_SECRET_KEY:-${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in infra/docker/.env}}
+  # Optional spoken announcement after the beep: a 16-bit PCM mono WAV mounted into the container (the beep alone
+  # plays without it). Record it in the line's language(s).
+  RECORDING_ANNOUNCEMENT_WAV: ${RECORDING_ANNOUNCEMENT_WAV:-}
+
+services:
+  # LiveKit server flags (livekit-server v1.13.11): SIP and Egress talk to it through Redis.
+  livekit:
+    environment:
+      REDIS_HOST: 127.0.0.1:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in infra/docker/.env}
+    # LiveKit must reach the published Redis port on 127.0.0.1, so it joins the host network too.
+    network_mode: host
+    ports: !reset []
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  sip:
+    image: livekit/sip:v1.23.0
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      # Keys from docs.livekit.io/transport/self-hosting/sip-server and the livekit/sip README.
+      SIP_CONFIG_BODY: |
+        api_key: '${LIVEKIT_API_KEY:-opencaller}'
+        api_secret: '${LIVEKIT_API_SECRET}'
+        ws_url: 'ws://127.0.0.1:7880'
+        redis:
+          address: '127.0.0.1:6379'
+          password: '${REDIS_PASSWORD}'
+        sip_port: 5060
+        rtp_port: 10000-20000
+        use_external_ip: true
+        health_port: 8082
+        log_level: info
+    depends_on:
+      redis:
+        condition: service_healthy
+      livekit:
+        condition: service_started
+
+  egress:
+    image: livekit/egress:v1.15.0
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      # Keys from docs.livekit.io/transport/self-hosting/egress. The upload target comes with each request.
+      EGRESS_CONFIG_BODY: |
+        api_key: '${LIVEKIT_API_KEY:-opencaller}'
+        api_secret: '${LIVEKIT_API_SECRET}'
+        ws_url: 'ws://127.0.0.1:7880'
+        insecure: true
+        redis:
+          address: '127.0.0.1:6379'
+          password: '${REDIS_PASSWORD}'
+        health_port: 8083
+        logging:
+          level: info
+    depends_on:
+      redis:
+        condition: service_healthy
+      livekit:
+        condition: service_started
+
+  recorder:
+    build:
+      context: ../../backend/agents
+    image: opencaller/agents:dev
+    restart: unless-stopped
+    network_mode: host
+    command: ["python", "-m", "opencaller_agents.recorder", "start"]
+    environment: *recording-agent-environment
+    depends_on:
+      livekit:
+        condition: service_started
+      egress:
+        condition: service_started
+      server:
+        condition: service_healthy
+
+  # Transcripts for users who turned them on (self-hosted Whisper through faster-whisper, CPU). Off by default.
+  transcriber:
+    profiles: ["transcripts"]
+    image: opencaller/agents:dev
+    restart: unless-stopped
+    network_mode: host
+    command: ["python", "-m", "opencaller_agents.transcriber"]
+    environment:
+      OPENCALLER_API_URL: http://127.0.0.1:8080
+      RECORDING_AGENT_TOKEN: ${RECORDING_AGENT_TOKEN:?set RECORDING_AGENT_TOKEN in infra/docker/.env}
+      # A faster-whisper model name (downloaded from Hugging Face on first use) or a local model folder.
+      WHISPER_MODEL: ${WHISPER_MODEL:-small}
+    volumes:
+      - whisper-models:/root/.cache/huggingface
+    depends_on:
+      recorder:
+        condition: service_started
+
+volumes:
+  whisper-models:

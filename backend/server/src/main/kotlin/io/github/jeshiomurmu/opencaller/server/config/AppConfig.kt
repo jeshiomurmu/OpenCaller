@@ -31,6 +31,7 @@ data class AppConfig(
     val imports: ImportConfig = ImportConfig(),
     val billing: BillingConfig = BillingConfig(),
     val voip: VoipConfig = VoipConfig(),
+    val recording: RecordingConfig = RecordingConfig(),
 )
 
 /** Public API port and the internal metrics port. */

@@ -17,6 +17,10 @@ interface RecordingDao {
     @Query("SELECT * FROM recording ORDER BY createdAt DESC")
     fun observeAll(): Flow<List<RecordingEntity>>
 
+    /** Recording [id], or `null`. */
+    @Query("SELECT * FROM recording WHERE id = :id")
+    suspend fun find(id: String): RecordingEntity?
+
     /** Deletes recording [id]. */
     @Query("DELETE FROM recording WHERE id = :id")
     suspend fun delete(id: String)

@@ -12,4 +12,5 @@ data class SettingsLinks(
     val onOpenMessengerCallerId: () -> Unit = {},
     val onOpenBackup: () -> Unit = {},
     val onOpenVoip: () -> Unit = {},
+    val onOpenRecordings: () -> Unit = {},
 )

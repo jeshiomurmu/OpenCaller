@@ -1,5 +1,6 @@
 # Local development stack: PostgreSQL, Redis, MinIO (S3-compatible), the OpenCaller server, its video transcoder and
-# LiveKit (app-to-app calls; ports and TLS in infra/docker/README.md).
+# LiveKit (app-to-app calls; ports and TLS in infra/docker/README.md). The recording line's SIP, Egress and agents
+# come with the overlay compose.telephony.yml (infra/deploy/telephony.md).
 #
 #   cp infra/docker/.env.example infra/docker/.env   # then replace every value
 #   docker compose -f infra/docker/compose.yml up -d --build
@@ -74,6 +75,13 @@ x-server-environment: &server-environment
   VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
   VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
   VAPID_SUBJECT: ${VAPID_SUBJECT:-}
+  # Recording line (Phase 13, ADR 0009; setup in infra/deploy/telephony.md and compose.telephony.yml). Off unless
+  # RECORDING_LINES and RECORDING_AGENT_TOKEN are set. RECORDING_COUNTRIES lists the countries where recording is
+  # approved (default BD,IN); every other country stays off until the operator's own legal review approves it.
+  RECORDING_LINES: ${RECORDING_LINES:-}
+  RECORDING_COUNTRIES: ${RECORDING_COUNTRIES:-BD,IN}
+  RECORDING_AGENT_TOKEN: ${RECORDING_AGENT_TOKEN:-}
+  RECORDING_DOWNLOAD_GRACE_MINUTES: ${RECORDING_DOWNLOAD_GRACE_MINUTES:-30}
 
 services:
   postgres:

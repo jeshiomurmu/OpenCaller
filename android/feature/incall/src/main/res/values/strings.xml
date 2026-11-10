@@ -56,4 +56,22 @@
     <string name="incall_sim_show_names">Show SIM names</string>
     <string name="incall_cancel_call">Cancel call</string>
     <string name="incall_video_caller_id">The caller\'s video caller ID, without sound</string>
+    <!-- Recording line (Phase 13, ADR 0009) -->
+    <string name="incall_record">Record</string>
+    <string name="incall_record_stop">Stop recording</string>
+    <string name="incall_record_reminder_title">Record this call?</string>
+    <string name="incall_record_reminder_text">OpenCaller calls its recording line and adds it to this call. Both of you hear a beep and an announcement that the call is recorded. You are responsible for following the law where the other person is: some places require everyone\'s consent. The recording is saved on this phone; the server deletes its copy within an hour after that.</string>
+    <string name="incall_record_confirm">Record</string>
+    <string name="incall_record_cancel">Cancel</string>
+    <string name="incall_recording_connecting">Calling the recording line…</string>
+    <string name="incall_recording_merging">Adding the recording line to the call…</string>
+    <string name="incall_recording_on">Recording. Both of you heard the beep.</string>
+    <string name="incall_recording_ok">OK</string>
+    <string name="incall_recording_unavailable">Recording isn\'t available on this server or in your country.</string>
+    <string name="incall_recording_supporter">Recording is a supporter feature.</string>
+    <string name="incall_recording_signed_out">Sign in to record calls.</string>
+    <string name="incall_recording_network">The server couldn\'t be reached. Nothing was recorded.</string>
+    <string name="incall_recording_cannot_dial">The recording line couldn\'t be called.</string>
+    <string name="incall_recording_no_answer">The recording line didn\'t answer. Nothing was recorded.</string>
+    <string name="incall_recording_merge_failed">The calls couldn\'t be merged, so nothing was recorded. Your call goes on.</string>
 </resources>

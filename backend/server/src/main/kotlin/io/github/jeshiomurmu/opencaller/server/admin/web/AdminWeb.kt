@@ -3,6 +3,7 @@ package io.github.jeshiomurmu.opencaller.server.admin.web
 import io.github.jeshiomurmu.opencaller.server.business.ClaimReview
 import io.github.jeshiomurmu.opencaller.server.business.ClaimStatus
 import io.github.jeshiomurmu.opencaller.server.config.AdminWebConfig
+import io.github.jeshiomurmu.opencaller.server.recording.RecordingCountryPolicy
 import io.github.jeshiomurmu.opencaller.server.registry.ImportRunLog
 import io.github.jeshiomurmu.opencaller.server.registry.Importer
 import io.github.jeshiomurmu.opencaller.server.registry.OtpSourceCuration
@@ -37,7 +38,8 @@ class ImportTools(
     val importers: () -> List<Importer<*>>,
 )
 
-/** Everything the admin web works with. */
+/** Everything the admin web works with (one value per page group, hence the parameter count). */
+@Suppress("LongParameterList")
 class AdminWebServices(
     val claims: ClaimReview,
     val curation: OtpSourceCuration,
@@ -45,6 +47,7 @@ class AdminWebServices(
     val audit: AdminAuditLog,
     val clock: Clock,
     val scamCards: ScamFeedService,
+    val recordingCountries: RecordingCountryPolicy,
 )
 
 /** The signed-in admin of one request: who, from where, and the CSRF token their forms carry. */
@@ -117,8 +120,8 @@ class AdminGuard(
 
 /**
  * The admin web (docs/architecture.md: "Admin web (review queues)"): business-claim review, verified businesses,
- * OTP-source curation, sender-ID imports, the scam feed and the audit log. Served on its own port ([AdminWebConfig.port]) by
- * `main`; [remoteAddress] is the socket peer (no forwarded headers are trusted).
+ * OTP-source curation, sender-ID imports, the scam feed, recording countries and the audit log. Served on its own
+ * port ([AdminWebConfig.port]) by `main`; [remoteAddress] is the socket peer (no forwarded headers are trusted).
  */
 fun Application.adminWebModule(
     config: AdminWebConfig,
@@ -132,6 +135,7 @@ fun Application.adminWebModule(
         claimPages(guard, services)
         registryPages(guard, services)
         scamCardPages(guard, services)
+        recordingCountryPages(guard, services)
     }
 }
 

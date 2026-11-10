@@ -160,6 +160,10 @@ data object BackupSettingsRoute
 @Serializable
 data object FamilyNavRoute
 
+/** Me → Settings → Recordings (Phase 13). */
+@Serializable
+data object RecordingsNavRoute
+
 /** Me → Settings → App calls, Flash and video caller ID (Phase 11). */
 @Serializable
 data object VoipSettingsNavRoute

@@ -12,6 +12,8 @@ import io.github.jeshiomurmu.opencaller.core.telephony.incall.AudioRouteType
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallAudio
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallCapability
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallController
+import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallRecorder
+import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallRecordingStatus
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallStateRepository
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallStatus
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.ConferenceAction
@@ -70,6 +72,7 @@ data class InCallUiState(
     val swap: ConferenceAction? = null,
     val userReplies: List<String> = emptyList(),
     val ringingClip: File? = null,
+    val recording: CallRecordingStatus = CallRecordingStatus.Idle,
 ) {
     /** The quick replies offered when declining [call] with a message: the user's own, else the system's. */
     fun repliesFor(call: TrackedCall): List<String> = userReplies.ifEmpty { call.cannedReplies }
@@ -79,6 +82,12 @@ data class InCallUiState(
 
     /** True when the primary call can be put on hold or taken off it. */
     val canHold: Boolean get() = primary?.call?.can(CallCapability.HOLD) == true
+
+    /** True when the call in progress can be recorded: active, alone (no other call to merge with), nothing recording. */
+    val canRecord: Boolean
+        get() =
+            primary?.call?.let { it.status == CallStatus.ACTIVE && !it.isConference } == true && held == null &&
+                (recording is CallRecordingStatus.Idle || recording is CallRecordingStatus.Failed)
 
     /** True when the primary call can be muted (a call without the capability still shows the button, disabled). */
     val canMute: Boolean get() = primary?.call?.let { it.can(CallCapability.MUTE) || it.status == CallStatus.ACTIVE } == true
@@ -143,11 +152,20 @@ sealed interface InCallEvent {
 
     /** Read the calls again (a permission changed). */
     data object Refresh : InCallEvent
+
+    /** Record the call in progress through the recording line (the user confirmed the consent reminder). */
+    data object Record : InCallEvent
+
+    /** Stop recording (hang up the recording line). */
+    data object StopRecording : InCallEvent
+
+    /** The recording's error was shown. */
+    data object RecordingErrorShown : InCallEvent
 }
 
 /** The in-call screen of the default phone app: the calls, their callers, and the commands. */
 @HiltViewModel
-@Suppress("LongParameterList") // Hilt injects what the screen needs: calls, callers, numbers, controls, replies, time, clips.
+@Suppress("LongParameterList") // Hilt injects what the screen needs: calls, callers, numbers, controls, replies, time, clips, recorder.
 class InCallViewModel
     @Inject
     constructor(
@@ -158,6 +176,7 @@ class InCallViewModel
         templates: QuickReplyTemplates,
         clock: Clock,
         private val clips: CallerClips,
+        private val recorder: CallRecorder,
     ) : ViewModel() {
         /** Screen state. */
         val uiState: StateFlow<InCallUiState> =
@@ -165,7 +184,8 @@ class InCallViewModel
                 calls.state,
                 callers.callers,
                 templates.replies(),
-            ) { calls, callers, replies -> toUi(calls, callers).copy(userReplies = replies) }
+                recorder.status,
+            ) { calls, callers, replies, recording -> toUi(calls, callers).copy(userReplies = replies, recording = recording) }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), InCallUiState())
 
         /**
@@ -208,6 +228,9 @@ class InCallViewModel
                 is InCallEvent.HangUp -> controller.hangUp(event.callId)
                 is InCallEvent.SelectSim -> controller.selectSim(event.callId, event.simId)
                 InCallEvent.Refresh -> controller.refresh()
+                InCallEvent.Record -> record(uiState.value)
+                InCallEvent.StopRecording -> recorder.stop()
+                InCallEvent.RecordingErrorShown -> recorder.dismiss()
                 else -> onControl(event, uiState.value)
             }
         }
@@ -250,6 +273,13 @@ class InCallViewModel
                     // Call and SIM commands are handled in onEvent.
                 }
             }
+        }
+
+        private fun record(state: InCallUiState) {
+            state.primary
+                ?.call
+                ?.takeIf { state.canRecord }
+                ?.let { recorder.start(it.id) }
         }
 
         private fun toggleHold(state: InCallUiState) {

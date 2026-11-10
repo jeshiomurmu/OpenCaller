@@ -39,6 +39,8 @@ app downloads public lists.
 | App activity → Other actions | Yes | Optional | App functionality | Profile views (who viewed which profile, unless incognito); kept 90 days. |
 | Personal info → Other info | Yes | Optional (family protection) | App functionality | The name a family group's members know each other by ("Mum") and the group's name; who is in which group, when each member consented and which wording they saw. |
 | App activity → Other actions (family) | Yes | Optional (family protection, only what the member switches on) | App functionality | A family alert's kind ("code during a call", "many codes") and time, kept 30 days; once a day, two counts (calls blocked, messages filtered as spam), kept 8 days. Shown only to the group's admin; switching off or leaving deletes them. Never numbers, names of callers, message text, contacts or location. |
+| Audio → Voice or sound recordings | Yes | Optional (call recording, only when the user taps Record and confirms) | App functionality | The audio of a call the user chose to record, through the recording line; kept on the server only until the phone saved it (deleted within an hour of that, 24 hours at the latest). The download is encrypted in transit; the call itself travels the phone network and the SIP trunk like any phone call (ADR 0009). |
+| App activity → Other user-generated content | Yes | Optional (transcripts, off by default) | App functionality | The transcript of a recording, only when the user turned transcripts on; made on the server and deleted with the recording. |
 | Device or other IDs | Yes | Optional (with sign-in) | Account management; Fraud prevention, security and compliance; App functionality | A server-generated device ID tied to the session's refresh tokens; the device's Firebase Cloud Messaging token, to deliver call and Flash pushes (each carries only a random id). No hardware IDs, no advertising ID. |
 | Financial info → Purchase history | Yes | Optional (play build, supporters only) | App functionality; Account management | The supporter subscription: Google Play's purchase token, base plan, state and paid-until date, checked with Google to unlock supporter features. No card or payment details (Google Play handles payment). |
 
@@ -67,6 +69,7 @@ Explain if asked:
 - Since Phase 11 the play build includes Firebase Cloud Messaging (only when built with `opencaller.firebase.*`):
   the FCM token is in *Device or other IDs* above. The Firelog telemetry backend is excluded from the build.
 - Since Phase 12 (v1.0.0): family protection (the two rows above, collected only from members who switch them on)
+- Since Phase 13: call recordings and their optional transcripts (the two rows above, only for calls the user records)
   and the scam feed (a public download that names only the country). Searches of verified-business numbers are also
   counted per number and day for the business's dashboard, without the searcher (not personal data).
 - Microphone and camera: the microphone only during an app call the user starts or answers; the camera only while

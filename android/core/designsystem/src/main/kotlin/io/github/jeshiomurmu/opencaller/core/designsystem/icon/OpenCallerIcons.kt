@@ -148,4 +148,10 @@ object OpenCallerIcons {
 
     /** A time (scheduled messages). */
     @get:DrawableRes val Schedule: Int = R.drawable.ic_schedule
+
+    /** Record a call (the recording line). */
+    @get:DrawableRes val Record: Int = R.drawable.ic_radio_button_checked
+
+    /** Play (a recording). */
+    @get:DrawableRes val Play: Int = R.drawable.ic_play_arrow
 }

@@ -312,7 +312,7 @@ app):
 | TC-FAM-002 | Family alert | Member OTP-during-call → admin notified within 10 s | I + U + R + E2E — 12: `FamilyApiTest` (the alert is stored with its kind only and pushed to the admin as an opaque `family_alert` item; members who don't share alerts are refused); `OtpWatchTest` (each guard warning is reported); `FamilyDataTest` (the alert leaves the phone only while the member shares alerts, kind only; an alert older than an hour is dropped; daily counts are yesterday's two numbers); `VoipDataTest` + `FamilyAlertNotifierTest` (the admin's phone shows "Family alert: Mum" with no number); emulators `scripts/e2e/family.sh` (A's warning reaches B's push endpoint within 10 s, B shows the alert; the admin's own warnings go nowhere; counts arrive; leaving deletes them). Real push delivery: device step below |
 | TC-SCAM-001 | Scam feed | Published, unexpired cards of the phone's country in the reader's language (else English), offline copy | I + R — 12: `ScamFeedTest` (drafts and expired cards never served, country-only request, cacheable 1 h, card checks); `AdminWebTest` (drafts until published, CSRF, audit log); `FamilyDataTest` (language choice, offline copy); `ScamFeedViewModelTest` |
 | TC-BIZ-003 | Business dashboard | Verified business signs in by code to its number; edits website, hours and call reasons; sees searches, reports and disputes per day without who made them; no call outcomes | I — 12: `PortalTest` (code only for approved businesses, same page for others; session cookie and CSRF; revoked business loses its session; counts without the searcher, reporters or dispute text); smoke → Business dashboard |
-| TC-REC-001 | Recording beep | Other party hears beep; file on device; server copy deleted ≤ 1 h | D |
+| TC-REC-001 | Recording beep | Other party hears beep; file on device; server copy deleted ≤ 1 h | I + U + D — 13: `RecordingApiTest` (Testcontainers: the line of the user's country and a one-time code; supporter or self-hosted only; the legal switch from `RECORDING_COUNTRIES` and the admin web; the agent's claim needs its token and the code, once, 3 tries per call; the store's size is kept; an opaque `recording_ready` push; download link; deleted 30 min after the confirmed download and 24 h at the latest; a downloaded recording waits for its transcript; an agent that never reports leaves no file), `RecordingConfigTest`, `AdminWebTest` (switching a country on needs the legal confirmation; audit log); `backend/agents` pytest (code reading, beep and announcement, track egress request to MinIO, result reporting, transcriber); `LineRecorderTest`, `LinePlanTest` (dial string with pauses and the code, merge, hang-up on failure, the recording saved and labelled on the phone), `RecordingRepositoryTest` (file saved, then confirmed; no token on the file link), `RecordingsViewModelTest`, `InCallViewModelTest` (Record only for a single active call). On a real SIM: device steps below |
 | TC-AST-001 | Assistant | Forwarded unanswered call answered by agent; transcript streams | D |
 | TC-SCAN-001 | Scanner wording | Result phrased as likelihood, never certainty | U |
 
@@ -392,6 +392,27 @@ numbers, a server they can reach with a push provider (as for Phase 11):
    SMS; the dashboard shows the business, today's search after searching its number from a phone, reports and
    disputes per day. Change the hours and a call reason; after the next directory update a call from that number
    shows the new reason. Sign out. Check that the page loads no scripts (browser developer tools).
+
+Phase 13 device steps (TC-REC-001). A phone with a SIM in Bangladesh or India, OpenCaller as the default phone app,
+signed in as a supporter (or a self-hosted server), a second phone; the server with the telephony overlay, a Twilio
+number of that country on the trunk and the dispatch rule of `infra/deploy/telephony.md`:
+
+1. Call the line from any phone without a code: the ready tones, then after 20 s three low tones and the line hangs
+   up. The agent's log names the room, never the caller's number.
+2. Call the second phone, talk, tap Record: the reminder says both parties hear a beep and the user is responsible
+   for the law where the other person is. Tap Record. The screen shows "Calling the recording line…", then "Adding
+   the recording line…"; the other phone hears a short hold, then the beep (and the announcement, if configured), and
+   a short beep every 15 s. The screen says "Recording".
+3. Hang up after a minute. Within a minute Me → Settings → Recordings lists it with the other number and its length;
+   it plays. In MinIO, `recordings/<id>.ogg` exists until about 30 minutes after the download (check with
+   `mc ls` or the console); after the next job run (≤ 10 minutes later) it is gone and `GET /v1/recordings` is empty.
+4. A recording that is never downloaded (phone off): gone from MinIO within 24 hours.
+5. Turn Transcripts on, record again: with the `transcripts` profile running, the transcript appears under the
+   recording. Turn it off: the next recording has none.
+6. Sign in with a number of a country that isn't approved: Record says recording isn't available. Switch that
+   country on in the admin web (with the confirmation) and back off; the audit log shows both.
+7. A network or plan without merging (Telecom offers no merge): the screen says the calls couldn't be merged, the
+   line is hung up, the call with the second phone goes on.
 
 ## 5. Manual QA checklist (before each release)
 

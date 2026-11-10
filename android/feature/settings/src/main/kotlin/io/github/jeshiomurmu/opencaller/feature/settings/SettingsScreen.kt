@@ -108,6 +108,12 @@ private fun SupporterRows(links: SettingsLinks) {
         onClick = links.onOpenVoip,
         icon = OpenCallerIcons.Calls,
     )
+    SettingsRow(
+        title = stringResource(R.string.settings_recordings),
+        summary = stringResource(R.string.settings_recordings_summary),
+        onClick = links.onOpenRecordings,
+        icon = OpenCallerIcons.Record,
+    )
 }
 
 /** Number of taps on the version that open the debug screen. */
