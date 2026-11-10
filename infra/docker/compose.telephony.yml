@@ -16,13 +16,14 @@ x-recording-agent-environment: &recording-agent-environment
   LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?set LIVEKIT_API_SECRET in infra/docker/.env}
   OPENCALLER_API_URL: http://127.0.0.1:8080
   RECORDING_AGENT_TOKEN: ${RECORDING_AGENT_TOKEN:?set RECORDING_AGENT_TOKEN in infra/docker/.env}
+  # compose.yml's minio and redis services already require MINIO_ROOT_* and REDIS_PASSWORD, so they aren't checked here.
   # Where Egress uploads recordings (MinIO as the egress service reaches it) and with which credentials. In
   # production use a MinIO user that may only read and write the recordings/ prefix (infra/deploy/telephony.md).
   RECORDING_S3_ENDPOINT: ${RECORDING_S3_ENDPOINT:-http://127.0.0.1:9000}
   RECORDING_S3_BUCKET: ${MINIO_BUCKET:-opencaller}
   RECORDING_S3_REGION: ${MINIO_REGION:-us-east-1}
-  RECORDING_S3_ACCESS_KEY: ${RECORDING_S3_ACCESS_KEY:-${MINIO_ROOT_USER:?set MINIO_ROOT_USER in infra/docker/.env}}
-  RECORDING_S3_SECRET_KEY: ${RECORDING_S3_SECRET_KEY:-${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in infra/docker/.env}}
+  RECORDING_S3_ACCESS_KEY: ${RECORDING_S3_ACCESS_KEY:-${MINIO_ROOT_USER}}
+  RECORDING_S3_SECRET_KEY: ${RECORDING_S3_SECRET_KEY:-${MINIO_ROOT_PASSWORD}}
   # Optional spoken announcement after the beep: a 16-bit PCM mono WAV mounted into the container (the beep alone
   # plays without it). Record it in the line's language(s).
   RECORDING_ANNOUNCEMENT_WAV: ${RECORDING_ANNOUNCEMENT_WAV:-}
@@ -32,7 +33,7 @@ services:
   livekit:
     environment:
       REDIS_HOST: 127.0.0.1:6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in infra/docker/.env}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     # LiveKit must reach the published Redis port on 127.0.0.1, so it joins the host network too.
     network_mode: host
     ports: !reset []
