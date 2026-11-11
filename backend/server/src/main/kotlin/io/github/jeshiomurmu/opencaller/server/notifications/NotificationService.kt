@@ -1,5 +1,7 @@
 package io.github.jeshiomurmu.opencaller.server.notifications
 
+import io.github.jeshiomurmu.opencaller.server.assistant.AssistantCallService
+import io.github.jeshiomurmu.opencaller.server.assistant.AssistantCallView
 import io.github.jeshiomurmu.opencaller.server.family.FamilyAlertService
 import io.github.jeshiomurmu.opencaller.server.family.FamilyAlertView
 import io.github.jeshiomurmu.opencaller.server.flash.FlashService
@@ -19,7 +21,7 @@ import java.util.UUID
 
 /**
  * What a push stood for: [kind] is `call_invite`, `call_update` (with [call]), `flash` (with [flash]),
- * `family_alert` (with [familyAlert]) or `recording_ready` (with [recording]).
+ * `family_alert` (with [familyAlert]), `recording_ready` (with [recording]) or `assistant_call` (with [assistantCall]).
  */
 @Serializable
 data class NotificationView(
@@ -30,6 +32,7 @@ data class NotificationView(
     val flash: FlashView? = null,
     val familyAlert: FamilyAlertView? = null,
     val recording: RecordingView? = null,
+    val assistantCall: AssistantCallView? = null,
 )
 
 /** `GET /v1/notifications`: the items behind pushes, for the push that just arrived or for a phone that missed some. */
@@ -39,6 +42,7 @@ class NotificationService(
     private val flash: FlashService,
     private val family: FamilyAlertService,
     private val recordings: RecordingService,
+    private val assistant: AssistantCallService,
 ) {
     /** Push item [id] of [userId], resolved; 404 `notification_not_found` if it is gone. */
     suspend fun item(
@@ -69,6 +73,10 @@ class NotificationService(
 
             PushKind.RECORDING_READY -> {
                 recordings.view(userId, item.refId)?.let { base.copy(recording = it) }
+            }
+
+            PushKind.ASSISTANT_CALL -> {
+                assistant.view(userId, item.refId)?.let { base.copy(assistantCall = it) }
             }
         }
     }

@@ -3,6 +3,9 @@ package io.github.jeshiomurmu.opencaller.server
 import io.github.jeshiomurmu.opencaller.server.admin.web.AdminAuditLog
 import io.github.jeshiomurmu.opencaller.server.admin.web.AdminWebServices
 import io.github.jeshiomurmu.opencaller.server.admin.web.ImportTools
+import io.github.jeshiomurmu.opencaller.server.assistant.AssistantCallService
+import io.github.jeshiomurmu.opencaller.server.assistant.AssistantLineService
+import io.github.jeshiomurmu.opencaller.server.assistant.AssistantRouteServices
 import io.github.jeshiomurmu.opencaller.server.auth.AuthRepository
 import io.github.jeshiomurmu.opencaller.server.auth.AuthService
 import io.github.jeshiomurmu.opencaller.server.auth.TokenService
@@ -216,8 +219,16 @@ class ServerDependencies(
         )
     val recordingRetention = RecordingRetentionJob(database, objectStore, config.recording, clock)
 
+    // Phase 13: the call assistant (ADR 0010).
+    val assistant =
+        AssistantRouteServices(
+            lines = AssistantLineService(database, config.assistant, entitlements, rateLimiter, clock),
+            calls = AssistantCallService(database, config.assistant, config.voip.liveKit, entitlements, push, rateLimiter, clock),
+            agentToken = config.recording.agentToken,
+        )
+
     val voipRoutes =
-        VoipRouteServices(push, NotificationService(push, voip, flash, familyAlerts, recordings), voip, flash, video)
+        VoipRouteServices(push, NotificationService(push, voip, flash, familyAlerts, recordings, assistant.calls), voip, flash, video)
     val voipCleanup = VoipCleanupJob(database, clock)
 
     /** What `GET /v1/server` says about the Phase 11 features. */
@@ -229,6 +240,7 @@ class ServerDependencies(
             webPushVapidKey =
                 config.voip.push.webPush
                     ?.publicKeyBase64Url,
+            assistant = assistant.lines.enabled && config.voip.liveKit != null,
         )
 
     /** Sender-ID importers: the CSV extracts in the import folder, then the registries without documented access. */

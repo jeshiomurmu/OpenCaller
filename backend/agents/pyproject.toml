@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "opencaller-agents"
 version = "0.1.0"
-description = "OpenCaller's LiveKit agents: the recording line's recorder and the optional self-hosted transcriber."
+description = "OpenCaller's LiveKit agents: the recording line's recorder, the optional self-hosted transcriber and the call assistant."
 readme = "README.md"
 license = "GPL-3.0-only"
 requires-python = ">=3.12,<3.15"
@@ -22,6 +22,15 @@ dependencies = [
 [project.optional-dependencies]
 # Self-hosted Whisper (CTranslate2), CPU by default. Verified on pypi.org 2026-11-10: faster-whisper 1.2.1 (MIT).
 transcripts = ["faster-whisper==1.2.1"]
+# The call assistant's providers (ADR 0010). Verified on pypi.org 2026-11-11: the plugins are released with
+# livekit-agents and pinned to the same version; Silero ships its VAD model in the wheel.
+assistant = [
+  "livekit-plugins-openai==1.8.11",
+  "livekit-plugins-deepgram==1.8.11",
+  "livekit-plugins-elevenlabs==1.8.11",
+  "livekit-plugins-google==1.8.11",
+  "livekit-plugins-silero==1.8.11",
+]
 # Verified on pypi.org 2026-11-10 (latest stable).
 test = ["pytest==9.2.0", "pytest-asyncio==1.4.1.post1", "ruff==0.17.4"]
 

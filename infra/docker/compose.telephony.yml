@@ -4,6 +4,8 @@
 #   docker compose -f infra/docker/compose.yml -f infra/docker/compose.telephony.yml up -d --build
 #   # optional transcripts (self-hosted Whisper; downloads the model on first start):
 #   docker compose -f infra/docker/compose.yml -f infra/docker/compose.telephony.yml --profile transcripts up -d
+#   # the call assistant (ADR 0010; needs ASSISTANT_NUMBERS and the speech and language providers' keys):
+#   docker compose -f infra/docker/compose.yml -f infra/docker/compose.telephony.yml --profile assistant up -d
 #
 # Setup of the SIP trunk and the dispatch rule, ports and firewall: infra/deploy/telephony.md.
 # SIP, Egress and the agents use host networking (Linux only), as LiveKit's own SIP compose file does: Docker handles
@@ -121,6 +123,44 @@ services:
     depends_on:
       recorder:
         condition: service_started
+
+  # The call assistant (ADR 0010): answers calls forwarded to the users' assistant numbers. Off by default. The
+  # providers are the operator's choice (ASSISTANT_STT, ASSISTANT_LLM, ASSISTANT_TTS: openai, deepgram, elevenlabs or
+  # google; an OpenAI-compatible server of your own through the *_BASE_URL variables). Only the variables set in .env
+  # reach the agent.
+  assistant:
+    profiles: ["assistant"]
+    image: opencaller/agents:dev
+    restart: unless-stopped
+    network_mode: host
+    command: ["python", "-m", "opencaller_agents.assistant", "start"]
+    environment:
+      LIVEKIT_URL: ws://127.0.0.1:7880
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-opencaller}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?set LIVEKIT_API_SECRET in infra/docker/.env}
+      OPENCALLER_API_URL: http://127.0.0.1:8080
+      RECORDING_AGENT_TOKEN: ${RECORDING_AGENT_TOKEN:?set RECORDING_AGENT_TOKEN in infra/docker/.env}
+      ASSISTANT_LANGUAGE: ${ASSISTANT_LANGUAGE:-en}
+      ASSISTANT_STT: ${ASSISTANT_STT:-openai}
+      ASSISTANT_STT_MODEL: ${ASSISTANT_STT_MODEL:-}
+      ASSISTANT_STT_BASE_URL: ${ASSISTANT_STT_BASE_URL:-}
+      ASSISTANT_LLM: ${ASSISTANT_LLM:-openai}
+      ASSISTANT_LLM_MODEL: ${ASSISTANT_LLM_MODEL:-}
+      ASSISTANT_LLM_BASE_URL: ${ASSISTANT_LLM_BASE_URL:-}
+      ASSISTANT_TTS: ${ASSISTANT_TTS:-openai}
+      ASSISTANT_TTS_MODEL: ${ASSISTANT_TTS_MODEL:-}
+      ASSISTANT_TTS_VOICE: ${ASSISTANT_TTS_VOICE:-}
+      ASSISTANT_TTS_BASE_URL: ${ASSISTANT_TTS_BASE_URL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      DEEPGRAM_API_KEY: ${DEEPGRAM_API_KEY:-}
+      ELEVEN_API_KEY: ${ELEVEN_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-}
+    depends_on:
+      livekit:
+        condition: service_started
+      server:
+        condition: service_healthy
 
 volumes:
   whisper-models:

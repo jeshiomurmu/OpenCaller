@@ -53,8 +53,10 @@ tags:
     description: The business dashboard, server-rendered HTML (docs/prd.md F-BZ-04)
   - name: recording
     description: The recording line, recordings and transcripts (docs/prd.md F-UT-03, ADR 0009)
+  - name: assistant
+    description: The AI call-screening assistant (docs/prd.md F-UT-04, ADR 0010)
   - name: agents
-    description: Endpoints for the recorder and transcriber agents (bearer RECORDING_AGENT_TOKEN; absent when unset)
+    description: Endpoints for the recorder, transcriber and assistant agents (bearer RECORDING_AGENT_TOKEN; absent when unset)
 
 paths:
   /health:
@@ -1798,6 +1800,105 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/RecordingNotFound" }
 
+  /v1/lines/assistant:
+    post:
+      tags: [assistant]
+      summary: Get your assistant number
+      description: |
+        Gives a supporter (or anyone on a self-hosted server) a number of their own from the operator's pool
+        (ASSISTANT_NUMBERS), in the country of their verified number. The app sets conditional call forwarding to it;
+        calls that reach it are answered by the assistant. Asking again returns the same number. 10 a day.
+      operationId: allocateAssistantNumber
+      security: [{ accessToken: [] }]
+      responses:
+        "201": { description: Your number., content: { application/json: { schema: { $ref: "#/components/schemas/AssistantLine" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { description: "`supporter_required`, or `assistant_unavailable` (no numbers on this server, or none free in your country).", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "429": { $ref: "#/components/responses/RateLimited" }
+    get:
+      tags: [assistant]
+      summary: Your assistant number
+      operationId: getAssistantNumber
+      security: [{ accessToken: [] }]
+      responses:
+        "200": { description: Your number., content: { application/json: { schema: { $ref: "#/components/schemas/AssistantLine" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: "`assistant_line_not_found`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    delete:
+      tags: [assistant]
+      summary: Give your assistant number back
+      description: Cancel the call forwarding first (`##002#`); the number goes back to the pool.
+      operationId: releaseAssistantNumber
+      security: [{ accessToken: [] }]
+      responses:
+        "204": { description: Released (also when you had none). }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/assistant/usage:
+    get:
+      tags: [assistant]
+      summary: Assistant minutes used this month
+      operationId: getAssistantUsage
+      security: [{ accessToken: [] }]
+      responses:
+        "200": { description: The month's usage., content: { application/json: { schema: { $ref: "#/components/schemas/AssistantUsage" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/assistant/calls/{id}:
+    get:
+      tags: [assistant]
+      summary: A call the assistant answered
+      description: |
+        The room to join while the call lasts, with a LiveKit token that can send and receive data messages but
+        publish no media. The caller's number, the transcript and the details come from the agent in the room; the
+        server has none of them. Calls are deleted a day after they started.
+      operationId: getAssistantCall
+      security: [{ accessToken: [] }]
+      parameters: [{ $ref: "#/components/parameters/ItemId" }]
+      responses:
+        "200": { description: The call., content: { application/json: { schema: { $ref: "#/components/schemas/AssistantCall" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: "`assistant_call_not_found` (also for another user's call).", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+
+  /agent/v1/assistant/calls:
+    post:
+      tags: [agents]
+      summary: Claim a call by the dialed number
+      description: |
+        The assistant answered a call to `number` in `room`. The user who has that number gets an `assistant_call`
+        push (only the call's id). The same room claims the same call again. 600 per 10 minutes for the server.
+      operationId: claimAssistantCall
+      security: [{ agentToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AssistantClaimRequest" }
+      responses:
+        "200": { description: The call., content: { application/json: { schema: { $ref: "#/components/schemas/AssistantClaimResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { description: "`supporter_required` (the user's subscription lapsed).", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "404": { description: "`number_not_found` (no user has this number).", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "429": { description: "`assistant_limit` (the user's minutes for this month are used up) or `rate_limited`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+
+  /agent/v1/assistant/calls/{id}/end:
+    post:
+      tags: [agents]
+      summary: Report the end of a call
+      description: The duration counts towards the user's month, clamped to the time since the claim. A second report changes nothing.
+      operationId: endAssistantCall
+      security: [{ agentToken: [] }]
+      parameters: [{ $ref: "#/components/parameters/ItemId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AssistantEndRequest" }
+      responses:
+        "204": { description: Stored. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: "`assistant_call_not_found`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+
 components:
   securitySchemes:
     accessToken:
@@ -2148,6 +2249,7 @@ components:
             flash: { type: boolean, description: A push provider is configured. }
             fcm: { type: boolean, description: FCM is configured (play builds register FCM tokens). }
             webPushVapidKey: { type: string, description: "VAPID public key (87 characters, base64url) for UnifiedPush registration." }
+            assistant: { type: boolean, description: The call assistant has numbers and LiveKit (Phase 13). }
 
     Entitlements:
       type: object
@@ -2478,12 +2580,62 @@ components:
       required: [id, kind, createdAt]
       properties:
         id: { type: string, format: uuid }
-        kind: { type: string, enum: [call_invite, call_update, flash, family_alert, recording_ready] }
+        kind: { type: string, enum: [call_invite, call_update, flash, family_alert, recording_ready, assistant_call] }
         createdAt: { type: string, format: date-time }
         call: { $ref: "#/components/schemas/CallInvite" }
         flash: { $ref: "#/components/schemas/Flash" }
         familyAlert: { $ref: "#/components/schemas/FamilyAlert" }
         recording: { $ref: "#/components/schemas/Recording" }
+        assistantCall: { $ref: "#/components/schemas/AssistantCall" }
+
+    AssistantLine:
+      type: object
+      required: [number, country]
+      properties:
+        number: { type: string, description: Forward unanswered calls to this number (E.164). }
+        country: { type: string, pattern: "^[A-Z]{2}$" }
+
+    AssistantUsage:
+      type: object
+      required: [month, usedSeconds, limitMinutes, maxCallMinutes]
+      properties:
+        month: { type: string, pattern: "^[0-9]{4}-[0-9]{2}$", description: The calendar month (UTC). }
+        usedSeconds: { type: integer, minimum: 0 }
+        limitMinutes: { type: integer, minimum: 0, description: Minutes a month; 0 means no cap. }
+        maxCallMinutes: { type: integer, minimum: 1 }
+
+    AssistantCall:
+      type: object
+      required: [id, startedAt, ended, room]
+      properties:
+        id: { type: string, format: uuid }
+        startedAt: { type: string, format: date-time }
+        ended: { type: boolean }
+        room: { type: string }
+        url: { type: string, description: LiveKit URL (while the call lasts). }
+        token: { type: string, description: LiveKit token for data messages only (while the call lasts). }
+        expiresAt: { type: string, format: date-time }
+
+    AssistantClaimRequest:
+      type: object
+      required: [number, room]
+      properties:
+        number: { type: string, description: "The dialed number (`sip.trunkPhoneNumber`), with or without `+`." }
+        room: { type: string, maxLength: 128 }
+
+    AssistantClaimResponse:
+      type: object
+      required: [callId, appIdentity, remainingSeconds]
+      properties:
+        callId: { type: string, format: uuid }
+        appIdentity: { type: string, description: "The user's LiveKit identity: send data messages to it only." }
+        remainingSeconds: { type: integer, description: How long this call may last. }
+
+    AssistantEndRequest:
+      type: object
+      required: [durationSeconds]
+      properties:
+        durationSeconds: { type: integer, minimum: 0 }
 
     RecordingLine:
       type: object
@@ -2912,3 +3064,8 @@ components:
             - session_not_active
             - recording_not_found
             - invalid_recording
+            - assistant_unavailable
+            - assistant_line_not_found
+            - assistant_call_not_found
+            - number_not_found
+            - assistant_limit

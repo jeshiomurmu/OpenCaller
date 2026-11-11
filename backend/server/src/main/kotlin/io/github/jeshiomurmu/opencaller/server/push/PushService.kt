@@ -45,6 +45,7 @@ enum class PushKind(
     FLASH("flash"),
     FAMILY_ALERT("family_alert"),
     RECORDING_READY("recording_ready"),
+    ASSISTANT_CALL("assistant_call"),
     ;
 
     /** Lookup by stored value. */

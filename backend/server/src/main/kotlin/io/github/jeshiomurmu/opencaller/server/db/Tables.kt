@@ -295,4 +295,7 @@ val allTables: List<Table> =
         RecordingCountries,
         RecordingSessions,
         Recordings,
+        AssistantNumbers,
+        AssistantCalls,
+        AssistantUsage,
     )

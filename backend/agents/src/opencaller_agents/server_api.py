@@ -29,6 +29,22 @@ class Claim:
 
 
 @dataclass(frozen=True)
+class AssistantClaim:
+    """A call the assistant may answer: data messages go to [app_identity] only; it ends after [remaining_seconds]."""
+
+    call_id: str
+    app_identity: str
+    remaining_seconds: int
+
+
+@dataclass(frozen=True)
+class AssistantRefusal:
+    """Why the assistant can't take a call: `number_not_found`, `assistant_limit`, `supporter_required`, ..."""
+
+    code: str
+
+
+@dataclass(frozen=True)
 class TranscriptJob:
     recording_id: str
     url: str
@@ -54,6 +70,23 @@ class ServerApi:
             "POST",
             f"/agent/v1/recording/sessions/{session_id}/result",
             {"status": "complete" if complete else "failed", "sizeBytes": size_bytes, "durationMs": duration_ms},
+        )
+        _expect(status, 204, body)
+
+    async def claim_assistant_call(self, number: str, room: str) -> AssistantClaim | AssistantRefusal:
+        """The user who has the dialed [number]; the server pushes the call's id to their phone. Never the caller's number."""
+        status, body = await self._transport.send("POST", "/agent/v1/assistant/calls", {"number": number, "room": room})
+        if status == 200:
+            return AssistantClaim(str(body["callId"]), str(body["appIdentity"]), int(body["remainingSeconds"]))
+        if 400 <= status < 500:
+            code = body.get("code") if isinstance(body, dict) else None
+            return AssistantRefusal(str(code or f"http_{status}"))
+        raise ServerError(f"HTTP {status}")
+
+    async def end_assistant_call(self, call_id: str, duration_seconds: int) -> None:
+        """The call's length, for the user's monthly minutes."""
+        status, body = await self._transport.send(
+            "POST", f"/agent/v1/assistant/calls/{call_id}/end", {"durationSeconds": max(0, duration_seconds)}
         )
         _expect(status, 204, body)
 

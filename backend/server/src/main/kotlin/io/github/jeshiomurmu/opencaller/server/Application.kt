@@ -3,6 +3,7 @@ package io.github.jeshiomurmu.opencaller.server
 import com.auth0.jwt.interfaces.JWTVerifier
 import io.github.jeshiomurmu.opencaller.server.admin.adminModule
 import io.github.jeshiomurmu.opencaller.server.admin.web.adminWebModule
+import io.github.jeshiomurmu.opencaller.server.assistant.assistantRoutes
 import io.github.jeshiomurmu.opencaller.server.auth.TokenService
 import io.github.jeshiomurmu.opencaller.server.auth.authRoutes
 import io.github.jeshiomurmu.opencaller.server.billing.billingRoutes
@@ -136,6 +137,7 @@ fun Application.module(deps: ServerDependencies) {
         scamFeedRoutes(deps.scamFeed)
         portalRoutes(deps.portal, secureCookie = deps.config.environment == Environment.PRODUCTION)
         recordingRoutes(deps.recording)
+        assistantRoutes(deps.assistant)
     }
 }
 

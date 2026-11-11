@@ -82,6 +82,11 @@ x-server-environment: &server-environment
   RECORDING_COUNTRIES: ${RECORDING_COUNTRIES:-BD,IN}
   RECORDING_AGENT_TOKEN: ${RECORDING_AGENT_TOKEN:-}
   RECORDING_DOWNLOAD_GRACE_MINUTES: ${RECORDING_DOWNLOAD_GRACE_MINUTES:-30}
+  # Call assistant (Phase 13, ADR 0010; the `assistant` profile of compose.telephony.yml). Off unless
+  # ASSISTANT_NUMBERS is set (with RECORDING_AGENT_TOKEN and LiveKit): the pool of numbers users forward calls to.
+  ASSISTANT_NUMBERS: ${ASSISTANT_NUMBERS:-}
+  ASSISTANT_MONTHLY_MINUTES: ${ASSISTANT_MONTHLY_MINUTES:-100}
+  ASSISTANT_MAX_CALL_MINUTES: ${ASSISTANT_MAX_CALL_MINUTES:-5}
 
 services:
   postgres:
