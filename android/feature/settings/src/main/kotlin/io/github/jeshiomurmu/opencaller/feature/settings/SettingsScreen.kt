@@ -71,6 +71,7 @@ fun SettingsScreen(
             icon = OpenCallerIcons.Message,
         )
         SupporterRows(links)
+        CallToolRows(links)
         AboutRow(versionName = versionName, onOpenDebug = links.onOpenDebug)
     }
 }
@@ -108,11 +109,22 @@ private fun SupporterRows(links: SettingsLinks) {
         onClick = links.onOpenVoip,
         icon = OpenCallerIcons.Calls,
     )
+}
+
+// Phase 13: the recording line and the call assistant.
+@Composable
+private fun CallToolRows(links: SettingsLinks) {
     SettingsRow(
         title = stringResource(R.string.settings_recordings),
         summary = stringResource(R.string.settings_recordings_summary),
         onClick = links.onOpenRecordings,
         icon = OpenCallerIcons.Record,
+    )
+    SettingsRow(
+        title = stringResource(R.string.settings_assistant),
+        summary = stringResource(R.string.settings_assistant_summary),
+        onClick = links.onOpenAssistant,
+        icon = OpenCallerIcons.Voicemail,
     )
 }
 

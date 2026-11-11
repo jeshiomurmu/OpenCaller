@@ -130,4 +130,6 @@
     <string name="messenger_no_number_note">If the app shows a name instead of a number (a contact in that app), OpenCaller shows nothing.</string>
     <string name="settings_recordings">Recordings</string>
     <string name="settings_recordings_summary">Calls you recorded with the recording line, kept only on this phone</string>
+    <string name="settings_assistant">Call assistant</string>
+    <string name="settings_assistant_summary">An AI assistant answers calls you miss and shows you who is calling and why</string>
 </resources>

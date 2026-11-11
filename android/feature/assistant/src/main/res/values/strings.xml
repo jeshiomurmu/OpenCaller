@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Setup (docs/prd.md F-UT-04) -->
+    <string name="assistant_title">Call assistant</string>
+    <string name="assistant_intro">When you don\'t answer, your calls can go to an automated assistant. It tells the caller it is an assistant, asks who is calling and why, and shows you the conversation live. It never asks for codes, passwords or bank details.</string>
+    <string name="assistant_privacy">The caller\'s number, the conversation and the summary go only to this phone. The server keeps your minutes, not who called or what was said.</string>
+    <string name="assistant_turn_on">Get my assistant number</string>
+    <string name="assistant_turn_off">Turn off the assistant</string>
+    <string name="assistant_your_number">Your assistant number: %1$s</string>
+    <string name="assistant_forwarding_title">Forward unanswered calls</string>
+    <string name="assistant_forwarding_intro">Dial each code below. Your phone shows the network\'s answer; most networks confirm with a short message.</string>
+    <string name="assistant_code_no_reply">When you don\'t answer</string>
+    <string name="assistant_code_unreachable">When your phone is off or has no signal</string>
+    <string name="assistant_code_busy">When you are on another call</string>
+    <string name="assistant_dial">Dial</string>
+    <string name="assistant_cancel_title">Stop forwarding</string>
+    <string name="assistant_cancel_text">Dial %1$s to cancel every call forwarding on this SIM, then turn the assistant off.</string>
+    <string name="assistant_carrier_title">My carrier doesn\'t support this</string>
+    <string name="assistant_carrier_text">Some carriers, prepaid plans and VoLTE networks don\'t accept these codes, or charge for forwarded calls. Look in your phone\'s call settings (Calls → Call forwarding) or your carrier\'s app, and forward to your assistant number there. Ask your carrier about the cost of forwarded calls. If nothing works, your carrier doesn\'t offer conditional forwarding on this plan.</string>
+    <string name="assistant_turn_off_title">Turn off the assistant?</string>
+    <string name="assistant_turn_off_text">First dial %1$s, or calls keep going to a number that no longer answers for you.</string>
+    <string name="assistant_turn_off_confirm">Turn off</string>
+    <string name="assistant_cancel">Cancel</string>
+    <string name="assistant_usage_title">This month</string>
+    <string name="assistant_usage">%1$d of %2$d minutes used</string>
+    <string name="assistant_usage_unlimited">%1$d minutes used</string>
+    <string name="assistant_usage_exhausted">Your minutes for this month are used up. Until next month, callers hear that you can\'t take calls.</string>
+    <string name="assistant_history_title">Screened calls</string>
+    <string name="assistant_history_empty">No screened calls yet.</string>
+    <string name="assistant_hidden_number">Hidden number</string>
+    <string name="assistant_spam_label">Likely spam</string>
+    <string name="assistant_urgent_label">Urgent</string>
+    <string name="assistant_delete">Delete</string>
+    <string name="assistant_signed_out">Sign in to use the call assistant.</string>
+    <string name="assistant_supporter">The call assistant is part of the supporter tier.</string>
+    <string name="assistant_unavailable">There is no assistant number for your country on this server yet.</string>
+    <string name="assistant_network_error">Couldn\'t reach the server. Try again.</string>
+    <string name="assistant_not_on_server">This server doesn\'t offer the call assistant.</string>
+    <string name="assistant_not_in_build">This build can\'t show live calls (F-Droid builds leave out LiveKit). Use the Play build or your own build with LiveKit.</string>
+
+    <!-- Live screen -->
+    <string name="assistant_live_title">Assistant is answering</string>
+    <string name="assistant_live_connecting">Connecting to the call…</string>
+    <string name="assistant_live_failed">Couldn\'t join the call. It may have ended.</string>
+    <string name="assistant_live_ended">The call ended.</string>
+    <string name="assistant_live_not_in_build">This build can\'t follow the call live.</string>
+    <string name="assistant_live_caller">Caller</string>
+    <string name="assistant_live_assistant">Assistant</string>
+    <string name="assistant_live_name">Name: %1$s</string>
+    <string name="assistant_live_reason">Reason: %1$s</string>
+    <string name="assistant_live_reply_hint">Quick reply for the caller</string>
+    <string name="assistant_live_send">Send</string>
+    <string name="assistant_live_call_back">Call back</string>
+    <string name="assistant_live_spam">Spam, hang up</string>
+    <string name="assistant_live_close">Close</string>
+    <string name="assistant_live_not_connected">The call isn\'t connected.</string>
+    <string name="assistant_live_send_failed">Couldn\'t send that to the assistant.</string>
+    <string name="assistant_end_callback">You said you\'d call back</string>
+    <string name="assistant_end_spam">Marked as spam</string>
+    <string name="assistant_end_time">Ended at the time limit</string>
+    <string name="assistant_end_hung_up">The caller hung up</string>
+    <string name="assistant_end_done">The assistant said goodbye</string>
+
+    <!-- Notification -->
+    <string name="assistant_channel">Call assistant</string>
+    <string name="assistant_channel_description">When the assistant answers a call for you</string>
+    <string name="assistant_notification_title">Assistant is answering a call</string>
+    <string name="assistant_notification_text">Tap to follow it live</string>
+</resources>

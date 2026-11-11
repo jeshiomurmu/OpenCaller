@@ -90,6 +90,9 @@ class OpenCallerNetwork(
     /** The recording line (Phase 13). */
     val recordingApi: RecordingApi = retrofit(authed).create(RecordingApi::class.java)
 
+    /** The call assistant (Phase 13, ADR 0010). */
+    val assistantApi: AssistantApi = retrofit(authed).create(AssistantApi::class.java)
+
     /** The live lookup, cut off after the lookup timeout so a slow server never holds up a call. */
     val lookupApi: LookupApi =
         retrofit(

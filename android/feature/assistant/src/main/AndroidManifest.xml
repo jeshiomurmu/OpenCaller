@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- The live screen of a call the assistant answers; only this app's notification opens it. -->
+        <activity
+            android:name=".LiveScreeningActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTop"
+            android:taskAffinity="io.github.jeshiomurmu.opencaller.assistant" />
+    </application>
+</manifest>

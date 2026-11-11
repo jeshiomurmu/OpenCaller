@@ -25,6 +25,7 @@ data class NotificationDto(
     val flash: FlashDto? = null,
     val familyAlert: FamilyAlertViewDto? = null,
     val recording: RecordingDto? = null,
+    val assistantCall: AssistantCallDto? = null,
 )
 
 /** An app call as one party sees it; [number], [name] and [videoId] describe the other party. */

@@ -29,6 +29,7 @@ class VoipPreferences(
                 flash = it[FLASH] ?: false,
                 fcm = it[FCM] ?: false,
                 webPushVapidKey = it[VAPID],
+                assistant = it[ASSISTANT] ?: false,
             )
         }
 
@@ -43,6 +44,7 @@ class VoipPreferences(
             it[APP_CALLS] = features.appCalls
             it[FLASH] = features.flash
             it[FCM] = features.fcm
+            it[ASSISTANT] = features.assistant
             val vapid = features.webPushVapidKey
             if (vapid == null) it.remove(VAPID) else it[VAPID] = vapid
         }
@@ -98,6 +100,7 @@ class VoipPreferences(
         private val APP_CALLS = booleanPreferencesKey("feature_app_calls")
         private val FLASH = booleanPreferencesKey("feature_flash")
         private val FCM = booleanPreferencesKey("feature_fcm")
+        private val ASSISTANT = booleanPreferencesKey("feature_assistant")
         private val VAPID = stringPreferencesKey("feature_vapid_key")
         private val ENDPOINT_TYPE = stringPreferencesKey("push_type")
         private val ENDPOINT = stringPreferencesKey("push_endpoint")

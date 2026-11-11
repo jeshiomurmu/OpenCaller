@@ -14,6 +14,7 @@ import io.github.jeshiomurmu.opencaller.core.database.dao.OtpAppHashDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.RecordingDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.ReportOutboxDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.ScheduledSmsDao
+import io.github.jeshiomurmu.opencaller.core.database.dao.ScreenedCallDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.ScreeningEventDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.SenderIdDao
 import io.github.jeshiomurmu.opencaller.core.database.dao.SpamListDao
@@ -30,6 +31,7 @@ import io.github.jeshiomurmu.opencaller.core.database.entity.OtpAppHashEntity
 import io.github.jeshiomurmu.opencaller.core.database.entity.RecordingEntity
 import io.github.jeshiomurmu.opencaller.core.database.entity.ReportOutboxEntity
 import io.github.jeshiomurmu.opencaller.core.database.entity.ScheduledSmsEntity
+import io.github.jeshiomurmu.opencaller.core.database.entity.ScreenedCallEntity
 import io.github.jeshiomurmu.opencaller.core.database.entity.ScreeningEventEntity
 import io.github.jeshiomurmu.opencaller.core.database.entity.SenderIdEntity
 import io.github.jeshiomurmu.opencaller.core.database.entity.SpamListEntry
@@ -59,8 +61,9 @@ import io.github.jeshiomurmu.opencaller.core.database.entity.VerifiedBusinessEnt
         VerifiedBusinessEntity::class,
         ExtendedSpamListEntry::class,
         FlashMessageEntity::class,
+        ScreenedCallEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 @Suppress("TooManyFunctions") // One accessor per DAO is how Room exposes them.
@@ -115,4 +118,7 @@ abstract class OpenCallerDatabase : RoomDatabase() {
 
     /** Flash messages (Phase 11). */
     abstract fun flashMessageDao(): FlashMessageDao
+
+    /** Calls the assistant answered (Phase 13). */
+    abstract fun screenedCallDao(): ScreenedCallDao
 }

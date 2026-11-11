@@ -38,8 +38,19 @@ object Migrations {
                 "`name` TEXT, `atMillis` INTEGER NOT NULL, `outgoing` INTEGER NOT NULL, PRIMARY KEY(`id`))",
         )
 
+    /** Version 6 (Phase 13): calls the AI assistant answered, `screened_call` (on the phone only, ADR 0010). */
+    val MIGRATION_5_6: Migration =
+        SqlMigration(
+            5,
+            6,
+            "CREATE TABLE IF NOT EXISTS `screened_call` (`id` TEXT NOT NULL, `startedAt` INTEGER NOT NULL, `e164` TEXT, " +
+                "`name` TEXT, `reason` TEXT, `urgency` TEXT NOT NULL, `likelySpam` INTEGER NOT NULL, `transcript` TEXT NOT NULL, " +
+                "`endReason` TEXT NOT NULL, PRIMARY KEY(`id`))",
+            "CREATE INDEX IF NOT EXISTS `index_screened_call_startedAt` ON `screened_call` (`startedAt`)",
+        )
+
     /** Every migration, in order. */
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
 }
 
 /**

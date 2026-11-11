@@ -2,6 +2,7 @@ package io.github.jeshiomurmu.opencaller.core.data
 
 import android.os.Build
 import io.github.jeshiomurmu.opencaller.core.data.account.AccountStatus
+import io.github.jeshiomurmu.opencaller.core.data.assistant.AssistantCallNotices
 import io.github.jeshiomurmu.opencaller.core.data.voip.AppCallHandler
 import io.github.jeshiomurmu.opencaller.core.data.voip.ClipNetwork
 import io.github.jeshiomurmu.opencaller.core.data.voip.FlashRepository
@@ -56,6 +57,8 @@ class VoipDataTest {
     private val shown = mutableListOf<FlashMessage>()
     private val familyAlerts = mutableListOf<FamilyAlert>()
     private var recordingSyncs = 0
+    private val assistantCalls = mutableListOf<String>()
+    private val assistantNotices = AssistantCallNotices { callId, _ -> assistantCalls += callId }
     private val invites = mutableListOf<AppCall>()
     private val updates = mutableListOf<AppCall>()
     private val handler =
@@ -76,7 +79,16 @@ class VoipDataTest {
     }
 
     private fun router(calls: Optional<AppCallHandler> = Optional.of(handler)) =
-        NotificationRouter(api, calls, flash, { shown += it }, { familyAlerts += it }, { recordingSyncs++ }, clock)
+        NotificationRouter(
+            api,
+            calls,
+            flash,
+            { shown += it },
+            { familyAlerts += it },
+            { recordingSyncs++ },
+            Optional.of(assistantNotices),
+            clock,
+        )
 
     private val itemId = "7b0a0c7e-1f7c-4d73-9d0e-2cbe0e6f6a10"
     private val videoId = "3f2d1c4b-5a69-4e7f-8a9b-0c1d2e3f4a5b"
@@ -165,6 +177,23 @@ class VoipDataTest {
             )
             assertTrue(router().onPush(itemId))
             assertEquals(1, recordingSyncs)
+        }
+
+    // TC-AST-001 (phone side): the push stands only for the call's id; a call that already ended shows nothing.
+    @Test
+    fun anAssistantCallPushShowsTheCallWhileItLasts() =
+        runBlocking {
+            for (ended in listOf(false, true)) {
+                server.enqueue(
+                    jsonResponse(
+                        200,
+                        """{"id":"$itemId","kind":"assistant_call","createdAt":"2026-11-11T10:00:00Z","assistantCall":{"id":"$itemId",""" +
+                            """"startedAt":"2026-11-11T10:00:00Z","ended":$ended,"room":"ast_1"}}""",
+                    ),
+                )
+                assertTrue(router().onPush(itemId))
+            }
+            assertEquals(listOf(itemId), assistantCalls)
         }
 
     @Test
