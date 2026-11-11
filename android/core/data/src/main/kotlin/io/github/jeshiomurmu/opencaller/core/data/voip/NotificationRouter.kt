@@ -4,6 +4,7 @@ import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.common.Clock
 import io.github.jeshiomurmu.opencaller.core.data.family.FamilyAlertNotices
 import io.github.jeshiomurmu.opencaller.core.data.family.toFamilyAlert
+import io.github.jeshiomurmu.opencaller.core.data.recording.RecordingDownloads
 import io.github.jeshiomurmu.opencaller.core.network.NotificationDto
 import io.github.jeshiomurmu.opencaller.core.network.VoipApi
 import io.github.jeshiomurmu.opencaller.core.network.apiCall
@@ -15,10 +16,12 @@ import javax.inject.Singleton
 /**
  * Turns a push into what it stands for (ADR 0007). A push carries only a random id; the phone asks the server
  * what it is (`GET /v1/notifications/{id}`) and hands app calls to [AppCallHandler] (when the build has app calls)
- * and Flash messages to [FlashRepository] and [FlashAlerts], and shows a family alert to the group's admin
- * ([FamilyAlertNotices], ADR 0008). [catchUp] does the same for items whose push never arrived.
+ * and Flash messages to [FlashRepository] and [FlashAlerts], shows a family alert to the group's admin
+ * ([FamilyAlertNotices], ADR 0008) and saves a finished recording ([RecordingDownloads], ADR 0009). [catchUp] does
+ * the same for items whose push never arrived.
  */
 @Singleton
+@Suppress("LongParameterList") // One handler per kind of push item, plus the API and the clock.
 class NotificationRouter
     @Inject
     constructor(
@@ -27,6 +30,7 @@ class NotificationRouter
         private val flash: FlashRepository,
         private val alerts: FlashAlerts,
         private val family: FamilyAlertNotices,
+        private val recordings: RecordingDownloads,
         private val clock: Clock,
     ) {
         /** Handles the push that carried [itemId]; false if the item couldn't be fetched. */
@@ -77,6 +81,11 @@ class NotificationRouter
                     item.familyAlert?.toFamilyAlert()?.let(family::show)
                 }
 
+                RECORDING_READY -> {
+                    // Saved in the background; the server deletes its copy once the phone has it (ADR 0009).
+                    if (item.recording != null) recordings.syncSoon()
+                }
+
                 else -> {
                     Timber.i("Unknown push item kind %s", item.kind)
                 }
@@ -88,6 +97,7 @@ class NotificationRouter
             const val CALL_UPDATE = "call_update"
             const val FLASH = "flash"
             const val FAMILY_ALERT = "family_alert"
+            const val RECORDING_READY = "recording_ready"
             val ITEM_ID = Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
         }
     }

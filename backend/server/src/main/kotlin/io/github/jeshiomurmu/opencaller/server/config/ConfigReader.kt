@@ -66,6 +66,7 @@ internal class ConfigReader(
                 imports = ImportConfig(string("imports.dir"), int("imports.hourUtc", "IMPORT_HOUR_UTC", 0..LAST_HOUR)),
                 billing = BillingConfig(bool("billing.selfHosted", "SELF_HOSTED"), readGooglePlay(environment)),
                 voip = readVoip(environment),
+                recording = readRecording(),
             )
         if (result.scoring.verifiedCap >= result.lists.minScore) problems += "SCORING_VERIFIED_CAP must be below LIST_MIN_SCORE"
         if (result.http.port == result.http.metricsPort) problems += "PORT and METRICS_PORT must differ"
@@ -183,6 +184,9 @@ internal class ConfigReader(
 
     // An unset or blank variable counts as missing.
     internal fun string(path: String): String? = if (config.hasPath(path)) config.getString(path).trim().ifEmpty { null } else null
+
+    // The value as set, blank included (for lists where "set but empty" means none).
+    internal fun rawString(path: String): String? = if (config.hasPath(path)) config.getString(path).trim() else null
 
     internal fun required(
         path: String,

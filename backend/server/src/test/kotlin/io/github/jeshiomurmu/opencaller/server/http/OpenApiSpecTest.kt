@@ -1,6 +1,9 @@
 package io.github.jeshiomurmu.opencaller.server.http
 
+import io.github.jeshiomurmu.opencaller.server.config.RecordingConfig
+import io.github.jeshiomurmu.opencaller.server.testing.TestServer
 import io.github.jeshiomurmu.opencaller.server.testing.apiTest
+import io.github.jeshiomurmu.opencaller.server.testing.testConfig
 import io.ktor.server.application.plugin
 import io.ktor.server.routing.HttpMethodRouteSelector
 import io.ktor.server.routing.RoutingRoot
@@ -29,9 +32,13 @@ class OpenApiSpecTest {
             }
         }
 
+    // With every optional part on, so their routes exist too (the agents' only with RECORDING_AGENT_TOKEN).
+    private val everything =
+        testConfig().copy(recording = RecordingConfig(lines = mapOf("BD" to "+8809638000000"), agentToken = "a".repeat(32)))
+
     @Test
     fun everyRouteIsDocumented() =
-        apiTest {
+        apiTest(TestServer(config = everything)) {
             var routes: List<Pair<String, String>> = emptyList()
             application {
                 routes =

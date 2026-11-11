@@ -25,6 +25,7 @@ import io.github.jeshiomurmu.opencaller.server.lists.listRoutes
 import io.github.jeshiomurmu.opencaller.server.lookup.lookupRoutes
 import io.github.jeshiomurmu.opencaller.server.portal.portalRoutes
 import io.github.jeshiomurmu.opencaller.server.profile.profileRoutes
+import io.github.jeshiomurmu.opencaller.server.recording.recordingRoutes
 import io.github.jeshiomurmu.opencaller.server.reports.reportRoutes
 import io.github.jeshiomurmu.opencaller.server.scamfeed.scamFeedRoutes
 import io.github.jeshiomurmu.opencaller.server.sync.syncRoutes
@@ -134,6 +135,7 @@ fun Application.module(deps: ServerDependencies) {
         familyRoutes(deps.family, deps.familyAlerts)
         scamFeedRoutes(deps.scamFeed)
         portalRoutes(deps.portal, secureCookie = deps.config.environment == Environment.PRODUCTION)
+        recordingRoutes(deps.recording)
     }
 }
 

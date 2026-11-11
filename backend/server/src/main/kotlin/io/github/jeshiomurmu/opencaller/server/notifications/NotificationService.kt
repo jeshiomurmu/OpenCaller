@@ -8,6 +8,8 @@ import io.github.jeshiomurmu.opencaller.server.http.ApiProblem
 import io.github.jeshiomurmu.opencaller.server.push.PushItem
 import io.github.jeshiomurmu.opencaller.server.push.PushKind
 import io.github.jeshiomurmu.opencaller.server.push.PushService
+import io.github.jeshiomurmu.opencaller.server.recording.RecordingService
+import io.github.jeshiomurmu.opencaller.server.recording.RecordingView
 import io.github.jeshiomurmu.opencaller.server.voip.InviteView
 import io.github.jeshiomurmu.opencaller.server.voip.VoipService
 import io.ktor.http.HttpStatusCode
@@ -16,8 +18,8 @@ import org.slf4j.LoggerFactory
 import java.util.UUID
 
 /**
- * What a push stood for: [kind] is `call_invite`, `call_update` (with [call]), `flash` (with [flash]) or
- * `family_alert` (with [familyAlert]).
+ * What a push stood for: [kind] is `call_invite`, `call_update` (with [call]), `flash` (with [flash]),
+ * `family_alert` (with [familyAlert]) or `recording_ready` (with [recording]).
  */
 @Serializable
 data class NotificationView(
@@ -27,6 +29,7 @@ data class NotificationView(
     val call: InviteView? = null,
     val flash: FlashView? = null,
     val familyAlert: FamilyAlertView? = null,
+    val recording: RecordingView? = null,
 )
 
 /** `GET /v1/notifications`: the items behind pushes, for the push that just arrived or for a phone that missed some. */
@@ -35,6 +38,7 @@ class NotificationService(
     private val voip: VoipService,
     private val flash: FlashService,
     private val family: FamilyAlertService,
+    private val recordings: RecordingService,
 ) {
     /** Push item [id] of [userId], resolved; 404 `notification_not_found` if it is gone. */
     suspend fun item(
@@ -61,6 +65,10 @@ class NotificationService(
 
             PushKind.FAMILY_ALERT -> {
                 family.alertView(userId, item.refId)?.let { base.copy(familyAlert = it) }
+            }
+
+            PushKind.RECORDING_READY -> {
+                recordings.view(userId, item.refId)?.let { base.copy(recording = it) }
             }
         }
     }

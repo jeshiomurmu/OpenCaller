@@ -11,10 +11,13 @@ import io.github.jeshiomurmu.opencaller.core.telephony.incall.AudioRouteType
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallAudio
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallCapability
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallController
+import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallRecorder
+import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallRecordingStatus
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallStateRepository
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallStatus
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.ConferenceAction
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.InCallState
+import io.github.jeshiomurmu.opencaller.core.telephony.incall.RecordingFailure
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.TrackedCall
 import io.github.jeshiomurmu.opencaller.core.testing.FakeClock
 import io.github.jeshiomurmu.opencaller.core.testing.MainDispatcherRule
@@ -109,6 +112,7 @@ class InCallViewModelTest {
     private val callers = MutableStateFlow<Map<String, CallerInfo>>(emptyMap())
     private val controller = FakeCallController()
     private val userReplies = MutableStateFlow<List<String>>(emptyList())
+    private val recorder = FakeRecorder()
     private val vm by lazy {
         InCallViewModel(
             calls =
@@ -124,6 +128,7 @@ class InCallViewModelTest {
             templates = { userReplies },
             clock = FakeClock(),
             clips = CallerClips.NONE,
+            recorder = recorder,
         )
     }
 
@@ -262,4 +267,49 @@ class InCallViewModelTest {
             userReplies.value = listOf("Driving, call you later", "In a meeting")
             assertEquals(listOf("Driving, call you later", "In a meeting"), vm.uiState.value.repliesFor(ringing))
         }
+
+    @Test
+    fun onlyASingleActiveCallCanBeRecorded() =
+        runTest {
+            observe()
+            calls.value = InCallState(listOf(call("1", CallStatus.DIALING)))
+            assertFalse(vm.uiState.value.canRecord)
+            vm.onEvent(InCallEvent.Record)
+            assertTrue(recorder.started.isEmpty())
+
+            calls.value = InCallState(listOf(call("1", CallStatus.ACTIVE)))
+            assertTrue(vm.uiState.value.canRecord)
+            vm.onEvent(InCallEvent.Record)
+            assertEquals(listOf("1"), recorder.started)
+
+            // While it records, the screen shows it and offers Stop instead.
+            recorder.status.value = CallRecordingStatus.Recording("1", "2")
+            assertEquals(CallRecordingStatus.Recording("1", "2"), vm.uiState.value.recording)
+            assertFalse(vm.uiState.value.canRecord)
+            vm.onEvent(InCallEvent.StopRecording)
+            assertEquals(1, recorder.stops)
+
+            recorder.status.value = CallRecordingStatus.Failed(RecordingFailure.MERGE_FAILED)
+            assertTrue(vm.uiState.value.canRecord)
+            vm.onEvent(InCallEvent.RecordingErrorShown)
+            assertEquals(CallRecordingStatus.Idle, vm.uiState.value.recording)
+        }
+}
+
+private class FakeRecorder : CallRecorder {
+    override val status = MutableStateFlow<CallRecordingStatus>(CallRecordingStatus.Idle)
+    val started = mutableListOf<String>()
+    var stops = 0
+
+    override fun start(callId: String) {
+        started += callId
+    }
+
+    override fun stop() {
+        stops++
+    }
+
+    override fun dismiss() {
+        status.value = CallRecordingStatus.Idle
+    }
 }

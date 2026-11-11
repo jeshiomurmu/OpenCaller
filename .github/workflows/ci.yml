@@ -305,6 +305,34 @@ jobs:
           python3 -I ml/sms-classifier/corpus/generate.py
           git diff --exit-code -- android/core/testing/src/main/resources/fixtures/sms_corpus
 
+  agents:
+    name: agents (recorder, transcriber)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      # The runner's Python 3.12; versions pinned in backend/agents/pyproject.toml. Fakes stand in for LiveKit.
+      - name: Lint and unit tests (ruff, pytest)
+        working-directory: backend/agents
+        run: |
+          python3 --version
+          python3 -m venv .venv
+          .venv/bin/pip install --quiet -e '.[test]'
+          .venv/bin/ruff check src tests
+          .venv/bin/ruff format --check src tests
+          .venv/bin/pytest -q
+          .venv/bin/python -c "import opencaller_agents.recorder as r; assert r.AGENT_NAME == 'recorder'"
+
+      # The image the telephony overlay runs (recorder and transcriber), and the overlay itself.
+      - name: Agents image and telephony overlay
+        run: |
+          docker build -t opencaller/agents:ci backend/agents
+          docker run --rm opencaller/agents:ci python -c "import faster_whisper, opencaller_agents.recorder"
+          cp infra/docker/.env.example infra/docker/.env
+          echo "RECORDING_AGENT_TOKEN=$(openssl rand -hex 32)" >> infra/docker/.env
+          docker compose -f infra/docker/compose.yml -f infra/docker/compose.telephony.yml --profile transcripts config --quiet
+
   license:
     name: license
     runs-on: ubuntu-latest

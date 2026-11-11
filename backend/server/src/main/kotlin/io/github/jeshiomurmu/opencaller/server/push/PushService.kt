@@ -44,6 +44,7 @@ enum class PushKind(
     CALL_UPDATE("call_update"),
     FLASH("flash"),
     FAMILY_ALERT("family_alert"),
+    RECORDING_READY("recording_ready"),
     ;
 
     /** Lookup by stored value. */
@@ -53,7 +54,7 @@ enum class PushKind(
     }
 }
 
-/** A stored push item: [refId] is the invite, Flash message or family alert it stands for. */
+/** A stored push item: [refId] is the invite, Flash message, family alert or recording it stands for. */
 data class PushItem(
     val id: UUID,
     val kind: PushKind,

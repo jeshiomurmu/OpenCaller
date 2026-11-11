@@ -52,6 +52,14 @@ import io.github.jeshiomurmu.opencaller.server.push.HttpPushSender
 import io.github.jeshiomurmu.opencaller.server.push.PushEndpointPolicy
 import io.github.jeshiomurmu.opencaller.server.push.PushSender
 import io.github.jeshiomurmu.opencaller.server.push.PushService
+import io.github.jeshiomurmu.opencaller.server.recording.RecordingAgentService
+import io.github.jeshiomurmu.opencaller.server.recording.RecordingCodes
+import io.github.jeshiomurmu.opencaller.server.recording.RecordingCountryPolicy
+import io.github.jeshiomurmu.opencaller.server.recording.RecordingLineService
+import io.github.jeshiomurmu.opencaller.server.recording.RecordingRetentionJob
+import io.github.jeshiomurmu.opencaller.server.recording.RecordingRetentionResult
+import io.github.jeshiomurmu.opencaller.server.recording.RecordingRouteServices
+import io.github.jeshiomurmu.opencaller.server.recording.RecordingService
 import io.github.jeshiomurmu.opencaller.server.redis.RateLimiter
 import io.github.jeshiomurmu.opencaller.server.redis.Redis
 import io.github.jeshiomurmu.opencaller.server.registry.ImportJobResult
@@ -188,7 +196,28 @@ class ServerDependencies(
         )
     val expiryJob = ExpiryJob(database, clock)
 
-    val voipRoutes = VoipRouteServices(push, NotificationService(push, voip, flash, familyAlerts), voip, flash, video)
+    // Phase 13: the recording line (ADR 0009).
+    val recordingCountries = RecordingCountryPolicy(database, config.recording, clock)
+    val recordings = RecordingService(database, objectStore, config.recording, clock)
+    val recording =
+        RecordingRouteServices(
+            lines =
+                RecordingLineService(
+                    db = database,
+                    countries = recordingCountries,
+                    entitlements = entitlements,
+                    rateLimiter = rateLimiter,
+                    clock = clock,
+                    codes = RecordingCodes(config.otp.pepper, random),
+                ),
+            recordings = recordings,
+            agents = RecordingAgentService(database, objectStore, push, clock),
+            agentToken = config.recording.agentToken,
+        )
+    val recordingRetention = RecordingRetentionJob(database, objectStore, config.recording, clock)
+
+    val voipRoutes =
+        VoipRouteServices(push, NotificationService(push, voip, flash, familyAlerts, recordings), voip, flash, video)
     val voipCleanup = VoipCleanupJob(database, clock)
 
     /** What `GET /v1/server` says about the Phase 11 features. */
@@ -208,7 +237,15 @@ class ServerDependencies(
 
     /** What the admin web works with. */
     val adminWeb =
-        AdminWebServices(claimReview, otpCuration, ImportTools(senderIdStore, importRuns, importers), adminAudit, clock, scamFeed)
+        AdminWebServices(
+            claimReview,
+            otpCuration,
+            ImportTools(senderIdStore, importRuns, importers),
+            adminAudit,
+            clock,
+            scamFeed,
+            recordingCountries,
+        )
 
     val scoringJob = ScoringJob(database, config.scoring, clock)
     val listBuilder = ListBuilder(database, objectStore, config.lists, clock)
@@ -231,11 +268,14 @@ class ServerDependencies(
                 ApiJson.encodeToJsonElement(VoipCleanupResult.serializer(), voipCleanup.run())
             },
             LeaderJob(ExpiryJob.JOB_NAME, EXPIRY_LOCK) { ApiJson.encodeToJsonElement(ExpiryResult.serializer(), expiryJob.run()) },
+            LeaderJob(RecordingRetentionJob.JOB_NAME, RECORDING_RETENTION_LOCK) {
+                ApiJson.encodeToJsonElement(RecordingRetentionResult.serializer(), recordingRetention.run())
+            },
         )
 
     /**
      * Starts the scoring job every [ScoringConfig.intervalMinutes]; the list build, retention and sender-ID imports
-     * daily; the billing re-check, the VoIP cleanup and the Phase 12 expiry hourly.
+     * daily; the billing re-check, the VoIP cleanup and the Phase 12 expiry hourly; recording retention every 10 minutes.
      */
     fun startJobs(scope: CoroutineScope) {
         val scheduler = JobScheduler(scope, jobRunner, clock)
@@ -246,6 +286,10 @@ class ServerDependencies(
         scheduler.every(Duration.ofHours(1), jobs.first { it.name == BILLING_JOB })
         scheduler.every(Duration.ofHours(1), jobs.first { it.name == VoipCleanupJob.JOB_NAME })
         scheduler.every(Duration.ofHours(1), jobs.first { it.name == ExpiryJob.JOB_NAME })
+        scheduler.every(
+            Duration.ofMinutes(RecordingRetentionJob.INTERVAL_MINUTES),
+            jobs.first { it.name == RecordingRetentionJob.JOB_NAME },
+        )
     }
 
     override fun close() {
@@ -268,6 +312,7 @@ class ServerDependencies(
         private const val BILLING_LOCK = 4_000_005L
         private const val VOIP_CLEANUP_LOCK = 4_000_006L
         private const val EXPIRY_LOCK = 4_000_007L
+        private const val RECORDING_RETENTION_LOCK = 4_000_008L
 
         /** Connects to PostgreSQL (running migrations) and Redis, picks the OTP provider and seeds sender IDs. */
         fun create(

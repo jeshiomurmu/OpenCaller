@@ -55,6 +55,7 @@ class VoipDataTest {
     private val flash = FlashRepository(api, clock, DatabaseAccess { db }, RealDispatchers)
     private val shown = mutableListOf<FlashMessage>()
     private val familyAlerts = mutableListOf<FamilyAlert>()
+    private var recordingSyncs = 0
     private val invites = mutableListOf<AppCall>()
     private val updates = mutableListOf<AppCall>()
     private val handler =
@@ -75,7 +76,7 @@ class VoipDataTest {
     }
 
     private fun router(calls: Optional<AppCallHandler> = Optional.of(handler)) =
-        NotificationRouter(api, calls, flash, { shown += it }, { familyAlerts += it }, clock)
+        NotificationRouter(api, calls, flash, { shown += it }, { familyAlerts += it }, { recordingSyncs++ }, clock)
 
     private val itemId = "7b0a0c7e-1f7c-4d73-9d0e-2cbe0e6f6a10"
     private val videoId = "3f2d1c4b-5a69-4e7f-8a9b-0c1d2e3f4a5b"
@@ -149,6 +150,21 @@ class VoipDataTest {
             assertEquals(FamilyAlertKind.OTP_DURING_CALL, alert.kind)
             assertEquals("Mum", alert.memberLabel)
             assertEquals(1_794_218_400_000L, alert.atMillis)
+        }
+
+    @Test
+    fun aFinishedRecordingIsSavedInTheBackground() =
+        runBlocking {
+            server.enqueue(
+                jsonResponse(
+                    200,
+                    """{"id":"$itemId","kind":"recording_ready","createdAt":"2026-11-10T10:00:00Z","recording":{"id":"$itemId",""" +
+                        """"createdAt":"2026-11-10T10:00:00Z","durationMs":61000,"sizeBytes":4096,"transcript":"off",""" +
+                        """"downloaded":false,"deleteBy":"2026-11-11T10:00:00Z"}}""",
+                ),
+            )
+            assertTrue(router().onPush(itemId))
+            assertEquals(1, recordingSyncs)
         }
 
     @Test

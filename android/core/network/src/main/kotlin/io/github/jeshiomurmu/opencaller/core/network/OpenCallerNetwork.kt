@@ -87,6 +87,9 @@ class OpenCallerNetwork(
     /** Family protection and the scam feed (Phase 12). */
     val familyApi: FamilyApi = retrofit(authed).create(FamilyApi::class.java)
 
+    /** The recording line (Phase 13). */
+    val recordingApi: RecordingApi = retrofit(authed).create(RecordingApi::class.java)
+
     /** The live lookup, cut off after the lookup timeout so a slow server never holds up a call. */
     val lookupApi: LookupApi =
         retrofit(

@@ -47,6 +47,8 @@ die() {
   exit 1
 }
 compose() { docker compose -f "$compose_file" "$@"; }
+# scripts/e2e/ci.sh stops a script that runs too long: print what the phones and the stack were doing.
+trap 'die "stopped after the time limit in scripts/e2e/ci.sh"' TERM
 sql() {
   compose exec -T postgres sh -c "psql -tA -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -c \"$1\"" | tr -d '\r' | sed '/^$/d'
 }
@@ -86,9 +88,23 @@ sign_in() {
   qa_ok "$device" signin-verify --es number "$number" --es code "$code" > /dev/null
 }
 
+# `am start -W` waits for the launch to report. Right after an app call it twice never did (runs 42790801180 and
+# 42795311862, both on B before the Flash check), so each try gets 30 s; a silent launch prints what the phone shows
+# in front and the app's last log lines, then the launch is tried once more. The checks after it decide the test.
 foreground() {
-  adb -s "$1" shell input keyevent KEYCODE_HOME
-  adb -s "$1" shell am start -W -n "$main_activity" > /dev/null
+  local attempt
+  for attempt in 1 2; do
+    adb -s "$1" shell input keyevent KEYCODE_WAKEUP
+    adb -s "$1" shell wm dismiss-keyguard > /dev/null 2>&1 || true
+    adb -s "$1" shell input keyevent KEYCODE_HOME
+    if timeout 30 adb -s "$1" shell am start -W -n "$main_activity" > /dev/null; then return 0; fi
+    echo "::warning::$1: the launch of the app didn't report within 30 s (try $attempt)"
+    timeout 15 adb -s "$1" shell dumpsys activity activities 2> /dev/null | tr -d '\r' |
+      grep -E 'ResumedActivity|mFocusedApp' | head -n 5 || true
+    timeout 15 adb -s "$1" shell dumpsys window 2> /dev/null | tr -d '\r' | grep -E 'mCurrentFocus' | head -n 2 || true
+    timeout 15 adb -s "$1" logcat -d -v threadtime 2> /dev/null | tr -d '\r' |
+      grep -E 'ActivityTaskManager|OpenCaller|AndroidRuntime' | tail -n 20 || true
+  done
 }
 
 # log_time <device> <pattern>: epoch milliseconds of the first log line matching <pattern> since the last `logcat -c`.
@@ -186,10 +202,17 @@ gateway="$(docker inspect "$server_id" -f '{{range .NetworkSettings.Networks}}{{
 python3 scripts/e2e/push_sink.py "$sink_port" "$sink_log" &
 sink_pid=$!
 trap 'kill "$sink_pid" 2> /dev/null || true' EXIT
+# Bounded: without a time limit one probe can wait ~2 minutes for a dropped connection, and 20 of them took the
+# job's whole hour (PR #20 run 42776465919).
+sink_up=""
 for _ in $(seq 1 20); do
-  if compose exec -T server sh -c "curl -s -o /dev/null -X POST http://$gateway:$sink_port/probe"; then break; fi
+  if compose exec -T server sh -c "curl -s -o /dev/null --connect-timeout 2 -m 5 -X POST http://$gateway:$sink_port/probe"; then
+    sink_up=1
+    break
+  fi
   sleep 0.5
 done
+[[ -n "$sink_up" ]] || die "the server can't reach the push sink at $gateway:$sink_port"
 : > "$sink_log"
 
 for device in "$device_a" "$device_b"; do

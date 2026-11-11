@@ -60,9 +60,11 @@ network_report() {
   done
 }
 
+# Each test has a time limit (a normal run takes a few minutes each), so a hang fails that test with its diagnostics
+# and the network report instead of using up the job's hour in silence.
 status=0
-scripts/e2e/report_to_block.sh "$apk" "$app_id" emulator-5554 "$device_b" || status=1
-scripts/e2e/voip.sh "$app_id" emulator-5554 "$device_b" "$out" || status=1
-scripts/e2e/family.sh "$app_id" emulator-5554 "$device_b" "$out" || status=1
+timeout --kill-after=60 900 scripts/e2e/report_to_block.sh "$apk" "$app_id" emulator-5554 "$device_b" || status=1
+timeout --kill-after=60 1200 scripts/e2e/voip.sh "$app_id" emulator-5554 "$device_b" "$out" || status=1
+timeout --kill-after=60 600 scripts/e2e/family.sh "$app_id" emulator-5554 "$device_b" "$out" || status=1
 if [[ "$status" -ne 0 ]]; then network_report; fi
 exit "$status"

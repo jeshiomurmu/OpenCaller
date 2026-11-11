@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="recordings_title">Recordings</string>
+    <string name="recordings_intro">Recordings made with the recording line are kept only on this phone. The server deletes its copy within an hour after your phone saved it, and after 24 hours at the latest.</string>
+    <string name="recordings_empty">No recordings yet. During a call, tap Record.</string>
+    <string name="recordings_transcripts">Transcripts</string>
+    <string name="recordings_transcripts_summary">Write down new recordings on OpenCaller\'s server (self-hosted speech recognition; the audio goes nowhere else). Off by default.</string>
+    <string name="recordings_unknown_party">Unknown number</string>
+    <string name="recordings_play">Play</string>
+    <string name="recordings_stop">Stop</string>
+    <string name="recordings_delete">Delete</string>
+    <string name="recordings_cancel">Cancel</string>
+    <string name="recordings_delete_title">Delete this recording?</string>
+    <string name="recordings_delete_text">It is deleted from this phone and, if it is still there, from the server. This can\'t be undone.</string>
+    <string name="recordings_cannot_play">This recording can\'t be played.</string>
+    <string name="recordings_signed_out">Sign in to fetch recordings from the server.</string>
+    <string name="recordings_network_error">The server couldn\'t be reached. Saved recordings still play.</string>
+    <string name="recordings_storage_error">The recording couldn\'t be saved on this phone.</string>
+</resources>

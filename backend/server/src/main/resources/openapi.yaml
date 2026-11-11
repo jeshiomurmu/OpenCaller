@@ -51,6 +51,10 @@ tags:
     description: Admin-curated scam cards per country (docs/prd.md F-PR-15)
   - name: portal
     description: The business dashboard, server-rendered HTML (docs/prd.md F-BZ-04)
+  - name: recording
+    description: The recording line, recordings and transcripts (docs/prd.md F-UT-03, ADR 0009)
+  - name: agents
+    description: Endpoints for the recorder and transcriber agents (bearer RECORDING_AGENT_TOKEN; absent when unset)
 
 paths:
   /health:
@@ -1623,6 +1627,177 @@ paths:
         "303": { description: "Signed out: to `/portal`." }
         "403": { description: The form token is wrong. }
 
+  /v1/lines/recording:
+    post:
+      tags: [recording]
+      summary: Start a recording
+      description: |
+        Gives a supporter (or anyone on a self-hosted server) whose number belongs to an approved country
+        (RECORDING_COUNTRIES, default BD and IN, plus the admin web's overrides) the recording line of that country and
+        a one-time 8-digit code. The app dials the number, sends the code as tones and merges the calls once the
+        session is `active`. The code is single use and expires after 10 minutes. 20 an hour.
+      operationId: startRecording
+      security: [{ accessToken: [] }]
+      responses:
+        "201": { description: The line and the code., content: { application/json: { schema: { $ref: "#/components/schemas/RecordingLine" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { description: "`supporter_required`, or `recording_unavailable` (no line on this server, not approved in your country, or no line there).", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /v1/lines/recording/{id}:
+    get:
+      tags: [recording]
+      summary: A recording session's state
+      description: "`pending` until the line has the code, `active` while it records (merge now), then `ended` (with `recordingId`) or `failed`."
+      operationId: getRecordingSession
+      security: [{ accessToken: [] }]
+      parameters: [{ $ref: "#/components/parameters/ItemId" }]
+      responses:
+        "200": { description: The state., content: { application/json: { schema: { $ref: "#/components/schemas/RecordingSession" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: "`session_not_found`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+
+  /v1/recordings:
+    get:
+      tags: [recording]
+      summary: Your recordings on the server
+      description: Newest first, at most 100. Each is deleted after the confirmed download (grace period) and 24 hours after it was made at the latest (`deleteBy`).
+      operationId: listRecordings
+      security: [{ accessToken: [] }]
+      responses:
+        "200": { description: The recordings., content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Recording" } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/recordings/settings:
+    get:
+      tags: [recording]
+      summary: Your transcript setting
+      operationId: getRecordingSettings
+      security: [{ accessToken: [] }]
+      responses:
+        "200": { description: The setting., content: { application/json: { schema: { $ref: "#/components/schemas/RecordingSettings" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    put:
+      tags: [recording]
+      summary: Turn transcripts on or off
+      description: Transcripts are made on this server with self-hosted Whisper, only for recordings started while the setting is on.
+      operationId: putRecordingSettings
+      security: [{ accessToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RecordingSettings" }
+      responses:
+        "200": { description: The new setting., content: { application/json: { schema: { $ref: "#/components/schemas/RecordingSettings" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/recordings/{id}/download:
+    get:
+      tags: [recording]
+      summary: A link to the recording
+      description: A presigned GET link (Opus in OGG) valid 15 minutes, and the transcript once it is done.
+      operationId: downloadRecording
+      security: [{ accessToken: [] }]
+      parameters: [{ $ref: "#/components/parameters/ItemId" }]
+      responses:
+        "200": { description: The link., content: { application/json: { schema: { $ref: "#/components/schemas/RecordingDownload" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/RecordingNotFound" }
+
+  /v1/recordings/{id}/downloaded:
+    post:
+      tags: [recording]
+      summary: Confirm the download
+      description: The server deletes the recording after RECORDING_DOWNLOAD_GRACE_MINUTES (at most 50; within an hour), once a requested transcript is finished. A second confirmation keeps the first time.
+      operationId: confirmRecordingDownload
+      security: [{ accessToken: [] }]
+      parameters: [{ $ref: "#/components/parameters/ItemId" }]
+      responses:
+        "204": { description: Confirmed. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/RecordingNotFound" }
+
+  /v1/recordings/{id}:
+    delete:
+      tags: [recording]
+      summary: Delete a recording from the server now
+      operationId: deleteRecording
+      security: [{ accessToken: [] }]
+      parameters: [{ $ref: "#/components/parameters/ItemId" }]
+      responses:
+        "204": { description: Deleted. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/RecordingNotFound" }
+
+  /agent/v1/recording/claim:
+    post:
+      tags: [agents]
+      summary: Claim a session by its code
+      description: The recorder read the code from the call's tones. 3 tries per room, 600 per 10 minutes for the server. The answer names the object key Egress must write.
+      operationId: claimRecording
+      security: [{ agentToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClaimRequest" }
+      responses:
+        "200": { description: The session., content: { application/json: { schema: { $ref: "#/components/schemas/ClaimResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: "`code_not_found` (wrong, used or expired).", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /agent/v1/recording/sessions/{id}/result:
+    post:
+      tags: [agents]
+      summary: Report a session's result
+      description: "`complete`: the file must be at the session's object key; the server stores the recording with the size the store reports and pushes `recording_ready`. `failed`: any file is deleted."
+      operationId: reportRecording
+      security: [{ agentToken: [] }]
+      parameters: [{ $ref: "#/components/parameters/ItemId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RecordingResult" }
+      responses:
+        "204": { description: Stored. }
+        "400": { description: "`invalid_recording`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: "`session_not_found`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: "`session_not_active`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+
+  /agent/v1/transcripts/next:
+    post:
+      tags: [agents]
+      summary: Take the next recording to transcribe
+      operationId: nextTranscript
+      security: [{ agentToken: [] }]
+      responses:
+        "200": { description: A recording to transcribe (link valid 30 minutes)., content: { application/json: { schema: { $ref: "#/components/schemas/TranscriptJob" } } } }
+        "204": { description: Nothing waits. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /agent/v1/transcripts/{id}:
+    put:
+      tags: [agents]
+      summary: Deliver a transcript
+      operationId: putTranscript
+      security: [{ agentToken: [] }]
+      parameters: [{ $ref: "#/components/parameters/ItemId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TranscriptResult" }
+      responses:
+        "204": { description: Stored. }
+        "400": { description: "`invalid_recording`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/RecordingNotFound" }
+
 components:
   securitySchemes:
     accessToken:
@@ -1632,6 +1807,10 @@ components:
       description: |
         Access token from verify/refresh, valid 15 minutes (`sub` = user ID, `did` = device ID). Endpoints that need
         it answer 401 `unauthorized` without a valid token. Where it is optional, a token that is sent must be valid.
+    agentToken:
+      type: http
+      scheme: bearer
+      description: RECORDING_AGENT_TOKEN, shared by the server and backend/agents (32+ characters). Without it the `/agent/…` routes don't exist.
 
   headers:
     RequestId:
@@ -1686,6 +1865,11 @@ components:
       schema: { type: integer }
 
   responses:
+    RecordingNotFound:
+      description: "`recording_not_found` (also for another user's recording)."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
     BadRequest:
       description: "`invalid_request` (unreadable JSON or missing fields) or `invalid_phone_number`."
       headers:
@@ -2294,11 +2478,93 @@ components:
       required: [id, kind, createdAt]
       properties:
         id: { type: string, format: uuid }
-        kind: { type: string, enum: [call_invite, call_update, flash, family_alert] }
+        kind: { type: string, enum: [call_invite, call_update, flash, family_alert, recording_ready] }
         createdAt: { type: string, format: date-time }
         call: { $ref: "#/components/schemas/CallInvite" }
         flash: { $ref: "#/components/schemas/Flash" }
         familyAlert: { $ref: "#/components/schemas/FamilyAlert" }
+        recording: { $ref: "#/components/schemas/Recording" }
+
+    RecordingLine:
+      type: object
+      required: [sessionId, number, code, expiresAt]
+      properties:
+        sessionId: { type: string, format: uuid }
+        number: { type: string, description: The line to dial (E.164). }
+        code: { type: string, pattern: "^[0-9]{8}$", description: Send as tones after the line answers. }
+        expiresAt: { type: string, format: date-time }
+
+    RecordingSession:
+      type: object
+      required: [sessionId, state]
+      properties:
+        sessionId: { type: string, format: uuid }
+        state: { type: string, enum: [pending, active, ended, failed] }
+        recordingId: { type: string, format: uuid }
+
+    Recording:
+      type: object
+      required: [id, createdAt, durationMs, sizeBytes, transcript, downloaded, deleteBy]
+      properties:
+        id: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        durationMs: { type: integer, format: int64 }
+        sizeBytes: { type: integer, format: int64 }
+        transcript: { type: string, enum: ["off", pending, working, done, failed] }
+        downloaded: { type: boolean }
+        deleteBy: { type: string, format: date-time, description: When the server deletes it at the latest. }
+
+    RecordingDownload:
+      type: object
+      required: [url, contentType, sizeBytes, expiresInSeconds]
+      properties:
+        url: { type: string, format: uri }
+        contentType: { type: string, enum: [audio/ogg] }
+        sizeBytes: { type: integer, format: int64 }
+        expiresInSeconds: { type: integer }
+        transcript: { type: string }
+
+    RecordingSettings:
+      type: object
+      required: [transcripts]
+      properties:
+        transcripts: { type: boolean }
+
+    ClaimRequest:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, description: The digits read from the tones. }
+        room: { type: string, maxLength: 128, description: The LiveKit room (for the per-call limit). }
+
+    ClaimResponse:
+      type: object
+      required: [sessionId, objectKey, maxMinutes]
+      properties:
+        sessionId: { type: string, format: uuid }
+        objectKey: { type: string, description: "recordings/<session id>.ogg" }
+        maxMinutes: { type: integer }
+
+    RecordingResult:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [complete, failed] }
+        sizeBytes: { type: integer, format: int64 }
+        durationMs: { type: integer, format: int64, minimum: 0 }
+
+    TranscriptJob:
+      type: object
+      required: [recordingId, url]
+      properties:
+        recordingId: { type: string, format: uuid }
+        url: { type: string, format: uri }
+
+    TranscriptResult:
+      type: object
+      properties:
+        text: { type: string, maxLength: 200000 }
+        failed: { type: boolean }
 
     CreateFamilyRequest:
       type: object
@@ -2640,3 +2906,9 @@ components:
             - member_not_found
             - invalid_country
             - not_a_business
+            - recording_unavailable
+            - session_not_found
+            - code_not_found
+            - session_not_active
+            - recording_not_found
+            - invalid_recording

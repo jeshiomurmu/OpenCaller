@@ -183,7 +183,8 @@ qa_ok "$device_b" reset > /dev/null
 qa_ok "$device_b" region --es region US > /dev/null
 qa_ok "$device_b" settings --es threshold LOW --ez topSpammers true > /dev/null
 # Keep B's process alive like a phone in everyday use.
-adb -s "$device_b" shell am start -W -n "$app_id/io.github.jeshiomurmu.opencaller.MainActivity" > /dev/null
+timeout 30 adb -s "$device_b" shell am start -W -n "$app_id/io.github.jeshiomurmu.opencaller.MainActivity" > /dev/null ||
+  echo "::warning::$device_b: the launch of the app didn't report within 30 s"
 adb -s "$device_b" shell input keyevent KEYCODE_HOME
 echo "A = $device_a, B = $device_b; B holds the call screening role"
 

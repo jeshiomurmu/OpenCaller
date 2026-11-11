@@ -224,7 +224,7 @@ Networking (`core:network`, a JVM module): Retrofit + OkHttp + kotlinx.serializa
 ### 4.9 VoIP, recording line, AI assistant, voice scanner
 
 - **VoIP (F-CM-09):** client gets LiveKit token from `/v1/voip/token`; callee notified by push; call registered with Jetpack Telecom so it appears like a phone call. Pushes carry only a random item id the phone fetches (ADR 0007); F-Droid builds leave app calls out (`-Popencaller.voip=false`).
-- **Recording line (F-UT-03):** user taps Record → app dials the user's assigned recording number and merges (conference) → LiveKit SIP room records with beep announcement → agent stores audio in MinIO → app downloads, server deletes.
+- **Recording line (F-UT-03, ADR 0009, `infra/deploy/telephony.md`):** user taps Record and confirms the consent reminder → `POST /v1/lines/recording` gives the line of the user's country (only where `RECORDING_COUNTRIES` / the admin web approve it) and a one-time 8-digit code → the app dials `line,,code#` (`feature:recording` `LineRecorder`, Telecom holds the user's call) → LiveKit SIP: inbound trunk + callee dispatch rule (`randomize`, `hide_phone_number`) → room `rec_<line>_<random>` with the `recorder` agent (`backend/agents`), which reads the code and claims the session → the app merges the calls (`Call.conference`) → beep and announcement for both parties, a short beep every 15 s → LiveKit track egress of the caller's audio to MinIO (`recordings/<session>.ogg`) → the agent reports, the server pushes `recording_ready` (an opaque id) → the phone saves the file (Room `recording`, app files) and confirms → the server deletes it within an hour (the `recording-retention` job, every 10 min), 24 h at the latest. Optional transcripts: self-hosted Whisper (`transcriber`), only when the user turned them on.
 - **AI assistant (F-UT-04):** onboarding sets conditional call forwarding (no answer / busy / unreachable) to the user's assistant number using standard GSM MMI codes where supported, with carrier-specific guidance. Calls land in LiveKit SIP → Python agent (STT → LLM → TTS) → transcript streamed to app via LiveKit data channel; user actions sent back.
 - **Voice scanner (F-PR-13):** same merge flow as recording; agent samples a few seconds and runs the anti-spoofing model; returns probability.
 
@@ -443,7 +443,9 @@ Later migrations (V1 stays exactly the SQL above): `V2__jobs_and_lookup_indexes.
 | `POST /v1/voip/token` | access | LiveKit token for the call's room (10 minutes, audio only) |
 | `GET /v1/voip/settings`, `PUT /v1/voip/settings` | access | Whether app calls and Flash messages reach the user (on by default) |
 | `POST /v1/flash` | access | A predefined Flash message (F-CM-10); deleted once fetched |
-| `POST /v1/lines/{recording|assistant|scanner}` | access + entitlement | Allocate/return line number and room |
+| `POST /v1/lines/{recording|assistant|scanner}` | access + entitlement | Allocate/return line number and room (recording: number + one-time code, Phase 13) |
+| `GET /v1/lines/recording/{id}`, `GET /v1/recordings`, `GET /v1/recordings/{id}/download`, `POST /v1/recordings/{id}/downloaded`, `DELETE /v1/recordings/{id}`, `GET`/`PUT /v1/recordings/settings` | access | Recording session state, recordings still on the server, presigned download, confirm, delete, transcript switch |
+| `/agent/v1/recording/claim`, `/agent/v1/recording/sessions/{id}/result`, `/agent/v1/transcripts/{next,id}` | agent token | The recorder and transcriber agents (absent without `RECORDING_AGENT_TOKEN`) |
 | `GET /v1/me/video`, `POST /v1/me/video/upload`, `POST /v1/me/video`, `DELETE /v1/me/video` | access | Video caller ID: pre-signed upload, submit for the transcoder worker (ffmpeg, ≤ 10 s, 480 px, no audio), delete (F-CM-11) |
 | `POST /v1/videos/links`, `POST /v1/videos/{id}/report` | none / access | Download links for the clip ids of a lookup bucket (all of them, ADR 0007); report a clip |
 
@@ -473,6 +475,7 @@ Implementation (Phase 4, `scoring/`): the Kotlin job runs every 15 minutes under
 8. App-call invites are deleted a day after the call and Flash messages once fetched (at most a day); call audio is never recorded or stored on the server (`VoipApiTest`, `FlashApiTest`).
 9. Family protection shares only what the member switched on, from the member to the admin: an alert's kind and time, and a day's two counts. No number, name, message text, contact or call log; nobody is added without their own request and consent; switching off or leaving deletes what the server held (`FamilyApiTest`, ADR 0008).
 10. The business dashboard shows counts of data the server already holds (explicit searches counted without the searcher, reports, disputes); apps send no call-outcome data (answered, declined) at all (`PortalTest`).
+11. Recordings: no request names either party's number (the one-time code links the call to the account; the dispatch rule hides the caller's number from LiveKit); the server keeps the audio until the phone saved it plus at most 50 minutes, and never longer than 24 hours; transcripts only when the user turned them on, made on the operator's own server (`RecordingApiTest`, `backend/agents` tests, ADR 0009).
 
 ## 11. Error handling
 

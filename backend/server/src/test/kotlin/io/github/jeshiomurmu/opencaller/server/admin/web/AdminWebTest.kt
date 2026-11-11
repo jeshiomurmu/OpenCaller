@@ -359,6 +359,31 @@ class AdminWebTest {
         }
 
     @Test
+    fun recordingCountriesAreSwitchedOnlyWithTheLegalConfirmationAndAudited() =
+        adminTest {
+            val page = client.page("/recording-countries").bodyAsText()
+            assertTrue("BD" in page && "IN" in page && "RECORDING_COUNTRIES" in page, page)
+            val token = client.csrf("/recording-countries")
+
+            // Switching a new country on needs the confirmation that the legal review approved it.
+            val unconfirmed = client.post("/recording-countries", mapOf("csrf" to token, "country" to "NP", "enabled" to "true"))
+            assertEquals("/recording-countries?done=unconfirmed", unconfirmed.headers[HttpHeaders.Location])
+            assertTrue(!runBlocking { server.deps.recordingCountries.approved("NP") })
+            val bad =
+                client.post("/recording-countries", mapOf("csrf" to token, "country" to "Nepal", "enabled" to "true", "approved" to "yes"))
+            assertEquals("/recording-countries?done=invalid", bad.headers[HttpHeaders.Location])
+
+            client.post("/recording-countries", mapOf("csrf" to token, "country" to "np", "enabled" to "true", "approved" to "yes"))
+            client.post("/recording-countries", mapOf("csrf" to token, "country" to "BD", "enabled" to "false"))
+            assertTrue(runBlocking { server.deps.recordingCountries.approved("NP") })
+            assertTrue(!runBlocking { server.deps.recordingCountries.approved("BD") })
+            assertTrue(runBlocking { server.deps.recordingCountries.approved("IN") })
+            assertEquals(HttpStatusCode.Forbidden, client.post("/recording-countries", mapOf("csrf" to "forged", "country" to "BD")).status)
+            val audit = client.page("/audit").bodyAsText()
+            listOf("recording-country.on", "recording-country.off").forEach { assertTrue(it in audit, it) }
+        }
+
+    @Test
     fun theApiDoesNotServeTheAdminPages() =
         testApplication {
             application { module(server.deps) }
