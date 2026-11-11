@@ -218,6 +218,52 @@ Without `RECORDING_LINES` and `RECORDING_AGENT_TOKEN` the feature is off: `POST 
 
 These are the steps of TC-REC-001 (docs/testing.md), which must pass on a real SIM in a launch country.
 
+## The call assistant (ADR 0010)
+
+The assistant answers calls that users forward to their own assistant number (docs/prd.md F-UT-04). It runs next to
+the recording line on the same SIP server, with its own numbers, trunk and dispatch rule.
+
+1. **Numbers.** Buy a pool of numbers per country (one per user who turns the assistant on) and list them in the
+   server's environment: `ASSISTANT_NUMBERS=+880…,+880…` (needs `RECORDING_AGENT_TOKEN` and `LIVEKIT_*`).
+   `ASSISTANT_MONTHLY_MINUTES` (default 100, 0 = no cap) and `ASSISTANT_MAX_CALL_MINUTES` (default 5) bound the cost.
+   A number removed from the list is taken from its user at the next start.
+2. **Trunk.** One inbound trunk with all the assistant numbers (`numbers`), restricted like the line's trunk
+   (`allowed_addresses` or auth; § 3). Keep it separate from the recording line's trunk so the two dispatch rules
+   can't mix.
+3. **Dispatch rule.** A callee rule for that trunk only. It must **not** set `hide_phone_number`: the agent reads the
+   caller's number (`sip.phoneNumber`) to show it on the user's phone, and the dialed number
+   (`sip.trunkPhoneNumber`) to find the user.
+
+   ```json
+   {
+     "dispatch_rule": {
+       "name": "OpenCaller call assistant",
+       "rule": { "dispatch_rule_callee": { "room_prefix": "ast", "randomize": true } },
+       "room_config": {
+         "empty_timeout": 30,
+         "departure_timeout": 5,
+         "max_participants": 3,
+         "agents": [{ "agent_name": "assistant" }]
+       }
+     }
+   }
+   ```
+
+   `lk sip dispatch create assistant-rule.json --trunks "<assistant-trunk-id>"`. `max_participants`: the caller, the
+   agent and the user's app.
+4. **Agent.** Start the `assistant` profile of `compose.telephony.yml` with the providers' variables in `.env`:
+   `ASSISTANT_STT` (openai, deepgram, elevenlabs, google), `ASSISTANT_LLM` (openai, google), `ASSISTANT_TTS` (openai,
+   deepgram, elevenlabs, google), each with optional `_MODEL`, `_BASE_URL` (an OpenAI-compatible server of your own,
+   which then needs no OpenAI key) and `ASSISTANT_TTS_VOICE`; `ASSISTANT_LANGUAGE` (BCP-47, default `en`). Keys go in
+   the providers' usual variables (`OPENAI_API_KEY`, `DEEPGRAM_API_KEY`, `ELEVEN_API_KEY`, `GOOGLE_API_KEY`,
+   `GOOGLE_APPLICATION_CREDENTIALS`). The agent refuses to start with a missing key and names it.
+5. **Privacy.** The providers you choose hear the caller and see the conversation; say so in your privacy policy, or
+   use servers of your own. LiveKit holds the caller's number in the SIP participant's attributes while the call
+   lasts; keep LiveKit's logs short. The OpenCaller server never receives the caller's number or the conversation.
+6. **Test** (TC-AST-001, docs/testing.md): call an assistant number that no user has: the agent says the person can't
+   take calls and hangs up. Then from the app, turn the assistant on, dial the codes it shows, let a call ring out:
+   the phone shows "Assistant is answering a call"; tap it to follow the conversation.
+
 ## Twilio Elastic SIP Trunking
 
 From LiveKit's [Twilio quickstart](https://docs.livekit.io/telephony/start/providers/twilio.md) (inbound only; the

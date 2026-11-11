@@ -6,7 +6,7 @@
 
 | Field | Value |
 | --- | --- |
-| **Current phase** | **13 — Recording line, AI assistant, voice scanner** (13a, the recording line F-UT-03, merged as PR #20; this task, 13b: the AI call-screening assistant F-UT-04 — call forwarding to a per-user assistant number, a Python `assistant` agent with env-selected speech, language and voice providers, a live transcript on the phone, minutes per month; the voice scanner follows) |
+| **Current phase** | **13 — Recording line, AI assistant, voice scanner** (13a, the recording line F-UT-03, merged as PR #20; 13b, the AI call-screening assistant F-UT-04, done in code on this branch; the voice scanner follows) |
 | Phase started | 2026-11-10 |
 | Target exit date | — |
 | Branch | `claude/vibrant-johnson-4pfw6q` (13b: from `main` at `58a9d53`, the merge of PR #20; 13a started from `5ec8b5e`) |
@@ -20,7 +20,7 @@ Copied from `docs/implementation_plan.md` → Phase 13. Tick here as you go; cop
 - [x] LiveKit SIP + SIP trunk config docs (provider-agnostic) in `infra/deploy` (`infra/deploy/telephony.md`, Twilio section, `infra/docker/compose.telephony.yml`)
 - [x] Line allocation API; per-country legal switch for recording (`POST /v1/lines/recording`, `RECORDING_COUNTRIES=BD,IN` + admin web)
 - [x] Recording: merge flow UI, beep, download, server deletion ≤ 1 h, local playback, transcript + summary (optional) — summaries left for later (owner: transcripts only, self-hosted Whisper); device QA TC-REC-001 open
-- [ ] AI assistant: Python LiveKit agent (STT → LLM → TTS), guided call-forwarding setup with MMI codes and carrier notes, live transcript UI, pick-up/reply/block actions
+- [x] AI assistant: Python LiveKit agent (STT → LLM → TTS), guided call-forwarding setup with MMI codes and carrier notes, live transcript UI, pick-up/reply/block actions — in code (13b, ADR 0010); device QA TC-AST-001 and the cost per screened minute open
 - [ ] Voice scanner: anti-spoofing service in `ml/voice-spoof`, agent integration, warning UI with uncertainty text
 
 **Exit:** TC-REC-*, TC-AST-*, TC-SCAN-* pass on a real SIM in one launch country; cost per screened minute measured and recorded.
@@ -99,6 +99,17 @@ Plan (AI assistant, F-UT-04):
    telephony guide section, ADR 0010, architecture §4.9/§10, Data safety, `docs/phase.md`.
 
 ## Next step
+
+The AI assistant (13b) is done in code on `claude/vibrant-johnson-4pfw6q` (PR to `main`): the server (V9: number pool,
+`/v1/lines/assistant`, usage, call view with a data-only LiveKit token, agent claim and end, the monthly cap, an opaque
+`assistant_call` push, OpenAPI), the `assistant` agent in `backend/agents` (providers by env: OpenAI-compatible,
+Deepgram, ElevenLabs, Google; fixed disclosure, prompt, tools, data channel to the user's phone only), the compose
+`assistant` profile and the telephony guide section, and the app (`feature:assistant`: setup with the GSM codes and
+carrier guidance, minutes this month, live screen with Call back / Quick reply / Spam, history in Room v6; LiveKit room
+client in `feature:voip`). Next: CI green on the PR, the owner merges; then the owner's steps: buy assistant numbers
+(Twilio) in a launch country, set the providers' keys, the trunk and dispatch rule, and run TC-AST-001 on a real SIM
+(`docs/testing.md` → Phase 13b device steps) with the cost per screened minute; then the voice scanner (F-PR-13), with
+its own owner decision (the anti-spoofing model).
 
 The recording line is done in code on `claude/vibrant-johnson-4pfw6q` (PR to `main`): the telephony guide and compose
 overlay, the server (V8, line allocation with the legal switch, agent API, recordings API, 10-minute retention job,
@@ -353,6 +364,21 @@ Phase 3 carry-over: measure the total screening p95 < 50 ms on a physical phone 
      `scripts/ci/emulator-heap.sh` ran 4 s after boot and `adb root` answered "unable to connect for root: closed", so
      the job stopped before any test. The script now retries `adb root` (up to 10 times, 2 s apart) until
      `adb shell id -u` is 0.
+161. **The assistant's fixed sentences are English.** The greeting (with the disclosure), the unavailable, time-up,
+     call-back and reply sentences are said word for word in English; the model answers in the caller's language
+     (`ASSISTANT_LANGUAGE`). Translations (Bengali, Hindi) are for the owner to provide; they belong in the agent's
+     settings next to the language.
+162. **Phase 13b app code runs only in CI** (as issue 151): the assistant screens, the notifier, `LiveKitAssistantRoom`,
+     Room v6 and `MigrationTest` 5→6 were first compiled there; `AssistantMessages`, `AssistantRepository`, the history
+     mapping and both view models were compiled and tested locally (JVM harness, 10 tests). Room's `6.json` is
+     hand-written from 5.json; if CI's Room schema step prints a different file, commit Room's.
+163. **Conditional forwarding can't be checked by the app.** The app opens the codes in the dial pad and the network
+     shows its answer; whether forwarding is active, and what the carrier charges for forwarded calls, the app doesn't
+     know. F-Droid builds (no LiveKit) can't show the live screen, so the setup says the assistant isn't available there.
+164. **LiveKit holds the caller's number while the call lasts.** The assistant's dispatch rule doesn't hide it (the
+     agent reads `sip.phoneNumber` for the user's screen); it stays in the SIP participant's attributes in LiveKit's
+     memory and possibly its logs. The speech and language providers the operator picks hear the caller (ADR 0010).
+     Spam from the live screen ends the call and marks it in the history; it doesn't file a community report yet.
 
 ## Verified dependency versions
 
@@ -438,6 +464,8 @@ Fill as dependencies are added (the source of truth is `libs.versions.toml`; thi
 | ffmpeg (transcoder image and the backend CI job; a tool, not a dependency) | Ubuntu noble's `ffmpeg` package (apt, security updates with the image); 6.1.1 (noble) observed locally | `apt-get install ffmpeg` on `eclipse-temurin:17-jre-noble` (image built locally, transcoder worked in the smoke test) | 2026-11-04 |
 | LiveKit SIP (`livekit/sip`), Egress (`livekit/egress`) | v1.23.0 (2026-11-06), v1.15.0 (2026-10-06); SIP config keys from the livekit/sip README, Egress keys from docs.livekit.io/transport/self-hosting/egress and `pkg/config` of v1.15.0 (per-request `S3Upload` with `force_path_style`) | https://hub.docker.com (tag API), https://docs.livekit.io (SIP inbound trunk, dispatch rule, SIP API, Egress API, ports and firewall, Twilio quickstart), raw.githubusercontent.com/livekit/{sip,egress} | 2026-11-10 |
 | LiveKit server flags `REDIS_HOST` / `REDIS_PASSWORD` | v1.13.11 | https://raw.githubusercontent.com/livekit/livekit/v1.13.11/cmd/server/main.go, `pkg/config/config.go` | 2026-11-10 |
+| LiveKit Agents plugins (`assistant` extra) | livekit-plugins-openai, -deepgram, -elevenlabs, -google, -silero 1.8.11 (released with livekit-agents 1.8.11; Silero's model ships in the wheel); constructors read from the installed packages (`openai.STT/LLM/TTS(model, base_url, api_key, …)`, `deepgram.STT/TTS`, `elevenlabs.STT(model_id, language_code)`, `elevenlabs.TTS(voice_id, language)`, `google.STT(languages)`, `google.LLM(model)`, `google.TTS(voice_name, language)`, `silero.VAD.load`), `AgentSession`, `function_tool`, `RunContext.wait_for_playout`, `room_io.RoomOptions(participant_identity, text_output, close_on_disconnect)`, `rtc.LocalParticipant.publish_data(destination_identities, topic)` | https://pypi.org (JSON API), packages installed in a venv and read | 2026-11-11 |
+| LiveKit Android data messages | `LocalParticipant.publishData(data, reliability, topic, identities)`, `RoomEvent.DataReceived(data, participant, topic)`, `ConnectOptions(autoSubscribe)` in livekit-android 2.30.0 (the version already used) | Maven Central sources JAR `io/livekit/livekit-android/2.30.0` | 2026-11-11 |
 | Python agents (`backend/agents`) | livekit-agents 1.8.11 (pins livekit 1.2.0), livekit-api 1.2.2, aiohttp 3.14.5, faster-whisper 1.2.1 (MIT), pytest 9.2.0, pytest-asyncio 1.4.1.post1, ruff 0.17.4; base image `python:3.13-slim-bookworm`; APIs read from the wheels (`AgentServer.rtc_session`, `JobContext`, `rtc.AudioSource`, `sip_dtmf_received`, `TrackEgressRequest`, `WhisperModel.transcribe`) | https://pypi.org (JSON API), wheels downloaded and read; Docker Hub tag API | 2026-11-10 |
 | Material Symbols `radio_button_checked`, `play_arrow` | `master` (Apache-2.0) | https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/ | 2026-11-10 |
 | LiveKit server's config and flags | `rtc.tcp_port`, `port_range_start/end`, `use_external_ip`, `turn.enabled/udp_port/tls_port/relay_range_*`, `room.max_participants`; `LIVEKIT_KEYS`, `NODE_IP` | https://raw.githubusercontent.com/livekit/livekit/v1.13.11/config-sample.yaml, `cmd/server/main.go`, `pkg/service/turn.go`; run locally with `/rtc/validate` | 2026-11-04 |
@@ -446,6 +474,7 @@ Fill as dependencies are added (the source of truth is `libs.versions.toml`; thi
 
 | Date | Phase | What changed | Verified by |
 | --- | --- | --- | --- |
+| 2026-11-11 | 13b | The AI call-screening assistant (F-UT-04, ADR 0010). Server: V9 (`assistant_numbers` pool synced from `ASSISTANT_NUMBERS`, `assistant_calls` without numbers, `assistant_usage`, `assistant_call` push kind), `POST/GET/DELETE /v1/lines/assistant` (supporter or self-hosted, the user's country), `GET /v1/assistant/usage`, `GET /v1/assistant/calls/{id}` (data-only LiveKit token), agent claim by dialed number (404/403/429 with `ASSISTANT_MONTHLY_MINUTES`, 0 = no cap) and end, cleanup in `voip-cleanup`, `GET /v1/server` `features.assistant`, OpenAPI. Agents: `assistant` (STT → LLM → TTS by env, Silero VAD, fixed disclosure, prompt forbidding codes and bank details, `record_details`/`end_call` tools, data channel to the user's identity only, wrap-up before the limit), `assistant` extra and image, compose `assistant` profile, CI. App: models, `AssistantApi`, `CallAssistant`, `AssistantMessages`, optional `AssistantRoomClient` (LiveKit in `feature:voip`), push routing, Room v6 `screened_call` + migration, `feature:assistant` (setup with the GSM codes and carrier guidance, minutes meter, history, live screen with Call back / Quick reply / Spam, notification), Settings row. Docs: ADR 0010, telephony guide section, architecture §4.9/§6/§10, testing (TC-AST-001 steps), Data safety | Locally: backend `./gradlew check` green (255 tests incl. `AssistantApiTest` 8, `AssistantConfigTest` 3; MinIO via `MINIO_TEST_IMAGE`); OpenAPI 3.1 valid; agents pytest 44 passed, ruff clean; compose config with the `assistant` profile valid; android Spotless + Detekt clean; JVM harness 10 tests (`AssistantDataTest`, `ForwardingCodesTest`, `AssistantViewModelTest`, `LiveScreeningViewModelTest`). CI: run 42946496611 on `80c36ef` (server + agents) all jobs green; the app run follows |
 | 2026-11-10 | 13 | e2e: `voip.sh` wakes the phone before each app launch, prints the foreground window and app log when a launch stays silent, and tries once more (issue 159, run 42795311862: B's launch stayed silent after the app call and TC-VOIP-002 failed) | `bash -n`; CI: runs 42797523785 (push) and 42797533410 (PR) on `5cd09bc`: e2e green in both (TC-E2E-001, TC-VOIP-001…003, TC-FAM-001/002, every launch reported at once), all other jobs green except emulator API 29 (PR run: the emulator died in `emulator-heap.sh` before any test; push run: total p95 105 ms > 100 ms with the app's own p95 8 ms, issue 36), both re-run once |
 | 2026-11-10 | 13 | e2e: the app launch waits (`am start -W`) give up after 30 s (issue 159, run 42790801180 hung 19 min there; the TERM trap stopped it and printed the diagnostics, and TC-FAM still ran) | `bash -n`; CI: run 42795311862 on `0c07934` ended in 15 min with the launch warning; TC-VOIP-002 failed (B's app didn't come up), every other job green |
 | 2026-11-10 | 13 | `scripts/ci/emulator-heap.sh` retries `adb root` until the shell is root (issue 160, after run 42790056580 stopped the API 29 job before any test) | `bash -n`; CI: run 42790801180 on `8ef1c07`, both emulator jobs green (API 29 passed `adb root`) |

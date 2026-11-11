@@ -313,7 +313,7 @@ app):
 | TC-SCAM-001 | Scam feed | Published, unexpired cards of the phone's country in the reader's language (else English), offline copy | I + R — 12: `ScamFeedTest` (drafts and expired cards never served, country-only request, cacheable 1 h, card checks); `AdminWebTest` (drafts until published, CSRF, audit log); `FamilyDataTest` (language choice, offline copy); `ScamFeedViewModelTest` |
 | TC-BIZ-003 | Business dashboard | Verified business signs in by code to its number; edits website, hours and call reasons; sees searches, reports and disputes per day without who made them; no call outcomes | I — 12: `PortalTest` (code only for approved businesses, same page for others; session cookie and CSRF; revoked business loses its session; counts without the searcher, reporters or dispute text); smoke → Business dashboard |
 | TC-REC-001 | Recording beep | Other party hears beep; file on device; server copy deleted ≤ 1 h | I + U + D — 13: `RecordingApiTest` (Testcontainers: the line of the user's country and a one-time code; supporter or self-hosted only; the legal switch from `RECORDING_COUNTRIES` and the admin web; the agent's claim needs its token and the code, once, 3 tries per call; the store's size is kept; an opaque `recording_ready` push; download link; deleted 30 min after the confirmed download and 24 h at the latest; a downloaded recording waits for its transcript; an agent that never reports leaves no file), `RecordingConfigTest`, `AdminWebTest` (switching a country on needs the legal confirmation; audit log); `backend/agents` pytest (code reading, beep and announcement, track egress request to MinIO, result reporting, transcriber); `LineRecorderTest`, `LinePlanTest` (dial string with pauses and the code, merge, hang-up on failure, the recording saved and labelled on the phone), `RecordingRepositoryTest` (file saved, then confirmed; no token on the file link), `RecordingsViewModelTest`, `InCallViewModelTest` (Record only for a single active call). On a real SIM: device steps below |
-| TC-AST-001 | Assistant | Forwarded unanswered call answered by agent; transcript streams | D |
+| TC-AST-001 | Assistant | Forwarded unanswered call answered by agent; transcript streams | I + U + D — 13b: `AssistantApiTest` (Testcontainers: one number per user and country from the pool, given back and reused; supporter or self-hosted only; the agent's claim by dialed number needs its token, unknown numbers 404, a lapsed subscription 403, the monthly cap 429 and no cap at 0; an opaque `assistant_call` push; a data-only LiveKit token for the user's own call; duration clamped and counted once; call rows hold no number and go after a day), `AssistantConfigTest`; `backend/agents` pytest (`test_assistant.py`: the fixed disclosure, the claim, app actions reply/callback/spam, messages only to the user's identity, the caller's number never to the server, goodbye before the time runs out, refused calls; `test_assistant_settings.py`: provider selection and keys, the plugins built with the right options); `AssistantDataTest` (messages, history rows, the meter), `VoipDataTest` (push routing), `ForwardingCodesTest`, `AssistantViewModelTest`, `LiveScreeningViewModelTest`, `MigrationTest` 5→6. On a real SIM: device steps below |
 | TC-SCAN-001 | Scanner wording | Result phrased as likelihood, never certainty | U |
 
 Phase 9 device steps (a phone with a SIM, a debug build pointing at a compose stack the phone can reach, and a second
@@ -413,6 +413,29 @@ number of that country on the trunk and the dispatch rule of `infra/deploy/telep
    country on in the admin web (with the confirmation) and back off; the audit log shows both.
 7. A network or plan without merging (Telecom offers no merge): the screen says the calls couldn't be merged, the
    line is hung up, the call with the second phone goes on.
+
+Phase 13b device steps (TC-AST-001). A phone with a SIM in a country that has assistant numbers, OpenCaller signed in
+as a supporter (or on a self-hosted server), a second phone; the server with `ASSISTANT_NUMBERS`, the `assistant`
+profile running with real providers, the assistant trunk and dispatch rule of `infra/deploy/telephony.md`:
+
+1. Me → Settings → Call assistant → Get my assistant number: the number and three codes appear. Tap Dial on each:
+   the dial pad opens with `**61*<number>#` (and `**62*`, `**67*`); press Call; the network confirms. Note the
+   carrier's answer (some refuse; then follow "My carrier doesn't support this").
+2. From the second phone call the first and let it ring out: the call is forwarded; the second phone hears the
+   disclosure ("an automated call assistant…") and the questions. Within a few seconds the first phone shows
+   "Assistant is answering a call"; tap it: the caller's number, the conversation as it happens, then name and reason.
+3. Ask the caller (second phone) to give a fake one-time code: the assistant declines to take it.
+4. Send a quick reply: the caller hears it. Tap Call back: the caller hears that you will call back, the call ends,
+   and the dial pad opens with the caller's number.
+5. Again, tap Spam, hang up: the call ends; the history shows "Marked as spam".
+6. Let a call run past `ASSISTANT_MAX_CALL_MINUTES`: the assistant says goodbye and hangs up. The minutes this month
+   grow by the calls' lengths. With `ASSISTANT_MONTHLY_MINUTES` used up, the next caller hears that the person can't
+   take calls.
+7. Network capture on the server side (or its logs): no request or row holds the caller's number or the
+   conversation; `assistant_calls` rows are gone a day later.
+8. Dial `##002#`, then Turn off the assistant: forwarded calls stop, and the number goes back to the pool.
+9. Measure the cost per screened minute (providers' bills ÷ minutes in `assistant_usage`) and record it in
+   `docs/phase.md` (the phase's exit criterion).
 
 ## 5. Manual QA checklist (before each release)
 
