@@ -112,9 +112,8 @@ private fun Status(state: LiveUiState) {
             Text(stringResource(endText(state.end) ?: R.string.assistant_live_ended))
         }
 
-        LivePhase.LIVE -> {
-            Unit
-        }
+        // The transcript and the actions show the live state.
+        LivePhase.LIVE -> {}
     }
 }
 
