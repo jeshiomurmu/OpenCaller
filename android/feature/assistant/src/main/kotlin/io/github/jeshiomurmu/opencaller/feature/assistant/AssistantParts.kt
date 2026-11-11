@@ -13,6 +13,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -79,7 +80,7 @@ internal fun Usage(usage: AssistantUsage) {
         SectionTitle(R.string.assistant_usage_title)
         if (usage.limitMinutes > 0) {
             Text(
-                stringResource(R.string.assistant_usage, usage.usedMinutes, usage.limitMinutes),
+                pluralStringResource(R.plurals.assistant_usage, usage.limitMinutes, usage.usedMinutes, usage.limitMinutes),
                 style = MaterialTheme.typography.bodyMedium,
             )
             LinearProgressIndicator(
@@ -87,7 +88,10 @@ internal fun Usage(usage: AssistantUsage) {
                 modifier = Modifier.fillMaxWidth(),
             )
         } else {
-            Text(stringResource(R.string.assistant_usage_unlimited, usage.usedMinutes), style = MaterialTheme.typography.bodyMedium)
+            Text(
+                pluralStringResource(R.plurals.assistant_usage_unlimited, usage.usedMinutes, usage.usedMinutes),
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
         if (usage.exhausted) Text(stringResource(R.string.assistant_usage_exhausted), color = MaterialTheme.colorScheme.error)
     }

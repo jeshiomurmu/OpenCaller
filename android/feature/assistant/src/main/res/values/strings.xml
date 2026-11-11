@@ -22,8 +22,14 @@
     <string name="assistant_turn_off_confirm">Turn off</string>
     <string name="assistant_cancel">Cancel</string>
     <string name="assistant_usage_title">This month</string>
-    <string name="assistant_usage">%1$d of %2$d minutes used</string>
-    <string name="assistant_usage_unlimited">%1$d minutes used</string>
+    <plurals name="assistant_usage">
+        <item quantity="one">%1$d of %2$d minute used</item>
+        <item quantity="other">%1$d of %2$d minutes used</item>
+    </plurals>
+    <plurals name="assistant_usage_unlimited">
+        <item quantity="one">%1$d minute used</item>
+        <item quantity="other">%1$d minutes used</item>
+    </plurals>
     <string name="assistant_usage_exhausted">Your minutes for this month are used up. Until next month, callers hear that you can\'t take calls.</string>
     <string name="assistant_history_title">Screened calls</string>
     <string name="assistant_history_empty">No screened calls yet.</string>
