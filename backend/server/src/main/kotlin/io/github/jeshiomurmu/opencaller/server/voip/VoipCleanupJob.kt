@@ -1,5 +1,6 @@
 package io.github.jeshiomurmu.opencaller.server.voip
 
+import io.github.jeshiomurmu.opencaller.server.db.AssistantCalls
 import io.github.jeshiomurmu.opencaller.server.db.CallInvites
 import io.github.jeshiomurmu.opencaller.server.db.FlashMessages
 import io.github.jeshiomurmu.opencaller.server.db.PushItems
@@ -16,11 +17,13 @@ data class VoipCleanupResult(
     val pushItems: Int,
     val flashMessages: Int,
     val callInvites: Int,
+    val assistantCalls: Int = 0,
 )
 
 /**
  * Hourly: deletes expired push items and undelivered Flash messages, and app-call invites a day after they were
- * made, so the server never builds up a history of who called or pinged whom (ADR 0007).
+ * made, so the server never builds up a history of who called or pinged whom (ADR 0007); assistant calls a day
+ * after they started (ADR 0010; the minutes stay in `assistant_usage`).
  */
 class VoipCleanupJob(
     private val db: ServerDatabase,
@@ -34,6 +37,7 @@ class VoipCleanupJob(
                 pushItems = PushItems.deleteWhere { expiresAt less now },
                 flashMessages = FlashMessages.deleteWhere { expiresAt less now },
                 callInvites = CallInvites.deleteWhere { createdAt less now.minusHours(INVITE_KEEP_HOURS) },
+                assistantCalls = AssistantCalls.deleteWhere { startedAt less now.minusHours(INVITE_KEEP_HOURS) },
             )
         }
     }

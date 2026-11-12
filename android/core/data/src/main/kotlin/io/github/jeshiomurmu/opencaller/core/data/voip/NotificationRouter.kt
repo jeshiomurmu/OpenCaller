@@ -2,8 +2,10 @@ package io.github.jeshiomurmu.opencaller.core.data.voip
 
 import io.github.jeshiomurmu.opencaller.core.common.AppResult
 import io.github.jeshiomurmu.opencaller.core.common.Clock
+import io.github.jeshiomurmu.opencaller.core.data.assistant.AssistantCallNotices
 import io.github.jeshiomurmu.opencaller.core.data.family.FamilyAlertNotices
 import io.github.jeshiomurmu.opencaller.core.data.family.toFamilyAlert
+import io.github.jeshiomurmu.opencaller.core.data.profile.millisOf
 import io.github.jeshiomurmu.opencaller.core.data.recording.RecordingDownloads
 import io.github.jeshiomurmu.opencaller.core.network.NotificationDto
 import io.github.jeshiomurmu.opencaller.core.network.VoipApi
@@ -17,8 +19,9 @@ import javax.inject.Singleton
  * Turns a push into what it stands for (ADR 0007). A push carries only a random id; the phone asks the server
  * what it is (`GET /v1/notifications/{id}`) and hands app calls to [AppCallHandler] (when the build has app calls)
  * and Flash messages to [FlashRepository] and [FlashAlerts], shows a family alert to the group's admin
- * ([FamilyAlertNotices], ADR 0008) and saves a finished recording ([RecordingDownloads], ADR 0009). [catchUp] does
- * the same for items whose push never arrived.
+ * ([FamilyAlertNotices], ADR 0008), saves a finished recording ([RecordingDownloads], ADR 0009) and tells the user
+ * the assistant answered a call ([AssistantCallNotices], ADR 0010). [catchUp] does the same for items whose push
+ * never arrived.
  */
 @Singleton
 @Suppress("LongParameterList") // One handler per kind of push item, plus the API and the clock.
@@ -31,6 +34,7 @@ class NotificationRouter
         private val alerts: FlashAlerts,
         private val family: FamilyAlertNotices,
         private val recordings: RecordingDownloads,
+        private val assistant: Optional<AssistantCallNotices>,
         private val clock: Clock,
     ) {
         /** Handles the push that carried [itemId]; false if the item couldn't be fetched. */
@@ -86,6 +90,13 @@ class NotificationRouter
                     if (item.recording != null) recordings.syncSoon()
                 }
 
+                ASSISTANT_CALL -> {
+                    // Only a call still going on is worth a notification; a missed push of an ended one isn't.
+                    item.assistantCall
+                        ?.takeIf { !it.ended }
+                        ?.let { call -> assistant.ifPresent { it.show(call.id, millisOf(call.startedAt)) } }
+                }
+
                 else -> {
                     Timber.i("Unknown push item kind %s", item.kind)
                 }
@@ -98,6 +109,7 @@ class NotificationRouter
             const val FLASH = "flash"
             const val FAMILY_ALERT = "family_alert"
             const val RECORDING_READY = "recording_ready"
+            const val ASSISTANT_CALL = "assistant_call"
             val ITEM_ID = Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
         }
     }

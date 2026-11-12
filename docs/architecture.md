@@ -225,7 +225,7 @@ Networking (`core:network`, a JVM module): Retrofit + OkHttp + kotlinx.serializa
 
 - **VoIP (F-CM-09):** client gets LiveKit token from `/v1/voip/token`; callee notified by push; call registered with Jetpack Telecom so it appears like a phone call. Pushes carry only a random item id the phone fetches (ADR 0007); F-Droid builds leave app calls out (`-Popencaller.voip=false`).
 - **Recording line (F-UT-03, ADR 0009, `infra/deploy/telephony.md`):** user taps Record and confirms the consent reminder → `POST /v1/lines/recording` gives the line of the user's country (only where `RECORDING_COUNTRIES` / the admin web approve it) and a one-time 8-digit code → the app dials `line,,code#` (`feature:recording` `LineRecorder`, Telecom holds the user's call) → LiveKit SIP: inbound trunk + callee dispatch rule (`randomize`, `hide_phone_number`) → room `rec_<line>_<random>` with the `recorder` agent (`backend/agents`), which reads the code and claims the session → the app merges the calls (`Call.conference`) → beep and announcement for both parties, a short beep every 15 s → LiveKit track egress of the caller's audio to MinIO (`recordings/<session>.ogg`) → the agent reports, the server pushes `recording_ready` (an opaque id) → the phone saves the file (Room `recording`, app files) and confirms → the server deletes it within an hour (the `recording-retention` job, every 10 min), 24 h at the latest. Optional transcripts: self-hosted Whisper (`transcriber`), only when the user turned them on.
-- **AI assistant (F-UT-04):** onboarding sets conditional call forwarding (no answer / busy / unreachable) to the user's assistant number using standard GSM MMI codes where supported, with carrier-specific guidance. Calls land in LiveKit SIP → Python agent (STT → LLM → TTS) → transcript streamed to app via LiveKit data channel; user actions sent back.
+- **AI assistant (F-UT-04, ADR 0010, `infra/deploy/telephony.md`):** Me → Settings → Call assistant → `POST /v1/lines/assistant` gives the user a number of their own from the pool (`ASSISTANT_NUMBERS`, one per user, in their country) → the app opens the GSM codes `**61*`/`**62*`/`**67*` + number + `#` in the dial pad (`##002#` cancels), with guidance for carriers that don't accept them → a missed call is forwarded to that number → LiveKit SIP: the assistant numbers' trunk + a callee dispatch rule (`ast`, `randomize`, caller's number not hidden) with the `assistant` agent → the agent claims the call by the dialed number (`/agent/v1/assistant/calls`; 404/403/429 → "can't take calls") and the server pushes `assistant_call` (an opaque id) → the agent (`AgentSession`: STT → LLM → TTS, Silero VAD; providers by env) greets with a fixed disclosure, asks name and reason, never asks for codes or bank details → the app opens the live screen: a data-only LiveKit token, topic `opencaller.assistant` (`hello`, `partial`, `line`, `details`, `ended` to the user's identity only; `reply`, `callback`, `spam` back) → Call back opens the dial pad with the caller's number → the agent reports the duration (`assistant_usage`, the monthly cap) → the phone keeps the call in Room `screened_call` (90 days).
 - **Voice scanner (F-PR-13):** same merge flow as recording; agent samples a few seconds and runs the anti-spoofing model; returns probability.
 
 ## 5. Permissions and roles
@@ -296,6 +296,10 @@ ReportOutboxEntity(@PrimaryKey(autoGenerate = true) id: Long, e164: String, labe
 @Entity(tableName = "recording")
 RecordingEntity(@PrimaryKey id: String, e164: String?, filePath: String, durationMs: Long,
   transcript: String?, summary: String?, createdAt: Long)
+
+@Entity(tableName = "screened_call", primaryKeys = ["id"], indices = [Index("startedAt")])   // v6, Phase 13 (ADR 0010)
+ScreenedCallEntity(id: String, startedAt: Long, e164: String? /*null = hidden*/, name: String?, reason: String?,
+  urgency: String, likelySpam: Boolean, transcript: String /*"C …" / "A …" per line*/, endReason: String)
 
 @Entity(tableName = "scheduled_sms")
 ScheduledSmsEntity(@PrimaryKey(autoGenerate = true) id: Long, to: String, body: String, subId: Int,
@@ -476,6 +480,7 @@ Implementation (Phase 4, `scoring/`): the Kotlin job runs every 15 minutes under
 9. Family protection shares only what the member switched on, from the member to the admin: an alert's kind and time, and a day's two counts. No number, name, message text, contact or call log; nobody is added without their own request and consent; switching off or leaving deletes what the server held (`FamilyApiTest`, ADR 0008).
 10. The business dashboard shows counts of data the server already holds (explicit searches counted without the searcher, reports, disputes); apps send no call-outcome data (answered, declined) at all (`PortalTest`).
 11. Recordings: no request names either party's number (the one-time code links the call to the account; the dispatch rule hides the caller's number from LiveKit); the server keeps the audio until the phone saved it plus at most 50 minutes, and never longer than 24 hours; transcripts only when the user turned them on, made on the operator's own server (`RecordingApiTest`, `backend/agents` tests, ADR 0009).
+12. Call assistant: the caller's number, the transcript and the summary go from the agent to the user's phone only (data messages addressed to the user's LiveKit identity); the server keeps the user's number pool assignment, a call row without any phone number for a day, and seconds per month (`AssistantApiTest`, `backend/agents` `test_assistant.py`, ADR 0010).
 
 ## 11. Error handling
 

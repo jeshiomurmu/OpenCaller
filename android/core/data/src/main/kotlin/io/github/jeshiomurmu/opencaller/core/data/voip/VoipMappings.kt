@@ -56,7 +56,16 @@ internal fun FlashDto.toModel(nowMillis: Long): FlashMessage? {
     }
 }
 
-internal fun FeaturesDto.toModel(): ServerFeatures = ServerFeatures(appCalls, flash, fcm, webPushVapidKey?.takeIf { VAPID_KEY.matches(it) })
+internal fun FeaturesDto.toModel(): ServerFeatures =
+    ServerFeatures(
+        appCalls,
+        flash,
+        fcm,
+        webPushVapidKey?.takeIf {
+            VAPID_KEY.matches(it)
+        },
+        assistant,
+    )
 
 // What UnifiedPush accepts: a base64url uncompressed P-256 point (87 characters).
 private val VAPID_KEY = Regex("^[A-Za-z0-9_-]{87}$")

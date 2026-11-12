@@ -74,12 +74,13 @@ data class AppCallRoom(
     val token: String,
 )
 
-/** What the server offers (`GET /v1/server`); a server before Phase 11 offers none of it. */
+/** What the server offers (`GET /v1/server`); a server before Phase 11 offers none of it ([assistant]: Phase 13). */
 data class ServerFeatures(
     val appCalls: Boolean = false,
     val flash: Boolean = false,
     val fcm: Boolean = false,
     val webPushVapidKey: String? = null,
+    val assistant: Boolean = false,
 )
 
 /** Where pushes for this device go. */

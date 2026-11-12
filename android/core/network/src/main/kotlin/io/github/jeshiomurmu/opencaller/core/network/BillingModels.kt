@@ -20,6 +20,7 @@ data class FeaturesDto(
     val flash: Boolean = false,
     val fcm: Boolean = false,
     val webPushVapidKey: String? = null,
+    val assistant: Boolean = false,
 )
 
 /** Purchase options of the server; [googlePlayProductId] is set while Play billing is configured. */

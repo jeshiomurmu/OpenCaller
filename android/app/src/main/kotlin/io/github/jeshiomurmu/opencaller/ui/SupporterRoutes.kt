@@ -6,6 +6,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import io.github.jeshiomurmu.opencaller.core.model.AccessItem
+import io.github.jeshiomurmu.opencaller.feature.assistant.AssistantRoute
 import io.github.jeshiomurmu.opencaller.feature.backup.BackupRoute
 import io.github.jeshiomurmu.opencaller.feature.premium.SupporterRoute
 import io.github.jeshiomurmu.opencaller.feature.recording.RecordingsRoute
@@ -18,6 +19,7 @@ import io.github.jeshiomurmu.opencaller.feature.social.RecordClipRoute
 import io.github.jeshiomurmu.opencaller.feature.social.VoipSettingsRoute
 import io.github.jeshiomurmu.opencaller.navigation.AnnounceSettingsRoute
 import io.github.jeshiomurmu.opencaller.navigation.AppearanceSettingsRoute
+import io.github.jeshiomurmu.opencaller.navigation.AssistantNavRoute
 import io.github.jeshiomurmu.opencaller.navigation.BackupSettingsRoute
 import io.github.jeshiomurmu.opencaller.navigation.GhostCallSettingsRoute
 import io.github.jeshiomurmu.opencaller.navigation.MessengerSettingsRoute
@@ -46,6 +48,7 @@ internal fun settingsLinks(
         onOpenBackup = { go(BackupSettingsRoute) },
         onOpenVoip = { go(VoipSettingsNavRoute) },
         onOpenRecordings = { go(RecordingsNavRoute) },
+        onOpenAssistant = { go(AssistantNavRoute) },
     )
 }
 
@@ -59,6 +62,7 @@ internal fun NavGraphBuilder.supporterRoutes(navController: NavHostController) {
     composable<MessengerSettingsRoute> { MessengerCallerIdRoute(onOpenSupporter = openSupporter) }
     composable<BackupSettingsRoute> { BackupRoute(onOpenSupporter = openSupporter) }
     composable<RecordingsNavRoute> { RecordingsRoute() }
+    composable<AssistantNavRoute> { AssistantRoute() }
     voipRoutes(navController)
 }
 

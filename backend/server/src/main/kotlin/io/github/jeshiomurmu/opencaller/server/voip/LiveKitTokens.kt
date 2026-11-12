@@ -25,22 +25,26 @@ class LiveKitTokens(
 ) {
     private val algorithm = Algorithm.HMAC256(config.apiSecret)
 
-    /** A token for [identity] (a user ID) to join [room]. */
+    /**
+     * A token for [identity] (a user ID) to join [room]. With [publishMedia] `false` the participant can't publish
+     * any track: it only sends and receives data messages (the assistant's live screen, ADR 0010).
+     */
     fun issue(
         identity: String,
         room: String,
+        publishMedia: Boolean = true,
     ): IssuedToken {
         val now = clock.instant()
         val expiresAt = now.plusSeconds(config.tokenTtlSeconds)
         val grant =
-            mapOf(
-                "room" to room,
-                "roomJoin" to true,
-                "canPublish" to true,
-                "canSubscribe" to true,
-                "canPublishData" to true,
-                "canPublishSources" to listOf(MICROPHONE),
-            )
+            buildMap {
+                put("room", room)
+                put("roomJoin", true)
+                put("canPublish", publishMedia)
+                put("canSubscribe", true)
+                put("canPublishData", true)
+                if (publishMedia) put("canPublishSources", listOf(MICROPHONE))
+            }
         val token =
             JWT
                 .create()

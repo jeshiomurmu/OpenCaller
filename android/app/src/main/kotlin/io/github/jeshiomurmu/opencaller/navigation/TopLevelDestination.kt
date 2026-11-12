@@ -164,6 +164,10 @@ data object FamilyNavRoute
 @Serializable
 data object RecordingsNavRoute
 
+/** Me → Settings → Call assistant (Phase 13). */
+@Serializable
+data object AssistantNavRoute
+
 /** Me → Settings → App calls, Flash and video caller ID (Phase 11). */
 @Serializable
 data object VoipSettingsNavRoute

@@ -143,6 +143,32 @@ class MigrationTest {
             }
         }
 
+    // Version 6 (Phase 13): an empty screened_call table; Flash messages keep their rows.
+    @Test
+    fun migration5To6AddsScreenedCalls() =
+        runTest {
+            helper.createDatabase(5).use { db ->
+                db.execSQL(
+                    "INSERT INTO flash_message (id, kind, e164, name, atMillis, outgoing) " +
+                        "VALUES ('f1', 'call_me', '+12015550123', NULL, 5, 0)",
+                )
+            }
+            helper.runMigrationsAndValidate(6, listOf(Migrations.MIGRATION_5_6)).use { db ->
+                db.prepare("SELECT kind FROM flash_message WHERE id = 'f1'").use { row ->
+                    assertTrue(row.step())
+                    assertEquals("call_me", row.getText(0))
+                }
+                db.execSQL(
+                    "INSERT INTO screened_call (id, startedAt, e164, name, reason, urgency, likelySpam, transcript, endReason) " +
+                        "VALUES ('c1', 5, NULL, 'Rahim', 'Delivery', 'NORMAL', 0, 'C Hello', 'DONE')",
+                )
+                db.prepare("SELECT name FROM screened_call WHERE id = 'c1'").use { row ->
+                    assertTrue(row.step())
+                    assertEquals("Rahim", row.getText(0))
+                }
+            }
+        }
+
     private companion object {
         const val TEST_DB = "migration-test.db"
     }

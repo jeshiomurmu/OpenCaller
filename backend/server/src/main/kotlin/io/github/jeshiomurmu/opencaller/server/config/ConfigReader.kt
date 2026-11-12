@@ -67,9 +67,11 @@ internal class ConfigReader(
                 billing = BillingConfig(bool("billing.selfHosted", "SELF_HOSTED"), readGooglePlay(environment)),
                 voip = readVoip(environment),
                 recording = readRecording(),
+                assistant = readAssistant(),
             )
         if (result.scoring.verifiedCap >= result.lists.minScore) problems += "SCORING_VERIFIED_CAP must be below LIST_MIN_SCORE"
         if (result.http.port == result.http.metricsPort) problems += "PORT and METRICS_PORT must differ"
+        checkAssistant(result)
         result.adminWeb?.port?.let { port ->
             if (port == result.http.port ||
                 port == result.http.metricsPort

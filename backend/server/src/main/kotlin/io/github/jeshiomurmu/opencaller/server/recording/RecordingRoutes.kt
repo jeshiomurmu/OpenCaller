@@ -56,18 +56,8 @@ private fun Route.agentRoutes(
     services: RecordingRouteServices,
     token: String,
 ) {
-    val expected = "Bearer $token".toByteArray(Charsets.UTF_8)
-    val agent: suspend RoutingContext.(suspend RoutingContext.() -> Unit) -> Unit = { handler ->
-        val given =
-            call.request.headers[HttpHeaders.Authorization]
-                .orEmpty()
-                .toByteArray(Charsets.UTF_8)
-        if (MessageDigest.isEqual(given, expected)) {
-            handler()
-        } else {
-            call.respondProblem(ApiProblem(HttpStatusCode.Unauthorized, "unauthorized", "A valid agent token is required"))
-        }
-    }
+    val expected = agentBearer(token)
+    val agent: suspend RoutingContext.(suspend RoutingContext.() -> Unit) -> Unit = { handler -> asAgent(expected, handler) }
     post("/agent/v1/recording/claim") { agent { call.noStore().respond(services.lines.claim(call.receive<ClaimRequest>())) } }
     post("/agent/v1/recording/sessions/{id}/result") {
         agent {
@@ -89,13 +79,32 @@ private fun Route.agentRoutes(
     }
 }
 
+/** The `Authorization` value the agents send with `RECORDING_AGENT_TOKEN` [token]. */
+internal fun agentBearer(token: String): ByteArray = "Bearer $token".toByteArray(Charsets.UTF_8)
+
+/** Runs [handler] if the request carries the agents' bearer ([expected], compared in constant time); 401 otherwise. */
+internal suspend fun RoutingContext.asAgent(
+    expected: ByteArray,
+    handler: suspend RoutingContext.() -> Unit,
+) {
+    val given =
+        call.request.headers[HttpHeaders.Authorization]
+            .orEmpty()
+            .toByteArray(Charsets.UTF_8)
+    if (MessageDigest.isEqual(given, expected)) {
+        handler()
+    } else {
+        call.respondProblem(ApiProblem(HttpStatusCode.Unauthorized, "unauthorized", "A valid agent token is required"))
+    }
+}
+
 private val UUID_PATTERN = Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
 
-private fun idOf(
+internal fun idOf(
     value: String?,
     missing: () -> ApiProblem,
 ): UUID = value?.takeIf(UUID_PATTERN::matches)?.let(UUID::fromString) ?: throw missing()
 
 private fun RoutingContext.recordingId(): UUID = idOf(call.parameters["id"], ::recordingNotFound)
 
-private fun ApplicationCall.noStore(): ApplicationCall = apply { response.header(HttpHeaders.CacheControl, "no-store") }
+internal fun ApplicationCall.noStore(): ApplicationCall = apply { response.header(HttpHeaders.CacheControl, "no-store") }

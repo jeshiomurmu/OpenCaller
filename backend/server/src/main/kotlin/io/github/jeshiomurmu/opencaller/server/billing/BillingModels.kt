@@ -38,7 +38,7 @@ data class ServerInfoResponse(
 /**
  * Phase 11 features of a server: [appCalls] (LiveKit and a push provider configured), [flash] (a push provider),
  * [fcm] (play builds can register FCM tokens) and [webPushVapidKey] (foss builds pass it to their UnifiedPush
- * distributor; `null` when Web Push is off).
+ * distributor; `null` when Web Push is off); Phase 13: [assistant] (the call assistant has numbers and LiveKit).
  */
 @Serializable
 data class FeatureInfo(
@@ -46,6 +46,7 @@ data class FeatureInfo(
     val flash: Boolean = false,
     val fcm: Boolean = false,
     val webPushVapidKey: String? = null,
+    val assistant: Boolean = false,
 )
 
 /** Purchase options of a server; [googlePlayProductId] is set while Play billing is configured. */
