@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 6,
-    "identityHash": "77e14ac704a2c7fa78c2680df648e9a5",
+    "identityHash": "439b3a4f47d18360ca09f5477b1fa642",
     "entities": [
       {
         "tableName": "spam_list",
@@ -892,14 +892,14 @@
               "startedAt"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `${INDEX_NAME}` ON `${TABLE_NAME}` (`startedAt`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_screened_call_startedAt` ON `${TABLE_NAME}` (`startedAt`)"
           }
         ]
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '77e14ac704a2c7fa78c2680df648e9a5')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '439b3a4f47d18360ca09f5477b1fa642')"
     ]
   }
 }
