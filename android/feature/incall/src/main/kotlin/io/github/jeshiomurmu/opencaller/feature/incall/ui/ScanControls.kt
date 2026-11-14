@@ -82,8 +82,8 @@ internal fun ScanPanel(
         VoiceScanStatus.Connecting -> ScanNote(R.string.incall_scan_connecting, modifier = modifier)
         VoiceScanStatus.Merging -> ScanNote(R.string.incall_scan_merging, modifier = modifier)
         VoiceScanStatus.Listening -> ScanNote(R.string.incall_scan_listening, modifier = modifier)
-        VoiceScanStatus.NoResult -> ScanNote(R.string.incall_scan_no_result, onClose = { onEvent(InCallEvent.ScanDismissed) }, modifier)
-        is VoiceScanStatus.Failed -> ScanNote(messageOf(status.reason), onClose = { onEvent(InCallEvent.ScanDismissed) }, modifier)
+        VoiceScanStatus.NoResult -> ScanNote(R.string.incall_scan_no_result, modifier, onClose = { onEvent(InCallEvent.ScanDismissed) })
+        is VoiceScanStatus.Failed -> ScanNote(messageOf(status.reason), modifier, onClose = { onEvent(InCallEvent.ScanDismissed) })
         is VoiceScanStatus.Done -> ScanResultCard(status.result, onClose = { onEvent(InCallEvent.ScanDismissed) }, modifier)
     }
 }
@@ -91,8 +91,8 @@ internal fun ScanPanel(
 @Composable
 private fun ScanNote(
     @StringRes text: Int,
-    onClose: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    onClose: (() -> Unit)? = null,
 ) {
     Surface(
         shape = OpenCallerShape.card,
