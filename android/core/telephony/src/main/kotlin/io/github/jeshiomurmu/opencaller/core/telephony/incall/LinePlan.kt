@@ -1,16 +1,14 @@
-package io.github.jeshiomurmu.opencaller.feature.recording
+package io.github.jeshiomurmu.opencaller.core.telephony.incall
 
 import io.github.jeshiomurmu.opencaller.core.common.AppError
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
 import io.github.jeshiomurmu.opencaller.core.model.RecordingLine
-import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallStatus
-import io.github.jeshiomurmu.opencaller.core.telephony.incall.ConferenceAction
-import io.github.jeshiomurmu.opencaller.core.telephony.incall.InCallState
-import io.github.jeshiomurmu.opencaller.core.telephony.incall.RecordingFailure
-import io.github.jeshiomurmu.opencaller.core.telephony.incall.mergeAction
 
-/** How the phone talks to the recording line: pure functions, tested on the JVM. */
-internal object LinePlan {
+/**
+ * How the phone talks to the recording line (ADR 0009) for recording and for the voice scan (ADR 0011): pure
+ * functions, tested on the JVM.
+ */
+object LinePlan {
     /**
      * The number to dial: the line, two pauses (`,`, two seconds each, so the line has answered and played its ready
      * signal), then the code and `#`. Telecom sends the digits after the pauses as tones.

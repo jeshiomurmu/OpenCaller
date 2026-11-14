@@ -305,8 +305,43 @@ jobs:
           python3 -I ml/sms-classifier/corpus/generate.py
           git diff --exit-code -- android/core/testing/src/main/resources/fixtures/sms_corpus
 
+  voice-spoof:
+    name: voice-spoof (AASIST service)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      # The runner's Python 3.12; versions pinned in ml/voice-spoof/pyproject.toml. The tests use a tiny ONNX model;
+      # ffmpeg runs the telephone-codec conditions of the evaluation.
+      - name: Lint and unit tests (ruff, pytest)
+        working-directory: ml/voice-spoof
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          python3 -m venv .venv
+          .venv/bin/pip install --quiet -e '.[test]'
+          .venv/bin/ruff check src tests scripts
+          .venv/bin/ruff format --check src tests scripts
+          .venv/bin/pytest -q
+
+      # The image downloads AASIST's weights (checksum pinned), exports them to ONNX with PyTorch's CPU build and
+      # serves them; the check scores 4 s of a test signal with the real model.
+      - name: Image with the exported model
+        run: |
+          docker build -t opencaller/voice-spoof:ci ml/voice-spoof
+          token=$(openssl rand -hex 32)
+          docker run -d --name voice-spoof --read-only --tmpfs /tmp --cap-drop ALL -e VOICE_SPOOF_TOKEN="$token" \
+            -p 127.0.0.1:8090:8090 opencaller/voice-spoof:ci
+          for _ in $(seq 1 30); do curl -fsS --max-time 2 http://127.0.0.1:8090/health && break; sleep 1; done
+          python3 -c "import math,struct,sys; sys.stdout.buffer.write(b''.join(struct.pack('<h', int(8000*math.sin(2*math.pi*220*i/16000))) for i in range(64000)))" > tone.pcm
+          test "$(curl -s -o /dev/null -w '%{http_code}' --data-binary @tone.pcm http://127.0.0.1:8090/v1/score)" = 401
+          curl -fsS --max-time 10 -H "Authorization: Bearer $token" -H 'Content-Type: application/octet-stream' \
+            --data-binary @tone.pcm http://127.0.0.1:8090/v1/score | tee score.json
+          python3 -c "import json; p=json.load(open('score.json'))['spoofProbability']; assert 0 <= p <= 1, p"
+          docker logs voice-spoof
+
   agents:
-    name: agents (recorder, transcriber, assistant)
+    name: agents (recorder, transcriber, assistant, scanner)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -324,15 +359,18 @@ jobs:
           .venv/bin/pytest -q
           .venv/bin/python -c "import opencaller_agents.recorder as r; assert r.AGENT_NAME == 'recorder'"
           .venv/bin/python -c "import opencaller_agents.assistant as a; assert a.AGENT_NAME == 'assistant'"
+          .venv/bin/python -c "import opencaller_agents.scanner as s; assert s.AGENT_NAME == 'scanner'"
 
       # The image the telephony overlay runs (recorder, transcriber, assistant), and the overlay itself.
       - name: Agents image and telephony overlay
         run: |
           docker build -t opencaller/agents:ci backend/agents
-          docker run --rm opencaller/agents:ci python -c "import faster_whisper, opencaller_agents.recorder, opencaller_agents.assistant"
+          docker run --rm opencaller/agents:ci python -c "import faster_whisper, numpy, opencaller_agents.recorder, opencaller_agents.assistant, opencaller_agents.scanner"
+          docker run --rm opencaller/agents:ci test -w /home/agent/.cache/huggingface
           cp infra/docker/.env.example infra/docker/.env
           echo "RECORDING_AGENT_TOKEN=$(openssl rand -hex 32)" >> infra/docker/.env
-          docker compose -f infra/docker/compose.yml -f infra/docker/compose.telephony.yml --profile transcripts --profile assistant config --quiet
+          echo "VOICE_SPOOF_TOKEN=$(openssl rand -hex 32)" >> infra/docker/.env
+          docker compose -f infra/docker/compose.yml -f infra/docker/compose.telephony.yml --profile transcripts --profile assistant --profile scanner config --quiet
 
   license:
     name: license

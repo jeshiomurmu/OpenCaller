@@ -5,6 +5,9 @@ import io.github.jeshiomurmu.opencaller.core.model.CallerInfo
 import io.github.jeshiomurmu.opencaller.core.model.Direction
 import io.github.jeshiomurmu.opencaller.core.model.NameSource
 import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
+import io.github.jeshiomurmu.opencaller.core.model.ScamCue
+import io.github.jeshiomurmu.opencaller.core.model.VoiceScanResult
+import io.github.jeshiomurmu.opencaller.core.model.VoiceVerdict
 import io.github.jeshiomurmu.opencaller.core.phonenumber.PhoneNumberNormalizer
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.AudioRoute
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.AudioRouteType
@@ -13,12 +16,14 @@ import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallCapability
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallController
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallRecorder
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallRecordingStatus
+import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallScanner
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallStateRepository
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallStatus
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.ConferenceAction
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.InCallState
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.RecordingFailure
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.TrackedCall
+import io.github.jeshiomurmu.opencaller.core.telephony.incall.VoiceScanStatus
 import io.github.jeshiomurmu.opencaller.core.testing.FakeClock
 import io.github.jeshiomurmu.opencaller.core.testing.MainDispatcherRule
 import io.github.jeshiomurmu.opencaller.feature.incall.calls.CallerDirectory
@@ -113,6 +118,7 @@ class InCallViewModelTest {
     private val controller = FakeCallController()
     private val userReplies = MutableStateFlow<List<String>>(emptyList())
     private val recorder = FakeRecorder()
+    private val scanner = FakeScanner()
     private val vm by lazy {
         InCallViewModel(
             calls =
@@ -129,6 +135,7 @@ class InCallViewModelTest {
             clock = FakeClock(),
             clips = CallerClips.NONE,
             recorder = recorder,
+            scanner = scanner,
         )
     }
 
@@ -294,6 +301,55 @@ class InCallViewModelTest {
             vm.onEvent(InCallEvent.RecordingErrorShown)
             assertEquals(CallRecordingStatus.Idle, vm.uiState.value.recording)
         }
+
+    @Test
+    fun tcScan001TheVoiceScanUsesTheLineWhenItIsFreeAndShowsItsResult() =
+        runTest {
+            observe()
+            calls.value = InCallState(listOf(call("1", CallStatus.ACTIVE)))
+            assertTrue(vm.uiState.value.canScan)
+
+            // Recording and scanning share the line: one at a time.
+            recorder.status.value = CallRecordingStatus.Recording("1", "2")
+            assertFalse(vm.uiState.value.canScan)
+            vm.onEvent(InCallEvent.ScanVoice)
+            assertTrue(scanner.started.isEmpty())
+            recorder.status.value = CallRecordingStatus.Idle
+
+            vm.onEvent(InCallEvent.ScanVoice)
+            assertEquals(listOf("1"), scanner.started)
+            scanner.status.value = VoiceScanStatus.Listening
+            assertFalse(vm.uiState.value.canScan)
+            assertFalse(vm.uiState.value.canRecord)
+            vm.onEvent(InCallEvent.StopScan)
+            assertEquals(1, scanner.stops)
+
+            val result = VoiceScanResult(0.83f, listOf(ScamCue.OTP_REQUEST))
+            scanner.status.value = VoiceScanStatus.Done(result)
+            assertEquals(VoiceScanStatus.Done(result), vm.uiState.value.scan)
+            assertEquals(VoiceVerdict.POSSIBLY_AI, result.verdict) // shown as "Possibly AI-generated"
+            assertTrue(vm.uiState.value.canScan && vm.uiState.value.canRecord)
+            vm.onEvent(InCallEvent.ScanDismissed)
+            assertEquals(VoiceScanStatus.Idle, vm.uiState.value.scan)
+        }
+}
+
+private class FakeScanner : CallScanner {
+    override val status = MutableStateFlow<VoiceScanStatus>(VoiceScanStatus.Idle)
+    val started = mutableListOf<String>()
+    var stops = 0
+
+    override fun start(callId: String) {
+        started += callId
+    }
+
+    override fun stop() {
+        stops++
+    }
+
+    override fun dismiss() {
+        status.value = VoiceScanStatus.Idle
+    }
 }
 
 private class FakeRecorder : CallRecorder {

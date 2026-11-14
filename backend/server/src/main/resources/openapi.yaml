@@ -1659,6 +1659,36 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { description: "`session_not_found`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
 
+  /v1/lines/scanner:
+    post:
+      tags: [recording]
+      summary: Start a voice scan
+      description: |
+        The voice scanner (ADR 0011) uses the recording line: the same number of the user's country, a one-time code
+        and the same legal switch. The app dials the line, sends the code as tones and merges the calls once the
+        session is `active`; the scanner listens to a few seconds of the other party and stores only the outcome.
+        Needs SCANNER_ENABLED. 20 an hour.
+      operationId: startScan
+      security: [{ accessToken: [] }]
+      responses:
+        "201": { description: The line and the code., content: { application/json: { schema: { $ref: "#/components/schemas/RecordingLine" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { description: "`supporter_required`, or `scanner_unavailable` (no scanner on this server, not approved in your country, or no line there).", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /v1/lines/scanner/{id}:
+    get:
+      tags: [recording]
+      summary: A voice scan's state and outcome
+      description: "`pending` until the line has the code, `active` while the scanner listens (merge now), then `ended` with the spoof probability and the scam cues, or `failed`. Deleted a day after the scan."
+      operationId: getScan
+      security: [{ accessToken: [] }]
+      parameters: [{ $ref: "#/components/parameters/ItemId" }]
+      responses:
+        "200": { description: The state., content: { application/json: { schema: { $ref: "#/components/schemas/ScanSession" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: "`session_not_found`.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+
   /v1/recordings:
     get:
       tags: [recording]
@@ -1749,7 +1779,27 @@ paths:
         "200": { description: The session., content: { application/json: { schema: { $ref: "#/components/schemas/ClaimResponse" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { description: "`code_not_found` (wrong, used or expired).", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "409": { description: "`other_kind`: the code is the other agent's session (a scan for the recorder or the reverse); it stays pending.", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
         "429": { $ref: "#/components/responses/RateLimited" }
+
+  /agent/v1/scanner/sessions/{id}/result:
+    post:
+      tags: [agents]
+      summary: Report a voice scan's outcome
+      description: "`complete` with the spoof probability (0–1) and the scam-cue ids found in the transcript, or `failed`. The audio and the transcript are never sent."
+      operationId: reportScan
+      security: [{ agentToken: [] }]
+      parameters: [{ $ref: "#/components/parameters/ItemId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScanResult" }
+      responses:
+        "204": { description: Stored. }
+        "400": { description: "`invalid_recording` (probability out of range, unknown cue).", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { description: "`session_not_active` (not an active scan).", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
 
   /agent/v1/recording/sessions/{id}/result:
     post:
@@ -2250,6 +2300,7 @@ components:
             fcm: { type: boolean, description: FCM is configured (play builds register FCM tokens). }
             webPushVapidKey: { type: string, description: "VAPID public key (87 characters, base64url) for UnifiedPush registration." }
             assistant: { type: boolean, description: The call assistant has numbers and LiveKit (Phase 13). }
+            scanner: { type: boolean, description: The voice scanner runs on the recording line (Phase 13). }
 
     Entitlements:
       type: object
@@ -2688,14 +2739,37 @@ components:
       properties:
         code: { type: string, description: The digits read from the tones. }
         room: { type: string, maxLength: 128, description: The LiveKit room (for the per-call limit). }
+        kind: { type: string, enum: [record, scan], default: record, description: Which agent claims (V10; older recorders send none). }
 
     ClaimResponse:
       type: object
-      required: [sessionId, objectKey, maxMinutes]
+      required: [sessionId, maxMinutes]
       properties:
         sessionId: { type: string, format: uuid }
-        objectKey: { type: string, description: "recordings/<session id>.ogg" }
+        objectKey: { type: [string, "null"], description: "recordings/<session id>.ogg; null for a scan." }
         maxMinutes: { type: integer }
+        kind: { type: string, enum: [record, scan] }
+
+    ScanSession:
+      type: object
+      required: [sessionId, state]
+      properties:
+        sessionId: { type: string, format: uuid }
+        state: { type: string, enum: [pending, active, ended, failed] }
+        spoofProbability: { type: number, minimum: 0, maximum: 1, description: "The model's spoof score; a likelihood, never a verdict." }
+        cues: { type: array, items: { $ref: "#/components/schemas/ScamCue" } }
+
+    ScanResult:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [complete, failed] }
+        spoofProbability: { type: number, minimum: 0, maximum: 1 }
+        cues: { type: array, items: { $ref: "#/components/schemas/ScamCue" }, maxItems: 10 }
+
+    ScamCue:
+      type: string
+      enum: [otp_request, payment_request, gift_card, remote_access, urgency, authority, secrecy, prize, account_problem, personal_data]
 
     RecordingResult:
       type: object
@@ -3069,3 +3143,5 @@ components:
             - assistant_call_not_found
             - number_not_found
             - assistant_limit
+            - scanner_unavailable
+            - other_kind

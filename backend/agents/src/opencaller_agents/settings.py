@@ -116,3 +116,56 @@ def _token(env: Mapping[str, str], problems: list[str]) -> str:
     if token and len(token) < MIN_TOKEN_LENGTH:
         problems.append(f"RECORDING_AGENT_TOKEN must be at least {MIN_TOKEN_LENGTH} characters")
     return token
+
+
+@dataclass(frozen=True)
+class ScannerSettings:
+    """The voice scanner's settings (ADR 0011, infra/docker/compose.telephony.yml)."""
+
+    api_url: str
+    agent_token: str
+    voice_spoof_url: str
+    voice_spoof_token: str
+    # A faster-whisper model for the scam cues, or None to skip them (the voice result alone).
+    whisper_model: str | None = "small"
+    # Seconds between the claim and the beep, so the app has merged the calls when the scanner starts listening.
+    merge_delay_s: float = 4.0
+    # How many 4 s windows of speech are scored (their mean is reported) and how long the scanner listens at most.
+    windows: int = 2
+    max_listen_s: float = 40.0
+    code_timeout_s: float = 20.0
+    max_code_attempts: int = 3
+
+    def __repr__(self) -> str:
+        return (
+            f"ScannerSettings(api_url={self.api_url!r}, agent_token=***, voice_spoof_url={self.voice_spoof_url!r}, "
+            f"voice_spoof_token=***, whisper_model={self.whisper_model!r}, windows={self.windows})"
+        )
+
+    @classmethod
+    def from_env(cls, env: Mapping[str, str] | None = None) -> ScannerSettings:
+        """Reads the settings; raises [SettingsError] naming every problem."""
+        env = os.environ if env is None else env
+        problems: list[str] = []
+        api_url = _url(env, "OPENCALLER_API_URL", problems)
+        token = _token(env, problems)
+        spoof_url = _url(env, "VOICE_SPOOF_URL", problems)
+        spoof_token = _required(env, "VOICE_SPOOF_TOKEN", problems)
+        if spoof_token and len(spoof_token) < MIN_TOKEN_LENGTH:
+            problems.append(f"VOICE_SPOOF_TOKEN must be at least {MIN_TOKEN_LENGTH} characters")
+        for name in ("LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET"):
+            _required(env, name, problems)
+        model = env.get("SCANNER_WHISPER_MODEL", "").strip() or "small"
+        windows = env.get("SCANNER_WINDOWS", "").strip() or "2"
+        if not windows.isdigit() or not 1 <= int(windows) <= 5:
+            problems.append("SCANNER_WINDOWS must be a number in 1..5")
+        if problems:
+            raise SettingsError(problems)
+        return cls(
+            api_url=api_url,
+            agent_token=token,
+            voice_spoof_url=spoof_url,
+            voice_spoof_token=spoof_token,
+            whisper_model=None if model.lower() == "off" else model,
+            windows=int(windows),
+        )

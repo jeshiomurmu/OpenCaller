@@ -21,8 +21,9 @@ import java.security.MessageDigest
 import java.util.UUID
 
 /**
- * The recording line (docs/prd.md F-UT-03, ADR 0009): the app's routes under `/v1` (access token) and the agents'
- * under `/agent/v1` (bearer `RECORDING_AGENT_TOKEN`, compared in constant time).
+ * The recording line (docs/prd.md F-UT-03, ADR 0009) and the voice scanner on the same line (F-PR-13, ADR 0011): the
+ * app's routes under `/v1` (access token) and the agents' under `/agent/v1` (bearer `RECORDING_AGENT_TOKEN`, compared
+ * in constant time).
  */
 fun Route.recordingRoutes(services: RecordingRouteServices) {
     authenticate(ACCESS_AUTH) {
@@ -31,6 +32,12 @@ fun Route.recordingRoutes(services: RecordingRouteServices) {
         }
         get("/v1/lines/recording/{id}") {
             call.noStore().respond(services.lines.session(call.userId(), idOf(call.parameters["id"], ::sessionNotFound)))
+        }
+        post("/v1/lines/scanner") {
+            call.noStore().respond(HttpStatusCode.Created, services.lines.allocate(call.userId(), RecordingKinds.SCAN))
+        }
+        get("/v1/lines/scanner/{id}") {
+            call.noStore().respond(services.scans.session(call.userId(), idOf(call.parameters["id"], ::sessionNotFound)))
         }
         get("/v1/recordings") { call.noStore().respond(services.recordings.list(call.userId())) }
         get("/v1/recordings/settings") { call.noStore().respond(services.recordings.settings(call.userId())) }
@@ -62,6 +69,12 @@ private fun Route.agentRoutes(
     post("/agent/v1/recording/sessions/{id}/result") {
         agent {
             services.agents.result(idOf(call.parameters["id"], ::sessionNotFound), call.receive<RecordingResultRequest>())
+            call.respond(HttpStatusCode.NoContent)
+        }
+    }
+    post("/agent/v1/scanner/sessions/{id}/result") {
+        agent {
+            services.scans.result(idOf(call.parameters["id"], ::sessionNotFound), call.receive<ScanResultRequest>())
             call.respond(HttpStatusCode.NoContent)
         }
     }

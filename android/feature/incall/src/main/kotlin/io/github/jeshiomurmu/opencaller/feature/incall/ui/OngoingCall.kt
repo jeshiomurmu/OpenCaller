@@ -56,6 +56,7 @@ internal fun OngoingCall(
         ) {
             CallHeader(view = primary, nowMillis = nowMillis)
             RecordingBanner(status = state.recording, onEvent = actions.onEvent)
+            ScanPanel(status = state.scan, onEvent = actions.onEvent)
             state.ringing?.let { WaitingCall(view = it, onEvent = actions.onEvent) }
             state.held?.let { HeldCall(view = it, canSwap = state.swap != null, onSwap = { actions.onEvent(InCallEvent.Swap) }) }
         }
@@ -75,7 +76,7 @@ internal fun OngoingCall(
     }
 }
 
-/** Mute, Keypad, Speaker (or Audio with a headset); Hold, Add call, Merge; Record. */
+/** Mute, Keypad, Speaker (or Audio with a headset); Hold, Add call, Merge; Record, Scan voice. */
 @Composable
 private fun CallControls(
     state: InCallUiState,
@@ -96,7 +97,10 @@ private fun CallControls(
             AudioControl(state = state, onEvent = onEvent, onAudio = actions.onAudio)
         }
         CallControlsSecondRow(state = state, actions = actions)
-        Row(modifier = Modifier.align(Alignment.CenterHorizontally)) { RecordControl(state = state, onEvent = onEvent) }
+        Row(modifier = Modifier.align(Alignment.CenterHorizontally), horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.l)) {
+            RecordControl(state = state, onEvent = onEvent)
+            ScanControl(state = state, onEvent = onEvent)
+        }
     }
 }
 

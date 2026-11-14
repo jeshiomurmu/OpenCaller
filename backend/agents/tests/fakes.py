@@ -22,8 +22,9 @@ SETTINGS = RecorderSettings(
 class FakeTransport:
     """Answers like the server for one pending session with [code]; records every request."""
 
-    def __init__(self, code: str = "12345678") -> None:
+    def __init__(self, code: str = "12345678", kind: str = "record") -> None:
         self.code = code
+        self.kind = kind
         self.requests: list[tuple[str, str, Any]] = []
         self.jobs: list[dict[str, str]] = []
 
@@ -31,8 +32,12 @@ class FakeTransport:
         self.requests.append((method, path, body))
         if path == "/agent/v1/recording/claim":
             assert body is not None
+            if body["code"] == self.code and body.get("kind", "record") != self.kind:
+                return 409, {"code": "other_kind"}  # left pending for the other agent
             if body["code"] == self.code:
                 self.code = "used"
+                if self.kind == "scan":
+                    return 200, {"sessionId": "s-1", "objectKey": None, "maxMinutes": 2, "kind": "scan"}
                 return 200, {"sessionId": "s-1", "objectKey": "recordings/s-1.ogg", "maxMinutes": 180}
             return 404, {"code": "code_not_found"}
         if path.endswith("/result"):

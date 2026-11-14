@@ -38,13 +38,15 @@ data class RecordingRetentionResult(
     val abandonedSessions: Int,
     val sessionsPurged: Int,
     val transcriptsTimedOut: Int,
+    val scansPurged: Int = 0,
 )
 
 /**
  * Every [INTERVAL_MINUTES] (ADR 0009, TC-REC-001): deletes each recording [RecordingConfig.downloadGraceMinutes]
  * after the app confirmed its download (once a requested transcript is finished) and every recording by
  * [MAX_AGE_HOURS] after it was made, file first, then the row. Also fails sessions nobody claimed, removes the
- * file of a call whose agent never reported, gives up transcripts that hang and forgets sessions after two days.
+ * file of a call whose agent never reported, gives up transcripts that hang and forgets sessions after two days,
+ * scans (ADR 0011) after a day.
  */
 class RecordingRetentionJob(
     private val db: ServerDatabase,
@@ -73,6 +75,11 @@ class RecordingRetentionJob(
                         (Recordings.transcriptState eq TRANSCRIPT_WORKING) and
                             (Recordings.transcriptStartedAt less now.minusMinutes(TRANSCRIPT_TIMEOUT_MINUTES))
                     }) { it[transcriptState] = TRANSCRIPT_FAILED },
+                // A scan's outcome is only for the call it was made in (ADR 0011).
+                scansPurged =
+                    RecordingSessions.deleteWhere {
+                        (kind eq RecordingKinds.SCAN) and (createdAt less now.minusHours(SCAN_KEEP_HOURS))
+                    },
             )
         }
     }
@@ -148,6 +155,7 @@ class RecordingRetentionJob(
         /** No recording stays longer than this. */
         const val MAX_AGE_HOURS = 24L
         private const val SESSION_DAYS = 2L
+        private const val SCAN_KEEP_HOURS = 24L
         private const val TRANSCRIPT_TIMEOUT_MINUTES = 60L
         private const val ABANDON_AFTER_MINUTES = 60L
         private const val BATCH = 500

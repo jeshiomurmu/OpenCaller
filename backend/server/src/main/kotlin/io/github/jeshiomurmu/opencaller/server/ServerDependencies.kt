@@ -63,6 +63,7 @@ import io.github.jeshiomurmu.opencaller.server.recording.RecordingRetentionJob
 import io.github.jeshiomurmu.opencaller.server.recording.RecordingRetentionResult
 import io.github.jeshiomurmu.opencaller.server.recording.RecordingRouteServices
 import io.github.jeshiomurmu.opencaller.server.recording.RecordingService
+import io.github.jeshiomurmu.opencaller.server.recording.ScanService
 import io.github.jeshiomurmu.opencaller.server.redis.RateLimiter
 import io.github.jeshiomurmu.opencaller.server.redis.Redis
 import io.github.jeshiomurmu.opencaller.server.registry.ImportJobResult
@@ -215,6 +216,7 @@ class ServerDependencies(
                 ),
             recordings = recordings,
             agents = RecordingAgentService(database, objectStore, push, clock),
+            scans = ScanService(database, clock),
             agentToken = config.recording.agentToken,
         )
     val recordingRetention = RecordingRetentionJob(database, objectStore, config.recording, clock)
@@ -241,6 +243,7 @@ class ServerDependencies(
                 config.voip.push.webPush
                     ?.publicKeyBase64Url,
             assistant = assistant.lines.enabled && config.voip.liveKit != null,
+            scanner = config.recording.scanner,
         )
 
     /** Sender-ID importers: the CSV extracts in the import folder, then the registries without documented access. */

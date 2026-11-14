@@ -14,11 +14,13 @@ import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallCapability
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallController
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallRecorder
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallRecordingStatus
+import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallScanner
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallStateRepository
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.CallStatus
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.ConferenceAction
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.InCallState
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.TrackedCall
+import io.github.jeshiomurmu.opencaller.core.telephony.incall.VoiceScanStatus
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.mergeAction
 import io.github.jeshiomurmu.opencaller.core.telephony.incall.swapAction
 import io.github.jeshiomurmu.opencaller.feature.incall.calls.CallerDirectory
@@ -73,6 +75,7 @@ data class InCallUiState(
     val userReplies: List<String> = emptyList(),
     val ringingClip: File? = null,
     val recording: CallRecordingStatus = CallRecordingStatus.Idle,
+    val scan: VoiceScanStatus = VoiceScanStatus.Idle,
 ) {
     /** The quick replies offered when declining [call] with a message: the user's own, else the system's. */
     fun repliesFor(call: TrackedCall): List<String> = userReplies.ifEmpty { call.cannedReplies }
@@ -83,11 +86,21 @@ data class InCallUiState(
     /** True when the primary call can be put on hold or taken off it. */
     val canHold: Boolean get() = primary?.call?.can(CallCapability.HOLD) == true
 
-    /** True when the call in progress can be recorded: active, alone (no other call to merge with), nothing recording. */
-    val canRecord: Boolean
+    /** True when nothing uses the recording line: no recording and no voice scan starting or running. */
+    private val lineFree: Boolean
         get() =
-            primary?.call?.let { it.status == CallStatus.ACTIVE && !it.isConference } == true && held == null &&
-                (recording is CallRecordingStatus.Idle || recording is CallRecordingStatus.Failed)
+            (recording is CallRecordingStatus.Idle || recording is CallRecordingStatus.Failed) &&
+                scan !in setOf(VoiceScanStatus.Connecting, VoiceScanStatus.Merging, VoiceScanStatus.Listening)
+
+    /** True when the call in progress is active and alone (no other call to merge with). */
+    private val aloneAndActive: Boolean
+        get() = primary?.call?.let { it.status == CallStatus.ACTIVE && !it.isConference } == true && held == null
+
+    /** True when the call in progress can be recorded: active, alone, the line free. */
+    val canRecord: Boolean get() = aloneAndActive && lineFree
+
+    /** True when the other party's voice can be scanned (F-PR-13): the same conditions as recording. */
+    val canScan: Boolean get() = aloneAndActive && lineFree
 
     /** True when the primary call can be muted (a call without the capability still shows the button, disabled). */
     val canMute: Boolean get() = primary?.call?.let { it.can(CallCapability.MUTE) || it.status == CallStatus.ACTIVE } == true
@@ -161,11 +174,20 @@ sealed interface InCallEvent {
 
     /** The recording's error was shown. */
     data object RecordingErrorShown : InCallEvent
+
+    /** Scan the other party's voice through the recording line (the user confirmed the explanation). */
+    data object ScanVoice : InCallEvent
+
+    /** Stop the voice scan (hang up the line, unmute). */
+    data object StopScan : InCallEvent
+
+    /** The scan's result or error was closed. */
+    data object ScanDismissed : InCallEvent
 }
 
 /** The in-call screen of the default phone app: the calls, their callers, and the commands. */
 @HiltViewModel
-@Suppress("LongParameterList") // Hilt injects what the screen needs: calls, callers, numbers, controls, replies, time, clips, recorder.
+@Suppress("LongParameterList") // Hilt injects what the screen needs: calls, callers, numbers, controls, replies, time, clips, line.
 class InCallViewModel
     @Inject
     constructor(
@@ -177,6 +199,7 @@ class InCallViewModel
         clock: Clock,
         private val clips: CallerClips,
         private val recorder: CallRecorder,
+        private val scanner: CallScanner,
     ) : ViewModel() {
         /** Screen state. */
         val uiState: StateFlow<InCallUiState> =
@@ -185,8 +208,10 @@ class InCallViewModel
                 callers.callers,
                 templates.replies(),
                 recorder.status,
-            ) { calls, callers, replies, recording -> toUi(calls, callers).copy(userReplies = replies, recording = recording) }
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), InCallUiState())
+                scanner.status,
+            ) { calls, callers, replies, recording, scan ->
+                toUi(calls, callers).copy(userReplies = replies, recording = recording, scan = scan)
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), InCallUiState())
 
         /**
          * The ringing caller's video caller ID, if one is downloaded (it may arrive a few seconds into the ringing, so
@@ -231,6 +256,9 @@ class InCallViewModel
                 InCallEvent.Record -> record(uiState.value)
                 InCallEvent.StopRecording -> recorder.stop()
                 InCallEvent.RecordingErrorShown -> recorder.dismiss()
+                InCallEvent.ScanVoice -> scanVoice(uiState.value)
+                InCallEvent.StopScan -> scanner.stop()
+                InCallEvent.ScanDismissed -> scanner.dismiss()
                 else -> onControl(event, uiState.value)
             }
         }
@@ -280,6 +308,13 @@ class InCallViewModel
                 ?.call
                 ?.takeIf { state.canRecord }
                 ?.let { recorder.start(it.id) }
+        }
+
+        private fun scanVoice(state: InCallUiState) {
+            state.primary
+                ?.call
+                ?.takeIf { state.canScan }
+                ?.let { scanner.start(it.id) }
         }
 
         private fun toggleHold(state: InCallUiState) {

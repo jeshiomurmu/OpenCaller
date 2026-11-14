@@ -173,8 +173,8 @@ it, the one-time code identifies the session.
     "room_config": {
       "empty_timeout": 30,
       "departure_timeout": 5,
-      "max_participants": 4,
-      "agents": [{ "agent_name": "recorder" }]
+      "max_participants": 5,
+      "agents": [{ "agent_name": "recorder" }, { "agent_name": "scanner" }]
     }
   }
 }
@@ -186,8 +186,9 @@ lk sip dispatch list
 ```
 
 - `agent_name` must match the agent's name (`recorder`, `backend/agents/opencaller_agents/recorder.py`); the agent
-  only joins rooms it is explicitly dispatched to.
-- `max_participants`: the SIP caller, the agent and the egress recorder, with one spare.
+  only joins rooms it is explicitly dispatched to. Add `scanner` only where the voice scanner runs (§ The voice
+  scanner); both agents read the code and the claimed session's kind decides which one stays.
+- `max_participants`: the SIP caller, the two agents and the egress recorder, with one spare.
 - `room_config` fields: [`RoomConfiguration`](https://docs.livekit.io/reference/server/server-apis.md#roomconfiguration).
 
 ## 5. Tell the server about the lines
@@ -263,6 +264,33 @@ the recording line on the same SIP server, with its own numbers, trunk and dispa
 6. **Test** (TC-AST-001, docs/testing.md): call an assistant number that no user has: the agent says the person can't
    take calls and hangs up. Then from the app, turn the assistant on, dial the codes it shows, let a call ring out:
    the phone shows "Assistant is answering a call"; tap it to follow the conversation.
+
+## The voice scanner (ADR 0011)
+
+The voice scanner (docs/prd.md F-PR-13) uses the recording line: the same numbers, trunk, countries and one-time
+codes. The user taps Scan voice in a call; the app dials the line, merges it and mutes the user's microphone; the
+`scanner` agent beeps for both parties, listens to a few seconds of the other party, scores them with the
+anti-spoofing service and hangs up. Only a probability and scam-cue ids reach the server (kept for a day).
+
+1. **Server.** `SCANNER_ENABLED=true` next to `RECORDING_LINES` and `RECORDING_AGENT_TOKEN`; `GET /v1/server` then
+   reports `features.scanner`. Scanning follows the recording countries (§ Legal switch) and is a supporter feature
+   (everyone on a self-hosted server).
+2. **Dispatch rule.** Add `{ "agent_name": "scanner" }` to the line's rule (§ 4) and raise `max_participants` to 5:
+   `lk sip dispatch update` or delete and create it again. The recorder leaves a scan's call without a sound; without
+   the scanner agent, a scan's line call gets the recorder's ready tones and then nothing: the app gives up after
+   about 45 s ("the voice scanner couldn't be added").
+3. **Services.** Set `VOICE_SPOOF_TOKEN` (32+ random characters) and start the `scanner` profile of
+   `compose.telephony.yml`: `voice-spoof` (the model, `ml/voice-spoof`; the image downloads AASIST's weights at build
+   time and checks their SHA-256) on 127.0.0.1:8090 only, and the `scanner` agent. The scam cues use self-hosted
+   Whisper (`SCANNER_WHISPER_MODEL`, default `small`, downloaded from Hugging Face on first start; `off` keeps the
+   voice result only). CPU is enough for the model (about 0.1 s per 4 s window in the evaluation); Whisper's time
+   depends on the model and the CPU (not measured yet; `base` or `tiny` are faster and less accurate).
+4. **Privacy.** The other party's voice passes through LiveKit and the scanner on your machines; the agent keeps the
+   audio and the transcript in memory only. Say in your privacy policy that the voice scan processes the other
+   party's voice for up to a minute when the user asks for it.
+5. **Test** (TC-SCAN-001, docs/testing.md → Phase 13c device steps): call a phone, tap Scan voice; both phones hear
+   the scan beep; the result shows within about 20 s after the other person speaks. The model's error rates on a
+   phone line are in `ml/voice-spoof/README.md`; read them before telling users what the result means.
 
 ## Twilio Elastic SIP Trunking
 

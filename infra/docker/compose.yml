@@ -87,6 +87,8 @@ x-server-environment: &server-environment
   ASSISTANT_NUMBERS: ${ASSISTANT_NUMBERS:-}
   ASSISTANT_MONTHLY_MINUTES: ${ASSISTANT_MONTHLY_MINUTES:-100}
   ASSISTANT_MAX_CALL_MINUTES: ${ASSISTANT_MAX_CALL_MINUTES:-5}
+  # The voice scanner on the recording line (ADR 0011; needs RECORDING_LINES): true turns it on.
+  SCANNER_ENABLED: ${SCANNER_ENABLED:-false}
 
 services:
   postgres:

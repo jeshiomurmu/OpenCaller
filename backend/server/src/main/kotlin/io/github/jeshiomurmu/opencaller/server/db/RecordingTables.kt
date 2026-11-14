@@ -16,7 +16,10 @@ object RecordingCountries : Table("recording_countries") {
     override val primaryKey = PrimaryKey(countryIso)
 }
 
-/** `recording_sessions`: one Record tap; found by its code's HMAC ([codeHash]) while pending. */
+/**
+ * `recording_sessions`: one Record or Scan voice tap ([kind] `record` or `scan`); found by its code's HMAC
+ * ([codeHash]) while pending. A scan keeps only its outcome ([scanProbability], [scanCues]; V10).
+ */
 object RecordingSessions : Table("recording_sessions") {
     val id = javaUUID("id")
     val userId = reference("user_id", Users.id, onDelete = ReferenceOption.CASCADE)
@@ -24,6 +27,9 @@ object RecordingSessions : Table("recording_sessions") {
     val codeHash = text("code_hash")
     val state = text("state")
     val transcribe = bool("transcribe").default(false)
+    val kind = text("kind").default("record")
+    val scanProbability = float("scan_probability").nullable()
+    val scanCues = text("scan_cues").nullable()
     val createdAt = timestampWithTimeZone("created_at").defaultExpression(CurrentTimestampWithTimeZone)
     val expiresAt = timestampWithTimeZone("expires_at")
     val claimedAt = timestampWithTimeZone("claimed_at").nullable()

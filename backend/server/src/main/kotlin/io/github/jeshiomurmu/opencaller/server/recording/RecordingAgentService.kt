@@ -128,7 +128,7 @@ class RecordingAgentService(
                 .selectAll()
                 .where { RecordingSessions.id eq sessionId }
                 .singleOrNull() ?: throw sessionNotFound()
-        if (row[RecordingSessions.state] != ACTIVE) throw notActive()
+        if (row[RecordingSessions.state] != ACTIVE || row[RecordingSessions.kind] != RecordingKinds.RECORD) throw notActive()
         return row[RecordingSessions.userId]
     }
 

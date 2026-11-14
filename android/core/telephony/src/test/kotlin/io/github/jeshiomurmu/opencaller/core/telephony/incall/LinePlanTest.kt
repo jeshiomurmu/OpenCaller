@@ -1,7 +1,8 @@
-package io.github.jeshiomurmu.opencaller.feature.recording
+package io.github.jeshiomurmu.opencaller.core.telephony.incall
 
 import io.github.jeshiomurmu.opencaller.core.common.AppError
-import io.github.jeshiomurmu.opencaller.core.telephony.incall.RecordingFailure
+import io.github.jeshiomurmu.opencaller.core.model.PhoneNumber
+import io.github.jeshiomurmu.opencaller.core.model.RecordingLine
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -31,5 +32,11 @@ class LinePlanTest {
         assertEquals(RecordingFailure.NOT_SIGNED_IN, LinePlan.failureOf(AppError.Auth))
         assertEquals(RecordingFailure.NOT_SIGNED_IN, LinePlan.failureOf(AppError.ServerNotConfigured))
         assertEquals(RecordingFailure.NETWORK, LinePlan.failureOf(AppError.Network))
+        // The voice scan's refusal reads like recording's: not offered here.
+        assertEquals(RecordingFailure.UNAVAILABLE, LinePlan.failureOf(AppError.Validation("scanner_unavailable")))
+    }
+
+    private companion object {
+        val LINE = RecordingLine("0f8fad5b-d9cb-469f-a165-70867728950e", PhoneNumber("+8809638000000"), "12345678", 0)
     }
 }

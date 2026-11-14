@@ -55,19 +55,21 @@ data class RecordingSettings(
     val transcripts: Boolean,
 )
 
-/** The agent read [code] from the caller's tones in LiveKit room [room]. */
+/** The agent of [kind] (`record` or `scan`) read [code] from the caller's tones in LiveKit room [room]. */
 @Serializable
 data class ClaimRequest(
     val code: String,
     val room: String = "",
+    val kind: String = RecordingKinds.RECORD,
 )
 
-/** The session the agent records; [objectKey] is where Egress must write the file. */
+/** The session the agent took; for a recording, [objectKey] is where Egress must write the file. */
 @Serializable
 data class ClaimResponse(
     val sessionId: String,
-    val objectKey: String,
+    val objectKey: String?,
     val maxMinutes: Int,
+    val kind: String = RecordingKinds.RECORD,
 )
 
 /** The agent's result: [status] `complete` (with the file's size and duration) or `failed`. */
@@ -97,9 +99,17 @@ class RecordingRouteServices(
     val lines: RecordingLineService,
     val recordings: RecordingService,
     val agents: RecordingAgentService,
+    val scans: ScanService,
     /** `RECORDING_AGENT_TOKEN`; without it the `/agent/…` routes don't exist. */
     val agentToken: String?,
 )
+
+/** What a session is for (`recording_sessions.kind`, V10). */
+internal object RecordingKinds {
+    const val RECORD = "record"
+    const val SCAN = "scan"
+    val ALL = setOf(RECORD, SCAN)
+}
 
 /** Session and transcript states as stored. */
 internal object RecordingStates {
@@ -118,6 +128,10 @@ internal object RecordingStates {
 /** 403 `recording_unavailable`: off on this server, not approved in the user's country or no line there. */
 internal fun recordingUnavailable(detail: String) =
     ApiProblem(HttpStatusCode.Forbidden, "recording_unavailable", "Recording isn't available", detail)
+
+/** 403 `scanner_unavailable`: no scanner on this server, not approved in the user's country or no line there. */
+internal fun scannerUnavailable(detail: String) =
+    ApiProblem(HttpStatusCode.Forbidden, "scanner_unavailable", "The voice scanner isn't available", detail)
 
 /** 404 `recording_not_found` (also for another user's recording). */
 internal fun recordingNotFound() = ApiProblem(HttpStatusCode.NotFound, "recording_not_found", "No such recording")

@@ -44,6 +44,14 @@ class RecordingConfigTest {
     }
 
     @Test
+    fun theScannerNeedsItsSwitchAndTheRecordingLine() {
+        assertFalse(loadConfig(valid + ("SCANNER_ENABLED" to "true")).recording.scanner) // no line
+        val lines = valid + mapOf("RECORDING_LINES" to "+8809638000000", "RECORDING_AGENT_TOKEN" to token)
+        assertFalse(loadConfig(lines).recording.scanner) // off by default
+        assertTrue(loadConfig(lines + ("SCANNER_ENABLED" to "true")).recording.scanner)
+    }
+
+    @Test
     fun theOperatorSetsTheCountryList() {
         assertEquals(setOf("BD", "IN", "NP"), loadConfig(valid + ("RECORDING_COUNTRIES" to "bd, IN,np")).recording.countries)
         // Set but empty: recording is off everywhere.

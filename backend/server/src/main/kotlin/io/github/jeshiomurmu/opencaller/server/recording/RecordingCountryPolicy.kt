@@ -32,6 +32,9 @@ class RecordingCountryPolicy(
     /** `true` when this server has a recording line (numbers and the agents' token). */
     val enabled: Boolean get() = config.enabled
 
+    /** `true` when the line also serves the voice scanner (ADR 0011). */
+    val scannerEnabled: Boolean get() = config.scanner
+
     /** The line of country [iso], or `null` if it has none. */
     fun lineIn(iso: String): String? = config.lines[iso]
 

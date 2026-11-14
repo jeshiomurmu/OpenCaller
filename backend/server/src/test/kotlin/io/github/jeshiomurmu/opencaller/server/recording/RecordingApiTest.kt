@@ -88,7 +88,7 @@ class RecordingApiTest {
         val claimed = claim(line.code)
         assertEquals(HttpStatusCode.OK, claimed.status, claimed.bodyAsText())
         val session = testJson.decodeFromString(ClaimResponse.serializer(), claimed.bodyAsText())
-        objects.upload(session.objectKey, ByteArray(AUDIO_BYTES), "audio/ogg")
+        objects.upload(checkNotNull(session.objectKey), ByteArray(AUDIO_BYTES), "audio/ogg")
         assertEquals(HttpStatusCode.NoContent, report(session.sessionId).status)
         return list(token).single()
     }
@@ -110,12 +110,12 @@ class RecordingApiTest {
             assertEquals(HttpStatusCode.OK, claimed.status, claimed.bodyAsText())
             val session = testJson.decodeFromString(ClaimResponse.serializer(), claimed.bodyAsText())
             assertEquals(line.sessionId, session.sessionId)
-            assertEquals("recordings/${line.sessionId}.ogg", session.objectKey)
+            assertEquals("recordings/${line.sessionId}.ogg", checkNotNull(session.objectKey))
             assertEquals("active", session(token, line.sessionId).state) // the app merges now
             claim(line.code, room = "rec_other").assertProblem(HttpStatusCode.NotFound, "code_not_found")
 
             // Egress wrote the file; the agent reports; the app gets a push with an opaque id only.
-            objects.upload(session.objectKey, ByteArray(AUDIO_BYTES), "audio/ogg")
+            objects.upload(checkNotNull(session.objectKey), ByteArray(AUDIO_BYTES), "audio/ogg")
             assertEquals(HttpStatusCode.NoContent, report(session.sessionId).status)
             val notification = notifications(token).single()
             assertEquals("recording_ready", notification.kind)
@@ -134,7 +134,7 @@ class RecordingApiTest {
             val download = client.getWith("/v1/recordings/${recording.id}/download", token)
             assertEquals(HttpStatusCode.OK, download.status, download.bodyAsText())
             val link = testJson.decodeFromString(RecordingDownload.serializer(), download.bodyAsText())
-            assertTrue(link.url.contains(session.objectKey))
+            assertTrue(link.url.contains(checkNotNull(session.objectKey)))
             assertEquals("audio/ogg", link.contentType)
             assertEquals(HttpStatusCode.NoContent, client.postJson("/v1/recordings/${recording.id}/downloaded", "{}", bearer(token)).status)
             assertTrue(list(token).single().downloaded)
@@ -142,11 +142,11 @@ class RecordingApiTest {
             // TC-REC-001: the server copy is gone within an hour of the confirmed download.
             it.clock.advance(29.minutes)
             it.deps.recordingRetention.run()
-            assertTrue(objects.objects.containsKey(session.objectKey))
+            assertTrue(objects.objects.containsKey(checkNotNull(session.objectKey)))
             it.clock.advance(1.minutes)
             val run = it.deps.recordingRetention.run()
             assertEquals(1, run.recordingsDeleted)
-            assertFalse(objects.objects.containsKey(session.objectKey))
+            assertFalse(objects.objects.containsKey(checkNotNull(session.objectKey)))
             val fresh = signIn(it, BD_USER).accessToken // the first access token has expired by now
             assertTrue(list(fresh).isEmpty())
             client.getWith("/v1/recordings/${recording.id}/download", fresh).assertProblem(HttpStatusCode.NotFound, "recording_not_found")
@@ -271,7 +271,7 @@ class RecordingApiTest {
             val token = signIn(it, BD_USER).accessToken
             setSupporterTier(BD_USER, "supporter")
             val session = testJson.decodeFromString(ClaimResponse.serializer(), claim(line(token).code).bodyAsText())
-            objects.upload(session.objectKey, ByteArray(AUDIO_BYTES), "audio/ogg")
+            objects.upload(checkNotNull(session.objectKey), ByteArray(AUDIO_BYTES), "audio/ogg")
             it.clock.advance(5.hours)
             assertEquals(
                 1,
@@ -279,7 +279,7 @@ class RecordingApiTest {
                     .run()
                     .abandonedSessions,
             )
-            assertFalse(objects.objects.containsKey(session.objectKey))
+            assertFalse(objects.objects.containsKey(checkNotNull(session.objectKey)))
         }
 
     @Test

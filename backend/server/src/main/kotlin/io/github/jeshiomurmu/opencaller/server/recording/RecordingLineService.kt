@@ -49,17 +49,27 @@ class RecordingLineService(
     private val clock: Clock,
     private val codes: RecordingCodes,
 ) {
-    /** A new session for [userId]: their country's line and a fresh code, valid for [SESSION_MINUTES]. */
-    suspend fun allocate(userId: UUID): RecordingLineView {
-        requireValid(countries.enabled) { recordingUnavailable("This server has no recording line.") }
+    /**
+     * A new session of [kind] (`record`, or `scan` for the voice scanner, ADR 0011) for [userId]: their country's line
+     * and a fresh code, valid for [SESSION_MINUTES]. A scan needs the scanner switched on and follows the recording
+     * line's legal switch (the owner's decision of 2026-11-14).
+     */
+    suspend fun allocate(
+        userId: UUID,
+        kind: String = RecordingKinds.RECORD,
+    ): RecordingLineView {
+        val scan = kind == RecordingKinds.SCAN
+        val unavailable = { detail: String -> if (scan) scannerUnavailable(detail) else recordingUnavailable(detail) }
+        requireValid(countries.enabled) { unavailable("This server has no recording line.") }
+        requireValid(!scan || countries.scannerEnabled) { unavailable("This server has no voice scanner.") }
         requireValid(entitlements.everyone || entitlements.isSupporter(userId), ::supporterRequired)
         val (e164, transcribe) = db.query { activeUser(userId).let { it[Users.e164] to it[Users.recordingTranscripts] } }
         val country = E164.parseOrNull(e164)?.let(::regionOf)
-        requireValid(country != null) { recordingUnavailable("Your number has no country.") }
-        requireValid(countries.approved(checkNotNull(country))) { recordingUnavailable("Recording isn't offered in your country.") }
+        requireValid(country != null) { unavailable("Your number has no country.") }
+        requireValid(countries.approved(checkNotNull(country))) { unavailable("It isn't offered in your country.") }
         val line = countries.lineIn(country)
-        requireValid(line != null) { recordingUnavailable("There is no recording line for your country yet.") }
-        enforce(rateLimiter.hit(SESSIONS_PER_USER, userId.toString()), "Too many recordings started")
+        requireValid(line != null) { unavailable("There is no line for your country yet.") }
+        enforce(rateLimiter.hit(if (scan) SCANS_PER_USER else SESSIONS_PER_USER, userId.toString()), "Too many sessions started")
         val now = now()
         val sessionId = UUID.randomUUID()
         val code =
@@ -71,7 +81,8 @@ class RecordingLineService(
                     it[lineE164] = checkNotNull(line)
                     it[codeHash] = codes.hash(code)
                     it[state] = PENDING
-                    it[RecordingSessions.transcribe] = transcribe
+                    it[RecordingSessions.transcribe] = transcribe && !scan
+                    it[RecordingSessions.kind] = kind
                     it[createdAt] = now
                     it[expiresAt] = now.plusMinutes(SESSION_MINUTES)
                 }
@@ -89,8 +100,10 @@ class RecordingLineService(
             val row =
                 RecordingSessions
                     .selectAll()
-                    .where { (RecordingSessions.id eq sessionId) and (RecordingSessions.userId eq userId) }
-                    .singleOrNull() ?: throw sessionNotFound()
+                    .where {
+                        (RecordingSessions.id eq sessionId) and (RecordingSessions.userId eq userId) and
+                            (RecordingSessions.kind eq RecordingKinds.RECORD)
+                    }.singleOrNull() ?: throw sessionNotFound()
             val recording =
                 Recordings
                     .select(Recordings.id)
@@ -106,14 +119,18 @@ class RecordingLineService(
         }
 
     /**
-     * The agent in LiveKit room [ClaimRequest.room] read [ClaimRequest.code]: the pending session with that code
-     * becomes active. 404 `code_not_found` for a wrong, used or expired code (the same answer for each); at most
-     * [CLAIMS_PER_ROOM] tries per call and [CLAIMS_PER_WINDOW] for the whole server.
+     * The agent of [ClaimRequest.kind] in LiveKit room [ClaimRequest.room] read [ClaimRequest.code]: the pending session
+     * with that code becomes active. 404 `code_not_found` for a wrong, used or expired code (the same answer for each);
+     * 409 `other_kind` when the code belongs to a session of the other kind, which stays pending for the other agent
+     * (both agents join every call on the line, ADR 0011). At most [CLAIMS_PER_ROOM] tries per call and agent, and
+     * [CLAIMS_PER_WINDOW] for the whole server.
      */
     suspend fun claim(request: ClaimRequest): ClaimResponse {
         val room = request.room.take(MAX_ROOM_LENGTH)
+        val kind = request.kind
+        requireValid(kind in RecordingKinds.ALL) { invalidRecording("kind must be record or scan.") }
         enforce(rateLimiter.hit(CLAIMS_ALL, "all"), "Too many code attempts")
-        if (room.isNotEmpty()) enforce(rateLimiter.hit(CLAIMS_ROOM, room), "Too many code attempts in this call")
+        if (room.isNotEmpty()) enforce(rateLimiter.hit(CLAIMS_ROOM, "$room:$kind"), "Too many code attempts in this call")
         val code = request.code.filter(Char::isDigit).takeIf { it.length == CODE_LENGTH && it.length == request.code.length }
         val now = now()
         val sessionId =
@@ -127,6 +144,7 @@ class RecordingLineService(
                                     (RecordingSessions.expiresAt greater now)
                             }.forUpdate()
                             .singleOrNull()
+                    if (row != null && row[RecordingSessions.kind] != kind) throw otherKind()
                     row?.get(RecordingSessions.id)?.also { id ->
                         RecordingSessions.update({ RecordingSessions.id eq id }) {
                             it[state] = ACTIVE
@@ -135,7 +153,11 @@ class RecordingLineService(
                     }
                 }
             } ?: throw ApiProblem(HttpStatusCode.NotFound, "code_not_found", "No recording waits for this code")
-        return ClaimResponse(sessionId.toString(), objectKey(sessionId), MAX_MINUTES)
+        return if (kind == RecordingKinds.SCAN) {
+            ClaimResponse(sessionId.toString(), null, SCAN_MAX_MINUTES, kind)
+        } else {
+            ClaimResponse(sessionId.toString(), objectKey(sessionId), MAX_MINUTES, kind)
+        }
     }
 
     // A code no pending session uses (the partial unique index guards the rare race between two requests).
@@ -165,6 +187,9 @@ class RecordingLineService(
         /** The longest recording; the agent stops the egress after this. */
         const val MAX_MINUTES = 180
 
+        /** The longest scan; the scanner listens for a few seconds and hangs up long before. */
+        const val SCAN_MAX_MINUTES = 2
+
         /** Where Egress writes session [sessionId]'s file. */
         fun objectKey(sessionId: UUID): String = "recordings/$sessionId.ogg"
 
@@ -173,6 +198,7 @@ class RecordingLineService(
         private const val CLAIMS_PER_ROOM = 3
         private const val CLAIMS_PER_WINDOW = 600
         private val SESSIONS_PER_USER = RateLimit("recording_sessions", maxHits = 20, window = 1.hours)
+        private val SCANS_PER_USER = RateLimit("scan_sessions", maxHits = 20, window = 1.hours)
         private val CLAIMS_ROOM = RateLimit("recording_claims_room", maxHits = CLAIMS_PER_ROOM, window = 1.hours)
         private val CLAIMS_ALL = RateLimit("recording_claims", maxHits = CLAIMS_PER_WINDOW, window = 10.minutes)
     }
@@ -203,6 +229,9 @@ class RecordingCodes(
         const val CODE_SPACE = 100_000_000
     }
 }
+
+/** 409 `other_kind`: the code is the other agent's (a scan for the recorder, or the reverse); it stays pending. */
+private fun otherKind() = ApiProblem(HttpStatusCode.Conflict, "other_kind", "This code belongs to the other agent")
 
 /** 404 `session_not_found`. */
 internal fun sessionNotFound() = ApiProblem(HttpStatusCode.NotFound, "session_not_found", "No such recording session")

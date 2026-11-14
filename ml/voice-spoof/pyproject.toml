@@ -1,0 +1,43 @@
+[build-system]
+# setuptools 77 is the first to read an SPDX licence string (PEP 639).
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opencaller-voice-spoof"
+version = "1.0.0"
+description = "OpenCaller's voice anti-spoofing service: AASIST (ONNX, onnxruntime) behind a small HTTP API."
+readme = "README.md"
+license = "GPL-3.0-only"
+requires-python = ">=3.12,<3.15"
+# Verified on pypi.org 2026-11-14 (latest stable).
+dependencies = [
+  "onnxruntime==1.32.0",
+  "numpy==2.5.4",
+  "soundfile==0.14.0",
+  "fastapi==0.162.7",
+  "uvicorn==0.54.0",
+]
+
+[project.optional-dependencies]
+# Only to export the ONNX file from AASIST's PyTorch weights (the Dockerfile's builder stage; torch's CPU build).
+export = ["torch==2.15.0", "onnx==1.23.2", "onnxscript==0.7.2"]
+# Verified on pypi.org 2026-11-14 (latest stable); onnx builds a tiny stand-in model for the tests.
+test = ["pytest==9.2.0", "httpx==0.28.1", "onnx==1.23.2", "ruff==0.17.4"]
+
+[project.scripts]
+voice-spoof-export = "voice_spoof.export:main"
+voice-spoof-evaluate = "voice_spoof.evaluate:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+# AASIST's model code is vendored unchanged (MIT, NAVER).
+extend-exclude = ["src/voice_spoof/aasist.py"]
