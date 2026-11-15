@@ -7,21 +7,26 @@ import com.google.i18n.phonenumbers.PhoneNumberUtil
  * The recording line (Phase 13, ADR 0009; infra/deploy/telephony.md). [lines] maps each line's country (ISO 3166,
  * from libphonenumber) to its number in E.164; [countries] is where recording is approved (`RECORDING_COUNTRIES`,
  * default `BD,IN`; the admin web can override single countries). The agents call `/agent/…` with [agentToken].
- * A confirmed download is deleted after [downloadGraceMinutes]. Off unless lines and a token are set.
+ * A confirmed download is deleted after [downloadGraceMinutes]. Off unless lines and a token are set. The voice
+ * scanner (ADR 0011) shares the lines when [scannerEnabled] (`SCANNER_ENABLED=true`).
  */
 data class RecordingConfig(
     val lines: Map<String, String> = emptyMap(),
     val countries: Set<String> = DEFAULT_COUNTRIES,
     val agentToken: String? = null,
     val downloadGraceMinutes: Int = DEFAULT_GRACE_MINUTES,
+    val scannerEnabled: Boolean = false,
 ) {
     /** `true` when the line is configured. */
     val enabled: Boolean get() = lines.isNotEmpty() && agentToken != null
 
+    /** `true` when the line is configured and the operator runs the scanner agent and service (`SCANNER_ENABLED`, ADR 0011). */
+    val scanner: Boolean get() = enabled && scannerEnabled
+
     override fun toString(): String {
         val token = if (agentToken == null) "none" else "***"
         return "RecordingConfig(lines=${lines.keys.sorted()}, countries=${countries.sorted()}, agentToken=$token, " +
-            "downloadGraceMinutes=$downloadGraceMinutes)"
+            "downloadGraceMinutes=$downloadGraceMinutes, scannerEnabled=$scannerEnabled)"
     }
 
     /** Defaults. */
@@ -49,6 +54,7 @@ internal fun ConfigReader.readRecording(): RecordingConfig {
         countries = readCountries(),
         agentToken = token,
         downloadGraceMinutes = int("recording.downloadGraceMinutes", "RECORDING_DOWNLOAD_GRACE_MINUTES", 0..MAX_GRACE_MINUTES),
+        scannerEnabled = bool("recording.scannerEnabled", "SCANNER_ENABLED"),
     )
 }
 

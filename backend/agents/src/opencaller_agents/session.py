@@ -12,7 +12,7 @@ from typing import Protocol
 from . import tones
 from .codes import CodeReader
 from .egress import EgressApi, finish, track_egress_request
-from .server_api import Claim, ServerApi
+from .server_api import Claim, OtherKind, ServerApi
 from .settings import RecorderSettings
 
 log = logging.getLogger("opencaller.recorder")
@@ -31,6 +31,8 @@ class CallOutcome:
     claimed: bool = False
     recorded: bool = False
     reported: bool = False
+    # The code was a voice scan's: the scanner has the call, so the recorder leaves without a sound or a hang-up.
+    handed_over: bool = False
 
 
 class RecordingCall:
@@ -65,11 +67,18 @@ class RecordingCall:
         outcome = CallOutcome()
         await self._player.play(tones.ready_signal())
         claim = await self._claim(room, ended)
+        if isinstance(claim, OtherKind):
+            outcome.handed_over = True
+            return outcome
         if claim is None:
             if not ended.is_set():
                 await self._player.play(tones.rejected_signal())
             return outcome
         outcome.claimed = True
+        if claim.object_key is None:  # the server gives a recording session a key; never record without one
+            await self._server.report(claim.session_id, complete=False)
+            outcome.reported = True
+            return outcome
         try:
             track_id = await caller_track()
             info = await self._egress.start_track_egress(
@@ -90,7 +99,7 @@ class RecordingCall:
         outcome.reported = True
         return outcome
 
-    async def _claim(self, room: str, ended: asyncio.Event) -> Claim | None:
+    async def _claim(self, room: str, ended: asyncio.Event) -> Claim | OtherKind | None:
         for _ in range(self._settings.max_code_attempts):
             code = await _until_ended(self._codes.read(self._settings.code_timeout_s), ended)
             if code is None:

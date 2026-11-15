@@ -14,6 +14,7 @@ from livekit.agents import AgentServer, AutoSubscribe, JobContext, cli
 
 from . import tones
 from .codes import CodeReader
+from .room_audio import RoomPlayer
 from .server_api import AiohttpTransport, ServerApi
 from .session import RecordingCall
 from .settings import RecorderSettings
@@ -21,18 +22,6 @@ from .settings import RecorderSettings
 AGENT_NAME = "recorder"
 log = logging.getLogger("opencaller.recorder")
 server = AgentServer()
-
-
-class RoomPlayer:
-    """Plays PCM into a published audio track that everyone in the room (the merged call) hears."""
-
-    def __init__(self, source: rtc.AudioSource) -> None:
-        self._source = source
-
-    async def play(self, pcm: bytes) -> None:
-        for frame in tones.frames(pcm):
-            await self._source.capture_frame(rtc.AudioFrame(frame, tones.SAMPLE_RATE, 1, tones.SAMPLES_PER_FRAME))
-        await self._source.wait_for_playout()
 
 
 async def caller_audio_track(participant: rtc.RemoteParticipant, room: rtc.Room) -> str:
@@ -85,7 +74,11 @@ async def entrypoint(ctx: JobContext) -> None:
             announcement=announcement,
         )
         outcome = await call.run(ctx.room.name, lambda: caller_audio_track(caller, ctx.room), ended)
-    log.info("Call done: claimed=%s recorded=%s", outcome.claimed, outcome.recorded)
+    log.info("Call done: claimed=%s recorded=%s handed_over=%s", outcome.claimed, outcome.recorded, outcome.handed_over)
+    if outcome.handed_over:  # a voice scan: the scanner stays in the call and hangs up when it is done
+        await ctx.room.local_participant.unpublish_track(track.sid)
+        ctx.shutdown("voice scan: left to the scanner")
+        return
     # Deleting the room hangs up the line; the user's own call goes on.
     ctx.delete_room()
     ctx.shutdown("recording line call done")

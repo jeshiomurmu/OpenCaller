@@ -19,13 +19,22 @@ class ServerError(RuntimeError):
     """The server answered something the agent can't use."""
 
 
+RECORD = "record"
+SCAN = "scan"
+
+
 @dataclass(frozen=True)
 class Claim:
-    """A claimed session: Egress must write [object_key]; recording stops after [max_minutes]."""
+    """A claimed session: Egress must write [object_key] (None for a scan); the agent stops after [max_minutes]."""
 
     session_id: str
-    object_key: str
+    object_key: str | None
     max_minutes: int
+
+
+@dataclass(frozen=True)
+class OtherKind:
+    """The code is the other line agent's session (a scan for the recorder or the reverse): leave the call to it."""
 
 
 @dataclass(frozen=True)
@@ -56,13 +65,20 @@ class ServerApi:
     def __init__(self, transport: Transport) -> None:
         self._transport = transport
 
-    async def claim(self, code: str, room: str) -> Claim | None:
-        """The session waiting for [code], or None if no session waits for it (404) or the call tried too often (429)."""
-        status, body = await self._transport.send("POST", "/agent/v1/recording/claim", {"code": code, "room": room})
+    async def claim(self, code: str, room: str, kind: str = RECORD) -> Claim | OtherKind | None:
+        """
+        The session of [kind] waiting for [code]; [OtherKind] when the code belongs to the other agent (409), None if no
+        session waits for it (404) or the call tried too often (429).
+        """
+        request = {"code": code, "room": room, "kind": kind}
+        status, body = await self._transport.send("POST", "/agent/v1/recording/claim", request)
         if status in (404, 429):
             return None
+        if status == 409 and isinstance(body, dict) and body.get("code") == "other_kind":
+            return OtherKind()
         _expect(status, 200, body)
-        return Claim(str(body["sessionId"]), str(body["objectKey"]), int(body["maxMinutes"]))
+        key = body.get("objectKey")
+        return Claim(str(body["sessionId"]), None if key is None else str(key), int(body["maxMinutes"]))
 
     async def report(self, session_id: str, *, complete: bool, size_bytes: int = 0, duration_ms: int = 0) -> None:
         """The session's result; the server checks the file itself."""
@@ -71,6 +87,16 @@ class ServerApi:
             f"/agent/v1/recording/sessions/{session_id}/result",
             {"status": "complete" if complete else "failed", "sizeBytes": size_bytes, "durationMs": duration_ms},
         )
+        _expect(status, 204, body)
+
+    async def report_scan(self, session_id: str, *, probability: float | None, cues: list[str]) -> None:
+        """A voice scan's outcome: the spoof probability and the scam-cue ids, or failed when [probability] is None."""
+        payload: dict[str, Any] = (
+            {"status": "failed"}
+            if probability is None
+            else {"status": "complete", "spoofProbability": round(min(1.0, max(0.0, probability)), 4), "cues": cues}
+        )
+        status, body = await self._transport.send("POST", f"/agent/v1/scanner/sessions/{session_id}/result", payload)
         _expect(status, 204, body)
 
     async def claim_assistant_call(self, number: str, room: str) -> AssistantClaim | AssistantRefusal:

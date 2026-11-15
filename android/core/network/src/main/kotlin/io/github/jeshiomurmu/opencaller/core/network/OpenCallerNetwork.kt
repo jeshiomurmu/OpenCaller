@@ -90,6 +90,9 @@ class OpenCallerNetwork(
     /** The recording line (Phase 13). */
     val recordingApi: RecordingApi = retrofit(authed).create(RecordingApi::class.java)
 
+    /** The voice scan on the recording line (Phase 13). */
+    val voiceScanApi: VoiceScanApi = retrofit(authed).create(VoiceScanApi::class.java)
+
     /** The call assistant (Phase 13, ADR 0010). */
     val assistantApi: AssistantApi = retrofit(authed).create(AssistantApi::class.java)
 

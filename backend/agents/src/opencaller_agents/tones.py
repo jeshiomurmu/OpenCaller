@@ -40,6 +40,11 @@ def reminder_beep() -> bytes:
     return tone(1400, 150, volume=0.2)
 
 
+def scan_beep() -> bytes:
+    """What both parties hear when the voice scanner starts listening (ADR 0011): two short high tones."""
+    return tone(1200, 150) + silence(80) + tone(1200, 150)
+
+
 def ready_signal() -> bytes:
     """Two short tones: the line answered and waits for the code."""
     return tone(880, 150) + silence(100) + tone(880, 150)

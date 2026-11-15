@@ -1,0 +1,4 @@
+* Call recording through the server's recording line, with a beep both parties hear.
+* AI call assistant: forward missed calls and follow the conversation live.
+* Voice scan: checks whether a caller's voice sounds AI-generated and lists scam phrases they used. It can be wrong; don't rely on it alone.
+Recording and voice scan need a server that offers them in your country.

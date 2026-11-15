@@ -40,7 +40,7 @@ async def test_tc_rec_001_the_call_is_recorded_announced_and_reported() -> None:
     assert transport.reports() == [{"status": "complete", "sizeBytes": 4096, "durationMs": 61_500}]
     # The claim carries the code and the room, never a phone number of either party.
     claim = next(body for _, path, body in transport.requests if path.endswith("/claim"))
-    assert claim == {"code": "12345678", "room": ROOM}
+    assert claim == {"code": "12345678", "room": ROOM, "kind": "record"}
 
 
 async def test_three_wrong_codes_get_the_rejection_and_nothing_is_recorded() -> None:
@@ -94,3 +94,15 @@ async def test_a_failed_upload_is_reported_failed() -> None:
     ended_soon.cancel()
     assert outcome.claimed and not outcome.recorded
     assert transport.reports() == [{"status": "failed", "sizeBytes": 0, "durationMs": 0}]
+
+
+async def test_a_voice_scan_code_is_left_to_the_scanner_without_a_sound() -> None:
+    transport, egress, player, codes = FakeTransport(kind="scan"), FakeEgress(), FakePlayer(), CodeReader()
+    for digit in "12345678#":
+        codes.feed(digit)
+    outcome = await call(transport, egress, player, codes).run(ROOM, caller_track, asyncio.Event())
+
+    assert outcome.handed_over and not outcome.claimed and not outcome.reported
+    assert player.played == [tones.ready_signal()]  # no rejection: the scanner takes it from here
+    assert egress.started == [] and transport.reports() == []
+    assert transport.code == "12345678"  # still pending for the scanner

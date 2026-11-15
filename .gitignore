@@ -49,3 +49,8 @@ ml/**/*.onnx
 
 # Logs
 *.log
+
+# ml/voice-spoof: downloaded weights, exported model and evaluation output (never committed; README)
+ml/voice-spoof/model/
+ml/voice-spoof/results/
+*.pth

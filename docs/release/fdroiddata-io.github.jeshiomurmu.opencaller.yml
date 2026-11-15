@@ -35,7 +35,16 @@ Builds:
     gradleprops:
       - opencaller.voip=false
 
+  - versionName: 1.1.0
+    versionCode: 1010099
+    commit: v1.1.0
+    subdir: android/app
+    gradle:
+      - foss
+    gradleprops:
+      - opencaller.voip=false
+
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.0.0
-CurrentVersionCode: 1000099
+CurrentVersion: 1.1.0
+CurrentVersionCode: 1010099

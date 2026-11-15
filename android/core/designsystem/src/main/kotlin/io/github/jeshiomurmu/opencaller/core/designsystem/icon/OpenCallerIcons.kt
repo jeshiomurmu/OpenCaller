@@ -154,4 +154,7 @@ object OpenCallerIcons {
 
     /** Play (a recording). */
     @get:DrawableRes val Play: Int = R.drawable.ic_play_arrow
+
+    /** Scan a caller's voice (the voice scan). */
+    @get:DrawableRes val VoiceScan: Int = R.drawable.ic_graphic_eq
 }

@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-14
+
+Phase 13: features that work through the server's own phone lines. They need a server with LiveKit SIP and a SIP
+trunk (`infra/deploy/telephony.md`); recording and the voice scan are offered only in countries the operator has
+approved (Bangladesh and India by default).
+
+### Added
+
+- Call recording through the recording line (supporter feature, default phone app): Record in a call adds the
+  server's line after a consent reminder; both parties hear a beep and the announcement. The recording is saved on the
+  phone (Me → Recordings, with playback and optional transcripts by self-hosted Whisper); the server deletes its copy
+  within an hour of the download, 24 hours at the latest.
+- AI call assistant (supporter feature): forward unanswered calls to your own assistant number with the standard
+  GSM codes; an automated assistant says it is one, asks who is calling and why, and you follow it live (Call back,
+  Quick reply, Spam). The caller's number and the conversation reach only your phone; up to 100 minutes a month.
+- Voice scan (supporter feature, default phone app): Scan voice in a call adds the server's line for up to a minute
+  (both parties hear a short beep; your microphone is muted while it listens). It shows "Likely human" or "Possibly
+  AI-generated" for the other person's voice, with an explanation that the check can be wrong, and the common scam
+  phrases they used (one-time codes, payments, gift cards, remote access, urgency, authorities, secrecy, prizes,
+  account problems, personal data) in English, Bengali or Hindi. Nothing is recorded; the server keeps only the
+  result for a day. The model is AASIST (ml/voice-spoof), run by the server's operator.
+
 ## [1.0.0] - 2026-11-09
 
 First stable release. Builds without a server work as before: blocking, the dialer and messages on the phone.
@@ -219,7 +241,8 @@ search and spam-list updates say "Not connected to a server".
 - `infra/docker/minio/Dockerfile`: Chainguard MinIO image plus a static BusyBox for the compose healthcheck.
 - `LICENSE` (GPL-3.0), `CHANGELOG.md` and `NOTICE.md`.
 
-[Unreleased]: https://github.com/jeshiomurmu/OpenCaller/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/jeshiomurmu/OpenCaller/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/jeshiomurmu/OpenCaller/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/jeshiomurmu/OpenCaller/compare/v0.5.0-beta...v1.0.0
 [0.5.0-beta]: https://github.com/jeshiomurmu/OpenCaller/compare/v0.1.0-alpha...v0.5.0-beta
 [0.1.0-alpha]: https://github.com/jeshiomurmu/OpenCaller/releases/tag/v0.1.0-alpha

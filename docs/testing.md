@@ -314,7 +314,7 @@ app):
 | TC-BIZ-003 | Business dashboard | Verified business signs in by code to its number; edits website, hours and call reasons; sees searches, reports and disputes per day without who made them; no call outcomes | I — 12: `PortalTest` (code only for approved businesses, same page for others; session cookie and CSRF; revoked business loses its session; counts without the searcher, reporters or dispute text); smoke → Business dashboard |
 | TC-REC-001 | Recording beep | Other party hears beep; file on device; server copy deleted ≤ 1 h | I + U + D — 13: `RecordingApiTest` (Testcontainers: the line of the user's country and a one-time code; supporter or self-hosted only; the legal switch from `RECORDING_COUNTRIES` and the admin web; the agent's claim needs its token and the code, once, 3 tries per call; the store's size is kept; an opaque `recording_ready` push; download link; deleted 30 min after the confirmed download and 24 h at the latest; a downloaded recording waits for its transcript; an agent that never reports leaves no file), `RecordingConfigTest`, `AdminWebTest` (switching a country on needs the legal confirmation; audit log); `backend/agents` pytest (code reading, beep and announcement, track egress request to MinIO, result reporting, transcriber); `LineRecorderTest`, `LinePlanTest` (dial string with pauses and the code, merge, hang-up on failure, the recording saved and labelled on the phone), `RecordingRepositoryTest` (file saved, then confirmed; no token on the file link), `RecordingsViewModelTest`, `InCallViewModelTest` (Record only for a single active call). On a real SIM: device steps below |
 | TC-AST-001 | Assistant | Forwarded unanswered call answered by agent; transcript streams | I + U + D — 13b: `AssistantApiTest` (Testcontainers: one number per user and country from the pool, given back and reused; supporter or self-hosted only; the agent's claim by dialed number needs its token, unknown numbers 404, a lapsed subscription 403, the monthly cap 429 and no cap at 0; an opaque `assistant_call` push; a data-only LiveKit token for the user's own call; duration clamped and counted once; call rows hold no number and go after a day), `AssistantConfigTest`; `backend/agents` pytest (`test_assistant.py`: the fixed disclosure, the claim, app actions reply/callback/spam, messages only to the user's identity, the caller's number never to the server, goodbye before the time runs out, refused calls; `test_assistant_settings.py`: provider selection and keys, the plugins built with the right options); `AssistantDataTest` (messages, history rows, the meter), `VoipDataTest` (push routing), `ForwardingCodesTest`, `AssistantViewModelTest`, `LiveScreeningViewModelTest`, `MigrationTest` 5→6. On a real SIM: device steps below |
-| TC-SCAN-001 | Scanner wording | Result phrased as likelihood, never certainty | U |
+| TC-SCAN-001 | Scanner wording | Result phrased as likelihood, never certainty | U + I + D — 13c: `VoiceScanTest` ("Possibly AI-generated" from 0.5, "Likely human" below; cue ids), `InCallViewModelTest` (Scan voice only while the line is free, Stop, the result shown and closed), `LineScannerTest` (line, code, merge, the user muted while the scanner listens and unmuted after, unless they had muted; the result, no result, the server's refusal, a line that never takes the code, calls that can't merge), `VoiceScanMappingTest`, `LinePlanTest`; `ScannerApiTest` (Testcontainers: the recorder gets `other_kind` for a scan's code and the code stays pending; the scan claim has no object key; the result is checked and stored as a probability and cue ids only; another user can't see it; purged after a day; `SCANNER_ENABLED`, the legal switch and the supporter check), `RecordingConfigTest`; `backend/agents` pytest (`test_scanner.py`: two windows scored, the mean and cues reported, the beep the only sound, the recorder's code left alone, failures reported as failed; `test_scam_cues.py` en/bn/hi; `test_speech.py`; `test_session.py`: the recorder leaves a scan's call quietly); `ml/voice-spoof` pytest (the service's input checks, the ONNX scorer, the codecs) and its evaluation (EER on ASVspoof 2019 LA, clean and through phone codecs: `ml/voice-spoof/README.md`); CI `voice-spoof` scores audio with the real model. On a real SIM: device steps below |
 
 Phase 9 device steps (a phone with a SIM, a debug build pointing at a compose stack the phone can reach, and a second
 phone or SIM whose number you can claim):
@@ -436,6 +436,31 @@ profile running with real providers, the assistant trunk and dispatch rule of `i
 8. Dial `##002#`, then Turn off the assistant: forwarded calls stop, and the number goes back to the pool.
 9. Measure the cost per screened minute (providers' bills ÷ minutes in `assistant_usage`) and record it in
    `docs/phase.md` (the phase's exit criterion).
+
+Phase 13c device steps (TC-SCAN-001). A phone with a SIM in an approved country, OpenCaller as the default phone app,
+signed in as a supporter (or on a self-hosted server), a second phone; the server with `SCANNER_ENABLED=true`, the
+`scanner` profile running and `scanner` added to the line's dispatch rule (`infra/deploy/telephony.md` → The voice
+scanner):
+
+1. Call the second phone, talk. Tap Scan voice: the dialog says both hear a beep, the microphone is muted while it
+   listens, nothing is recorded and the check can be wrong. Tap Scan. The screen shows "Calling the voice
+   scanner…", then "Adding the voice scanner…", then "Listening…"; the mute button is on. The second phone hears a
+   short hold, then two short high tones (no recording beep or announcement).
+2. Let the second phone's user speak for 10–15 s. Within about 20 s the line hangs up by itself, the microphone is
+   unmuted and a card shows "Likely human" (a real person speaking) with the sentence that the check can be wrong.
+   The call with the second phone goes on.
+3. Again, with the second phone playing a text-to-speech or voice-clone sample close to its microphone (e.g. a
+   generated clip saying "this is your bank, read me the one-time code right now"): note the result. Expect
+   "Possibly AI-generated" for many but not all samples, and "They mentioned: a one-time code; that it is urgent".
+   Record what you saw in `docs/phase.md` (sample, result); a miss is a known limitation, not a failure of this case.
+4. Repeat 2 with Bengali and Hindi speech (a native speaker): note which cue phrases were found or missed, for the
+   phrase lists' review (open issue).
+5. Mute first, then scan: after the scan the microphone stays muted.
+6. Tap Stop scan while listening: the line hangs up, the microphone is unmuted, "The scanner couldn't check this
+   voice" shows.
+7. Server side: `recording_sessions` holds the scan's probability and cue ids without any number; no audio object in
+   MinIO; the row is gone a day later. The scanner's log names the room, never a number or a sentence.
+8. A number of a country that isn't approved: Scan voice says it isn't available there.
 
 ## 5. Manual QA checklist (before each release)
 

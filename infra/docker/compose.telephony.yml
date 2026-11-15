@@ -6,6 +6,8 @@
 #   docker compose -f infra/docker/compose.yml -f infra/docker/compose.telephony.yml --profile transcripts up -d
 #   # the call assistant (ADR 0010; needs ASSISTANT_NUMBERS and the speech and language providers' keys):
 #   docker compose -f infra/docker/compose.yml -f infra/docker/compose.telephony.yml --profile assistant up -d
+#   # the voice scanner (ADR 0011; needs SCANNER_ENABLED=true and VOICE_SPOOF_TOKEN):
+#   docker compose -f infra/docker/compose.yml -f infra/docker/compose.telephony.yml --profile scanner up -d --build
 #
 # Setup of the SIP trunk and the dispatch rule, ports and firewall: infra/deploy/telephony.md.
 # SIP, Egress and the agents use host networking (Linux only), as LiveKit's own SIP compose file does: Docker handles
@@ -119,7 +121,7 @@ services:
       # A faster-whisper model name (downloaded from Hugging Face on first use) or a local model folder.
       WHISPER_MODEL: ${WHISPER_MODEL:-small}
     volumes:
-      - whisper-models:/root/.cache/huggingface
+      - whisper-models:/home/agent/.cache/huggingface
     depends_on:
       recorder:
         condition: service_started
@@ -161,6 +163,50 @@ services:
         condition: service_started
       server:
         condition: service_healthy
+
+  # The voice scanner (ADR 0011): dispatched to line calls next to the recorder; the one-time code decides which one
+  # stays. It listens to a few seconds of the other party, scores them with voice-spoof, transcribes them on this
+  # machine for scam cues and reports only a probability and cue ids. Off by default.
+  scanner:
+    profiles: ["scanner"]
+    image: opencaller/agents:dev
+    restart: unless-stopped
+    network_mode: host
+    command: ["python", "-m", "opencaller_agents.scanner", "start"]
+    environment:
+      LIVEKIT_URL: ws://127.0.0.1:7880
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-opencaller}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?set LIVEKIT_API_SECRET in infra/docker/.env}
+      OPENCALLER_API_URL: http://127.0.0.1:8080
+      RECORDING_AGENT_TOKEN: ${RECORDING_AGENT_TOKEN:?set RECORDING_AGENT_TOKEN in infra/docker/.env}
+      VOICE_SPOOF_URL: http://127.0.0.1:8090
+      VOICE_SPOOF_TOKEN: ${VOICE_SPOOF_TOKEN:?set VOICE_SPOOF_TOKEN in infra/docker/.env}
+      # A faster-whisper model for the scam cues (downloaded from Hugging Face on first use), or off.
+      SCANNER_WHISPER_MODEL: ${SCANNER_WHISPER_MODEL:-small}
+      SCANNER_WINDOWS: ${SCANNER_WINDOWS:-2}
+    volumes:
+      - whisper-models:/home/agent/.cache/huggingface
+    depends_on:
+      voice-spoof:
+        condition: service_healthy
+      recorder:
+        condition: service_started
+
+  # The anti-spoofing model (ml/voice-spoof: AASIST, ONNX on the CPU). Only the scanner on this machine reaches it.
+  voice-spoof:
+    profiles: ["scanner"]
+    build:
+      context: ../../ml/voice-spoof
+    image: opencaller/voice-spoof:dev
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: [/tmp]
+    environment:
+      VOICE_SPOOF_TOKEN: ${VOICE_SPOOF_TOKEN:?set VOICE_SPOOF_TOKEN in infra/docker/.env}
+    ports:
+      - "127.0.0.1:8090:8090"
 
 volumes:
   whisper-models:

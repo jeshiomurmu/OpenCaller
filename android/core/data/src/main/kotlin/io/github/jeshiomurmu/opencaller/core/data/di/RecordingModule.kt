@@ -13,14 +13,17 @@ import io.github.jeshiomurmu.opencaller.core.data.recording.CallRecordings
 import io.github.jeshiomurmu.opencaller.core.data.recording.RecordingDownloads
 import io.github.jeshiomurmu.opencaller.core.data.recording.RecordingRepository
 import io.github.jeshiomurmu.opencaller.core.data.recording.RoomRecordingStore
+import io.github.jeshiomurmu.opencaller.core.data.recording.VoiceScanRepository
+import io.github.jeshiomurmu.opencaller.core.data.recording.VoiceScans
 import io.github.jeshiomurmu.opencaller.core.data.recording.WorkManagerRecordingDownloads
 import io.github.jeshiomurmu.opencaller.core.database.DatabaseAccess
 import io.github.jeshiomurmu.opencaller.core.network.OpenCallerNetwork
 import io.github.jeshiomurmu.opencaller.core.network.RecordingApi
+import io.github.jeshiomurmu.opencaller.core.network.VoiceScanApi
 import java.io.File
 import javax.inject.Singleton
 
-/** Phase 13: the recording line (ADR 0009). */
+/** Phase 13: the recording line (ADR 0009) and the voice scan on it (ADR 0011). */
 @Module
 @InstallIn(SingletonComponent::class)
 interface RecordingModule {
@@ -28,11 +31,19 @@ interface RecordingModule {
     @Binds
     fun recordingDownloads(impl: WorkManagerRecordingDownloads): RecordingDownloads
 
+    /** The voice scan on the recording line (ADR 0011). */
+    @Binds
+    fun voiceScans(impl: VoiceScanRepository): VoiceScans
+
     /** Providers. */
     companion object {
         /** The Phase 13 API. */
         @Provides
         fun recordingApi(network: OpenCallerNetwork): RecordingApi = network.recordingApi
+
+        /** The voice scan's API (ADR 0011). */
+        @Provides
+        fun voiceScanApi(network: OpenCallerNetwork): VoiceScanApi = network.voiceScanApi
 
         /** Recordings, saved in the app's private files (not in backups' cache, never shared with other apps). */
         @Provides
