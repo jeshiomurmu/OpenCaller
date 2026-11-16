@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -173,13 +174,15 @@ private fun Composer(
             IconButton(onClick = onAttach) {
                 Icon(painter = painterResource(OpenCallerIcons.Image), contentDescription = stringResource(R.string.messages_attach))
             }
+            val hint = stringResource(R.string.messages_compose_hint)
             OutlinedTextField(
                 value = state.draft,
                 onValueChange = { onEvent(ThreadEvent.Draft(it)) },
-                placeholder = { Text(stringResource(R.string.messages_compose_hint)) },
+                placeholder = { Text(hint) },
                 shape = OpenCallerShape.card,
                 maxLines = MAX_LINES,
-                modifier = Modifier.weight(1f),
+                // The placeholder goes once there is text; TalkBack keeps the field's name.
+                modifier = Modifier.weight(1f).semantics { contentDescription = hint },
             )
             if (state.sims.size > 1) SimButton(state = state, onEvent = onEvent)
             if (!state.isGroup) {

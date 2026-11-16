@@ -11,6 +11,7 @@ import io.github.jeshiomurmu.opencaller.server.module
 import io.github.jeshiomurmu.opencaller.server.sync.OtpSourcesResponse
 import io.github.jeshiomurmu.opencaller.server.sync.SenderIdsResponse
 import io.github.jeshiomurmu.opencaller.server.testing.InMemoryObjectStore
+import io.github.jeshiomurmu.opencaller.server.testing.TEST_ADMIN_TOKEN
 import io.github.jeshiomurmu.opencaller.server.testing.TestInfra
 import io.github.jeshiomurmu.opencaller.server.testing.TestServer
 import io.github.jeshiomurmu.opencaller.server.testing.insertUser
@@ -21,6 +22,7 @@ import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.post
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.Headers
@@ -389,5 +391,8 @@ class AdminWebTest {
             application { module(server.deps) }
             assertEquals(HttpStatusCode.NotFound, client.get("/claims").status)
             assertTrue(testJson.parseToJsonElement(client.get("/claims").bodyAsText()).toString().contains("not_found"))
+            // Nor the admin jobs, even with the admin token: they live on the internal port only (docs/security.md).
+            val jobs = client.post("/admin/jobs/scoring") { header(HttpHeaders.Authorization, "Bearer $TEST_ADMIN_TOKEN") }
+            assertEquals(HttpStatusCode.NotFound, jobs.status)
         }
 }

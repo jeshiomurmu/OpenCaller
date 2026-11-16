@@ -137,6 +137,22 @@ class MainViewModelTest {
             vm.openThread(7)
             assertEquals(MessageRequest(threadId = 7), vm.pendingMessage.value)
         }
+
+    // MainActivity is exported: any app can start it with these extras (docs/security.md, MASVS-PLATFORM-1).
+    @Test
+    fun externalRequestsAreCheckedBeforeTheyOpenAnything() =
+        runTest {
+            val vm = MainViewModel(UserSettingsDataSource.inMemory(), access, conversations, StaticEntitlements())
+            listOf(null, "", "12025550123", "+1 202 555 0123", "+1202555012a", "'; DROP TABLE x;--", "+".padEnd(40, '1')).forEach {
+                vm.requestReport(it)
+                assertNull("report for $it", vm.pendingReport.value)
+            }
+            vm.requestReport("+12025550123")
+            assertEquals("+12025550123", vm.pendingReport.value)
+
+            vm.requestDial("   ")
+            assertEquals("a blank tel: link opens an empty dial pad", DialRequest(null), vm.pendingDial.value)
+        }
 }
 
 /** Only [threadFor] is used by the app's view model. */

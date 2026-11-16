@@ -1,0 +1,3 @@
+# Reviewed OSV findings that don't apply to OpenCaller (scripts/ci/dependency_audit.py).
+# One per line: the OSV or GHSA/CVE id, then why it doesn't apply (and when to look again). An id without a reason
+# fails the audit.

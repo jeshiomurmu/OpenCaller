@@ -469,11 +469,11 @@ Implementation (Phase 4, `scoring/`): the Kotlin job runs every 15 minutes under
 
 ## 10. Privacy invariants (tested in CI where possible)
 
-1. No API accepts contact lists, call logs or SMS bodies. A lint check fails the build if `ContactsContract`, `CallLog` or `Telephony.Sms` cursor data flows into a class in `core:network` (Detekt custom rule).
+1. No API accepts contact lists, call logs or SMS bodies. `core:network` is a plain JVM module (it can't read Android's providers), and `scripts/ci/privacy-imports.sh` (android CI job) fails the build when a source file that reads `ContactsContract`, `CallLog` or `Telephony` also imports the network layer (`core.network`, Retrofit, OkHttp). (Phase 14: this replaced a planned Detekt rule that was never written.)
 2. Live caller ID never sends the full number; only explicit search does.
 3. Logs redact numbers to last 4 digits.
 4. Reports send the reported number, label, category and optional comment; no device identifiers beyond the auth token.
-5. Crash reporting is opt-in and goes to a self-hosted endpoint (or none).
+5. The app has no crash reporting (no SDK, rules.md §2). The crash-free rate comes from Google Play's Android vitals, which Android collects for Play installs under the user's own system setting (Phase 14 owner decision); F-Droid installs report nothing.
 6. Pushes (FCM, UnifiedPush) carry only a random push-item id; what it stands for is fetched from our server with the access token (ADR 0007, `HttpPushSenderTest`, `VoipApiTest`).
 7. Video caller IDs of a lookup bucket are downloaded all together, so the server learns no more than the bucket; downloads run on Wi-Fi only unless the user allows mobile data (`VoipDataTest`).
 8. App-call invites are deleted a day after the call and Flash messages once fetched (at most a day); call audio is never recorded or stored on the server (`VoipApiTest`, `FlashApiTest`).

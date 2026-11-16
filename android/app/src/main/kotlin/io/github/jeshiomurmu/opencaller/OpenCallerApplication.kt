@@ -71,7 +71,7 @@ class OpenCallerApplication :
 
     override fun onCreate() {
         super.onCreate()
-        // Release builds log nothing until opt-in crash reporting exists (docs/architecture.md §10).
+        // Release builds log nothing: there is no crash reporting (docs/architecture.md §10 invariant 5).
         if (BuildConfig.DEBUG) Timber.plant(RedactingTree())
         NetworkLog.sink = { message, error -> Timber.w(error, message) }
         val scope = CoroutineScope(SupervisorJob() + dispatchers.io)

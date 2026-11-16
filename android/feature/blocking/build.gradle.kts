@@ -4,6 +4,9 @@ plugins {
 
 android {
     namespace = "io.github.jeshiomurmu.opencaller.feature.blocking"
+
+    // Compose semantics tests (Robolectric) read the strings.
+    testOptions.unitTests.isIncludeAndroidResources = true
 }
 
 // Protection tab: blocking settings, the rules editor and the blocked-calls log (docs/design.md §6, §7).
@@ -19,4 +22,6 @@ dependencies {
     testImplementation(libs.androidx.room.runtime)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.androidx.compose.ui.test.manifest)
 }

@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import io.github.jeshiomurmu.opencaller.core.designsystem.icon.OpenCallerIcons
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacing
 import io.github.jeshiomurmu.opencaller.core.model.CallUrgency
@@ -38,7 +39,11 @@ internal fun ScreenedCallCard(
     modifier: Modifier = Modifier,
 ) {
     var open by rememberSaveable(call.id) { mutableStateOf(false) }
-    Card(modifier = modifier.fillMaxWidth().clickable { open = !open }) {
+    val toggleLabel = stringResource(if (open) R.string.assistant_hide_conversation else R.string.assistant_show_conversation)
+    Card(
+        modifier =
+            modifier.fillMaxWidth().clickable(role = Role.Button, onClickLabel = toggleLabel) { open = !open },
+    ) {
         Column(modifier = Modifier.padding(OpenCallerSpacing.s), verticalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xxs)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {

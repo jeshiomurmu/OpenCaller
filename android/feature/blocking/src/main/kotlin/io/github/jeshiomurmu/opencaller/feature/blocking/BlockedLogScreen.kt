@@ -1,6 +1,7 @@
 package io.github.jeshiomurmu.opencaller.feature.blocking
 
 import android.text.format.DateUtils
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +26,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.jeshiomurmu.opencaller.core.designsystem.icon.OpenCallerIcons
@@ -130,18 +133,37 @@ private fun BlockedCallRow(
                 .heightIn(min = OpenCallerSpacing.minTouchTarget)
                 .padding(horizontal = OpenCallerSpacing.screenPadding, vertical = OpenCallerSpacing.xs),
     ) {
+        val title = call.display ?: stringResource(R.string.log_hidden)
+        // One TalkBack stop for the call, then its actions, each naming the call ("Unblock +1 555…").
         TextPair(
-            title = call.display ?: stringResource(R.string.log_hidden),
+            title = title,
             summary = listOfNotNull(what, why, time).joinToString(separator),
+            modifier = Modifier.semantics(mergeDescendants = true) {},
         )
         Row(horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xxs, Alignment.End), modifier = Modifier.fillMaxWidth()) {
-            TextButton(onClick = { onEvent(BlockedLogEvent.Explain(call)) }) { Text(text = stringResource(R.string.log_why)) }
+            LogAction(R.string.log_why, stringResource(R.string.log_why_description, title)) { onEvent(BlockedLogEvent.Explain(call)) }
             if (call.number != null) {
-                TextButton(onClick = { onEvent(BlockedLogEvent.Report(call)) }) { Text(text = stringResource(R.string.log_report)) }
-                TextButton(onClick = { onEvent(BlockedLogEvent.Unblock(call)) }) { Text(text = stringResource(R.string.log_unblock)) }
+                LogAction(R.string.log_report, stringResource(R.string.log_report_description, title)) {
+                    onEvent(BlockedLogEvent.Report(call))
+                }
+                LogAction(R.string.log_unblock, stringResource(R.string.log_unblock_description, title)) {
+                    onEvent(BlockedLogEvent.Unblock(call))
+                }
             }
         }
     }
+}
+
+@Composable
+private fun LogAction(
+    @StringRes label: Int,
+    description: String,
+    onClick: () -> Unit,
+) {
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier.heightIn(min = OpenCallerSpacing.minTouchTarget).semantics { contentDescription = description },
+    ) { Text(text = stringResource(label)) }
 }
 
 @OpenCallerPreviews

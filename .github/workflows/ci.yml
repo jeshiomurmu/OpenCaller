@@ -30,6 +30,10 @@ jobs:
       # Caches Gradle dependencies and validates the Gradle wrapper JAR checksum.
       - uses: gradle/actions/setup-gradle@v6
 
+      - name: Privacy invariant 1 (provider readers never import the network layer)
+        working-directory: .
+        run: scripts/ci/privacy-imports.sh
+
       - name: Lint, test and assemble both flavors
         # --continue: run every task and report all failures in one CI run.
         run: >-
@@ -207,7 +211,7 @@ jobs:
   e2e:
     # API 36 only: on the API 29 image, TCP from the emulator never connects, to the host or to its own loopback
     # (ping works, no firewall drops, not in Doze; docs/phase.md issue 138).
-    name: e2e (TC-E2E-001, TC-VOIP, TC-FAM emulators)
+    name: e2e (TC-E2E-001, TC-VOIP, TC-FAM, privacy traffic)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -257,6 +261,11 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Traffic checker self-test
+        run: |
+          mkdir -p build/e2e
+          python3 -m unittest scripts/e2e/test_check_traffic.py
+
       - name: Device A reports and device B blocks; A calls B over the app, sends a Flash message and a clip
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -265,8 +274,11 @@ jobs:
           arch: x86_64
           ram-size: 4096M
           disable-animations: true
-          # The runner's defaults without -noaudio: app calls record from the emulated microphone.
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -camera-back none
+          # The runner's defaults without -noaudio: app calls record from the emulated microphone. A's packets go to
+          # a.pcap for the privacy traffic check (scripts/e2e/check_traffic.py).
+          emulator-options: >-
+            -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -camera-back none
+            -tcpdump ${{ github.workspace }}/build/e2e/a.pcap
           script: scripts/e2e/ci.sh 36 android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/e2e
 
       - name: Server logs
@@ -385,6 +397,40 @@ jobs:
             --data-binary @tone.pcm http://127.0.0.1:8090/v1/score | tee score.json
           python3 -c "import json; p=json.load(open('score.json'))['spoofProbability']; assert 0 <= p <= 1, p"
           docker logs voice-spoof
+
+  dependency-audit:
+    # Phase 14 (docs/security.md, MASVS-CODE-3): every resolved dependency of the app (both flavors' release
+    # runtime), the server and the Python services checked against OSV; reviewed exceptions in
+    # docs/security/osv-ignore.txt.
+    name: dependency audit (OSV)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Resolve dependencies
+        run: |
+          mkdir -p build/audit
+          (cd android && ./gradlew -q :app:dependencies --configuration fossReleaseRuntimeClasspath) > build/audit/app-foss.txt
+          (cd android && ./gradlew -q :app:dependencies --configuration playReleaseRuntimeClasspath) > build/audit/app-play.txt
+          (cd backend/server && ./gradlew -q dependencies --configuration runtimeClasspath) > build/audit/server.txt
+          python3 -m venv build/audit/venv
+          build/audit/venv/bin/pip install --quiet --upgrade pip
+          build/audit/venv/bin/pip install --quiet --dry-run --ignore-installed --report build/audit/agents.json './backend/agents[transcripts,assistant]'
+          build/audit/venv/bin/pip install --quiet --dry-run --ignore-installed --report build/audit/voice-spoof.json ./ml/voice-spoof
+
+      - name: Check with OSV
+        run: >-
+          python3 scripts/ci/dependency_audit.py
+          --gradle build/audit/app-foss.txt --gradle build/audit/app-play.txt --gradle build/audit/server.txt
+          --pip build/audit/agents.json --pip build/audit/voice-spoof.json
 
   agents:
     name: agents (recorder, transcriber, assistant, scanner)

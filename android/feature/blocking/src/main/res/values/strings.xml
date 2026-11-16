@@ -109,5 +109,9 @@
     <string name="log_report">Report</string>
     <string name="log_why">Why?</string>
     <string name="log_unblock">Unblock</string>
+    <!-- TalkBack labels of the log's buttons; %1$s is the number or "Hidden number". -->
+    <string name="log_why_description">Why %1$s was blocked</string>
+    <string name="log_report_description">Report %1$s</string>
+    <string name="log_unblock_description">Unblock %1$s</string>
     <string name="log_unblocked">%1$s will ring next time</string>
 </resources>

@@ -20,8 +20,9 @@ avdmanager="$(find "$sdk/cmdline-tools" -path '*/bin/avdmanager' | sort -V | tai
 [[ -x "$avdmanager" ]] || { echo "::error::avdmanager not found under $sdk/cmdline-tools"; exit 1; }
 echo no | "$avdmanager" create avd --force -n e2e-b -k "$image" > /dev/null
 
+# B's packets go to b.pcap (A's to a.pcap, set in ci.yml) for the privacy traffic check below.
 "$sdk/emulator/emulator" -avd e2e-b -port 5556 -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim \
-  -memory 4096 -camera-back none > "$out/emulator-b.log" 2>&1 &
+  -memory 4096 -camera-back none -tcpdump "$(realpath "$out")/b.pcap" > "$out/emulator-b.log" 2>&1 &
 emulator_pid=$!
 trap 'adb -s "$device_b" emu kill > /dev/null 2>&1 || kill "$emulator_pid" 2> /dev/null || true' EXIT
 
@@ -62,9 +63,25 @@ network_report() {
 
 # Each test has a time limit (a normal run takes a few minutes each), so a hang fails that test with its diagnostics
 # and the network report instead of using up the job's hour in silence.
+# Privacy canaries (a contact, a call-log entry, an SMS) that must never appear in the traffic.
+for device in emulator-5554 "$device_b"; do scripts/e2e/canaries.sh "$device" || echo "::warning::canaries on $device failed"; done
+
 status=0
 timeout --kill-after=60 900 scripts/e2e/report_to_block.sh "$apk" "$app_id" emulator-5554 "$device_b" || status=1
 timeout --kill-after=60 1200 scripts/e2e/voip.sh "$app_id" emulator-5554 "$device_b" "$out" || status=1
 timeout --kill-after=60 600 scripts/e2e/family.sh "$app_id" emulator-5554 "$device_b" "$out" || status=1
 if [[ "$status" -ne 0 ]]; then network_report; fi
+
+# docs/architecture.md §10 on the wire: no canary in either phone's traffic, and the server endpoints used.
+echo "== Privacy traffic check"
+pcaps=()
+for capture in "$out/a.pcap" "$out/b.pcap"; do [[ -s "$capture" ]] && pcaps+=(--pcap "$capture"); done
+if [[ ${#pcaps[@]} -eq 0 ]]; then
+  echo "::error::no packet capture found in $out"
+  status=1
+else
+  python3 scripts/e2e/check_traffic.py "${pcaps[@]}" \
+    --canary "Canary Contact Qx7" --canary "+12025550177" --canary "+12025550178" --canary "+12025550179" \
+    --canary "CANARY-SMS-7d1f" || status=1
+fi
 exit "$status"

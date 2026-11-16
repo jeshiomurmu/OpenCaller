@@ -19,7 +19,7 @@
     <string name="onboarding_privacy_never_1">Your contacts.</string>
     <string name="onboarding_privacy_never_2">Your call history.</string>
     <string name="onboarding_privacy_never_3">Your messages.</string>
-    <string name="onboarding_privacy_never_4">Anything for ads or tracking: OpenCaller has neither. Crash reports stay off unless you turn them on.</string>
+    <string name="onboarding_privacy_never_4">Anything for ads or tracking: OpenCaller has neither, and it sends no crash reports.</string>
 
     <string name="onboarding_extras_title">Optional extras</string>
     <string name="onboarding_extras_body">Turn these on now or later in Me → Settings → Permissions &amp; roles.</string>

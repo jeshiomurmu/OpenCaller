@@ -49,6 +49,10 @@ class OpenCallerNetwork(
     lookupTimeoutMillis: Long = DEFAULT_LOOKUP_TIMEOUT_MILLIS,
 ) {
     private val baseUrl: HttpUrl = config.httpUrl ?: UNCONFIGURED
+
+    /** The public-key pins for the server's host, or `null` without pins (tested in `PinningTest`). */
+    internal val certificatePinner: CertificatePinner? = pinner()
+
     private val base: OkHttpClient =
         OkHttpClient
             .Builder()
@@ -57,7 +61,7 @@ class OpenCallerNetwork(
             .writeTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .addInterceptor(serverConfigured())
             .addInterceptor(userAgent())
-            .apply { pinner()?.let(::certificatePinner) }
+            .apply { certificatePinner?.let(::certificatePinner) }
             .build()
 
     private val authApi: AuthApi = retrofit(base).create(AuthApi::class.java)

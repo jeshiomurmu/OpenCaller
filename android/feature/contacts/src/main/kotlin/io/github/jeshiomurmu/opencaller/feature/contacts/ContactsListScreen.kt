@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -117,15 +118,7 @@ fun ContactsListScreen(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     Column(modifier = modifier.fillMaxSize()) {
-        OutlinedTextField(
-            value = state.query,
-            onValueChange = { onEvent(ContactsListEvent.Search(it)) },
-            placeholder = { Text(stringResource(R.string.contacts_search_hint)) },
-            leadingIcon = { Icon(painter = painterResource(OpenCallerIcons.Search), contentDescription = null) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            modifier = Modifier.fillMaxWidth().padding(horizontal = OpenCallerSpacing.screenPadding, vertical = OpenCallerSpacing.xs),
-        )
+        SearchField(query = state.query, onSearch = { onEvent(ContactsListEvent.Search(it)) })
         when {
             state.failed -> {
                 EmptyState(icon = OpenCallerIcons.Contacts, message = stringResource(R.string.contacts_failed))
@@ -259,4 +252,26 @@ private fun ContactsListScreenPreview() {
             )
         }
     }
+}
+
+@Composable
+private fun SearchField(
+    query: String,
+    onSearch: (String) -> Unit,
+) {
+    val hint = stringResource(R.string.contacts_search_hint)
+    OutlinedTextField(
+        value = query,
+        onValueChange = onSearch,
+        placeholder = { Text(hint) },
+        leadingIcon = { Icon(painter = painterResource(OpenCallerIcons.Search), contentDescription = null) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        // The placeholder goes once there is text; TalkBack keeps the field's name.
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = OpenCallerSpacing.screenPadding, vertical = OpenCallerSpacing.xs)
+                .semantics { contentDescription = hint },
+    )
 }
