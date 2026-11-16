@@ -286,6 +286,16 @@ jobs:
             -tcpdump ${{ github.workspace }}/build/e2e/a.pcap
           script: scripts/e2e/ci.sh 36 android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/e2e
 
+      - name: Privacy traffic check (no canary on the wire; the server endpoints used)
+        # After the emulators have exited, so both captures are complete (scripts/e2e/ci.sh). The canaries are the
+        # values scripts/e2e/canaries.sh planted on both phones.
+        if: ${{ !cancelled() }}
+        run: |
+          ls -l build/e2e/*.pcap
+          timeout 600 python3 scripts/e2e/check_traffic.py --pcap build/e2e/a.pcap --pcap build/e2e/b.pcap \
+            --canary "Canary Contact Qx7" --canary "+12025550177" --canary "+12025550178" --canary "+12025550179" \
+            --canary "CANARY-SMS-7d1f"
+
       - name: Server logs
         if: always()
         run: docker compose -f infra/docker/compose.yml logs --no-color --tail 300 server

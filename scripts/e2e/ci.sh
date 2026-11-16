@@ -20,7 +20,7 @@ avdmanager="$(find "$sdk/cmdline-tools" -path '*/bin/avdmanager' | sort -V | tai
 [[ -x "$avdmanager" ]] || { echo "::error::avdmanager not found under $sdk/cmdline-tools"; exit 1; }
 echo no | "$avdmanager" create avd --force -n e2e-b -k "$image" > /dev/null
 
-# B's packets go to b.pcap (A's to a.pcap, set in ci.yml) for the privacy traffic check below.
+# B's packets go to b.pcap (A's to a.pcap, set in ci.yml) for the privacy traffic check (its own step in ci.yml).
 "$sdk/emulator/emulator" -avd e2e-b -port 5556 -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim \
   -memory 4096 -camera-back none -tcpdump "$(realpath "$out")/b.pcap" > "$out/emulator-b.log" 2>&1 &
 emulator_pid=$!
@@ -92,17 +92,8 @@ timeout --kill-after=60 1200 scripts/e2e/voip.sh "$app_id" emulator-5554 "$devic
 timeout --kill-after=60 600 scripts/e2e/family.sh "$app_id" emulator-5554 "$device_b" "$out" || status=1
 if [[ "$status" -ne 0 ]]; then network_report; fi
 
-# docs/architecture.md §10 on the wire: no canary in either phone's traffic, and the server endpoints used.
-echo "== Privacy traffic check"
-pcaps=()
-for capture in "$out/a.pcap" "$out/b.pcap"; do [[ -s "$capture" ]] && pcaps+=(--pcap "$capture"); done
-if [[ ${#pcaps[@]} -eq 0 ]]; then
-  echo "::error::no packet capture found in $out"
-  status=1
-else
-  ls -l "$out"/*.pcap
-  timeout 600 python3 scripts/e2e/check_traffic.py "${pcaps[@]}" \
-    --canary "Canary Contact Qx7" --canary "+12025550177" --canary "+12025550178" --canary "+12025550179" \
-    --canary "CANARY-SMS-7d1f" || status=1
-fi
+# The privacy traffic check runs in its own workflow step after both emulators have stopped: the emulator writes
+# its -tcpdump capture as it goes but only completes it when it exits (a check here saw 20 KB and no server request).
+adb -s "$device_b" emu kill > /dev/null 2>&1 || true
+for _ in $(seq 1 30); do kill -0 "$emulator_pid" 2> /dev/null || break; sleep 2; done
 exit "$status"
