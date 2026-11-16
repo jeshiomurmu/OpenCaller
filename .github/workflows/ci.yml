@@ -166,8 +166,7 @@ jobs:
     # Phase 14: Baseline Profile generation, Macrobenchmark (cold start, screening), the screening Microbenchmark and a
     # 30-minute battery proxy on the API 36 emulator. Long, so only on pull requests; the results are printed into the
     # log (scripts/ci/performance.sh) and recorded in docs/testing.md.
-    # TEMPORARY (Phase 14 work in progress): also on pushes to the working branch; removed before the PR.
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/claude/vibrant-johnson-4pfw6q'
+    if: github.event_name == 'pull_request'
     name: performance (Baseline Profile, benchmarks, battery proxy)
     runs-on: ubuntu-latest
     timeout-minutes: 120
@@ -254,8 +253,8 @@ jobs:
             echo "MINIO_PUBLIC_ENDPOINT=http://10.0.2.2:9000"
           } >> .env
 
-      - name: Install ffmpeg (test clip for the video caller ID)
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: Install ffmpeg (test clip for the video caller ID) and tcpdump (privacy traffic check)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg tcpdump
 
       - name: Build and start the stack
         run: GIT_SHA="${GITHUB_SHA::7}" docker compose -f infra/docker/compose.yml up -d --build --wait --wait-timeout 300
@@ -270,6 +269,17 @@ jobs:
         run: |
           mkdir -p build/e2e
           python3 -m unittest scripts/e2e/test_check_traffic.py
+
+      - name: Capture the host's traffic (privacy traffic check)
+        # The emulators' own -tcpdump on the API 36 image records only a few packets (run 43823739801: no request to
+        # the server at all), so the check reads what the emulators send through the host: every interface, without
+        # adb and the emulator console (5037, 5554-5682), which carry the test's own commands (the canaries are planted
+        # through them).
+        run: |
+          sudo tcpdump -Z root -i any -U -s 0 -w build/e2e/host.pcap \
+            'not (tcp port 5037 or tcp portrange 5554-5682)' > build/e2e/tcpdump.log 2>&1 &
+          sleep 2
+          pgrep -x tcpdump
 
       - name: Device A reports and device B blocks; A calls B over the app, sends a Flash message and a clip
         uses: reactivecircus/android-emulator-runner@v2
@@ -291,8 +301,13 @@ jobs:
         # values scripts/e2e/canaries.sh planted on both phones.
         if: ${{ !cancelled() }}
         run: |
+          sudo pkill -INT -x tcpdump || true
+          sleep 2
+          cat build/e2e/tcpdump.log || true
+          sudo chown "$(id -u)" build/e2e/host.pcap
           ls -l build/e2e/*.pcap
-          timeout 600 python3 scripts/e2e/check_traffic.py --pcap build/e2e/a.pcap --pcap build/e2e/b.pcap \
+          timeout 600 python3 scripts/e2e/check_traffic.py --server-port 8080 \
+            --pcap build/e2e/host.pcap --pcap build/e2e/a.pcap --pcap build/e2e/b.pcap \
             --canary "Canary Contact Qx7" --canary "+12025550177" --canary "+12025550178" --canary "+12025550179" \
             --canary "CANARY-SMS-7d1f"
 

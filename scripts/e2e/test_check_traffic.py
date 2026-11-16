@@ -14,26 +14,28 @@ sys.path.insert(0, str(Path(__file__).parent))
 import check_traffic  # noqa: E402
 
 
-def frame(src: str, sport: int, dst: str, dport: int, seq: int, payload: bytes) -> bytes:
+def frame(src: str, sport: int, dst: str, dport: int, seq: int, payload: bytes, sll2: bool = False) -> bytes:
     tcp = struct.pack("!HHIIBBHHH", sport, dport, seq, 0, 5 << 4, 0x18, 65535, 0, 0) + payload
     total = 20 + len(tcp)
     ip = struct.pack("!BBHHHBBH4s4s", 0x45, 0, total, 0, 0, 64, 6, 0, bytes(map(int, src.split("."))), bytes(map(int, dst.split("."))))
+    if sll2:
+        return b"\x08\x00" + b"\x00" * 18 + ip + tcp
     return b"\x00" * 12 + b"\x08\x00" + ip + tcp
 
 
-def pcap(frames: list[bytes]) -> bytes:
-    out = struct.pack("<IHHiIII", 0xA1B2C3D4, 2, 4, 0, 0, 65535, 1)
+def pcap(frames: list[bytes], linktype: int = 1) -> bytes:
+    out = struct.pack("<IHHiIII", 0xA1B2C3D4, 2, 4, 0, 0, 65535, linktype)
     for f in frames:
         out += struct.pack("<IIII", 0, 0, len(f), len(f)) + f
     return out
 
 
 class CheckTrafficTest(unittest.TestCase):
-    def run_check(self, frames: list[bytes], *canaries: str) -> tuple[int, str]:
+    def run_check(self, frames: list[bytes], *canaries: str, linktype: int = 1, extra: tuple = ()) -> tuple[int, str]:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp, "a.pcap")
-            path.write_bytes(pcap(frames))
-            argv = ["check_traffic.py", "--pcap", str(path)] + [a for c in canaries for a in ("--canary", c)]
+            path.write_bytes(pcap(frames, linktype))
+            argv = ["check_traffic.py", "--pcap", str(path), *extra] + [a for c in canaries for a in ("--canary", c)]
             out = io.StringIO()
             sys.argv = argv
             with redirect_stdout(out):
@@ -70,6 +72,19 @@ class CheckTrafficTest(unittest.TestCase):
         code, out = self.run_check([frame("10.0.2.16", 40000, "142.250.0.1", 443, 1, b"\x16\x03\x01")])
         self.assertEqual(1, code)
         self.assertIn("no request to the server", out)
+
+    def test_host_capture_with_server_port_and_sll2(self):
+        frames = [frame("127.0.0.1", 40000, "127.0.0.1", 8080, 1, self.request, sll2=True)]
+        code, out = self.run_check(frames, "+12025550177", linktype=276, extra=("--server-port", "8080"))
+        self.assertEqual(0, code, out)
+        self.assertIn("POST /v1/reports", out)
+        leaked = [frame("172.18.0.1", 40000, "172.18.0.5", 8080, 1, self.request + b"+12025550177", sll2=True)]
+        code, out = self.run_check(leaked, "+12025550177", linktype=276, extra=("--server-port", "8080"))
+        self.assertEqual(1, code, out)
+
+    def test_without_server_port_only_the_emulator_address_counts(self):
+        code, out = self.run_check([frame("127.0.0.1", 40000, "127.0.0.1", 8080, 1, self.request)])
+        self.assertEqual(1, code, out)
 
 
 if __name__ == "__main__":
