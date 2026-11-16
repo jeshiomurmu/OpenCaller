@@ -2,7 +2,10 @@ package io.github.jeshiomurmu.opencaller.benchmark
 
 import androidx.benchmark.macro.MacrobenchmarkScope
 import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.Direction
+import androidx.test.uiautomator.StaleObjectException
+import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
 
@@ -17,6 +20,8 @@ internal const val TEST_OUTCOME_TAG = "rules_test_outcome"
 private const val TIMEOUT_MILLIS = 10_000L
 private const val SHORT_WAIT_MILLIS = 3_000L
 private const val ONBOARDING_STEPS = 8
+private const val SCROLL_PERCENT = 0.5f
+private const val DIAGNOSTIC_TEXTS = 40
 
 /** The bottom tabs, in order (app strings tab_*). */
 internal val TABS = listOf("Messages", "Contacts", "Protection", "Me", "Calls")
@@ -55,17 +60,54 @@ internal fun MacrobenchmarkScope.openNumberTester(): UiObject2 {
     return checkNotNull(list.scrollUntil(Direction.DOWN, Until.findObject(By.res(TEST_NUMBER_TAG)))) { "No number tester on Your rules" }
 }
 
-/** Tests [number] in the number tester and waits for a new outcome (the previous one is [before]). */
+/**
+ * Tests [number] in the number tester and waits for a new outcome (the previous one is [before]). The outcome appears
+ * under the field, where the keyboard or the screen's edge can hide it, so the list is scrolled down while waiting.
+ */
 internal fun MacrobenchmarkScope.testNumber(
     number: String,
     before: String?,
 ) {
-    device.findObject(By.res(TEST_NUMBER_TAG)).text = number
-    device.findObject(By.res(TEST_RUN_TAG)).click()
+    val field = checkNotNull(device.wait(Until.findObject(By.res(TEST_NUMBER_TAG)), TIMEOUT_MILLIS)) { "No number field" }
+    field.text = number
+    checkNotNull(device.wait(Until.findObject(By.res(TEST_RUN_TAG).enabled(true)), TIMEOUT_MILLIS)) { "No Test button" }
+        .click()
     val changed =
-        device.wait({ device.findObject(By.res(TEST_OUTCOME_TAG))?.text?.takeIf { it != before } }, TIMEOUT_MILLIS)
-    checkNotNull(changed) { "The number tester showed no result" }
+        device.wait(
+            {
+                val outcome = device.textOf(By.res(TEST_OUTCOME_TAG))
+                if (outcome != null && outcome != before) {
+                    outcome
+                } else {
+                    try {
+                        device.findObject(By.scrollable(true))?.scroll(Direction.DOWN, SCROLL_PERCENT)
+                    } catch (expected: StaleObjectException) {
+                        // The list recomposed under us; the next poll finds it again.
+                    }
+                    null
+                }
+            },
+            TIMEOUT_MILLIS,
+        )
+    checkNotNull(changed) {
+        val shown = device.findObjects(By.textContains("")).mapNotNull { it.textOrNull() }.take(DIAGNOSTIC_TEXTS)
+        "The number tester showed no result for $number (field: ${device.textOf(By.res(TEST_NUMBER_TAG))}, " +
+            "before: $before, on screen: $shown)"
+    }
 }
 
 /** The number tester's current outcome text, if any. */
-internal fun MacrobenchmarkScope.testOutcome(): String? = device.findObject(By.res(TEST_OUTCOME_TAG))?.text
+internal fun MacrobenchmarkScope.testOutcome(): String? = device.textOf(By.res(TEST_OUTCOME_TAG))
+
+/**
+ * The text of the first node matching [selector], or null. Compose replaces nodes when it recomposes (the outcome
+ * text changes while the engine answers), so a node found a moment ago can be stale when its text is read.
+ */
+private fun UiDevice.textOf(selector: BySelector): String? = findObject(selector)?.textOrNull()
+
+private fun UiObject2.textOrNull(): String? =
+    try {
+        text
+    } catch (expected: StaleObjectException) {
+        null
+    }

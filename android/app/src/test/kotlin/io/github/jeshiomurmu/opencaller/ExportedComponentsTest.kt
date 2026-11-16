@@ -35,14 +35,16 @@ class ExportedComponentsTest {
             info.services.orEmpty().forEach { add(it to it.permission) }
             info.receivers.orEmpty().forEach { add(it to it.permission) }
             info.providers.orEmpty().forEach { add(it to (it.writePermission ?: it.readPermission)) }
-        }.filter { (component, _) -> component.exported }
+        }.filter { (component, _) -> component.exported && !component.name.startsWith(TEST_ONLY_PREFIX) }
     }
 
     @Test
     fun everyExportedComponentIsGuardedOrReviewed() {
         val unexpected =
             exported().filterNot { (component, permission) ->
-                permission in SYSTEM_GUARDS || component.name in REVIEWED_UNGUARDED
+                permission in SYSTEM_GUARDS ||
+                    component.name in REVIEWED_UNGUARDED ||
+                    (BuildConfig.DEBUG && component.name in DEBUG_ONLY)
             }
         assertTrue(
             "Exported without a system guard: " + unexpected.joinToString { (c, p) -> "${c.name} (permission=$p)" },
@@ -61,6 +63,10 @@ class ExportedComponentsTest {
     }
 
     private companion object {
+        // The unit-test manifest also merges the test dependencies' manifests: androidx.test:core declares exported
+        // activities (InstrumentationActivityInvoker's bootstrap and empty activities) that never ship in the app.
+        const val TEST_ONLY_PREFIX = "androidx.test."
+
         // Permissions only the system (or Google Play services, for FCM) can hold.
         val SYSTEM_GUARDS =
             setOf(
@@ -75,7 +81,13 @@ class ExportedComponentsTest {
                 // adb shell and the system only: WorkManager's diagnostics, profileinstaller, the debug QA receiver.
                 "android.permission.DUMP",
                 "com.google.android.c2dm.permission.SEND",
+                // play: Google Sign-In's revocation service (play-services-auth, Drive backups); a signature
+                // permission of Google Play services.
+                "com.google.android.gms.auth.api.signin.permission.REVOCATION_NOTIFICATION",
             )
+
+        // Only in debug builds: Compose's @Preview host (ui-tooling is a debugImplementation, AndroidCompose.kt).
+        val DEBUG_ONLY = setOf("androidx.compose.ui.tooling.PreviewActivity")
 
         // Reachable by any app on purpose, each reviewed in docs/security.md.
         val REVIEWED_UNGUARDED =
@@ -87,6 +99,11 @@ class ExportedComponentsTest {
                 // fetched from our server with the user's session (ADR 0007).
                 "org.unifiedpush.android.connector.internal.MessagingReceiverImpl",
                 "org.unifiedpush.android.connector.internal.RaiseToForegroundService",
+                // Jetpack Telecom (feature:voip): listens for MICROPHONE_MUTE_CHANGED on API 33 and lower. onReceive
+                // only re-reads AudioManager.isMicrophoneMute and passes it to a callback; the instance Android
+                // creates from the manifest has none, so a forged broadcast changes nothing (androidx core-telecom
+                // MuteStateReceiver.kt, read 2026-11-16).
+                "androidx.core.telecom.internal.MuteStateReceiver",
             )
     }
 }

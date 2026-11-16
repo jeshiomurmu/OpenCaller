@@ -170,8 +170,7 @@ jobs:
     # Phase 14: Baseline Profile generation, Macrobenchmark (cold start, screening), the screening Microbenchmark and a
     # 30-minute battery proxy on the API 36 emulator. Long, so only on pull requests; the results are printed into the
     # log (scripts/ci/performance.sh) and recorded in docs/testing.md.
-    # TEMPORARY (Phase 14 work in progress): also on pushes to the working branch; removed before the PR.
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/claude/vibrant-johnson-4pfw6q'
+    if: github.event_name == 'pull_request'
     name: performance (Baseline Profile, benchmarks, battery proxy)
     runs-on: ubuntu-latest
     timeout-minutes: 120
@@ -217,7 +216,9 @@ jobs:
     # (ping works, no firewall drops, not in Doze; docs/phase.md issue 138).
     name: e2e (TC-E2E-001, TC-VOIP, TC-FAM, privacy traffic)
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # The tests' own limits add up to 45 minutes (scripts/e2e/ci.sh), plus the build, the stack and the traffic
+    # check: a hang must end in the scripts' diagnostics, not in the job's timeout (which keeps no log).
+    timeout-minutes: 80
     steps:
       - uses: actions/checkout@v7
 
@@ -230,7 +231,10 @@ jobs:
 
       - name: Assemble foss debug APK
         working-directory: android
-        run: ./gradlew assembleFossDebug
+        # The Gradle and Kotlin daemons are stopped afterwards: two 4 GB emulators and the stack need the memory.
+        run: |
+          ./gradlew assembleFossDebug
+          ./gradlew --stop
 
       - name: Create .env with throwaway credentials
         working-directory: infra/docker
@@ -253,8 +257,8 @@ jobs:
             echo "MINIO_PUBLIC_ENDPOINT=http://10.0.2.2:9000"
           } >> .env
 
-      - name: Install ffmpeg (test clip for the video caller ID)
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: Install ffmpeg (test clip for the video caller ID) and tcpdump (privacy traffic check)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg tcpdump
 
       - name: Build and start the stack
         run: GIT_SHA="${GITHUB_SHA::7}" docker compose -f infra/docker/compose.yml up -d --build --wait --wait-timeout 300
@@ -270,6 +274,17 @@ jobs:
           mkdir -p build/e2e
           python3 -m unittest scripts/e2e/test_check_traffic.py
 
+      - name: Capture the host's traffic (privacy traffic check)
+        # The emulators' own -tcpdump on the API 36 image records only a few packets (run 43823739801: no request to
+        # the server at all), so the check reads what the emulators send through the host: every interface, without
+        # adb and the emulator console (5037, 5554-5682), which carry the test's own commands (the canaries are planted
+        # through them). It is kept out of build/e2e: about 3 GB per run, too large for the uploaded logs.
+        run: |
+          sudo tcpdump -Z root -i any -U -s 0 -w "$RUNNER_TEMP/host.pcap" \
+            'not (tcp port 5037 or tcp portrange 5554-5682)' > build/e2e/tcpdump.log 2>&1 &
+          sleep 2
+          pgrep -x tcpdump
+
       - name: Device A reports and device B blocks; A calls B over the app, sends a Flash message and a clip
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -284,6 +299,21 @@ jobs:
             -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -camera-back none
             -tcpdump ${{ github.workspace }}/build/e2e/a.pcap
           script: scripts/e2e/ci.sh 36 android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/e2e
+
+      - name: Privacy traffic check (no canary on the wire; the server endpoints used)
+        # After the emulators have exited, so both captures are complete (scripts/e2e/ci.sh). The canaries are the
+        # values scripts/e2e/canaries.sh planted on both phones.
+        if: ${{ !cancelled() }}
+        run: |
+          sudo pkill -INT -x tcpdump || true
+          sleep 2
+          cat build/e2e/tcpdump.log || true
+          sudo chown "$(id -u)" "$RUNNER_TEMP/host.pcap"
+          ls -l build/e2e/*.pcap "$RUNNER_TEMP/host.pcap"
+          timeout 600 python3 scripts/e2e/check_traffic.py --server-port 8080 \
+            --pcap "$RUNNER_TEMP/host.pcap" --pcap build/e2e/a.pcap --pcap build/e2e/b.pcap \
+            --canary "Canary Contact Qx7" --canary "+12025550177" --canary "+12025550178" --canary "+12025550179" \
+            --canary "CANARY-SMS-7d1f"
 
       - name: Server logs
         if: always()

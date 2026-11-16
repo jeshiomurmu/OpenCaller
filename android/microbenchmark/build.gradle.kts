@@ -9,7 +9,9 @@ android {
 
     defaultConfig {
         testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
-        // CI runs on emulators; their numbers are indicative only (a phone's are the reference).
+        // CI runs on emulators; their numbers are indicative only (a phone's are the reference). The test APK must
+        // be `speed` compiled before the run (scripts/ci/performance.sh does it; the androidx.benchmark Gradle
+        // plugin isn't used).
         testInstrumentationRunnerArguments["androidx.benchmark.suppressErrors"] = "EMULATOR"
     }
 

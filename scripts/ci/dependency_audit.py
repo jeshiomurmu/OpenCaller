@@ -23,8 +23,12 @@ from pathlib import Path
 
 OSV = "https://api.osv.dev/v1"
 BATCH = 500  # OSV accepts up to 1,000 queries per batch
-# "+--- group:artifact:1.0", "group:artifact:1.0 -> 1.1 (*)", "group:artifact -> 1.1" (version from a BOM)
-GRADLE_LINE = re.compile(r"[+\\]--- ([\w.\-]+):([\w.\-]+)(?::([\w.\-+]+))?(?: -> ([\w.\-+]+))?")
+# "+--- group:artifact:1.0", "group:artifact:1.0 -> 1.1 (*)", "group:artifact -> 1.1" (version from a BOM),
+# "group:artifact:1.0 -> other.group:other-artifact:2.0" (a substitution: the right-hand module is what ships)
+GRADLE_LINE = re.compile(
+    r"[+\\]--- ([\w.\-]+):([\w.\-]+)(?::([\w.\-+]+))?"
+    r"(?: -> (?:([\w.\-]+):([\w.\-]+):)?([\w.\-+]+))?"
+)
 
 
 def gradle_packages(text: str) -> set[tuple[str, str, str]]:
@@ -33,7 +37,9 @@ def gradle_packages(text: str) -> set[tuple[str, str, str]]:
         match = GRADLE_LINE.search(line)
         if not match or line.strip().endswith("FAILED"):
             continue
-        group, artifact, declared, resolved = match.groups()
+        group, artifact, declared, new_group, new_artifact, resolved = match.groups()
+        if new_group:
+            group, artifact = new_group, new_artifact
         version = resolved or declared
         if version:
             found.add(("Maven", f"{group}:{artifact}", version))
@@ -71,6 +77,17 @@ def ignored(path: Path) -> dict[str, str]:
             sys.exit(f"{path}:{number}: {parts[0]} has no reason")
         entries[parts[0]] = parts[1]
     return entries
+
+
+def fixed_versions(details: dict) -> list[str]:
+    """`package fixed-version` for each range in the advisory, so an open finding says what to upgrade to."""
+    fixed = []
+    for affected in details.get("affected", []):
+        name = affected.get("package", {}).get("name", "?")
+        for event in (e for r in affected.get("ranges", []) for e in r.get("events", [])):
+            if "fixed" in event:
+                fixed.append(f"{name} {event['fixed']}")
+    return sorted(set(fixed))
 
 
 def main() -> int:
@@ -118,6 +135,9 @@ def main() -> int:
         if not reason:
             open_count += 1
         print(f"{status}: {vuln_id} {details.get('summary', '')}".rstrip())
+        fixed = fixed_versions(details)
+        if fixed:
+            print(f"    fixed in: {', '.join(fixed)}")
         for package in sorted(hits[vuln_id]):
             print(f"    {package}")
     print(f"{len(hits)} known vulnerabilities, {open_count} open")

@@ -17,6 +17,9 @@ spotless = "8.10.4"
 testcontainers = "2.0.5"
 # Test only: decrypts Web Push messages with Google's implementation to check WebPushCrypto (RFC 8291).
 tink = "1.15.0"
+# Security floors for transitive dependencies (dependency audit, docs/security.md); Maven Central, 2026-11-16.
+jackson = "2.23.0"
+guava = "33.8.0-jre"
 
 [libraries]
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
@@ -45,6 +48,9 @@ postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" 
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
 tink-apps-webpush = { module = "com.google.crypto.tink:apps-webpush", version.ref = "tink" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
+
+jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jackson" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
 
 [plugins]
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }

@@ -25,7 +25,7 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
-ETHERNET, RAW_IP, LINUX_SLL = 1, 101, 113
+ETHERNET, RAW_IP, LINUX_SLL, LINUX_SLL2 = 1, 101, 113, 276
 SERVER = ("10.0.2.2", 8080)
 REQUEST_LINE = re.compile(rb"(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) (/[^ \r\n]*) HTTP/1\.[01]\r\n")
 
@@ -62,6 +62,8 @@ def ip_payload(linktype: int, frame: bytes) -> bytes | None:
         return frame[start:] if ethertype == 0x0800 else None
     if linktype == LINUX_SLL:
         return frame[16:] if len(frame) > 16 and struct.unpack("!H", frame[14:16])[0] == 0x0800 else None
+    if linktype == LINUX_SLL2:  # tcpdump -i any: protocol type in the first two bytes of a 20-byte header
+        return frame[20:] if len(frame) > 20 and struct.unpack("!H", frame[0:2])[0] == 0x0800 else None
     if linktype == RAW_IP:
         return frame if frame and frame[0] >> 4 == 4 else None
     return None
@@ -161,6 +163,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--pcap", action="append", type=Path, required=True)
     parser.add_argument("--canary", action="append", default=[], help="text or E.164 number that must never be sent")
+    parser.add_argument(
+        "--server-port",
+        type=int,
+        help="count requests to this port at any address as server requests (a capture on the CI host sees the "
+        "server at 127.0.0.1 and the Docker bridge, not at the emulator's 10.0.2.2)",
+    )
     args = parser.parse_args()
 
     try:
@@ -181,11 +189,12 @@ def main() -> int:
 
     requests: Counter = Counter()
     for (proto, _src, _sport, dst, dport), data in flows.items():
-        if proto == "tcp" and (dst, dport) == SERVER:
+        if proto == "tcp" and (dport == args.server_port if args.server_port else (dst, dport) == SERVER):
             for match in REQUEST_LINE.finditer(data):
                 path = match.group(2).split(b"?")[0].decode("ascii", "replace")
                 requests[f"{match.group(1).decode()} {re.sub(r'[0-9]{4,}', '…', path)}"] += 1
-    print(f"Requests to the OpenCaller server {SERVER[0]}:{SERVER[1]} (digits masked):")
+    where = f"port {args.server_port}" if args.server_port else f"{SERVER[0]}:{SERVER[1]}"
+    print(f"Requests to the OpenCaller server at {where} (digits masked):")
     for line, count in sorted(requests.items()):
         print(f"  {count:4d}  {line}")
     if not requests:

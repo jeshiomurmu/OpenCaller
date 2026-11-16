@@ -20,7 +20,7 @@ avdmanager="$(find "$sdk/cmdline-tools" -path '*/bin/avdmanager' | sort -V | tai
 [[ -x "$avdmanager" ]] || { echo "::error::avdmanager not found under $sdk/cmdline-tools"; exit 1; }
 echo no | "$avdmanager" create avd --force -n e2e-b -k "$image" > /dev/null
 
-# B's packets go to b.pcap (A's to a.pcap, set in ci.yml) for the privacy traffic check below.
+# B's packets go to b.pcap (A's to a.pcap, set in ci.yml) for the privacy traffic check (its own step in ci.yml).
 "$sdk/emulator/emulator" -avd e2e-b -port 5556 -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim \
   -memory 4096 -camera-back none -tcpdump "$(realpath "$out")/b.pcap" > "$out/emulator-b.log" 2>&1 &
 emulator_pid=$!
@@ -34,6 +34,23 @@ for _ in $(seq 1 120); do
   sleep 5
 done
 [[ "$booted" == 1 ]] || { echo "::error::device B didn't boot"; tail -n 100 "$out/emulator-b.log"; exit 1; }
+
+# sys.boot_completed can be 1 while system_server is still settling or restarting (a run failed to install on B with
+# "Can't find service: package" right after boot): wait until the package and activity services answer.
+wait_for_services() {
+  local device=$1
+  for _ in $(seq 1 60); do
+    if adb -s "$device" shell cmd package list packages android > /dev/null 2>&1 &&
+      adb -s "$device" shell cmd activity get-current-user > /dev/null 2>&1; then
+      return 0
+    fi
+    sleep 5
+  done
+  echo "::error::$device: the package or activity service didn't come up"
+  adb -s "$device" logcat -d -b crash 2> /dev/null | tr -d '\r' | tail -n 60 || true
+  return 1
+}
+wait_for_services "$device_b" || { tail -n 100 "$out/emulator-b.log"; exit 1; }
 for scale in window_animation_scale transition_animation_scale animator_duration_scale; do
   adb -s "$device_b" shell settings put global "$scale" 0
 done
@@ -64,7 +81,10 @@ network_report() {
 # Each test has a time limit (a normal run takes a few minutes each), so a hang fails that test with its diagnostics
 # and the network report instead of using up the job's hour in silence.
 # Privacy canaries (a contact, a call-log entry, an SMS) that must never appear in the traffic.
-for device in emulator-5554 "$device_b"; do scripts/e2e/canaries.sh "$device" || echo "::warning::canaries on $device failed"; done
+for device in emulator-5554 "$device_b"; do
+  scripts/e2e/canaries.sh "$device" || echo "::warning::canaries on $device failed"
+  wait_for_services "$device" || exit 1
+done
 
 status=0
 timeout --kill-after=60 900 scripts/e2e/report_to_block.sh "$apk" "$app_id" emulator-5554 "$device_b" || status=1
@@ -72,16 +92,8 @@ timeout --kill-after=60 1200 scripts/e2e/voip.sh "$app_id" emulator-5554 "$devic
 timeout --kill-after=60 600 scripts/e2e/family.sh "$app_id" emulator-5554 "$device_b" "$out" || status=1
 if [[ "$status" -ne 0 ]]; then network_report; fi
 
-# docs/architecture.md §10 on the wire: no canary in either phone's traffic, and the server endpoints used.
-echo "== Privacy traffic check"
-pcaps=()
-for capture in "$out/a.pcap" "$out/b.pcap"; do [[ -s "$capture" ]] && pcaps+=(--pcap "$capture"); done
-if [[ ${#pcaps[@]} -eq 0 ]]; then
-  echo "::error::no packet capture found in $out"
-  status=1
-else
-  python3 scripts/e2e/check_traffic.py "${pcaps[@]}" \
-    --canary "Canary Contact Qx7" --canary "+12025550177" --canary "+12025550178" --canary "+12025550179" \
-    --canary "CANARY-SMS-7d1f" || status=1
-fi
+# The privacy traffic check runs in its own workflow step after both emulators have stopped: the emulator writes
+# its -tcpdump capture as it goes but only completes it when it exits (a check here saw 20 KB and no server request).
+adb -s "$device_b" emu kill > /dev/null 2>&1 || true
+for _ in $(seq 1 30); do kill -0 "$emulator_pid" 2> /dev/null || break; sleep 2; done
 exit "$status"
