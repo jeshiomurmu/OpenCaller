@@ -17,6 +17,8 @@ internal const val TEST_OUTCOME_TAG = "rules_test_outcome"
 private const val TIMEOUT_MILLIS = 10_000L
 private const val SHORT_WAIT_MILLIS = 3_000L
 private const val ONBOARDING_STEPS = 8
+private const val SCROLL_PERCENT = 0.5f
+private const val DIAGNOSTIC_TEXTS = 40
 
 /** The bottom tabs, in order (app strings tab_*). */
 internal val TABS = listOf("Messages", "Contacts", "Protection", "Me", "Calls")
@@ -55,16 +57,36 @@ internal fun MacrobenchmarkScope.openNumberTester(): UiObject2 {
     return checkNotNull(list.scrollUntil(Direction.DOWN, Until.findObject(By.res(TEST_NUMBER_TAG)))) { "No number tester on Your rules" }
 }
 
-/** Tests [number] in the number tester and waits for a new outcome (the previous one is [before]). */
+/**
+ * Tests [number] in the number tester and waits for a new outcome (the previous one is [before]). The outcome appears
+ * under the field, where the keyboard or the screen's edge can hide it, so the list is scrolled down while waiting.
+ */
 internal fun MacrobenchmarkScope.testNumber(
     number: String,
     before: String?,
 ) {
-    device.findObject(By.res(TEST_NUMBER_TAG)).text = number
-    device.findObject(By.res(TEST_RUN_TAG)).click()
+    val field = checkNotNull(device.wait(Until.findObject(By.res(TEST_NUMBER_TAG)), TIMEOUT_MILLIS)) { "No number field" }
+    field.text = number
+    checkNotNull(device.wait(Until.findObject(By.res(TEST_RUN_TAG).enabled(true)), TIMEOUT_MILLIS)) { "No Test button" }
+        .click()
     val changed =
-        device.wait({ device.findObject(By.res(TEST_OUTCOME_TAG))?.text?.takeIf { it != before } }, TIMEOUT_MILLIS)
-    checkNotNull(changed) { "The number tester showed no result" }
+        device.wait(
+            {
+                val outcome = device.findObject(By.res(TEST_OUTCOME_TAG))?.text
+                if (outcome != null && outcome != before) {
+                    outcome
+                } else {
+                    device.findObject(By.scrollable(true))?.scroll(Direction.DOWN, SCROLL_PERCENT)
+                    null
+                }
+            },
+            TIMEOUT_MILLIS,
+        )
+    checkNotNull(changed) {
+        val shown = device.findObjects(By.textContains("")).mapNotNull { it.text }.take(DIAGNOSTIC_TEXTS)
+        "The number tester showed no result for $number (field: ${device.findObject(By.res(TEST_NUMBER_TAG))?.text}, " +
+            "before: $before, on screen: $shown)"
+    }
 }
 
 /** The number tester's current outcome text, if any. */

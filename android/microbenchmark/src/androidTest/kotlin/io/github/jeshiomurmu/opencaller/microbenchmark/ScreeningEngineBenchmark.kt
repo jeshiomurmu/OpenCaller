@@ -42,8 +42,9 @@ class ScreeningEngineBenchmark {
     private val spamNumber = PhoneNumber("+12025550199")
     private val rules =
         (1..RULES).map { i ->
-            BlockRule(i.toLong(), RuleType.PREFIX, "+4420$i*", RuleAction.BLOCK, RuleTarget.CALLS, 0, enabled = true)
-        } + BlockRule(RULES + 1L, RuleType.PREFIX, "+1900*", RuleAction.BLOCK, RuleTarget.CALLS, 0, enabled = true)
+            // Stored as RuleValidator leaves them: the prefix without its `*`.
+            BlockRule(i.toLong(), RuleType.PREFIX, "+4420$i", RuleAction.BLOCK, RuleTarget.CALLS, 0, enabled = true)
+        } + BlockRule(RULES + 1L, RuleType.PREFIX, "+1900", RuleAction.BLOCK, RuleTarget.CALLS, 0, enabled = true)
 
     private val engine =
         ScreeningEngine(

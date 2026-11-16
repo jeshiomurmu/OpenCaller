@@ -3,7 +3,11 @@ package io.github.jeshiomurmu.opencaller.buildlogic
 import com.android.build.api.dsl.CommonExtension
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.tasks.testing.Test
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinBaseExtension
@@ -22,6 +26,7 @@ internal fun Project.configureKotlinAndroid(commonExtension: CommonExtension) {
         }
     }
     configureKotlin<KotlinAndroidProjectExtension>()
+    configureTestLogging()
 }
 
 /** Configures Java and Kotlin options for a pure JVM module. */
@@ -31,6 +36,17 @@ internal fun Project.configureKotlinJvm() {
         targetCompatibility = AndroidSdk.JAVA_VERSION
     }
     configureKotlin<KotlinJvmProjectExtension>()
+    configureTestLogging()
+}
+
+/** A failing test prints its message and stack trace in the build log (CI keeps no test reports). */
+private fun Project.configureTestLogging() {
+    tasks.withType<Test>().configureEach {
+        testLogging {
+            events(TestLogEvent.FAILED)
+            exceptionFormat = TestExceptionFormat.FULL
+        }
+    }
 }
 
 private inline fun <reified T : KotlinBaseExtension> Project.configureKotlin() =

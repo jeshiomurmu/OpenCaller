@@ -35,10 +35,13 @@ class CallerCardSemanticsTest {
 
     private val number = PhoneNumber("+12015550123")
 
-    private fun show(caller: CallerInfo) {
+    private fun show(
+        caller: CallerInfo,
+        formattedNumber: String? = FORMATTED,
+    ) {
         compose.setContent {
             OpenCallerTheme {
-                CallerCard(caller = caller, formattedNumber = FORMATTED) {
+                CallerCard(caller = caller, formattedNumber = formattedNumber) {
                     Button(onClick = {}) { Text(BLOCK) }
                     Button(onClick = {}) { Text(CLOSE) }
                 }
@@ -71,7 +74,8 @@ class CallerCardSemanticsTest {
 
     @Test
     fun aHiddenCallerIsNamedAsSuch() {
-        show(CallerInfo(number = null))
+        // A hidden caller has no number to format (callers pass null, as the overlay and in-call screen do).
+        show(CallerInfo(number = null), formattedNumber = null)
 
         val who = talkBackStops().first()
         assertTrue(who, "Hidden number" in who && "The caller hid their number." in who)

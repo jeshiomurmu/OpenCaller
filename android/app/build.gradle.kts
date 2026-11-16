@@ -168,6 +168,11 @@ dependencies {
     // UnifiedPush in foss builds (a distributor app of the user's choice delivers Web Push).
     "fossImplementation"(libs.unifiedpush.connector)
 
+    // A library brings Guava 33.3.1-android; raised past GHSA-xxph-c9ww-hj94 (scripts/ci/dependency_audit.py).
+    constraints {
+        implementation(libs.guava.android) { because("GHSA-xxph-c9ww-hj94 in older Guava") }
+    }
+
     testImplementation(libs.junit4)
     testImplementation(projects.core.testing)
     // DialerEligibilityTest reads the merged manifest.

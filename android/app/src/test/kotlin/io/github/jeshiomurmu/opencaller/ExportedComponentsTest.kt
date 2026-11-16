@@ -35,7 +35,7 @@ class ExportedComponentsTest {
             info.services.orEmpty().forEach { add(it to it.permission) }
             info.receivers.orEmpty().forEach { add(it to it.permission) }
             info.providers.orEmpty().forEach { add(it to (it.writePermission ?: it.readPermission)) }
-        }.filter { (component, _) -> component.exported }
+        }.filter { (component, _) -> component.exported && !component.name.startsWith(TEST_ONLY_PREFIX) }
     }
 
     @Test
@@ -61,6 +61,10 @@ class ExportedComponentsTest {
     }
 
     private companion object {
+        // The unit-test manifest also merges the test dependencies' manifests: androidx.test:core declares exported
+        // activities (InstrumentationActivityInvoker's bootstrap and empty activities) that never ship in the app.
+        const val TEST_ONLY_PREFIX = "androidx.test."
+
         // Permissions only the system (or Google Play services, for FCM) can hold.
         val SYSTEM_GUARDS =
             setOf(

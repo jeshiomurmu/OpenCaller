@@ -54,6 +54,8 @@ unifiedpush = "3.3.5"
 # The connector depends on Tink's JVM artifact, which brings the full protobuf-java next to the app's protobuf-lite
 # (duplicate classes); the app uses Tink's Android artifact at the same version instead (Maven Central, 2026-11-04).
 tinkAndroid = "1.23.0"
+# A security floor for a transitive dependency (dependency audit, docs/security.md); Maven Central, 2026-11-16.
+guavaAndroid = "33.8.0-android"
 protobuf = "4.36.2"
 protobufPlugin = "0.10.0"
 retrofit = "3.0.0"
@@ -120,6 +122,7 @@ androidx-core-telecom = { group = "androidx.core", name = "core-telecom", versio
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging", version.ref = "firebaseMessaging" }
 livekit-android = { group = "io.livekit", name = "livekit-android", version.ref = "livekit" }
 tink-android = { group = "com.google.crypto.tink", name = "tink-android", version.ref = "tinkAndroid" }
+guava-android = { group = "com.google.guava", name = "guava", version.ref = "guavaAndroid" }
 unifiedpush-connector = { group = "org.unifiedpush.android", name = "connector", version.ref = "unifiedpush" }
 okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver3", version.ref = "okhttp" }
 protobuf-kotlin-lite = { group = "com.google.protobuf", name = "protobuf-kotlin-lite", version.ref = "protobuf" }
