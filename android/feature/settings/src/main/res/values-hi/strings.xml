@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindi. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="settings_title">सेटिंग</string>
+    <string name="settings_permissions">अनुमतियाँ और भूमिकाएँ</string>
+    <string name="settings_permissions_summary">कॉलर आईडी, संपर्क, सूचनाएँ और डिफ़ॉल्ट ऐप</string>
+    <string name="settings_quick_replies">तुरंत जवाब</string>
+    <string name="settings_quick_replies_summary">कॉल अस्वीकार करने या कॉल के बाद मैसेज भेजने के लिए संदेश</string>
+    <string name="quick_replies_title">तुरंत जवाब</string>
+    <string name="quick_replies_none">आपने अभी कोई जवाब नहीं लिखा है, इसलिए Android के अपने जवाब दिखाए जाते हैं। आपके अपने जवाब उनकी जगह ले लेंगे।</string>
+    <string name="quick_replies_summary">मैसेज भेजकर कॉल अस्वीकार करते समय और कॉल के बाद दिखाए जाते हैं। ये इसी फ़ोन पर रहते हैं।</string>
+    <string name="quick_replies_new">नया जवाब</string>
+    <string name="quick_replies_change">जवाब बदलें</string>
+    <string name="quick_replies_length">%1$d / %2$d</string>
+    <string name="quick_replies_add">जोड़ें</string>
+    <string name="quick_replies_save">सेव करें</string>
+    <string name="quick_replies_cancel">रद्द करें</string>
+    <string name="quick_replies_edit">“%1$s” बदलें</string>
+    <string name="quick_replies_move_up">“%1$s” ऊपर ले जाएँ</string>
+    <string name="quick_replies_delete">“%1$s” मिटाएँ</string>
+    <string name="quick_replies_problem_empty">पहले एक जवाब लिखें।</string>
+    <string name="quick_replies_problem_duplicate">यह जवाब पहले से सूची में है।</string>
+    <string name="quick_replies_problem_full">सूची भर गई है। दूसरा जोड़ने के लिए कोई जवाब मिटाएँ।</string>
+    <plurals name="quick_replies_full">
+        <item quantity="one">आपके पास ज़्यादा से ज़्यादा %1$d जवाब है।</item>
+        <item quantity="other">आपके पास ज़्यादा से ज़्यादा %1$d जवाब हैं।</item>
+    </plurals>
+    <string name="permissions_title">अनुमतियाँ और भूमिकाएँ</string>
+    <string name="permissions_fix">ठीक करें</string>
+    <string name="permissions_status_on">चालू</string>
+    <string name="permissions_status_off">बंद</string>
+    <string name="permissions_status_coming_later">अगले अपडेट में आ रहा है</string>
+    <string name="permissions_status_not_needed">इस फ़ोन पर ज़रूरी नहीं</string>
+    <string name="permissions_settings_missing">वह सेटिंग पेज इस फ़ोन पर उपलब्ध नहीं है। अपने फ़ोन के सेटिंग ऐप में OpenCaller खोजें।</string>
+    <string name="permissions_how_title">OpenCaller अभी कैसे काम कर रहा है</string>
+    <string name="permissions_caller_id_in_call">कॉलर आईडी OpenCaller की कॉल स्क्रीन पर दिखती है।</string>
+    <string name="permissions_caller_id_overlay">कॉलर आईडी आपके फ़ोन ऐप के ऊपर एक कार्ड के रूप में दिखती है।</string>
+    <string name="permissions_caller_id_notification">कॉलर आईडी एक सूचना के रूप में दिखती है।</string>
+    <string name="permissions_after_call_notification">कॉल के सारांश सूचनाओं के रूप में आते हैं।</string>
+    <string name="permissions_after_call_history">कॉल के सारांश ऐप की कॉल हिस्ट्री में रहते हैं।</string>
+    <string name="settings_about">जानकारी</string>
+    <string name="settings_version">वर्ज़न %1$s</string>
+    <plurals name="settings_debug_taps">
+        <item quantity="one">डीबग स्क्रीन के लिए %1$d बार और टैप करें</item>
+        <item quantity="other">डीबग स्क्रीन के लिए %1$d बार और टैप करें</item>
+    </plurals>
+    <string name="debug_title">स्क्रीनिंग डीबग</string>
+    <string name="debug_no_decisions">अभी कोई कॉल जाँची नहीं गई।</string>
+    <string name="debug_latency">स्थानीय फ़ैसले: p50 %1$d ms · p95 %2$d ms · अधिकतम %3$d ms · n=%4$d</string>
+    <plurals name="debug_recent">
+        <item quantity="one">पिछला %1$d फ़ैसला</item>
+        <item quantity="other">पिछले %1$d फ़ैसले, नए पहले</item>
+    </plurals>
+    <string name="debug_event">%1$s · %2$s · %3$d ms</string>
+    <string name="debug_spam">स्पैम स्कोर %1$s</string>
+    <string name="debug_stir">STIR %1$s</string>
+    <string name="debug_hidden">कोई नंबर नहीं</string>
+    <string name="settings_supporter">सपोर्टर</string>
+    <string name="settings_supporter_summary">कभी कोई विज्ञापन नहीं। सपोर्टर सर्वर का खर्च उठाते हैं और अतिरिक्त सुविधाएँ पाते हैं।</string>
+    <string name="settings_appearance">दिखावट</string>
+    <string name="settings_appearance_summary">लाइट, डार्क या सिस्टम; सपोर्टर के लिए गोल्ड</string>
+    <string name="settings_announce">कॉलर की घोषणा</string>
+    <string name="settings_announce_summary">सुनें कि कौन कॉल कर रहा है (सपोर्टर)</string>
+    <string name="settings_ghost_call">घोस्ट कॉल</string>
+    <string name="settings_ghost_call_summary">जब आपको निकलने का बहाना चाहिए, तो एक नकली आने वाली कॉल (सपोर्टर)</string>
+    <string name="settings_messenger">WhatsApp, Telegram और Signal कॉल</string>
+    <string name="settings_messenger_summary">जब उनकी कॉल सूचना में नंबर दिखे तो कॉलर आईडी (सपोर्टर)</string>
+    <string name="settings_backup">बैकअप और रीस्टोर</string>
+    <string name="settings_backup_summary">आपकी सेटिंग, नियमों और हिस्ट्री की एक एन्क्रिप्टेड कॉपी</string>
+    <string name="settings_voip">ऐप कॉल, फ़्लैश और वीडियो कॉलर आईडी</string>
+    <string name="settings_voip_summary">OpenCaller से आप तक कौन पहुँच सकता है, आपकी वीडियो कॉलर आईडी, क्लिप डाउनलोड</string>
+    <string name="ghost_call_title">घोस्ट कॉल</string>
+    <string name="ghost_call_explainer">किसी मीटिंग या अटपटी बातचीत से निकलने के लिए एक नकली आने वाली कॉल। यह सिर्फ़ एक स्क्रीन है: कोई कॉल नहीं होती और आपके कॉल लॉग में कुछ नहीं दिखता।</string>
+    <string name="ghost_call_name">कॉल करने वाले का नाम</string>
+    <string name="ghost_call_number">दिखने वाला नंबर</string>
+    <string name="ghost_call_number_hint">सिर्फ़ स्क्रीन पर दिखता है, कभी डायल नहीं होता</string>
+    <string name="ghost_call_add_photo">फ़ोटो जोड़ें</string>
+    <string name="ghost_call_change_photo">फ़ोटो बदलें</string>
+    <string name="ghost_call_remove_photo">हटाएँ</string>
+    <string name="ghost_call_photo_failed">वह फ़ोटो पढ़ी नहीं जा सकी। कोई दूसरी आज़माएँ।</string>
+    <string name="ghost_call_delay">कितनी देर में बजे</string>
+    <plurals name="ghost_call_seconds">
+        <item quantity="one">%d सेकंड</item>
+        <item quantity="other">%d सेकंड</item>
+    </plurals>
+    <plurals name="ghost_call_minutes">
+        <item quantity="one">%d मिनट</item>
+        <item quantity="other">%d मिनट</item>
+    </plurals>
+    <string name="ghost_call_schedule">शेड्यूल करें</string>
+    <string name="ghost_call_scheduled">आपकी घोस्ट कॉल %1$s में बजेगी (कुछ सेकंड की देर हो सकती है)।</string>
+    <string name="ghost_call_cancel">रद्द करें</string>
+    <string name="ghost_call_channel">घोस्ट कॉल</string>
+    <string name="ghost_call_channel_description">आपकी शेड्यूल की गई नकली आने वाली कॉल</string>
+    <string name="ghost_call_default_name">अनजान कॉलर</string>
+    <string name="ghost_call_incoming">आने वाली कॉल</string>
+    <string name="ghost_call_answer">उठाएँ</string>
+    <string name="ghost_call_decline">अस्वीकार करें</string>
+    <string name="ghost_call_hang_up">कॉल काटें</string>
+    <string name="ghost_call_time">%1$d:%2$02d</string>
+    <string name="appearance_title">दिखावट</string>
+    <string name="appearance_explainer">लाइट, डार्क, या आपके फ़ोन जैसा।</string>
+    <string name="appearance_system">फ़ोन जैसा</string>
+    <string name="appearance_light">लाइट</string>
+    <string name="appearance_dark">डार्क</string>
+    <string name="appearance_gold_title">गोल्ड</string>
+    <string name="appearance_gold">गोल्ड रंग (सपोर्टर)</string>
+    <string name="announce_title">कॉलर की घोषणा</string>
+    <string name="announce_explainer">अपने फ़ोन की भाषा में सुनें कि कौन कॉल कर रहा है: नाम पता हो तो नाम, नहीं तो स्पैम चेतावनी।</string>
+    <string name="announce_off">कभी नहीं</string>
+    <string name="announce_always">हमेशा</string>
+    <string name="announce_headset">सिर्फ़ हेडफ़ोन के साथ</string>
+    <string name="announce_quiet_note">फ़ोन साइलेंट या वाइब्रेट पर हो, परेशान न करें चालू हो, या OpenCaller जिन कॉल को ब्लॉक या साइलेंट करता है, उनमें कुछ नहीं बोला जाता।</string>
+    <string name="messenger_title">WhatsApp, Telegram और Signal कॉल</string>
+    <string name="messenger_explainer">जब इनमें से कोई ऐप अपनी सूचना में फ़ोन नंबर के साथ आने वाली कॉल दिखाता है, तो OpenCaller उस नंबर के बारे में जो जानता है वह दिखाता है।</string>
+    <string name="messenger_privacy">इसके लिए OpenCaller को सूचनाओं की पहुँच चाहिए। यह सिर्फ़ इन तीन ऐप की कॉल सूचनाएँ, और सिर्फ़ उनका टेक्स्ट देखता है। कुछ भी सेव नहीं होता, और कहीं भेजा नहीं जाता।</string>
+    <string name="messenger_switch">मैसेंजर कॉल के लिए कॉलर आईडी (सपोर्टर)</string>
+    <string name="messenger_access_needed">सूचनाओं की पहुँच बंद है, इसलिए अभी कुछ नहीं दिखाया जा सकता।</string>
+    <string name="messenger_open_access">सूचनाओं की पहुँच खोलें</string>
+    <string name="messenger_no_number_note">अगर ऐप नंबर की जगह नाम दिखाता है (उस ऐप का कोई संपर्क), तो OpenCaller कुछ नहीं दिखाता।</string>
+    <string name="settings_recordings">रिकॉर्डिंग</string>
+    <string name="settings_recordings_summary">रिकॉर्डिंग लाइन से आपकी रिकॉर्ड की गई कॉल, सिर्फ़ इसी फ़ोन पर</string>
+    <string name="settings_assistant">कॉल असिस्टेंट</string>
+    <string name="settings_assistant_summary">एक AI असिस्टेंट आपकी छूटी कॉल का जवाब देता है और दिखाता है कि कौन कॉल कर रहा है और क्यों</string>
+</resources>

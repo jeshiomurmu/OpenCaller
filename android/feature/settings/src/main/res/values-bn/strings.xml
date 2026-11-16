@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bengali. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="settings_title">সেটিংস</string>
+    <string name="settings_permissions">অনুমতি ও ভূমিকা</string>
+    <string name="settings_permissions_summary">কলার আইডি, কন্টাক্ট, নোটিফিকেশন ও ডিফল্ট অ্যাপ</string>
+    <string name="settings_quick_replies">দ্রুত উত্তর</string>
+    <string name="settings_quick_replies_summary">কল প্রত্যাখ্যান করার বা কলের পরে টেক্সট করার মেসেজ</string>
+    <string name="quick_replies_title">দ্রুত উত্তর</string>
+    <string name="quick_replies_none">আপনি এখনো কোনো উত্তর লেখেননি, তাই Android-এর নিজস্ব উত্তরগুলো দেখানো হয়। আপনার নিজের উত্তর সেগুলোর জায়গা নেবে।</string>
+    <string name="quick_replies_summary">মেসেজ পাঠিয়ে কল প্রত্যাখ্যান করলে এবং কলের পরে দেখানো হয়। এগুলো এই ফোনেই থাকে।</string>
+    <string name="quick_replies_new">নতুন উত্তর</string>
+    <string name="quick_replies_change">উত্তর বদলান</string>
+    <string name="quick_replies_length">%1$d / %2$d</string>
+    <string name="quick_replies_add">যোগ করুন</string>
+    <string name="quick_replies_save">সেভ করুন</string>
+    <string name="quick_replies_cancel">বাতিল</string>
+    <string name="quick_replies_edit">“%1$s” সম্পাদনা করুন</string>
+    <string name="quick_replies_move_up">“%1$s” ওপরে সরান</string>
+    <string name="quick_replies_delete">“%1$s” মুছুন</string>
+    <string name="quick_replies_problem_empty">আগে একটি উত্তর লিখুন।</string>
+    <string name="quick_replies_problem_duplicate">এই উত্তরটি তালিকায় আগেই আছে।</string>
+    <string name="quick_replies_problem_full">তালিকা পূর্ণ। আরেকটি যোগ করতে একটি উত্তর মুছুন।</string>
+    <plurals name="quick_replies_full">
+        <item quantity="one">আপনার সর্বোচ্চ %1$dটি উত্তর আছে।</item>
+        <item quantity="other">আপনার সর্বোচ্চ %1$dটি উত্তর আছে।</item>
+    </plurals>
+    <string name="permissions_title">অনুমতি ও ভূমিকা</string>
+    <string name="permissions_fix">ঠিক করুন</string>
+    <string name="permissions_status_on">চালু</string>
+    <string name="permissions_status_off">বন্ধ</string>
+    <string name="permissions_status_coming_later">পরের আপডেটে আসছে</string>
+    <string name="permissions_status_not_needed">এই ফোনে দরকার নেই</string>
+    <string name="permissions_settings_missing">এই ফোনে ওই সেটিংস পেজটি নেই। ফোনের সেটিংস অ্যাপে OpenCaller খুঁজুন।</string>
+    <string name="permissions_how_title">OpenCaller এখন কীভাবে কাজ করছে</string>
+    <string name="permissions_caller_id_in_call">কলার আইডি OpenCaller-এর কল স্ক্রিনে দেখা যায়।</string>
+    <string name="permissions_caller_id_overlay">কলার আইডি আপনার ফোন অ্যাপের ওপরে একটি কার্ড হিসেবে দেখা যায়।</string>
+    <string name="permissions_caller_id_notification">কলার আইডি নোটিফিকেশন হিসেবে দেখা যায়।</string>
+    <string name="permissions_after_call_notification">কলের সারাংশ নোটিফিকেশন হিসেবে আসে।</string>
+    <string name="permissions_after_call_history">কলের সারাংশ অ্যাপের কলের ইতিহাসে থাকে।</string>
+    <string name="settings_about">সম্পর্কে</string>
+    <string name="settings_version">সংস্করণ %1$s</string>
+    <plurals name="settings_debug_taps">
+        <item quantity="one">ডিবাগ স্ক্রিনের জন্য আর %1$d বার ট্যাপ করুন</item>
+        <item quantity="other">ডিবাগ স্ক্রিনের জন্য আর %1$d বার ট্যাপ করুন</item>
+    </plurals>
+    <string name="debug_title">স্ক্রিনিং ডিবাগ</string>
+    <string name="debug_no_decisions">এখনো কোনো কল যাচাই হয়নি।</string>
+    <string name="debug_latency">স্থানীয় সিদ্ধান্ত: p50 %1$d ms · p95 %2$d ms · সর্বোচ্চ %3$d ms · n=%4$d</string>
+    <plurals name="debug_recent">
+        <item quantity="one">শেষ %1$dটি সিদ্ধান্ত</item>
+        <item quantity="other">শেষ %1$dটি সিদ্ধান্ত, নতুনগুলো আগে</item>
+    </plurals>
+    <string name="debug_event">%1$s · %2$s · %3$d ms</string>
+    <string name="debug_spam">স্প্যাম স্কোর %1$s</string>
+    <string name="debug_stir">STIR %1$s</string>
+    <string name="debug_hidden">নম্বর নেই</string>
+    <string name="settings_supporter">সমর্থক</string>
+    <string name="settings_supporter_summary">কখনো বিজ্ঞাপন নয়। সমর্থকেরা সার্ভারের খরচ দেন এবং বাড়তি সুবিধা পান।</string>
+    <string name="settings_appearance">চেহারা</string>
+    <string name="settings_appearance_summary">লাইট, ডার্ক বা সিস্টেম; সমর্থকদের জন্য গোল্ড</string>
+    <string name="settings_announce">কলার ঘোষণা</string>
+    <string name="settings_announce_summary">কে কল করছে শুনুন (সমর্থক)</string>
+    <string name="settings_ghost_call">ঘোস্ট কল</string>
+    <string name="settings_ghost_call_summary">বেরিয়ে আসার উপায় দরকার হলে একটি বানানো আসা কল (সমর্থক)</string>
+    <string name="settings_messenger">WhatsApp, Telegram ও Signal কল</string>
+    <string name="settings_messenger_summary">তাদের কলের নোটিফিকেশনে নম্বর দেখা গেলে কলার আইডি (সমর্থক)</string>
+    <string name="settings_backup">ব্যাকআপ ও রিস্টোর</string>
+    <string name="settings_backup_summary">আপনার সেটিংস, নিয়ম ও ইতিহাসের একটি এনক্রিপ্ট করা কপি</string>
+    <string name="settings_voip">অ্যাপ কল, ফ্ল্যাশ ও ভিডিও কলার আইডি</string>
+    <string name="settings_voip_summary">OpenCaller দিয়ে কে আপনার কাছে পৌঁছাতে পারে, আপনার ভিডিও কলার আইডি, ক্লিপ ডাউনলোড</string>
+    <string name="ghost_call_title">ঘোস্ট কল</string>
+    <string name="ghost_call_explainer">মিটিং বা অস্বস্তিকর আলাপ থেকে বের হওয়ার জন্য একটি বানানো আসা কল। এটি শুধু একটি স্ক্রিন: কোনো কল হয় না এবং আপনার কল লগে কিছু দেখা যায় না।</string>
+    <string name="ghost_call_name">কলারের নাম</string>
+    <string name="ghost_call_number">দেখানো নম্বর</string>
+    <string name="ghost_call_number_hint">শুধু স্ক্রিনে দেখানো হয়, কখনো ডায়াল করা হয় না</string>
+    <string name="ghost_call_add_photo">একটি ছবি যোগ করুন</string>
+    <string name="ghost_call_change_photo">ছবি বদলান</string>
+    <string name="ghost_call_remove_photo">সরান</string>
+    <string name="ghost_call_photo_failed">ছবিটি পড়া যায়নি। অন্য একটি চেষ্টা করুন।</string>
+    <string name="ghost_call_delay">কতক্ষণ পরে বাজবে</string>
+    <plurals name="ghost_call_seconds">
+        <item quantity="one">%d সেকেন্ড</item>
+        <item quantity="other">%d সেকেন্ড</item>
+    </plurals>
+    <plurals name="ghost_call_minutes">
+        <item quantity="one">%d মিনিট</item>
+        <item quantity="other">%d মিনিট</item>
+    </plurals>
+    <string name="ghost_call_schedule">সময় ঠিক করুন</string>
+    <string name="ghost_call_scheduled">আপনার ঘোস্ট কল %1$s পরে বাজবে (কয়েক সেকেন্ড দেরি হতে পারে)।</string>
+    <string name="ghost_call_cancel">বাতিল</string>
+    <string name="ghost_call_channel">ঘোস্ট কল</string>
+    <string name="ghost_call_channel_description">আপনার ঠিক করা বানানো আসা কল</string>
+    <string name="ghost_call_default_name">অজানা কলার</string>
+    <string name="ghost_call_incoming">আসা কল</string>
+    <string name="ghost_call_answer">ধরুন</string>
+    <string name="ghost_call_decline">প্রত্যাখ্যান</string>
+    <string name="ghost_call_hang_up">কল কেটে দিন</string>
+    <string name="ghost_call_time">%1$d:%2$02d</string>
+    <string name="appearance_title">চেহারা</string>
+    <string name="appearance_explainer">লাইট, ডার্ক, অথবা আপনার ফোনের মতো।</string>
+    <string name="appearance_system">ফোনের মতো</string>
+    <string name="appearance_light">লাইট</string>
+    <string name="appearance_dark">ডার্ক</string>
+    <string name="appearance_gold_title">গোল্ড</string>
+    <string name="appearance_gold">গোল্ড রঙের ছোঁয়া (সমর্থক)</string>
+    <string name="announce_title">কলার ঘোষণা</string>
+    <string name="announce_explainer">আপনার ফোনের ভাষায় শুনুন কে কল করছে: নাম জানা থাকলে নাম, নইলে স্প্যাম সতর্কতা।</string>
+    <string name="announce_off">কখনো না</string>
+    <string name="announce_always">সবসময়</string>
+    <string name="announce_headset">শুধু হেডফোনে</string>
+    <string name="announce_quiet_note">ফোন সাইলেন্ট বা ভাইব্রেটে থাকলে, বিরক্ত করবেন না চালু থাকলে, বা OpenCaller যে কল ব্লক বা নিঃশব্দ করে, তাতে কিছু বলা হয় না।</string>
+    <string name="messenger_title">WhatsApp, Telegram ও Signal কল</string>
+    <string name="messenger_explainer">এই অ্যাপগুলোর কোনোটি নোটিফিকেশনে ফোন নম্বরসহ আসা কল দেখালে, OpenCaller সেই নম্বর সম্পর্কে যা জানে তা দেখায়।</string>
+    <string name="messenger_privacy">এর জন্য OpenCaller-এর নোটিফিকেশন অ্যাক্সেস দরকার। এটি শুধু এই তিনটি অ্যাপের কলের নোটিফিকেশন, আর শুধু তার লেখা দেখে। কিছুই সংরক্ষণ করা হয় না, কোথাও পাঠানো হয় না।</string>
+    <string name="messenger_switch">মেসেঞ্জার কলের জন্য কলার আইডি (সমর্থক)</string>
+    <string name="messenger_access_needed">নোটিফিকেশন অ্যাক্সেস বন্ধ, তাই এখনো কিছু দেখানো যাচ্ছে না।</string>
+    <string name="messenger_open_access">নোটিফিকেশন অ্যাক্সেস খুলুন</string>
+    <string name="messenger_no_number_note">অ্যাপটি নম্বরের বদলে নাম দেখালে (ওই অ্যাপের কোনো কন্টাক্ট), OpenCaller কিছু দেখায় না।</string>
+    <string name="settings_recordings">রেকর্ডিং</string>
+    <string name="settings_recordings_summary">রেকর্ডিং লাইনে আপনার রেকর্ড করা কল, শুধু এই ফোনে রাখা</string>
+    <string name="settings_assistant">কল সহকারী</string>
+    <string name="settings_assistant_summary">একটি AI সহকারী আপনার না ধরা কলের উত্তর দেয় এবং দেখায় কে কল করছে ও কেন</string>
+</resources>
