@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bengali. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="recordings_title">রেকর্ডিং</string>
+    <string name="recordings_intro">রেকর্ডিং লাইনে করা রেকর্ডিং শুধু এই ফোনেই রাখা হয়। আপনার ফোন সেভ করার পর এক ঘণ্টার মধ্যে, আর বড়জোর ২৪ ঘণ্টা পরে সার্ভার তার কপি মুছে দেয়।</string>
+    <string name="recordings_empty">এখনো কোনো রেকর্ডিং নেই। কলের সময় রেকর্ড চাপুন।</string>
+    <string name="recordings_transcripts">লিখিত রূপ</string>
+    <string name="recordings_transcripts_summary">নতুন রেকর্ডিং OpenCaller-এর সার্ভারে লিখিত রূপে রূপান্তর করুন (নিজস্ব সার্ভারে কণ্ঠ শনাক্তকরণ; অডিও আর কোথাও যায় না)। শুরুতে বন্ধ থাকে।</string>
+    <string name="recordings_unknown_party">অজানা নম্বর</string>
+    <string name="recordings_play">চালান</string>
+    <string name="recordings_stop">থামান</string>
+    <string name="recordings_delete">মুছুন</string>
+    <string name="recordings_cancel">বাতিল</string>
+    <string name="recordings_delete_title">এই রেকর্ডিং মুছবেন?</string>
+    <string name="recordings_delete_text">এটি এই ফোন থেকে এবং সার্ভারে থাকলে সেখান থেকেও মুছে যাবে। এটি আর ফেরানো যাবে না।</string>
+    <string name="recordings_cannot_play">এই রেকর্ডিং চালানো যাচ্ছে না।</string>
+    <string name="recordings_signed_out">সার্ভার থেকে রেকর্ডিং আনতে সাইন ইন করুন।</string>
+    <string name="recordings_network_error">সার্ভারে পৌঁছানো যায়নি। সেভ করা রেকর্ডিং তবুও চলবে।</string>
+    <string name="recordings_storage_error">রেকর্ডিংটি এই ফোনে সেভ করা যায়নি।</string>
+</resources>

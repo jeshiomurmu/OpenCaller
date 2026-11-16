@@ -40,5 +40,5 @@
     <string name="backup_problem_drive">Google Drive access wasn\'t given.</string>
     <string name="backup_problem_offline">You\'re offline. Try again when you\'re connected.</string>
     <string name="backup_problem_failed">The backup couldn\'t be read or written. Try again.</string>
-    <string name="backup_file_name">opencaller-backup.ocbk</string>
+    <string name="backup_file_name" translatable="false">opencaller-backup.ocbk</string>
 </resources>

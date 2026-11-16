@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bengali. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <!-- Consent texts translate wording version 1 (FamilySharing.CONSENT_VERSION); they need a legal review too. -->
+    <string name="family_title">পরিবার সুরক্ষা</string>
+    <string name="family_entry_summary">OpenCaller আপনাকে রক্ষা করলে আপনার বিশ্বস্ত কাউকে জানান, অথবা পরিবারের কোনো সদস্যের খেয়াল রাখুন</string>
+    <string name="family_signed_out">পরিবার সুরক্ষা ব্যবহার করতে সাইন ইন করুন। এটি বিনামূল্যে।</string>
+    <string name="family_sign_in">সাইন ইন করুন</string>
+    <string name="family_intro">পরিবার সুরক্ষায় আপনার বিশ্বস্ত কেউ দেখতে পান যে OpenCaller আপনাকে রক্ষা করছে, এবং কলের সময় কোনো প্রতারক আপনার এককালীন কোড চাইতে পারে এমন হলে তা জানতে পারেন। শুধু আপনি যা বেছে নেন তা-ই শেয়ার হয়, আর আপনার নিজের কোড ও সম্মতি ছাড়া কেউ আপনাকে যোগ করতে পারে না।</string>
+    <string name="family_create_title">একটি গ্রুপ শুরু করুন</string>
+    <string name="family_create_text">আপনি গ্রুপের অ্যাডমিন হবেন। সর্বোচ্চ ৪ জনকে আমন্ত্রণ জানাতে পারবেন। অ্যাডমিন হিসেবে আপনি কিছুই শেয়ার করেন না; সদস্যরা নিজেরা বেছে নেন আপনার সঙ্গে কী শেয়ার করবেন।</string>
+    <string name="family_group_name">গ্রুপের নাম</string>
+    <string name="family_your_label">গ্রুপে আপনার নাম</string>
+    <string name="family_your_label_hint">যেমন মা, রাফি বা দাদু</string>
+    <string name="family_create">গ্রুপ তৈরি করুন</string>
+    <string name="family_join_title">একটি গ্রুপে যোগ দিন</string>
+    <string name="family_join_text">গ্রুপের অ্যাডমিন আপনাকে যে ৮ অক্ষরের কোড দিয়েছেন, তা লিখুন। কিছু শেয়ার হওয়ার আগে আপনি দেখতে পাবেন যোগ দেওয়ার মানে কী।</string>
+    <string name="family_code">আমন্ত্রণ কোড</string>
+    <string name="family_continue">চালিয়ে যান</string>
+    <string name="family_consent_title">%1$s-এ যোগ দেবেন?</string>
+    <string name="family_consent_admin">%1$s গ্রুপের অ্যাডমিন। %1$s কী দেখতে পাবেন তা বেছে নিন:</string>
+    <string name="family_consent_alerts">কোড সতর্কতা</string>
+    <string name="family_consent_alerts_text">অচেনা কারও সঙ্গে কলের সময় এককালীন কোড এলে, বা একসঙ্গে অনেক কোড এলে, %1$s একটি মেসেজ পান যে এমন হয়েছে। কোডটি নয়, এবং কে কল বা মেসেজ করেছে তা-ও নয়।</string>
+    <string name="family_consent_counts">দৈনিক হিসাব</string>
+    <string name="family_consent_counts_text">দিনে একবার, আপনার ফোনে OpenCaller কতগুলো কল ব্লক করেছে এবং কতগুলো মেসেজ স্প্যাম বা প্রতারণা হিসেবে ছেঁকে রেখেছে। শুধু এই দুটি সংখ্যা। %1$s শেষ ৭ দিন দেখতে পান।</string>
+    <string name="family_consent_never_title">%1$s কখনো দেখেন না</string>
+    <string name="family_consent_never">কে আপনাকে কল বা মেসেজ করেছে, কোনো ফোন নম্বর, আপনার মেসেজ, কন্টাক্ট, কলের ইতিহাস বা আপনি কোথায় আছেন।</string>
+    <string name="family_consent_change">সুরক্ষা → পরিবার সুরক্ষায় যেকোনো সময় এগুলোর প্রতিটি বন্ধ করতে বা গ্রুপ ছেড়ে দিতে পারেন। কিছু বন্ধ করলে সার্ভার তার যা রেখেছিল তা মুছে যায়।</string>
+    <string name="family_consent_check">আমি নিজে যোগ দিতে চেয়েছি, এবং %1$s কী দেখবেন তা বুঝেছি।</string>
+    <plurals name="family_consent_people">
+        <item quantity="one">এই গ্রুপে %2$d জনের মধ্যে %1$d জন</item>
+        <item quantity="other">এই গ্রুপে %2$d জনের মধ্যে %1$d জন</item>
+    </plurals>
+    <string name="family_join">গ্রুপে যোগ দিন</string>
+    <string name="family_cancel">বাতিল</string>
+    <plurals name="family_group_admin">
+        <item quantity="one">আপনি অ্যাডমিন। %2$d জনের মধ্যে %1$d জন।</item>
+        <item quantity="other">আপনি অ্যাডমিন। %2$d জনের মধ্যে %1$d জন।</item>
+    </plurals>
+    <string name="family_group_member">%1$s অ্যাডমিন। আপনি গ্রুপে %2$s নামে আছেন।</string>
+    <string name="family_my_sharing">আপনি %1$s-এর সঙ্গে যা শেয়ার করেন</string>
+    <string name="family_share_alerts_summary">অচেনা কারও সঙ্গে কলের সময় কোড এলে, বা একসঙ্গে অনেক কোড এলে একটি মেসেজ</string>
+    <string name="family_share_counts_summary">দিনে একবার: ব্লক করা কল ও ছেঁকে রাখা মেসেজ, দুটি সংখ্যা হিসেবে</string>
+    <string name="family_never_short">কখনো শেয়ার হয় না: কে কল বা মেসেজ করেছে, নম্বর, মেসেজ, কন্টাক্ট, কলের ইতিহাস, অবস্থান।</string>
+    <string name="family_leave">গ্রুপ ছেড়ে দিন</string>
+    <string name="family_end">গ্রুপ বন্ধ করুন</string>
+    <string name="family_leave_confirm">%1$s ছেড়ে দেবেন? আপনার অ্যাডমিন আর আপনার কাছ থেকে কিছু দেখতে পাবেন না, আর সার্ভার যা রেখেছিল তা মুছে যাবে।</string>
+    <string name="family_end_confirm">%1$s বন্ধ করবেন? সবাই গ্রুপ থেকে বেরিয়ে যাবেন আর সার্ভার যা রেখেছিল তা মুছে যাবে।</string>
+    <string name="family_invite_title">কাউকে আমন্ত্রণ জানান</string>
+    <string name="family_invite_text">একটি কোড তৈরি করে নিজে ব্যক্তিটিকে দিন, যেমন সামনাসামনি বা ফোনে। তিনি নিজের ফোনে কোডটি লিখবেন এবং কী শেয়ার করবেন তা ঠিক করবেন। একটি কোড একবারই, ৪৮ ঘণ্টার জন্য কাজ করে।</string>
+    <string name="family_invite_make">একটি কোড তৈরি করুন</string>
+    <string name="family_invite_code">কোড: %1$s</string>
+    <string name="family_invite_expires">একবার কাজ করবে, %1$s পর্যন্ত</string>
+    <string name="family_invite_share">কোড শেয়ার করুন</string>
+    <string name="family_invite_share_text">আমার OpenCaller পরিবার সুরক্ষা কোড: %1$s। OpenCaller খুলুন → সুরক্ষা → পরিবার সুরক্ষা → একটি গ্রুপে যোগ দিন।</string>
+    <string name="family_invite_done">হয়েছে</string>
+    <string name="family_full">গ্রুপ পূর্ণ (৫ জন)।</string>
+    <string name="family_members_title">সদস্য</string>
+    <string name="family_member_you">%1$s (আপনি, অ্যাডমিন)</string>
+    <string name="family_member_shares_both">কোড সতর্কতা ও দৈনিক হিসাব শেয়ার করেন</string>
+    <string name="family_member_shares_alerts">কোড সতর্কতা শেয়ার করেন</string>
+    <string name="family_member_shares_counts">দৈনিক হিসাব শেয়ার করেন</string>
+    <string name="family_member_shares_nothing">কিছুই শেয়ার করেন না</string>
+    <string name="family_member_day">%1$s: ব্লক করা কল %2$d, ছেঁকে রাখা মেসেজ %3$d</string>
+    <string name="family_member_no_days">এখনো কোনো হিসাব নেই। দিনে একবার আসে।</string>
+    <string name="family_remove">সরান</string>
+    <string name="family_remove_confirm">%1$s-কে গ্রুপ থেকে সরাবেন? সার্ভারে তাঁর যা রাখা ছিল তা মুছে যাবে।</string>
+    <string name="family_alerts_title">সতর্কতা (শেষ ৩০ দিন)</string>
+    <string name="family_alerts_empty">কোনো সতর্কতা নেই। কোনো সদস্যের ফোন তাঁকে সতর্ক করলে আপনি একটি নোটিফিকেশন পাবেন।</string>
+    <string name="family_alert_line">%1$s, %2$s</string>
+    <string name="family_alert_during_call">অচেনা কারও সঙ্গে কলের সময় একটি এককালীন কোড এসেছে। তাঁর ফোন তাঁকে সতর্ক করেছে। একটা খোঁজ নেওয়ার কল হয়তো কাজে দেবে।</string>
+    <string name="family_alert_burst">কয়েক মিনিটের মধ্যে কয়েকটি এককালীন কোড এসেছে। কেউ হয়তো তাঁর অ্যাকাউন্টে ঢোকার চেষ্টা করছে।</string>
+    <string name="family_channel">পরিবারের সতর্কতা</string>
+    <string name="family_channel_description">যখন আপনার পরিবার গ্রুপের কোনো সদস্য এককালীন কোড নিয়ে সতর্কতা পান</string>
+    <string name="family_notification_title">পরিবারের সতর্কতা: %1$s</string>
+    <string name="family_error_network">সার্ভারে পৌঁছানো যাচ্ছে না। আপনার সংযোগ দেখে আবার চেষ্টা করুন।</string>
+    <string name="family_error_rate_limited">অনেকবার চেষ্টা হয়েছে। কিছুক্ষণ অপেক্ষা করে আবার চেষ্টা করুন।</string>
+    <string name="family_error_code">এই কোড কাজ করছে না। হয়তো ভুল লেখা হয়েছে, আগেই ব্যবহার হয়েছে বা মেয়াদ শেষ।</string>
+    <string name="family_error_consent">যোগ দিতে চান তা নিশ্চিত করতে বক্সে টিক দিন।</string>
+    <string name="family_error_already_in">আপনি ইতিমধ্যে একটি পরিবার গ্রুপে আছেন। আগে সেটি ছেড়ে দিন।</string>
+    <string name="family_error_full">এই গ্রুপে ইতিমধ্যে ৫ জন আছেন।</string>
+    <string name="family_error_update_app">সম্মতির লেখা বদলেছে। অ্যাপ আপডেট করে আবার পড়ুন।</string>
+    <string name="family_error_too_many_invites">আপনার ৫টি খোলা কোড আছে। একটি ব্যবহার বা মেয়াদ শেষ না হওয়া পর্যন্ত অপেক্ষা করুন।</string>
+    <string name="family_error_label">নাম এক লাইনে ১ থেকে ৪০ অক্ষরের হতে হবে।</string>
+    <string name="family_error_generic">কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।</string>
+</resources>

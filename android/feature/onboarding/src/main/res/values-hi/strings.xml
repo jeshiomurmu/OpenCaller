@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindi. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="onboarding_progress">चरण %1$d / %2$d</string>
+    <string name="onboarding_get_started">शुरू करें</string>
+    <string name="onboarding_continue">आगे बढ़ें</string>
+    <string name="onboarding_finish">पूरा करें</string>
+    <string name="onboarding_bullet">• %1$s</string>
+    <string name="onboarding_welcome_title">जानें कौन कॉल कर रहा है</string>
+    <string name="onboarding_welcome_body">OpenCaller दिखाता है कि कौन कॉल कर रहा है और स्पैम कॉल रोकता है। यह एक बार में एक ही चीज़ माँगता है और पहले वजह बताता है। आप किसी भी चीज़ के लिए “अभी नहीं” कह सकते हैं।</string>
+    <string name="onboarding_privacy_title">आपका फ़ोन, आपका डेटा</string>
+    <string name="onboarding_privacy_leaves_title">क्या आपके फ़ोन से बाहर जाता है</string>
+    <string name="onboarding_privacy_leaves_1">कॉल करने वाले की जाँच के लिए, नंबर से बना एक छोटा उलझा हुआ कोड। पूरा नंबर कभी नहीं।</string>
+    <string name="onboarding_privacy_leaves_2">वह नंबर जो आप खुद खोजते हैं।</string>
+    <string name="onboarding_privacy_leaves_3">वह नंबर जिसे आप स्पैम के रूप में रिपोर्ट करते हैं, आपके चुने लेबल और टिप्पणी के साथ।</string>
+    <string name="onboarding_privacy_never_title">क्या कभी आपके फ़ोन से बाहर नहीं जाता</string>
+    <string name="onboarding_privacy_never_1">आपके संपर्क।</string>
+    <string name="onboarding_privacy_never_2">आपकी कॉल हिस्ट्री।</string>
+    <string name="onboarding_privacy_never_3">आपके मैसेज।</string>
+    <string name="onboarding_privacy_never_4">विज्ञापन या ट्रैकिंग के लिए कुछ भी नहीं: OpenCaller में इनमें से कुछ नहीं है, और यह कोई क्रैश रिपोर्ट नहीं भेजता।</string>
+    <string name="onboarding_extras_title">वैकल्पिक सुविधाएँ</string>
+    <string name="onboarding_extras_body">इन्हें अभी चालू करें या बाद में मैं → सेटिंग → अनुमतियाँ और भूमिकाएँ में।</string>
+    <string name="onboarding_set_up">सेट अप करें</string>
+    <string name="onboarding_sign_in">साइन इन (वैकल्पिक)</string>
+    <string name="onboarding_sign_in_summary">अपनी स्पैम रिपोर्ट साझा करें और नंबर खोजें। इसके बिना भी ब्लॉक करना काम करता है।</string>
+    <string name="onboarding_signed_in">साइन इन है</string>
+    <string name="onboarding_sign_in_action">साइन इन करें</string>
+    <string name="onboarding_status_on">चालू</string>
+    <string name="onboarding_status_optional">वैकल्पिक</string>
+    <string name="onboarding_status_coming_later">अगले अपडेट में आ रहा है</string>
+</resources>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindi. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="supporter_title">सपोर्टर</string>
+    <string name="supporter_intro">OpenCaller में कोई विज्ञापन नहीं है और यह कोई डेटा नहीं बेचता। सपोर्टर सर्वर का खर्च उठाते हैं और नीचे दी गई अतिरिक्त सुविधाएँ पाते हैं।</string>
+    <string name="supporter_benefits_title">सपोर्टर को क्या मिलता है</string>
+    <string name="supporter_bullet">• %1$s</string>
+    <string name="supporter_benefit_extended">विस्तृत स्पैम सूची, जिसमें वे नंबर भी हैं जिन्हें अभी कम लोगों ने रिपोर्ट किया है</string>
+    <string name="supporter_benefit_ghost">घोस्ट कॉल: किसी बातचीत से निकलने के लिए एक नकली आने वाली कॉल</string>
+    <string name="supporter_benefit_announce">कॉलर की घोषणा: सुनें कि कौन कॉल कर रहा है</string>
+    <string name="supporter_benefit_backup">आपकी सेटिंग, नियमों और हिस्ट्री के एन्क्रिप्टेड बैकअप</string>
+    <string name="supporter_benefit_messenger">WhatsApp, Telegram और Signal कॉल के लिए कॉलर आईडी</string>
+    <string name="supporter_benefit_visitors">देखें कि किसने आपकी प्रोफ़ाइल देखी और किसने आपको खोजा</string>
+    <string name="supporter_benefit_gold">गोल्ड थीम और एक सपोर्टर बैज</string>
+    <string name="supporter_status_title">आपकी स्थिति</string>
+    <string name="supporter_status_none">सपोर्टर नहीं</string>
+    <string name="supporter_status_tier_supporter">सपोर्टर</string>
+    <string name="supporter_status_tier_gold">गोल्ड</string>
+    <string name="supporter_status_tier_family">फ़ैमिली</string>
+    <string name="supporter_status_self_hosted">सब कुछ खुला है: यह सर्वर खुद होस्ट किया गया है।</string>
+    <string name="supporter_status_granted">सर्वर के संचालक ने दिया है।</string>
+    <string name="supporter_status_renews">%1$s को रिन्यू होगा</string>
+    <string name="supporter_status_ends">%1$s को खत्म होगा</string>
+    <string name="supporter_plans_title">प्लान</string>
+    <string name="supporter_plan_supporter">सपोर्टर</string>
+    <string name="supporter_plan_gold">गोल्ड</string>
+    <string name="supporter_plan_family">फ़ैमिली (फ़ैमिली ग्रुप आने पर ज़्यादा से ज़्यादा पाँच लोगों के लिए; अभी आपके खाते के लिए)</string>
+    <string name="supporter_plan_price">%1$s · %2$s</string>
+    <string name="supporter_period_month">हर महीने</string>
+    <string name="supporter_period_year">हर साल</string>
+    <string name="supporter_period_other">बिलिंग अवधि %1$s</string>
+    <string name="supporter_buy">चुनें</string>
+    <string name="supporter_restore">खरीदारी वापस लाएँ</string>
+    <string name="supporter_manage">Google Play में सब्सक्रिप्शन मैनेज करें</string>
+    <string name="supporter_donate_title">दान करें</string>
+    <string name="supporter_donate_body">इस बिल्ड में कोई ऐप स्टोर नहीं है। आप दान देकर OpenCaller का समर्थन कर सकते हैं; खुद होस्ट किए गए सर्वर पर सपोर्टर सुविधाएँ खुल जाती हैं।</string>
+    <string name="supporter_donate">दान करें</string>
+    <string name="supporter_no_donation_link">इस बिल्ड में दान का कोई लिंक नहीं है।</string>
+    <string name="supporter_note_thanks">धन्यवाद! आपकी सपोर्टर सुविधाएँ चालू हो गई हैं।</string>
+    <string name="supporter_note_pending">आपका भुगतान अभी पूरा नहीं हुआ है। Google Play के पुष्टि करते ही सुविधाएँ चालू हो जाएँगी।</string>
+    <string name="supporter_note_nothing">इस Google खाते के लिए कोई खरीदारी नहीं मिली।</string>
+    <string name="supporter_problem_offline">आप ऑफ़लाइन हैं। कनेक्ट होने पर फिर से कोशिश करें।</string>
+    <string name="supporter_problem_not_connected">यह बिल्ड किसी सर्वर से कनेक्ट नहीं है, इसलिए सपोर्टर सुविधाएँ उपलब्ध नहीं हैं।</string>
+    <string name="supporter_problem_sign_in">पहले अपने नंबर से साइन इन करें (मैं → खाता)। खरीदारी आपके खाते से जुड़ी होती है।</string>
+    <string name="supporter_problem_no_plans">Google Play पर अभी OpenCaller के कोई प्लान नहीं हैं।</string>
+    <string name="supporter_problem_not_accepted">सर्वर ने यह खरीदारी स्वीकार नहीं की। अगर आपने इसे किसी दूसरे नंबर से खरीदा था, तो उसी से साइन इन करें।</string>
+    <string name="supporter_problem_unexpected">कुछ गड़बड़ हो गई। फिर से कोशिश करें।</string>
+</resources>

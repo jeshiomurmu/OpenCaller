@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindi. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="search_title">कोई नंबर खोजें</string>
+    <string name="search_number">फ़ोन नंबर</string>
+    <string name="search_button">खोजें</string>
+    <plurals name="search_quota_left">
+        <item quantity="one">आज %2$d में से %1$d खोज बाकी</item>
+        <item quantity="other">आज %2$d में से %1$d खोज बाकी</item>
+    </plurals>
+    <plurals name="search_quota_used">
+        <item quantity="one">आपने आज की %1$d खोज इस्तेमाल कर ली है। कल और मिलेंगी, या सपोर्टर बनें।</item>
+        <item quantity="other">आपने आज की %1$d खोजें इस्तेमाल कर ली हैं। कल और मिलेंगी, या सपोर्टर बनें।</item>
+    </plurals>
+    <string name="search_privacy">आप जो नंबर लिखते हैं, उसे खोजने के लिए OpenCaller को भेजा जाता है। कॉल की जाँच अलग तरह से होती है: कॉल के दौरान सिर्फ़ एक छोटा कोड भेजा जाता है। अगर नंबर किसी OpenCaller यूज़र का है, तो वह देख सकता है कि आपने उसे खोजा, जब तक आप अपनी प्रोफ़ाइल में इनकॉग्निटो चालू न करें।</string>
+    <string name="search_offline">आप ऑफ़लाइन हैं। सेव की गई स्पैम सूची से ब्लॉक करना अब भी काम करता है।</string>
+    <string name="search_server_error">हमारी तरफ़ कुछ गड़बड़ हो गई। आपकी सुरक्षा ऑफ़लाइन भी काम करती है।</string>
+    <string name="search_retry">फिर से कोशिश करें</string>
+    <string name="search_invalid_number">यह सही फ़ोन नंबर नहीं है। अगर यह किसी दूसरे देश का है, तो देश का कोड भी लिखें।</string>
+    <string name="search_not_connected">किसी सर्वर से कनेक्ट नहीं है। OpenCaller का यह वर्ज़न नंबर नहीं खोज सकता; इस फ़ोन की स्पैम सूची से ब्लॉक करना काम करता है।</string>
+    <string name="search_needs_sign_in">नंबर खोजने के लिए साइन इन करें। साइन इन वैकल्पिक है और इसमें सिर्फ़ आपका फ़ोन नंबर लगता है।</string>
+    <string name="search_sign_in_again">कृपया फिर से साइन इन करें।</string>
+    <string name="search_sign_in">साइन इन करें</string>
+    <plurals name="search_not_spam_count">
+        <item quantity="one">%d व्यक्ति ने कहा कि यह स्पैम नहीं है।</item>
+        <item quantity="other">%d लोगों ने कहा कि यह स्पैम नहीं है।</item>
+    </plurals>
+    <string name="search_dispute">क्या यह आपका नंबर है? समीक्षा माँगें</string>
+    <string name="search_open_profile">प्रोफ़ाइल खोलें</string>
+    <string name="search_open_business">व्यवसाय प्रोफ़ाइल</string>
+    <string name="dispute_title">गलती से स्पैम बताया गया?</string>
+    <string name="dispute_body">हमें बताएँ कि स्पैम लेबल क्यों गलत है, जैसे कि यह आपका या आपके व्यवसाय का नंबर है। हर अनुरोध की समीक्षा एक व्यक्ति करता है।</string>
+    <string name="dispute_reason">लेबल गलत क्यों है?</string>
+    <string name="dispute_reason_hint">1,000 अक्षरों तक।</string>
+    <string name="dispute_send">समीक्षा माँगें</string>
+    <string name="dispute_sent">धन्यवाद। हम लेबल की समीक्षा करेंगे।</string>
+    <string name="dispute_done">हो गया</string>
+    <string name="dispute_needs_sign_in">समीक्षा माँगने के लिए साइन इन करें। इससे पता चलता है कि एक असली व्यक्ति पूछ रहा है।</string>
+    <string name="dispute_invalid_reason">कृपया कुछ शब्दों में बताएँ कि लेबल गलत क्यों है।</string>
+    <string name="dispute_too_many">आपने आज बहुत अनुरोध भेजे हैं। कृपया कल फिर कोशिश करें।</string>
+</resources>

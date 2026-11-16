@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bengali. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="channel_caller_id">কলার আইডি</string>
+    <string name="channel_caller_id_description">কে কল করছে, যখন OpenCaller আপনার ফোন অ্যাপের ওপরে কার্ড দেখাতে পারে না।</string>
+    <string name="channel_after_call">কলের পরের সারাংশ</string>
+    <string name="channel_after_call_description">আপনার কন্টাক্টে নেই এমন নম্বর থেকে কলের পরে একটি ছোট সারাংশ।</string>
+    <string name="callerid_close">বন্ধ করুন</string>
+    <string name="after_call_title">%1$s থেকে কল</string>
+    <string name="after_call_block">ব্লক করুন</string>
+    <string name="after_call_report">রিপোর্ট করুন</string>
+    <string name="after_call_not_spam">স্প্যাম নয়</string>
+    <string name="after_call_save_contact">কন্টাক্ট সেভ করুন</string>
+    <string name="after_call_blocked">%1$s ব্লক করা হয়েছে</string>
+    <string name="after_call_marked_not_spam">এই ফোনে %1$s আর স্প্যাম হিসেবে চিহ্নিত হবে না</string>
+    <string name="after_call_failed">কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।</string>
+    <string name="after_call_screen_ended">কল শেষ</string>
+    <string name="after_call_screen_missed">মিসড কল</string>
+    <string name="after_call_call_back">কল ব্যাক করুন</string>
+    <string name="after_call_message">মেসেজ</string>
+    <string name="after_call_message_own">একটি মেসেজ লিখুন</string>
+    <string name="after_call_close">বন্ধ করুন</string>
+    <string name="messenger_listener_label">WhatsApp, Telegram ও Signal কলের জন্য OpenCaller কলার আইডি</string>
+    <string name="announce_named">%1$s কল করছেন</string>
+    <string name="announce_spam">সম্ভবত স্প্যাম কল</string>
+    <string name="announce_hidden">লুকানো নম্বর থেকে কল</string>
+    <string name="announce_unknown">অজানা নম্বর থেকে কল</string>
+</resources>

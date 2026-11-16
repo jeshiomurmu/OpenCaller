@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bengali. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="backup_title">ব্যাকআপ ও রিস্টোর</string>
+    <string name="backup_intro">আপনার সেটিংস, ব্লক করার নিয়ম, কল স্ক্রিনিংয়ের ইতিহাস ও মেসেজের বিভাগ, আপনার বেছে নেওয়া পাসফ্রেজ দিয়ে এনক্রিপ্ট করা একটি ফাইলে। আপনার মেসেজ, কন্টাক্ট ও কল লগ Android-এই থাকে, ফাইলে নয়। এককালীন কোড কখনো ব্যাকআপ হয় না।</string>
+    <string name="backup_passphrase">পাসফ্রেজ</string>
+    <string name="backup_confirm">আবার পাসফ্রেজ</string>
+    <string name="backup_passphrase_hint">অন্তত ৮টি অক্ষর। এটি ছাড়া কেউ ব্যাকআপ খুলতে পারবে না, আপনিও না: এটি রিসেট করা যায় না।</string>
+    <string name="backup_file_title">একটি ফাইল</string>
+    <string name="backup_to_file">ফাইলে ব্যাকআপ নিন</string>
+    <string name="backup_from_file">ফাইল থেকে রিস্টোর করুন</string>
+    <string name="backup_drive_title">Google Drive</string>
+    <string name="backup_drive_body">আপনার Google Drive-এর একটি লুকানো ফোল্ডারে রাখা হয়, যা শুধু OpenCaller খুলতে পারে। আগে ফোনেই এনক্রিপ্ট করা হয়।</string>
+    <string name="backup_to_drive">Google Drive-এ ব্যাকআপ নিন</string>
+    <string name="backup_from_drive">Google Drive থেকে রিস্টোর করুন</string>
+    <string name="backup_restore_note">রিস্টোর করলে আপনার ব্লক করার নিয়ম ও ইতিহাস ব্যাকআপেরগুলো দিয়ে বদলে যায়, আর এই ফোনের অনুমতিগুলো থেকে যায়। রিস্টোর বিনামূল্যে; ব্যাকআপ নেওয়া সমর্থকদের সুবিধা।</string>
+    <string name="backup_saved">ব্যাকআপ সেভ হয়েছে।</string>
+    <string name="backup_restored">রিস্টোর হয়েছে।</string>
+    <plurals name="backup_restored_rules">
+        <item quantity="one">%dটি ব্লক করার নিয়ম</item>
+        <item quantity="other">%dটি ব্লক করার নিয়ম</item>
+    </plurals>
+    <plurals name="backup_restored_events">
+        <item quantity="one">ইতিহাসের %dটি এন্ট্রি</item>
+        <item quantity="other">ইতিহাসের %dটি এন্ট্রি</item>
+    </plurals>
+    <plurals name="backup_restored_messages">
+        <item quantity="one">%dটি মেসেজের বিভাগ আবার পাওয়া গেছে</item>
+        <item quantity="other">%dটি মেসেজের বিভাগ আবার পাওয়া গেছে</item>
+    </plurals>
+    <plurals name="backup_restored_missing">
+        <item quantity="one">%dটি মেসেজ এই ফোনে নেই</item>
+        <item quantity="other">%dটি মেসেজ এই ফোনে নেই</item>
+    </plurals>
+    <string name="backup_problem_not_entitled">ব্যাকআপ নেওয়া সমর্থকদের সুবিধা।</string>
+    <string name="backup_problem_short">পাসফ্রেজে অন্তত ৮টি অক্ষর লাগবে।</string>
+    <string name="backup_problem_differ">দুটি পাসফ্রেজ মেলেনি।</string>
+    <string name="backup_problem_wrong">ভুল পাসফ্রেজ, অথবা ফাইলটি বদলানো হয়েছে।</string>
+    <string name="backup_problem_not_backup">এটি OpenCaller-এর ব্যাকআপ নয়, অথবা নতুন কোনো সংস্করণে তৈরি।</string>
+    <string name="backup_problem_no_drive">আপনার Google Drive-এ এখনো কোনো ব্যাকআপ নেই।</string>
+    <string name="backup_problem_drive">Google Drive-এর অনুমতি দেওয়া হয়নি।</string>
+    <string name="backup_problem_offline">আপনি অফলাইনে আছেন। সংযুক্ত হলে আবার চেষ্টা করুন।</string>
+    <string name="backup_problem_failed">ব্যাকআপ পড়া বা লেখা যায়নি। আবার চেষ্টা করুন।</string>
+</resources>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bengali. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="flash_call_me">আমাকে কল করো</string>
+    <string name="flash_on_my_way">আসছি</string>
+    <string name="flash_running_late">দেরি হচ্ছে</string>
+    <string name="flash_cant_talk">এখন কথা বলতে পারছি না</string>
+    <string name="flash_arrived">পৌঁছে গেছি</string>
+    <string name="flash_call_you_back">পরে কল করছি</string>
+    <string name="flash_channel">ফ্ল্যাশ মেসেজ</string>
+    <string name="flash_channel_description">অন্য OpenCaller ব্যবহারকারীদের ছোট সংকেত</string>
+    <string name="flash_from">%1$s-এর ফ্ল্যাশ</string>
+    <string name="flash_send">ফ্ল্যাশ</string>
+    <string name="flash_pick_title">একটি ফ্ল্যাশ মেসেজ পাঠান</string>
+    <string name="flash_sent">ফ্ল্যাশ পাঠানো হয়েছে</string>
+    <string name="flash_not_sent">ফ্ল্যাশ মেসেজ পাঠানো যায়নি। %1$s</string>
+    <string name="flash_recent_title">সাম্প্রতিক ফ্ল্যাশ মেসেজ</string>
+    <string name="flash_recent_empty">এখনো কোনো ফ্ল্যাশ মেসেজ নেই</string>
+    <string name="flash_received_line">%1$s থেকে: %2$s</string>
+    <string name="flash_sent_line">%1$s-কে: %2$s</string>
+    <string name="cancel">বাতিল</string>
+    <string name="reach_app_call">অ্যাপ কল</string>
+    <string name="reach_explanation">কল ও ফ্ল্যাশ মেসেজ আপনার ফোন প্ল্যান দিয়ে নয়, OpenCaller সার্ভারের মাধ্যমে যায়। অন্যজনেরও OpenCaller থাকতে হবে এবং তাঁকে অনুমতি দিতে হবে।</string>
+    <string name="reach_not_reachable">OpenCaller দিয়ে এই নম্বরে পৌঁছানো যাচ্ছে না।</string>
+    <string name="voip_settings_title">অ্যাপ কল, ফ্ল্যাশ ও ভিডিও কলার আইডি</string>
+    <string name="voip_settings_signed_out">অ্যাপ কল, ফ্ল্যাশ মেসেজ ও ভিডিও কলার আইডি ব্যবহার করতে সাইন ইন করুন।</string>
+    <string name="voip_reachable">OpenCaller ব্যবহারকারীদের আমাকে কল ও ফ্ল্যাশ করতে দিন</string>
+    <string name="voip_reachable_summary">আপনার নম্বর জানা যেকোনো OpenCaller ব্যবহারকারী। এটি বন্ধ থাকলে তাঁরা দেখবেন আপনার নম্বরে পৌঁছানো যায় না, যেন আপনি OpenCaller ব্যবহার করেন না।</string>
+    <string name="voip_clips_mobile_data">মোবাইল ডেটায় ভিডিও কলার আইডি ডাউনলোড করুন</string>
+    <string name="voip_clips_mobile_data_summary">বন্ধ থাকলে: শুধু ওয়াই-ফাইতে। খোঁজার সময় একসঙ্গে সব নম্বরের ক্লিপ ডাউনলোড হয়, তাই সার্ভার বুঝতে পারে না কোন নম্বর কল করেছে।</string>
+    <string name="video_title">আমার ভিডিও কলার আইডি</string>
+    <string name="video_explanation">সর্বোচ্চ ১০ সেকেন্ড, শব্দ ছাড়া। আপনি কাউকে কল করলে তাঁরা এটি শব্দ ছাড়া দেখেন, আপনার নাম যতটা দৃশ্যমান ততটাই। দেখানোর আগে সার্ভার এটি ছোট করে।</string>
+    <string name="video_none">আপনার কোনো ভিডিও কলার আইডি নেই।</string>
+    <string name="video_published">আপনার ভিডিও কলার আইডি প্রকাশিত হয়েছে।</string>
+    <string name="video_hidden">অন্য ব্যবহারকারীদের রিপোর্টের পর আপনার ভিডিও কলার আইডি লুকানো হয়েছে।</string>
+    <string name="video_processing">আপনার নতুন ক্লিপ প্রস্তুত হচ্ছে। এটি তৈরি না হওয়া পর্যন্ত পুরোনোটি থাকবে।</string>
+    <string name="video_failed">শেষ ক্লিপটি প্রকাশিত হয়নি: %1$s</string>
+    <string name="video_record">একটি ক্লিপ রেকর্ড করুন</string>
+    <string name="video_delete">আমার ভিডিও কলার আইডি মুছুন</string>
+    <string name="video_uploading">আপলোড হচ্ছে…</string>
+    <string name="error_network">সার্ভারের সঙ্গে সংযোগ নেই।</string>
+    <string name="error_generic">কিছু একটা ভুল হয়েছে। পরে আবার চেষ্টা করুন।</string>
+    <string name="error_rate_limited">অনেক বেশি অনুরোধ। পরে আবার চেষ্টা করুন।</string>
+    <string name="record_title">আপনার ভিডিও কলার আইডি রেকর্ড করুন</string>
+    <string name="record_camera_needed">আপনার ক্লিপ রেকর্ড করতে OpenCaller-এর ক্যামেরা দরকার। রেকর্ড চাপার আগে কিছুই রেকর্ড হয় না; কোনো শব্দ থাকে না।</string>
+    <string name="record_allow_camera">ক্যামেরার অনুমতি দিন</string>
+    <string name="record_start">রেকর্ড (১০ সে.)</string>
+    <string name="record_stop">থামান</string>
+    <string name="record_recording">রেকর্ড হচ্ছে… %1$d সে.</string>
+    <string name="record_upload">এই ক্লিপটি ব্যবহার করুন</string>
+    <string name="record_again">আবার রেকর্ড করুন</string>
+    <string name="record_failed">ক্লিপটি রেকর্ড করা যায়নি। আবার চেষ্টা করুন।</string>
+</resources>

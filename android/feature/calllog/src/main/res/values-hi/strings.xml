@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindi. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="calllog_search_hint">कॉल खोजें</string>
+    <string name="calllog_filter_all">सभी</string>
+    <string name="calllog_filter_missed">मिस्ड</string>
+    <string name="calllog_filter_blocked">ब्लॉक की गई</string>
+    <string name="calllog_filter_spam">स्पैम</string>
+    <string name="calllog_today">आज</string>
+    <string name="calllog_yesterday">कल</string>
+    <string name="calllog_hidden">छिपा नंबर</string>
+    <string name="calllog_type_incoming">आने वाली</string>
+    <string name="calllog_type_outgoing">जाने वाली</string>
+    <string name="calllog_type_missed">मिस्ड</string>
+    <string name="calllog_type_rejected">अस्वीकार की गई</string>
+    <string name="calllog_type_blocked">ब्लॉक की गई</string>
+    <string name="calllog_type_voicemail">वॉइसमेल</string>
+    <string name="calllog_type_elsewhere">किसी दूसरे डिवाइस पर उठाई गई</string>
+    <string name="calllog_type_unknown">कॉल</string>
+    <plurals name="calllog_count">
+        <item quantity="one">%1$d कॉल</item>
+        <item quantity="other">%1$d कॉल</item>
+    </plurals>
+    <string name="calllog_spam">स्पैम</string>
+    <string name="calllog_suspicious">संदिग्ध</string>
+    <string name="calllog_blocked_label">ब्लॉक की गई</string>
+    <string name="calllog_call_back">%1$s को कॉल करें</string>
+    <string name="calllog_more_actions">और विकल्प</string>
+    <string name="calllog_action_call">कॉल करें</string>
+    <string name="calllog_action_message">मैसेज</string>
+    <string name="calllog_action_open_contact">संपर्क खोलें</string>
+    <string name="calllog_action_add_contact">संपर्क के रूप में सेव करें</string>
+    <string name="calllog_action_block">ब्लॉक करें</string>
+    <string name="calllog_action_delete">हिस्ट्री से मिटाएँ</string>
+    <string name="calllog_delete_title">कॉल हिस्ट्री से मिटाएँ?</string>
+    <plurals name="calllog_delete_body">
+        <item quantity="one">%1$s: %2$d कॉल। इसे वापस नहीं लाया जा सकता।</item>
+        <item quantity="other">%1$s: %2$d कॉल। इन्हें वापस नहीं लाया जा सकता।</item>
+    </plurals>
+    <string name="calllog_delete_confirm">मिटाएँ</string>
+    <string name="calllog_cancel">रद्द करें</string>
+    <string name="calllog_blocked">%1$s ब्लॉक किया गया</string>
+    <string name="calllog_undo">पहले जैसा करें</string>
+    <string name="calllog_failed">कुछ गड़बड़ हो गई। फिर से कोशिश करें।</string>
+    <string name="calllog_empty">अभी कोई कॉल नहीं है।</string>
+    <string name="calllog_empty_filtered">कोई कॉल नहीं मिली।</string>
+    <string name="calllog_dial_pad">डायल पैड</string>
+    <string name="calllog_permission_title">अपनी कॉल हिस्ट्री दिखाएँ</string>
+    <string name="calllog_permission_why">ताकि आपका फ़ोन ऐप OpenCaller आपकी कॉल की सूची दिखा सके, ब्लॉक और स्पैम कॉल पर निशान लगा सके, और आपको वापस कॉल करने या उन्हें मिटाने दे।</string>
+    <string name="calllog_permission_never">आपकी कॉल हिस्ट्री इसी फ़ोन पर रहती है। OpenCaller उसे कभी अपलोड नहीं करता।</string>
+    <string name="calllog_permission_needed">OpenCaller को पढ़ने की अनुमति मिलते ही आपकी कॉल हिस्ट्री यहाँ दिखेगी।</string>
+    <string name="calllog_allow">अनुमति दें</string>
+</resources>

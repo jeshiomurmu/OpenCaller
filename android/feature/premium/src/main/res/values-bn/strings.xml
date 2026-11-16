@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bengali. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="supporter_title">সমর্থক</string>
+    <string name="supporter_intro">OpenCaller-এ কোনো বিজ্ঞাপন নেই এবং এটি কোনো তথ্য বিক্রি করে না। সমর্থকেরা সার্ভারের খরচ দেন এবং নিচের বাড়তি সুবিধাগুলো পান।</string>
+    <string name="supporter_benefits_title">সমর্থকেরা যা পান</string>
+    <string name="supporter_bullet">• %1$s</string>
+    <string name="supporter_benefit_extended">বর্ধিত স্প্যাম তালিকা, যেখানে এমন নম্বরও আছে যা এখনো অল্প লোক রিপোর্ট করেছে</string>
+    <string name="supporter_benefit_ghost">ঘোস্ট কল: কথোপকথন থেকে বেরিয়ে আসতে একটি বানানো আসা কল</string>
+    <string name="supporter_benefit_announce">কলার ঘোষণা: কে কল করছে শুনুন</string>
+    <string name="supporter_benefit_backup">আপনার সেটিংস, নিয়ম ও ইতিহাসের এনক্রিপ্ট করা ব্যাকআপ</string>
+    <string name="supporter_benefit_messenger">WhatsApp, Telegram ও Signal কলের জন্য কলার আইডি</string>
+    <string name="supporter_benefit_visitors">কে আপনার প্রোফাইল দেখেছে এবং কে আপনাকে খুঁজেছে তা দেখুন</string>
+    <string name="supporter_benefit_gold">গোল্ড থিম ও একটি সমর্থক ব্যাজ</string>
+    <string name="supporter_status_title">আপনার অবস্থা</string>
+    <string name="supporter_status_none">সমর্থক নন</string>
+    <string name="supporter_status_tier_supporter">সমর্থক</string>
+    <string name="supporter_status_tier_gold">গোল্ড</string>
+    <string name="supporter_status_tier_family">পরিবার</string>
+    <string name="supporter_status_self_hosted">সবকিছু খোলা: এই সার্ভারটি নিজস্বভাবে চালানো।</string>
+    <string name="supporter_status_granted">সার্ভারের পরিচালক দিয়েছেন।</string>
+    <string name="supporter_status_renews">%1$s তারিখে নবায়ন হবে</string>
+    <string name="supporter_status_ends">%1$s তারিখে শেষ হবে</string>
+    <string name="supporter_plans_title">প্ল্যান</string>
+    <string name="supporter_plan_supporter">সমর্থক</string>
+    <string name="supporter_plan_gold">গোল্ড</string>
+    <string name="supporter_plan_family">পরিবার (পরিবার গ্রুপ এলে সর্বোচ্চ পাঁচজনের জন্য; আপাতত আপনার অ্যাকাউন্টের জন্য)</string>
+    <string name="supporter_plan_price">%1$s · %2$s</string>
+    <string name="supporter_period_month">প্রতি মাসে</string>
+    <string name="supporter_period_year">প্রতি বছরে</string>
+    <string name="supporter_period_other">বিলিং সময়কাল %1$s</string>
+    <string name="supporter_buy">বেছে নিন</string>
+    <string name="supporter_restore">কেনাকাটা ফিরিয়ে আনুন</string>
+    <string name="supporter_manage">Google Play-তে সাবস্ক্রিপশন পরিচালনা করুন</string>
+    <string name="supporter_donate_title">দান করুন</string>
+    <string name="supporter_donate_body">এই বিল্ডে কোনো অ্যাপ স্টোর নেই। দান করে OpenCaller-কে সমর্থন করতে পারেন; নিজস্ব সার্ভারে সমর্থকদের সুবিধা খুলে যায়।</string>
+    <string name="supporter_donate">দান করুন</string>
+    <string name="supporter_no_donation_link">এই বিল্ডে দানের কোনো লিংক নেই।</string>
+    <string name="supporter_note_thanks">ধন্যবাদ! আপনার সমর্থক সুবিধাগুলো চালু হয়েছে।</string>
+    <string name="supporter_note_pending">আপনার পেমেন্ট এখনো সম্পূর্ণ হয়নি। Google Play নিশ্চিত করলেই সুবিধাগুলো চালু হবে।</string>
+    <string name="supporter_note_nothing">এই Google অ্যাকাউন্টে কোনো কেনাকাটা পাওয়া যায়নি।</string>
+    <string name="supporter_problem_offline">আপনি অফলাইনে আছেন। সংযুক্ত হলে আবার চেষ্টা করুন।</string>
+    <string name="supporter_problem_not_connected">এই বিল্ড কোনো সার্ভারের সঙ্গে সংযুক্ত নয়, তাই সমর্থক সুবিধা পাওয়া যায় না।</string>
+    <string name="supporter_problem_sign_in">আগে আপনার নম্বর দিয়ে সাইন ইন করুন (আমি → অ্যাকাউন্ট)। কেনাকাটা আপনার অ্যাকাউন্টের সঙ্গে যুক্ত থাকে।</string>
+    <string name="supporter_problem_no_plans">এই মুহূর্তে Google Play-তে OpenCaller-এর কোনো প্ল্যান নেই।</string>
+    <string name="supporter_problem_not_accepted">সার্ভার এই কেনাকাটা গ্রহণ করেনি। অন্য নম্বর দিয়ে কিনে থাকলে সেই নম্বর দিয়ে সাইন ইন করুন।</string>
+    <string name="supporter_problem_unexpected">কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।</string>
+</resources>

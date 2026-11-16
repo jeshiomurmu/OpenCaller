@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bengali. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="assistant_title">কল সহকারী</string>
+    <string name="assistant_intro">আপনি কল না ধরলে কলটি একটি স্বয়ংক্রিয় সহকারীর কাছে যেতে পারে। এটি কলারকে জানায় যে এটি একটি সহকারী, জিজ্ঞেস করে কে কল করছেন ও কেন, আর আপনাকে কথোপকথনটি সরাসরি দেখায়। এটি কখনো কোড, পাসওয়ার্ড বা ব্যাংকের তথ্য চায় না।</string>
+    <string name="assistant_privacy">কলারের নম্বর, কথোপকথন ও সারাংশ শুধু এই ফোনে আসে। সার্ভার শুধু আপনার মিনিটের হিসাব রাখে, কে কল করেছে বা কী বলা হয়েছে তা নয়।</string>
+    <string name="assistant_turn_on">আমার সহকারী নম্বর নিন</string>
+    <string name="assistant_turn_off">সহকারী বন্ধ করুন</string>
+    <string name="assistant_your_number">আপনার সহকারী নম্বর: %1$s</string>
+    <string name="assistant_forwarding_title">না ধরা কল ফরোয়ার্ড করুন</string>
+    <string name="assistant_forwarding_intro">নিচের প্রতিটি কোড ডায়াল করুন। আপনার ফোন নেটওয়ার্কের উত্তর দেখায়; বেশিরভাগ নেটওয়ার্ক একটি ছোট মেসেজে নিশ্চিত করে।</string>
+    <string name="assistant_code_no_reply">আপনি কল না ধরলে</string>
+    <string name="assistant_code_unreachable">ফোন বন্ধ থাকলে বা নেটওয়ার্ক না থাকলে</string>
+    <string name="assistant_code_busy">আপনি অন্য কলে থাকলে</string>
+    <string name="assistant_dial">ডায়াল করুন</string>
+    <string name="assistant_cancel_title">ফরোয়ার্ড করা বন্ধ করুন</string>
+    <string name="assistant_cancel_text">এই সিমের সব কল ফরোয়ার্ডিং বাতিল করতে %1$s ডায়াল করুন, তারপর সহকারী বন্ধ করুন।</string>
+    <string name="assistant_carrier_title">আমার অপারেটর এটি সমর্থন করে না</string>
+    <string name="assistant_carrier_text">কিছু অপারেটর, প্রিপেইড প্ল্যান ও VoLTE নেটওয়ার্ক এই কোড গ্রহণ করে না, বা ফরোয়ার্ড করা কলের জন্য টাকা কাটে। আপনার ফোনের কল সেটিংসে (কল → কল ফরোয়ার্ডিং) বা অপারেটরের অ্যাপে দেখুন, এবং সেখান থেকে আপনার সহকারী নম্বরে ফরোয়ার্ড করুন। ফরোয়ার্ড করা কলের খরচ অপারেটরের কাছে জেনে নিন। কিছুই কাজ না করলে আপনার অপারেটর এই প্ল্যানে শর্তসাপেক্ষ ফরোয়ার্ডিং দেয় না।</string>
+    <string name="assistant_turn_off_title">সহকারী বন্ধ করবেন?</string>
+    <string name="assistant_turn_off_text">আগে %1$s ডায়াল করুন, নইলে কল এমন একটি নম্বরে যেতে থাকবে যা আর আপনার হয়ে উত্তর দেয় না।</string>
+    <string name="assistant_turn_off_confirm">বন্ধ করুন</string>
+    <string name="assistant_cancel">বাতিল</string>
+    <string name="assistant_usage_title">এই মাসে</string>
+    <plurals name="assistant_usage">
+        <item quantity="one">%2$d মিনিটের মধ্যে %1$d মিনিট ব্যবহৃত</item>
+        <item quantity="other">%2$d মিনিটের মধ্যে %1$d মিনিট ব্যবহৃত</item>
+    </plurals>
+    <plurals name="assistant_usage_unlimited">
+        <item quantity="one">%1$d মিনিট ব্যবহৃত</item>
+        <item quantity="other">%1$d মিনিট ব্যবহৃত</item>
+    </plurals>
+    <string name="assistant_usage_exhausted">এই মাসের মিনিট শেষ। আগামী মাস পর্যন্ত কলাররা শুনবেন যে আপনি কল ধরতে পারছেন না।</string>
+    <string name="assistant_history_title">যাচাই করা কল</string>
+    <string name="assistant_history_empty">এখনো কোনো যাচাই করা কল নেই।</string>
+    <string name="assistant_hidden_number">লুকানো নম্বর</string>
+    <string name="assistant_spam_label">সম্ভবত স্প্যাম</string>
+    <string name="assistant_urgent_label">জরুরি</string>
+    <string name="assistant_delete">মুছুন</string>
+    <string name="assistant_show_conversation">কথোপকথন দেখাতে</string>
+    <string name="assistant_hide_conversation">কথোপকথন লুকাতে</string>
+    <string name="assistant_signed_out">কল সহকারী ব্যবহার করতে সাইন ইন করুন।</string>
+    <string name="assistant_supporter">কল সহকারী সমর্থক স্তরের অংশ।</string>
+    <string name="assistant_unavailable">এই সার্ভারে এখনো আপনার দেশের জন্য কোনো সহকারী নম্বর নেই।</string>
+    <string name="assistant_network_error">সার্ভারে পৌঁছানো যায়নি। আবার চেষ্টা করুন।</string>
+    <string name="assistant_not_on_server">এই সার্ভার কল সহকারী দেয় না।</string>
+    <string name="assistant_not_in_build">এই বিল্ড সরাসরি কল দেখাতে পারে না (F-Droid বিল্ডে LiveKit নেই)। Play বিল্ড বা LiveKit-সহ নিজের বিল্ড ব্যবহার করুন।</string>
+    <string name="assistant_live_title">সহকারী উত্তর দিচ্ছে</string>
+    <string name="assistant_live_connecting">কলের সঙ্গে সংযোগ হচ্ছে…</string>
+    <string name="assistant_live_failed">কলে যোগ দেওয়া যায়নি। কলটি হয়তো শেষ হয়ে গেছে।</string>
+    <string name="assistant_live_ended">কল শেষ হয়েছে।</string>
+    <string name="assistant_live_not_in_build">এই বিল্ড কলটি সরাসরি অনুসরণ করতে পারে না।</string>
+    <string name="assistant_live_caller">কলার</string>
+    <string name="assistant_live_assistant">সহকারী</string>
+    <string name="assistant_live_name">নাম: %1$s</string>
+    <string name="assistant_live_reason">কারণ: %1$s</string>
+    <string name="assistant_live_reply_hint">কলারের জন্য দ্রুত উত্তর</string>
+    <string name="assistant_live_send">পাঠান</string>
+    <string name="assistant_live_call_back">কল ব্যাক করুন</string>
+    <string name="assistant_live_spam">স্প্যাম, কল কেটে দিন</string>
+    <string name="assistant_live_close">বন্ধ করুন</string>
+    <string name="assistant_live_not_connected">কলটি সংযুক্ত নয়।</string>
+    <string name="assistant_live_send_failed">এটি সহকারীর কাছে পাঠানো যায়নি।</string>
+    <string name="assistant_end_callback">আপনি কল ব্যাক করবেন বলেছেন</string>
+    <string name="assistant_end_spam">স্প্যাম হিসেবে চিহ্নিত</string>
+    <string name="assistant_end_time">সময়সীমায় শেষ হয়েছে</string>
+    <string name="assistant_end_hung_up">কলার কল কেটে দিয়েছেন</string>
+    <string name="assistant_end_done">সহকারী বিদায় জানিয়েছে</string>
+    <string name="assistant_channel">কল সহকারী</string>
+    <string name="assistant_channel_description">যখন সহকারী আপনার হয়ে কোনো কলের উত্তর দেয়</string>
+    <string name="assistant_notification_title">সহকারী একটি কলের উত্তর দিচ্ছে</string>
+    <string name="assistant_notification_text">সরাসরি দেখতে ট্যাপ করুন</string>
+</resources>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindi. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="channel_messages">मैसेज</string>
+    <string name="channel_messages_description">नए टेक्स्ट और फ़ोटो मैसेज, हर बातचीत के लिए एक सूचना।</string>
+    <string name="channel_message_failures">न भेजे गए मैसेज</string>
+    <string name="channel_message_failures_description">जब आपका लिखा कोई मैसेज भेजा नहीं जा सका।</string>
+    <string name="messages_you">आप</string>
+    <string name="messages_new_message">नया मैसेज</string>
+    <string name="messages_reply">जवाब दें</string>
+    <string name="messages_mark_read">पढ़ा हुआ मार्क करें</string>
+    <string name="messages_not_sent_title">मैसेज नहीं भेजा गया</string>
+    <string name="messages_not_sent_body">फिर से कोशिश करने के लिए बातचीत खोलें।</string>
+    <string name="messages_picture">फ़ोटो</string>
+    <string name="messages_picture_message">फ़ोटो मैसेज</string>
+    <string name="messages_new">नया मैसेज</string>
+    <string name="messages_empty">अभी कोई बातचीत नहीं है। मैसेज लिखने के लिए + दबाएँ।</string>
+    <string name="messages_failed">आपके मैसेज पढ़े नहीं जा सके। थोड़ी देर में फिर से कोशिश करें।</string>
+    <string name="messages_not_default">यहाँ मैसेज पढ़ने और भेजने के लिए OpenCaller को अपना मैसेज ऐप बनाएँ।</string>
+    <string name="messages_snippet_you">आप: %1$s</string>
+    <plurals name="messages_unread">
+        <item quantity="one">%1$d बिना पढ़ा मैसेज</item>
+        <item quantity="other">%1$d बिना पढ़े मैसेज</item>
+    </plurals>
+    <string name="messages_delete">मिटाएँ</string>
+    <string name="messages_keep">रखें</string>
+    <string name="messages_delete_title">यह बातचीत मिटाएँ?</string>
+    <string name="messages_delete_body">%1$s के साथ सभी मैसेज इस फ़ोन से मिट जाएँगे।</string>
+    <string name="messages_compose_hint">टेक्स्ट मैसेज</string>
+    <string name="messages_send">भेजें</string>
+    <string name="messages_attach">फ़ोटो जोड़ें</string>
+    <string name="messages_remove_picture">फ़ोटो हटाएँ</string>
+    <string name="messages_status_sending">भेजा जा रहा है…</string>
+    <string name="messages_status_sent">भेजा गया</string>
+    <string name="messages_status_delivered">पहुँच गया</string>
+    <string name="messages_status_failed">नहीं भेजा गया · फिर से कोशिश करने के लिए टैप करें</string>
+    <string name="messages_retry">फिर से कोशिश करें</string>
+    <string name="messages_download">डाउनलोड करें</string>
+    <string name="messages_downloading">डाउनलोड हो रहा है…</string>
+    <string name="messages_download_waiting">फ़ोटो मैसेज (%1$s)</string>
+    <string name="messages_download_failed">डाउनलोड नहीं हो सका (%1$s)</string>
+    <string name="messages_action_failed">यह नहीं हो सका। अपना सिग्नल जाँचें और फिर से कोशिश करें।</string>
+    <string name="messages_ok">ठीक है</string>
+    <string name="messages_cancel">रद्द करें</string>
+    <string name="messages_sim_title">किस सिम से भेजें</string>
+    <string name="messages_sim_ask">सिम चुनें</string>
+    <string name="messages_sim_slot">सिम %1$d</string>
+    <string name="messages_to">किसे</string>
+    <string name="messages_to_hint">नाम या नंबर</string>
+    <string name="messages_add_number">%1$s जोड़ें</string>
+    <string name="messages_next">आगे</string>
+    <string name="channel_otp">वेरिफ़िकेशन कोड</string>
+    <string name="channel_otp_description">वन-टाइम कोड। लॉक स्क्रीन पर कभी नहीं दिखते।</string>
+    <string name="channel_filtered">स्पैम और संदिग्ध मैसेज</string>
+    <string name="channel_filtered_description">स्पैम में छाँटे गए मैसेज, चुपचाप दिखाए जाते हैं।</string>
+    <string name="otp_notification_title">वेरिफ़िकेशन कोड</string>
+    <string name="otp_notification_title_from">%1$s से कोड</string>
+    <string name="otp_notification_expires">%1$s को समाप्त</string>
+    <string name="otp_notification_never_share">यह कोड कभी उस व्यक्ति को न बताएँ जो आपको कॉल करे।</string>
+    <string name="otp_copy">कोड कॉपी करें</string>
+    <string name="inbox_tab_personal">निजी</string>
+    <string name="inbox_tab_otp">कोड</string>
+    <string name="inbox_tab_transactions">लेन-देन</string>
+    <string name="inbox_tab_bills">बिल</string>
+    <string name="inbox_tab_deliveries">डिलीवरी</string>
+    <string name="inbox_tab_promotions">प्रचार</string>
+    <string name="inbox_tab_spam">स्पैम</string>
+    <string name="inbox_tab_unread">%1$s (%2$d)</string>
+    <string name="inbox_empty_tab">यहाँ कुछ नहीं है।</string>
+    <string name="inbox_clean">साफ़ करें</string>
+    <string name="inbox_clean_title">इनबॉक्स साफ़ करें</string>
+    <string name="inbox_clean_nothing">साफ़ करने को कुछ नहीं: यहाँ एक दिन से पुराने कोड, और 30 दिन से पुरानी डिलीवरी, प्रचार और स्पैम मिटाए जाते हैं।</string>
+    <plurals name="inbox_clean_body">
+        <item quantity="one">%1$d पुराना मैसेज मिटाया जाएगा: एक दिन से पुराने कोड, 30 दिन से पुरानी डिलीवरी, प्रचार और स्पैम। निजी मैसेज, लेन-देन और बिल बने रहेंगे।</item>
+        <item quantity="other">%1$d पुराने मैसेज मिटाए जाएँगे: एक दिन से पुराने कोड, 30 दिन से पुरानी डिलीवरी, प्रचार और स्पैम। निजी मैसेज, लेन-देन और बिल बने रहेंगे।</item>
+    </plurals>
+    <string name="inbox_auto_delete">कोड आने के एक दिन बाद उन्हें मिटाएँ</string>
+    <plurals name="inbox_cleaned">
+        <item quantity="one">%1$d मैसेज मिटाया गया।</item>
+        <item quantity="other">%1$d मैसेज मिटाए गए।</item>
+    </plurals>
+    <string name="inbox_ok">ठीक है</string>
+    <string name="inbox_risky">संदिग्ध मैसेज</string>
+    <string name="schedule_title">बाद में भेजें</string>
+    <string name="schedule_in_an_hour">एक घंटे में</string>
+    <string name="schedule_tonight">आज रात</string>
+    <string name="schedule_tomorrow_morning">कल सुबह</string>
+    <string name="schedule_tomorrow_evening">कल शाम</string>
+    <string name="schedule_about">लगभग उसी समय भेजा जाएगा; बैटरी बचाने के लिए फ़ोन इसे कुछ मिनट रोक सकता है।</string>
+    <string name="schedule_line">%1$s: %2$s</string>
+    <string name="schedule_cancel">रद्द करें</string>
+    <string name="messages_risky_warning">सावधान: संदिग्ध लिंक या कोड। पासवर्ड या कार्ड की जानकारी न डालें।</string>
+</resources>

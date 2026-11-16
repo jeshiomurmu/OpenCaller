@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bengali. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="voip_channel_incoming">আসা অ্যাপ কল</string>
+    <string name="voip_channel_incoming_description">অন্য কোনো OpenCaller ব্যবহারকারী অ্যাপের মাধ্যমে কল করলে রিং হয়</string>
+    <string name="voip_channel_ongoing">অ্যাপ কল চলছে</string>
+    <string name="voip_incoming">OpenCaller অ্যাপ কল</string>
+    <string name="voip_ongoing">অ্যাপ কল</string>
+    <string name="voip_answer">ধরুন</string>
+    <string name="voip_decline">প্রত্যাখ্যান</string>
+    <string name="voip_hang_up">কল কেটে দিন</string>
+    <string name="voip_mute">মিউট</string>
+    <string name="voip_speaker">স্পিকার</string>
+    <string name="voip_connecting">সংযোগ হচ্ছে…</string>
+    <string name="voip_ringing_out">রিং হচ্ছে…</string>
+    <string name="voip_ringing_in">আসা অ্যাপ কল</string>
+    <string name="voip_answering">কল ধরা হচ্ছে…</string>
+    <string name="voip_active">অ্যাপ কল</string>
+    <string name="voip_ended">কল শেষ</string>
+    <string name="voip_declined">কল প্রত্যাখ্যাত</string>
+    <string name="voip_missed">কেউ ধরেনি</string>
+    <string name="voip_unreachable">OpenCaller দিয়ে এই নম্বরে পৌঁছানো যাচ্ছে না।</string>
+    <string name="voip_failed">কলটি সংযুক্ত করা যায়নি। আপনার সংযোগ দেখে আবার চেষ্টা করুন।</string>
+    <string name="voip_busy">আপনি ইতিমধ্যে একটি কলে আছেন।</string>
+    <string name="voip_microphone_needed">অ্যাপ কলের জন্য OpenCaller-এর মাইক্রোফোন দরকার। কল চলাকালীনই শুধু অন্যজন আপনাকে শুনতে পান।</string>
+    <string name="voip_allow_microphone">মাইক্রোফোনের অনুমতি দিন</string>
+    <string name="voip_video_caller_id">কলারের ভিডিও কলার আইডি, শব্দ ছাড়া</string>
+    <string name="voip_via_app">আপনার ফোন প্ল্যান নয়, OpenCaller-এর মাধ্যমে</string>
+</resources>
