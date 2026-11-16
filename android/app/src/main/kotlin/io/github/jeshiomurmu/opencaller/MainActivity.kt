@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
@@ -19,6 +20,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
@@ -81,25 +84,28 @@ class MainActivity : ComponentActivity() {
             val report by viewModel.pendingReport.collectAsStateWithLifecycle()
             val dial by viewModel.pendingDial.collectAsStateWithLifecycle()
             val message by viewModel.pendingMessage.collectAsStateWithLifecycle()
-            when {
-                state.loading -> {
-                    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {}
-                }
+            // Compose test tags double as resource ids, so UiAutomator (the :benchmark journeys) can find them.
+            Box(modifier = Modifier.fillMaxSize().semantics { testTagsAsResourceId = true }) {
+                when {
+                    state.loading -> {
+                        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {}
+                    }
 
-                state.showOnboarding -> {
-                    Onboarding(account)
-                }
+                    state.showOnboarding -> {
+                        Onboarding(account)
+                    }
 
-                else -> {
-                    OpenCallerApp(
-                        state = state,
-                        reportNumber = report,
-                        onReportShown = viewModel::reportShown,
-                        dialRequest = dial,
-                        onDialShown = viewModel::dialShown,
-                        messageRequest = message,
-                        onMessageShown = viewModel::messageShown,
-                    )
+                    else -> {
+                        OpenCallerApp(
+                            state = state,
+                            reportNumber = report,
+                            onReportShown = viewModel::reportShown,
+                            dialRequest = dial,
+                            onDialShown = viewModel::dialShown,
+                            messageRequest = message,
+                            onMessageShown = viewModel::messageShown,
+                        )
+                    }
                 }
             }
         }

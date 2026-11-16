@@ -6,114 +6,71 @@
 
 | Field | Value |
 | --- | --- |
-| **Current phase** | **13 — Recording line, AI assistant, voice scanner** (13a, the recording line F-UT-03, merged as PR #20; 13b, the AI call-screening assistant F-UT-04, merged as PR #21; 13c, the voice scanner F-PR-13, done in code on this branch) |
-| Phase started | 2026-11-10 |
+| **Current phase** | **14 — Hardening** (accessibility, performance, battery, security, privacy, localization; started 2026-11-16 on the owner's instruction while Phase 13's device steps are still open) |
+| Phase started | 2026-11-16 |
 | Target exit date | — |
-| Branch | `claude/vibrant-johnson-4pfw6q` (13c: from `main` at `6bdb4f5`, the merge of PR #21; 13b from `58a9d53`; 13a from `5ec8b5e`) |
+| Branch | `claude/vibrant-johnson-4pfw6q` (14: from `main` at `fb8b2e8`, the merge of PR #22; Phase 13: 13a from `5ec8b5e`, 13b from `58a9d53`, 13c from `6bdb4f5`) |
 | Last green CI run | Phase 13c: PR #22 head `d54ac8a` green in [run 43599649170](https://github.com/jeshiomurmu/OpenCaller/actions/runs/43599649170) (push, all 10 jobs on the first attempt, incl. the new `voice-spoof` job) and [run 43599652892](https://github.com/jeshiomurmu/OpenCaller/actions/runs/43599652892) (PR; emulator API 29 passed on its one re-run after the emulator died in `emulator-heap.sh` before any test, as in PR #20's run 42797533410), 2026-11-14; the first commit `640d1e4` failed only on lint `ModifierParameter` in the scan card. Phase 13b: PR #21 merged as `6bdb4f5` (2026-11-12); its head green in runs 43168257732 (push) and 43168264199 (PR). Phase 13a: PR #20 merged as `58a9d53` (2026-11-11); its head `dac5337` green in [run 42802634451](https://github.com/jeshiomurmu/OpenCaller/actions/runs/42802634451) (push) and [run 42802641397](https://github.com/jeshiomurmu/OpenCaller/actions/runs/42802641397) (PR), all 9 jobs on the first attempt. Before: [run 42784996908](https://github.com/jeshiomurmu/OpenCaller/actions/runs/42784996908) (push) and [run 42785005495](https://github.com/jeshiomurmu/OpenCaller/actions/runs/42785005495) (PR #20) on `a56aef1`, 2026-11-10, all 9 jobs green on the first attempt, e2e with the new time limits (the PR run on `5847120` had hung for an hour, issue 159). Before: [run 42770697167](https://github.com/jeshiomurmu/OpenCaller/actions/runs/42770697167) (push) and [run 42770702992](https://github.com/jeshiomurmu/OpenCaller/actions/runs/42770702992) (PR #20) on `be8a838`, 2026-11-10, all 9 jobs green (android incl. lint and the new unit/Robolectric tests, backend with `RecordingApiTest`, the new `agents` job with the image and the telephony overlay, compose smoke, emulators API 29 + 36, e2e, `ml`, license); in the PR run e2e passed on its one re-run after phone A's app crashed in LiveKit's WebRTC microphone thread during TC-VOIP-001 (issue 157). GitGuardian red on two false positives (issue 158). `main` after Phase 12: PR #18 merged as `235ec27` (runs 42647136223 + 42647143480 on `5e98786`, all 8 jobs green) and PR #19 as `5ec8b5e` (runs 42651034526 + 42651168165 on `8890453`, all 8 jobs green, API 29 with the framework restart). Phase 12: [run 42624069007](https://github.com/jeshiomurmu/OpenCaller/actions/runs/42624069007) on `1dce0d1`, 2026-11-09, all 8 jobs green (android incl. lint and the new unit/Robolectric tests, both flavors and the release builds; backend; compose smoke with the Family, Scam feed and Business dashboard sections; emulators API 29 + 36; e2e with TC-E2E-001, TC-VOIP and TC-FAM-001/002; `ml`; license); API 36 passed on its one re-run after TC-OTP-005 lost the emulated call (issue 101). `main` after Phase 11: merges `08a9669` (PR #16) and `6d9d87a` (PR #17, the emulator run of TC-VOIP; runs 42553846860 + 42553869775 on `e665d0e`, all 8 jobs green after one re-run of the jobs that lost Ubuntu's apt mirror). Phase 11: [run 41827185493](https://github.com/jeshiomurmu/OpenCaller/actions/runs/41827185493) (PR) and push run 41827177644 on `78c649d` (PR #16, `phase/11-voip`), 2026-11-04, all 8 jobs green in both (android incl. lint, both flavors and Room's `5.json`; backend with the VoIP, Flash and video tests and the real ffmpeg; compose smoke with the real LiveKit and the transcoder; emulators API 29 + 36 incl. `MigrationTest` 4→5; e2e TC-E2E-001; `ml`; license); the API 29 job passed on its one re-run (first attempt: a corrupt system image download in one run, the emulator total p95 123 ms > 100 ms in the other with the app's own time 34 ms; the re-runs measured 49 / 36 ms total, 11 / 14 ms own); GitGuardian green. `main` after Phase 10: merge `f00a2df` of PR #15 (2026-11-04). Phase 10: [run 41664779825](https://github.com/jeshiomurmu/OpenCaller/actions/runs/41664779825) (PR) and push run 41664769818 on `3c2679d` (PR #15, `phase/10-supporter`), 2026-11-03, all 8 jobs green in both (android incl. lint, the new Robolectric tests `BackupTest`, `GhostCallTest`, `AnnounceCallerTest`, the play release + App Bundle build and the Room schema check with Room's `4.json`; backend with `BillingApiTest`, `ExtendedListTest` and the gauge fix; compose smoke with the Supporter tier section; emulators API 29 + 36 incl. `MigrationTest` 3→4 and TC-OTP-005/008; e2e TC-E2E-001; `ml`; license); GitGuardian green. `main` after Phase 9: [run 41584668083](https://github.com/jeshiomurmu/OpenCaller/actions/runs/41584668083) on `da35db9` (merge of PR #14), 2026-11-03, green. Phase 9: [run 41577281842](https://github.com/jeshiomurmu/OpenCaller/actions/runs/41577281842) (PR) and push run 41577277467 on `de64aaf` (PR #14, `phase/09-business`), 2026-11-03, all 8 jobs green in both (android incl. lint, Robolectric, the play release + App Bundle build and the Room schema check that now regenerates `3.json`; backend with TC-BIZ-001/002 and the admin web; compose smoke with the Business claims section and the admin web; emulators API 29 + 36 incl. `MigrationTest` 2→3 and TC-OTP-008 with `vis=SECRET`; e2e TC-E2E-001; `ml`; license); GitGuardian green. Phase 8: [run 41311151805](https://github.com/jeshiomurmu/OpenCaller/actions/runs/41311151805) (PR) and push run 41311146757 on `724568a` (PR #12), 2026-11-01, all 8 jobs green in both (android incl. lint, Robolectric and the Room schema check; backend with TC-SOC-001/002/003; compose smoke with the Profiles section; emulators API 29 + 36 incl. `MigrationTest`; e2e TC-E2E-001; `ml`; license); `main` after the merge: [run 41312418433](https://github.com/jeshiomurmu/OpenCaller/actions/runs/41312418433) on `a273b1b`, green. Phase 7b: [run 41276079338](https://github.com/jeshiomurmu/OpenCaller/actions/runs/41276079338) and run 41276075457 on `c272653` (PR #11, `phase/07b-otp`), 2026-11-01, all 8 jobs green in both (android incl. lint and Robolectric; `ml`; emulators API 29 + 36 with TC-OTP-006/005/008 next to the earlier QA; e2e TC-E2E-001); in run 41276075457 the API 36 job passed on its one re-run after TC-INCALL-001 lost the incoming call before Answer (issue 101). Phase 7a: [run 41201902241](https://github.com/jeshiomurmu/OpenCaller/actions/runs/41201902241) (PR) and push run 41201898349 on `d28897e` (PR #10, `phase/07a-sms`), 2026-10-31, all 7 jobs green in both (android incl. lint and Robolectric; emulators API 29 + 36 with TC-SMS-001/002 next to the earlier QA; e2e TC-E2E-001). Phase 6b: [run 40112242702](https://github.com/jeshiomurmu/OpenCaller/actions/runs/40112242702) and run 40112239972 on `96a2d1c` (PR #9, `phase/06b-dialer`), 2026-10-24, all 7 jobs green in both (android incl. lint and Robolectric, emulators API 29 + 36 with the tab walk, TC-BLK, TC-INCALL-001 and TC-DIAL-001, e2e TC-E2E-001). Phase 6a: [run 39995957056](https://github.com/jeshiomurmu/OpenCaller/actions/runs/39995957056) (PR) and push run 39995948436 on `1fcd066` (PR #8, `phase/06a-incall`), 2026-10-23, all 7 jobs green in both (in-call QA TC-INCALL-001 + TC-DIAL-001 on API 29 + 36). Phase 5: [run 39036657683](https://github.com/jeshiomurmu/OpenCaller/actions/runs/39036657683) (PR) and push run 39036654142 on `e7b3cbc` (PR #7, `phase/05-sync-lookup`), 2026-10-17, all 7 jobs green in both. Earlier [run 39034003467](https://github.com/jeshiomurmu/OpenCaller/actions/runs/39034003467) on `f1c3d57`, all 7 jobs green: android (incl. the unsigned foss release build), backend, compose smoke, license, emulators API 29 + 36, e2e TC-E2E-001. `main` after Phase 4: [run 39001557879](https://github.com/jeshiomurmu/OpenCaller/actions/runs/39001557879) on `176fb65` (merge of PR #6), 2026-10-17, all 6 jobs green. Phase 4 part 2: [run 39000717610](https://github.com/jeshiomurmu/OpenCaller/actions/runs/39000717610) on `d83871e` (PR #6, `phase/04-backend-mvp-2`), 2026-10-17, all 6 jobs green (backend `check` with Testcontainers PostgreSQL, Redis and Chainguard MinIO; compose `scripts/smoke.sh` with every check passing; android; emulators API 29 + 36; license); push run 39000690116 green too; GitGuardian green. Phase 4 part 1: [run 38912528858](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38912528858) on `c31d884` (PR #5), 2026-10-16, all 6 jobs green incl. backend Testcontainers tests and compose `scripts/smoke.sh`; GitGuardian green. `main` after Phase 3: [run 38907608878](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38907608878) on `39b93f0`, all 6 jobs green. Phase 3: [run 38903668253](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38903668253) on `39a6822` (PR #4), 2026-10-16, all 6 jobs green, blocking QA on API 29 + 36 with the new latency gates. Phase 2: [run 38879129151](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38879129151) on `f6b7392` (`phase/02-onboarding`, PR #3), 2026-10-16, all 6 jobs green. `main`: [run 38867777494](https://github.com/jeshiomurmu/OpenCaller/actions/runs/38867777494) (`aede43d`) |
 | App version | 1.1.0 (versionCode 1010099), prepared (13c), not tagged; `v0.1.0-alpha`, `v0.5.0-beta`, `v1.0.0` and `v1.1.0` wait for the signing secrets |
 
 ## Current phase checklist
 
-Copied from `docs/implementation_plan.md` → Phase 13. Tick here as you go; copy the ticked list back to the plan when the phase exits.
+Copied from `docs/implementation_plan.md` → Phase 14. Tick here as you go; copy the ticked list back to the plan when the phase exits.
 
-- [x] LiveKit SIP + SIP trunk config docs (provider-agnostic) in `infra/deploy` (`infra/deploy/telephony.md`, Twilio section, `infra/docker/compose.telephony.yml`)
-- [x] Line allocation API; per-country legal switch for recording (`POST /v1/lines/recording`, `RECORDING_COUNTRIES=BD,IN` + admin web)
-- [x] Recording: merge flow UI, beep, download, server deletion ≤ 1 h, local playback, transcript + summary (optional) — summaries left for later (owner: transcripts only, self-hosted Whisper); device QA TC-REC-001 open
-- [x] AI assistant: Python LiveKit agent (STT → LLM → TTS), guided call-forwarding setup with MMI codes and carrier notes, live transcript UI, pick-up/reply/block actions — in code (13b, ADR 0010); device QA TC-AST-001 and the cost per screened minute open
-- [x] Voice scanner: anti-spoofing service in `ml/voice-spoof`, agent integration, warning UI with uncertainty text — in code (13c, ADR 0011); device QA TC-SCAN-001 open
+- [ ] Accessibility audit (TalkBack walkthrough of every screen, font scale 200%)
+- [ ] Performance: Baseline Profiles, Macrobenchmark for cold start and screening; battery test 24 h
+- [ ] Security review: OWASP MASVS checklist, dependency audit, pinning tests
+- [ ] Privacy review: data inventory matches `architecture.md` §10; privacy policy + terms published
+- [ ] Localization: Bengali, Hindi, English first; RTL check (Arabic)
+- [ ] Crash-free ≥ 99.5% in beta cohort
 
-**Exit:** TC-REC-*, TC-AST-*, TC-SCAN-* pass on a real SIM in one launch country; cost per screened minute measured and recorded.
+**Exit:** all P0/P1 test cases pass; no open Severity-1/2 bugs.
 
-This task (2026-11-10): the first three items, the recording line. The owner names the SIP trunk provider and the
-launch countries before any provider-specific configuration is written; LiveKit's official docs (docs.livekit.io,
-allowed in the environment on 2026-11-10) are the only source for the SIP and Egress setup.
+This task (2026-11-16): the whole phase, one PR. The owner set the current phase to 14 although Phase 13's exit (the
+device steps TC-REC-001, TC-AST-001 with the cost per screened minute, TC-SCAN-001 on a real SIM) is still open; those
+steps carry over (Next step).
 
-Owner decisions (2026-11-10): the SIP trunk provider is **Twilio** (Elastic SIP Trunking, LiveKit's official Twilio
-quickstart); recording is enabled at launch for **Bangladesh and India** (`RECORDING_COUNTRIES=BD,IN`), and every
-other country stays off as a commented placeholder that must be approved after the operator's own legal review (an
-open-source server: self-hosters set their own list); the **server's hourly job** deletes recordings (1 h after the
-app confirms the download, 24 h at the latest), not the agent; optional transcripts use **self-hosted Whisper**
-(summaries later).
+Owner decisions (2026-11-16):
 
-Plan (recording line, F-UT-03):
+- **Localization:** all 1,185 strings in Bengali and Hindi now; every translated file is marked as needing a native
+  speaker's review, which blocks the Play release (open issue).
+- **Benchmarks:** two modules: `:benchmark` (Macrobenchmark: cold start, and screening in the running app through a
+  trace section) and `:microbenchmark` (AndroidX Microbenchmark of the screening engine); run on the CI API 36
+  emulator, so the numbers are indicative, not a phone's.
+- **Traffic check:** the e2e emulators run with the emulator's packet capture; a script checks every request's host
+  and body against architecture §10 (no contact, call-log or SMS content). The manual capture on a phone
+  (`testing.md` §5 step 10) stays.
+- **Crash-free:** measured with Google Play's Android vitals during the closed test (no SDK, rules.md §2); stays open
+  until a beta cohort exists. F-Droid users aren't covered.
 
-1. **Infra** (`infra/deploy/telephony.md`, provider-agnostic): LiveKit SIP server (`livekit/sip`, Redis, ports 5060
-   and 10000–20000), Egress (`livekit/egress`, Redis, S3 output to MinIO), LiveKit server's Redis; one inbound trunk
-   per recording number (`numbers`, `allowed_addresses` or auth), a callee dispatch rule (`room_prefix` `rec`,
-   `randomize`, `hide_phone_number`: the caller's number never reaches a room name; LiveKit warns that individual
-   rules put it there) whose `room_config` dispatches the `recorder` agent; firewall, TLS and how to test. Compose gets
-   SIP, Egress and the agents in an overlay file (`compose.telephony.yml`), so the default stack doesn't change.
-2. **Server** (V8): `recording_lines` (number, country, enabled), `recording_sessions` (user, one-time code, room,
-   state, times), `recordings` (session, object key, size, duration, downloaded/deleted times). `POST /v1/lines/recording`
-   (supporter or self-hosted): the user's line number and a one-time code, refused (`recording_unavailable`) where the
-   user's country isn't approved; the approved countries come from `RECORDING_COUNTRIES` and the admin web (audit
-   log). Internal agent endpoints (shared token): claim a session by caller number + code, report the egress result.
-   The app's endpoints: list, pre-signed download, confirm download. A job deletes objects 1 h after the confirmed
-   download, and after 24 h at the latest. The recording is announced as a push carrying only an item id (ADR 0007).
-3. **Agent** (`backend/agents`, Python, `livekit-agents`): `recorder` joins the room, plays a beep and a short
-   announcement to everyone, reads the one-time code (DTMF) and claims the session, starts an audio-only room
-   composite Egress to MinIO, stops it when the call ends and reports the result. pytest for the logic (code
-   matching, egress request, reporting) with fakes; no live LiveKit in unit tests.
-4. **App** (`feature:recording`, Room v6 `recording`): Record during a call → a consent reminder (both parties hear
-   the announcement; the user is responsible for the law where the other party is) → dial the line with the code as
-   DTMF (pauses in the dial string) → merge with `Call.conference` once both are active; recordings list, download
-   with confirmation, local playback, delete. Transcript and summary only if the user turns them on (server-side STT
-   and LLM, provider to be chosen).
-5. **Tests and docs**: server integration tests (allocation, legal switch, entitlement, agent claim, retention),
-   pytest for the agent, app unit/Robolectric tests, TC-REC-001 device steps (real SIM), ADR 0009, architecture §4.9
-   and §10, Data safety, `docs/phase.md`.
+Plan:
 
-This task (2026-11-11, 13b): the fourth item, the AI call-screening assistant (F-UT-04, TC-AST-001).
-
-Owner decisions (2026-11-11): a forwarded call is matched to the user by a **dedicated assistant number per user**,
-taken from a pool the operator buys (LiveKit gives the agent the dialed number as `sip.trunkPhoneNumber`; the
-forwarding `Diversion` header can't be relied on); **all four provider families** are selectable by env
-(OpenAI-compatible endpoints — OpenAI or self-hosted servers —, Deepgram, ElevenLabs, Google); the caller's number,
-the transcript and the summary go **to the user's phone only**, through the call room: the server keeps the minutes
-used per month and a short-lived call row without either party's number; a **monthly cap**
-(`ASSISTANT_MONTHLY_MINUTES`, default 100, 0 = none).
-
-Plan (AI assistant, F-UT-04):
-
-1. **Agent** (`backend/agents`, `assistant`): LiveKit Agents voice pipeline (`AgentSession`: STT → LLM → TTS with
-   Silero VAD), providers by env (`ASSISTANT_STT`, `ASSISTANT_LLM`, `ASSISTANT_TTS` and their model, voice and base
-   URL settings; plugins 1.8.11: `openai`, `deepgram`, `elevenlabs`, `google`, `silero`, APIs read from the wheels).
-   The prompt: say it is an automated assistant, greet, say the user is unavailable, ask name and reason, never ask
-   for or repeat OTPs, passwords or bank details, end politely. A function tool records `{name, reason, urgency,
-   likely_spam}`. Over the data channel (topic `opencaller.assistant`, JSON, sent only to the user's participant): the
-   caller's number, the transcript lines, the details and the end; from the app: quick reply (the agent speaks it),
-   call back (the agent tells the caller and hangs up), spam (the agent ends the call). It claims the call by the
-   dialed number, ends at the remaining minutes, reports the duration. pytest with fake providers and a fake room.
-2. **Server** (V9): `assistant_numbers` (the pool: number, country, assigned user), `assistant_calls` (user, room,
-   times; no numbers), `assistant_usage` (user, month, seconds). `POST /v1/lines/assistant` (supporter or self-hosted;
-   a free number in the user's country, `assistant_unavailable` otherwise), `DELETE /v1/lines/assistant`,
-   `GET /v1/assistant/usage`, `GET /v1/assistant/calls/{id}` (room, LiveKit token with data only, URL); agent API
-   (claim by dialed number → call id and remaining seconds, or 404 / 429 over the cap; end with the duration); an
-   opaque `assistant_call` push; OpenAPI; ADR 0010.
-3. **App** (`feature:assistant`): setup wizard (what forwarding does, Activate with the MMI codes `**61*`, `**62*`,
-   `**67*` + number + `#`, `##002#` to cancel all, "my carrier doesn't support this" guidance); live screen (joins the
-   room with LiveKit's data channel: transcript, details, Call back, Quick reply, Spam and hang up); history of screened
-   calls in Room (new table, migration); minutes used this month; push routing of `assistant_call`.
-4. **Tests and docs**: server integration tests, pytest, app unit tests, TC-AST-001 device steps (real SIM),
-   telephony guide section, ADR 0010, architecture §4.9/§10, Data safety, `docs/phase.md`.
-
-This task (2026-11-14, 13c): the fifth item, the voice scanner (F-PR-13, TC-SCAN-001).
-
-Owner decisions (2026-11-14): evaluation data **ASVspoof 2019 LA** from datashare.ed.ac.uk (ODC-By 1.0; host allowed in
-the environment), a stratified subset of the evaluation set, clean and through phone codecs; the scanner **shares the
-recording lines** (same numbers and one-time codes; the session has a kind, both agents are dispatched and the claimed
-code decides which one stays); **a short beep** for both parties and **the recording countries** only; scam cues in
-**English, Bengali and Hindi** from self-hosted Whisper on the sampled seconds, nothing stored, only cue ids to the
-phone (the Bengali and Hindi lists need a native speaker's check).
-
-Plan (voice scanner, F-PR-13): `ml/voice-spoof` (AASIST, MIT weights fetched at build time with a pinned SHA-256,
-ONNX + onnxruntime, FastAPI `POST /v1/score` for 4 s of 16 kHz PCM, evaluation script with G.711, GSM-FR and
-G.711 → Opus, EER in its README); server V10 (scan sessions on `recording_sessions`, `/v1/lines/scanner`, kind-aware
-claim with `409 other_kind`, scan result, one-day retention, `SCANNER_ENABLED`); `backend/agents` `scanner` (claim,
-beep, two speech windows, voice-spoof, Whisper, cue rules, report, hang up) and the recorder leaving scans alone;
-app `feature:scanner` (`LineScanner` on a `LineConnection` shared with the recorder, mute while listening) and the
-in-call Scan voice button with the result card; docs, ADR 0011, v1.1.0.
+1. **Accessibility** (design.md §11 on every screen): static audit of the 44 screens and the shared components (labels
+   on every icon and action, roles, 48 dp targets, focus order of the caller card's actions, information not by colour
+   alone, `@Preview` at font scale 2.0); fix every finding; Compose semantics tests (Robolectric) for `CallerCard`,
+   `OtpGuardScreen` and the blocked log; the emulator walk takes 200 % font screenshots. The TalkBack walkthrough
+   itself is a device step for the owner (`testing.md`).
+2. **Performance:** versions of `androidx.benchmark` (macro, micro, Baseline Profile Gradle plugin) and
+   `androidx.profileinstaller` read from Google Maven (temporary CI job, as in Phases 10 and 11); `:benchmark`
+   (cold start `StartupTimingMetric`, screening through a `TraceSectionMetric`) and `:microbenchmark` (the screening
+   engine with in-memory fakes); Baseline Profile generated on the CI emulator and committed; results in
+   `testing.md`.
+3. **Battery:** the 24 h procedure and a results table in `testing.md`; a one-hour emulator proxy (wakeups, jobs,
+   alarms, network from `dumpsys batterystats`) recorded from CI; the 24 h figure on a phone is the owner's step.
+4. **Security:** `docs/security.md` with OWASP MASVS v2 controls, pass/fail and evidence; verify and test pinning
+   (wrong pin refused), token storage (Keystore-wrapped), exported components (8 declared `exported="true"`: each must
+   be guarded by a system permission or be debug-only), Intent validation (every handler of external extras), SQL
+   injection safety on the server (no string-built SQL; tests with injection payloads), the admin port isolation;
+   dependency audit (tool verified first).
+5. **Privacy:** packet capture in the e2e job and a checker script; `PRIVACY.md` and `TERMS.md` drafts for the owner's
+   legal review.
+6. **Localization:** extract any hard-coded user-facing text; `values-bn` and `values-hi` for every module; lint
+   `MissingTranslation` as an error; pseudo-locales in debug builds and an `ar-XB` (RTL) pass in the emulator walk;
+   fix RTL findings.
+7. **Bugs:** triage the open issues into the bug log with severities; close or downgrade every S1/S2.
+8. **Verification and hand-off:** `./gradlew check` (backend), Android checks in CI, P0/P1 test cases (those that can
+   run in CI pass; device-only ones are listed); `docs/phase.md`; commit "chore: accessibility, performance, security
+   and privacy hardening"; push; PR.
 
 ## Next step
 
@@ -558,6 +515,7 @@ Older entries (Phases 0–10): `docs/phase-history.md`.
 
 | Phase | Started | Exited | Notes |
 | --- | --- | --- | --- |
+| 13 — Recording line, AI assistant, voice scanner | 2026-11-10 | 2026-11-15 (code) | PR #20 (`58a9d53`), PR #21 (`6bdb4f5`) and PR #22 (`fb8b2e8`) merged; CI green on each head (runs 42802634451 + 42802641397; 43168257732 + 43168264199; 43599649170 + 43599652892, 43604194403 + 43604197693). TC-REC/AST/SCAN pass at the server, agent (pytest) and unit level. Open: the device steps on a real SIM (TC-REC-001, TC-AST-001 with the cost per screened minute, TC-SCAN-001), issues 165 and 166, the `v1.1.0` tag (signing secrets) |
 | 12 — Family protection, scam feed, business dashboard | 2026-11-09 | 2026-11-09 (code) | PR #18 merged (`235ec27`), the API 29 heap fix in PR #19 (`5ec8b5e`); CI green (runs 42624069007; 42647136223 + 42647143480; 42651034526 + 42651168165). TC-FAM-001/002 pass at the server, unit and Robolectric level and on two API 36 emulators. Open: v1.0.0 tag (signing secrets), privacy policy URL, Play rollout and F-Droid, the Phase 12 device steps |
 | 11 — VoIP, Flash, video caller ID | 2026-11-04 | 2026-11-09 (code) | PR #16 merged (`08a9669`), the emulator run of TC-VOIP in PR #17 (`6d9d87a`); CI green (runs 41827185493 + 41827177644 on `78c649d`; 42553846860 + 42553869775 on `e665d0e`). TC-VOIP-001…003 pass at the server, unit and Robolectric level and on two API 36 emulators. Open: the two-phone steps across networks, real push delivery, camera recording (issues 128–131, 138), issue 139 |
 | 10 — Supporter tier and utilities | 2026-11-03 | 2026-11-04 (code) | PR #15 merged (`f00a2df`); CI green (runs 41664779825 + 41664769818 on `3c2679d`, 41675406882 + 41675390794 on `44ecfb8`). TC-UT-001…004 and TC-BILL-001 pass at the unit, Robolectric and server-integration level. Open: the device steps (license-tester purchase after the owner's Play setup, issue 117; Ghost Call, Announce Caller, Drive backup, messenger caller ID on a phone) |

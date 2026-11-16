@@ -46,6 +46,7 @@ class ScreeningEngine(
     private val timeSource: TimeSource,
     private val config: ScreeningConfig,
     regexClock: () -> Long = System::nanoTime,
+    private val trace: ScreeningTrace = ScreeningTrace.NONE,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + dispatchers.io)
     private val matcher = RuleMatcher(normalizer::countryOf, TimeLimitedRegex(config.regexBudgetMillis, regexClock))
@@ -55,7 +56,13 @@ class ScreeningEngine(
     suspend fun screen(call: ScreeningCall): ScreeningResult {
         val started = timeSource.markNow()
         val steps = StepTimes(timeSource)
-        val result = decideWithinBudget(call, steps)
+        val cookie = trace.begin()
+        val result =
+            try {
+                decideWithinBudget(call, steps)
+            } finally {
+                trace.end(cookie)
+            }
         val latencyMs = started.elapsedNow().inWholeMilliseconds.toInt()
         // Debug builds only (no tree is planted in release); durations and the reason code, never the number.
         Timber.d("Screening timings: %s in %d ms; %s", result.reason.code, latencyMs, steps)
