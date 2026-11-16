@@ -58,8 +58,24 @@ step "2. Macrobenchmark (cold start, screening)" ./gradlew --no-configuration-ca
   -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.enabledRules=Macrobenchmark
 find benchmark/build/outputs -name '*benchmarkData.json' -print -exec cat {} \; -exec cp {} "../$out/" \;
 
-step "2b. Microbenchmark (screening engine)" ./gradlew --no-configuration-cache :microbenchmark:connectedReleaseAndroidTest
-find microbenchmark/build/outputs -name '*benchmarkData.json' -print -exec cat {} \; -exec cp {} "../$out/micro-benchmarkData.json" \;
+# The Microbenchmark refuses to measure an APK that isn't `speed` compiled (NOT-AOT-COMPILED), and Gradle's
+# connected test installs and runs in one go; so: build, install, compile, then run it with `am instrument`.
+microbenchmark() {
+  local test_package=io.github.jeshiomurmu.opencaller.microbenchmark.test
+  local runner=androidx.benchmark.junit4.AndroidBenchmarkRunner
+  ./gradlew --no-configuration-cache :microbenchmark:assembleReleaseAndroidTest || return 1
+  local test_apk
+  test_apk=$(find microbenchmark/build/outputs/apk/androidTest -name '*.apk' | head -n 1)
+  [ -n "$test_apk" ] || { echo "no microbenchmark test APK"; return 1; }
+  adb install -r -t "$test_apk" || return 1
+  adb shell cmd package compile -m speed -f "$test_package"
+  adb shell am instrument -w -e androidx.benchmark.suppressErrors EMULATOR "$test_package/$runner" |
+    tr -d '\r' | tee "../$out/micro-instrument.txt"
+  adb pull "/sdcard/Android/media/$test_package/" "../$out/micro-results" > /dev/null 2>&1 || true
+  find "../$out/micro-results" -name '*benchmarkData.json' -print -exec cat {} \; 2> /dev/null
+  grep -q '^OK (' "../$out/micro-instrument.txt"
+}
+step "2b. Microbenchmark (screening engine)" microbenchmark
 
 echo "== 3. Battery proxy: fresh release install, idle ${idle_minutes} min, screen off, unplugged"
 apk=$(find app/build/outputs/apk/foss/benchmarkRelease -name '*.apk' | head -n 1)

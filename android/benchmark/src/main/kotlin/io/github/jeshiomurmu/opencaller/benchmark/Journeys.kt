@@ -2,7 +2,10 @@ package io.github.jeshiomurmu.opencaller.benchmark
 
 import androidx.benchmark.macro.MacrobenchmarkScope
 import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.Direction
+import androidx.test.uiautomator.StaleObjectException
+import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
 
@@ -72,22 +75,39 @@ internal fun MacrobenchmarkScope.testNumber(
     val changed =
         device.wait(
             {
-                val outcome = device.findObject(By.res(TEST_OUTCOME_TAG))?.text
+                val outcome = device.textOf(By.res(TEST_OUTCOME_TAG))
                 if (outcome != null && outcome != before) {
                     outcome
                 } else {
-                    device.findObject(By.scrollable(true))?.scroll(Direction.DOWN, SCROLL_PERCENT)
+                    try {
+                        device.findObject(By.scrollable(true))?.scroll(Direction.DOWN, SCROLL_PERCENT)
+                    } catch (expected: StaleObjectException) {
+                        // The list recomposed under us; the next poll finds it again.
+                    }
                     null
                 }
             },
             TIMEOUT_MILLIS,
         )
     checkNotNull(changed) {
-        val shown = device.findObjects(By.textContains("")).mapNotNull { it.text }.take(DIAGNOSTIC_TEXTS)
-        "The number tester showed no result for $number (field: ${device.findObject(By.res(TEST_NUMBER_TAG))?.text}, " +
+        val shown = device.findObjects(By.textContains("")).mapNotNull { it.textOrNull() }.take(DIAGNOSTIC_TEXTS)
+        "The number tester showed no result for $number (field: ${device.textOf(By.res(TEST_NUMBER_TAG))}, " +
             "before: $before, on screen: $shown)"
     }
 }
 
 /** The number tester's current outcome text, if any. */
-internal fun MacrobenchmarkScope.testOutcome(): String? = device.findObject(By.res(TEST_OUTCOME_TAG))?.text
+internal fun MacrobenchmarkScope.testOutcome(): String? = device.textOf(By.res(TEST_OUTCOME_TAG))
+
+/**
+ * The text of the first node matching [selector], or null. Compose replaces nodes when it recomposes (the outcome
+ * text changes while the engine answers), so a node found a moment ago can be stale when its text is read.
+ */
+private fun UiDevice.textOf(selector: BySelector): String? = findObject(selector)?.textOrNull()
+
+private fun UiObject2.textOrNull(): String? =
+    try {
+        text
+    } catch (expected: StaleObjectException) {
+        null
+    }

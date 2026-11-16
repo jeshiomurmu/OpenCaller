@@ -9,10 +9,10 @@ android {
 
     defaultConfig {
         testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
-        // CI runs on emulators; their numbers are indicative only (a phone's are the reference). Without the
-        // androidx.benchmark Gradle plugin the test APK isn't `speed` compiled before the run (NOT-AOT-COMPILED);
-        // the numbers include JIT warm-up, which the benchmark's warm-up iterations mostly absorb.
-        testInstrumentationRunnerArguments["androidx.benchmark.suppressErrors"] = "EMULATOR,NOT-AOT-COMPILED"
+        // CI runs on emulators; their numbers are indicative only (a phone's are the reference). The test APK must
+        // be `speed` compiled before the run (scripts/ci/performance.sh does it; the androidx.benchmark Gradle
+        // plugin isn't used).
+        testInstrumentationRunnerArguments["androidx.benchmark.suppressErrors"] = "EMULATOR"
     }
 
     // Benchmarks run against the release build type, so the test APK isn't debuggable.
