@@ -11,7 +11,7 @@
     <!-- RiskBanner, e.g. "Likely scam · Loan · 214 reports". -->
     <string name="risk_likely_scam">Likely scam</string>
     <string name="risk_suspicious">Suspicious</string>
-    <string name="risk_banner_separator">" · "</string>
+    <string name="risk_banner_separator" translatable="false">" · "</string>
     <plurals name="risk_report_count">
         <item quantity="one">%d report</item>
         <item quantity="other">%d reports</item>

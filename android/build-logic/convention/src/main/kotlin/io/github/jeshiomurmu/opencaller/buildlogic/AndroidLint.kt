@@ -14,6 +14,8 @@ internal fun Lint.configureOpenCallerLint(project: Project) {
     // Dependency and SDK freshness is handled by Renovate/Dependabot and the targetSdk is fixed by
     // docs/architecture.md §2, so "newer version available" checks must not break the build.
     disable += setOf("GradleDependency", "AndroidGradlePluginVersion", "NewerVersionAvailable", "OldTargetApi")
+    // Every string ships in Bengali and Hindi (Phase 14); a new string without both translations fails the build.
+    error += setOf("MissingTranslation", "ExtraTranslation", "MissingQuantity", "ImpliedQuantity")
     val baselineFile = project.file("lint-baseline.xml")
     if (baselineFile.exists()) {
         baseline = baselineFile

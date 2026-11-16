@@ -34,6 +34,10 @@ jobs:
         working-directory: .
         run: scripts/ci/privacy-imports.sh
 
+      - name: Translations match the English strings (bn, hi)
+        working-directory: .
+        run: python3 scripts/ci/check_translations.py android
+
       - name: Lint, test and assemble both flavors
         # --continue: run every task and report all failures in one CI run.
         run: >-

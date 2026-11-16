@@ -71,6 +71,8 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
+            // en-XA (long, accented text) and ar-XB (right to left) for the RTL and text-expansion walk (Phase 14).
+            isPseudoLocalesEnabled = true
             buildConfigField("String", "API_BASE_URL", quoted(debugApiBaseUrl.get()))
             buildConfigField("String", "API_PINS", quoted(""))
         }

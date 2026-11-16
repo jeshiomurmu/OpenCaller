@@ -151,10 +151,24 @@ wait_quietly() {
   return 1
 }
 
+# The Phase 14 walks change the font scale and the app's language; the next scripts expect the defaults.
+restore_display() {
+  adb shell settings put system font_scale 1.0 > /dev/null 2>&1 || true
+  if [[ "${sdk:-0}" -ge 33 ]]; then adb shell cmd locale set-app-locales "$app_id" --locales en-US > /dev/null 2>&1 || true; fi
+}
+
+# The x centre of the first node whose text contains $1 (pseudo-locales wrap the text in direction marks).
+x_of() {
+  dump | grep -oE "text=\"[^\"]*$1[^\"]*\"[^>]*bounds=\"\[[0-9]+,[0-9]+\]\[[0-9]+,[0-9]+\]\"" | head -1 |
+    grep -oE '\[[0-9]+,[0-9]+\]\[[0-9]+,[0-9]+\]' | sed -E 's/\[([0-9]+),[0-9]+\]\[([0-9]+),[0-9]+\]/\1 \2/' |
+    awk '{ print int(($1 + $2) / 2) }'
+}
+
 # What was going on when the script failed: crashes, the window in front, and the app's, the role controller's and
 # the activity manager's log lines.
 report_failure() {
   local status=$?
+  restore_display
   if [[ "$status" -ne 0 ]]; then
     echo "::group::Diagnostics (smoke script exited with $status)"
     adb logcat -d -b crash || true
@@ -284,3 +298,64 @@ for mode in no yes; do
 done
 
 echo "OK: $app_id walked all ${#tabs[@]} tabs in light and dark mode"
+
+# Phase 14, docs/design.md §11 and docs/testing.md → Localization: every tab at 200 % font (screenshots for the
+# record), then, where Android has per-app languages (API 33+), the tabs in Bengali and Hindi and the RTL
+# pseudo-locale ar-XB, whose bottom bar must be mirrored.
+sdk="$(adb shell getprop ro.build.version.sdk | tr -d '\r')"
+set_night_mode no
+
+adb shell settings put system font_scale 2.0
+adb shell am force-stop "$app_id"
+adb shell am start -W -n "$app_id/$activity" > /dev/null
+wait_for_text "Calls"
+for tab in "${tabs[@]}"; do
+  label="${tab%%|*}"
+  tap_text "$label"
+  wait_for_any "${tab#*|}"
+  adb exec-out screencap -p > "$out/font200-$label.png"
+done
+assert_alive
+adb shell settings put system font_scale 1.0
+echo "Font scale 200 %: all ${#tabs[@]} tabs shown"
+
+if [[ "$sdk" -ge 33 ]]; then
+  # locale|Calls tab|Protection tab|a text the Protection tab shows (values-bn / values-hi strings.xml)
+  for spec in "bn|কল|সুরক্ষা|আপনার নিয়ম" "hi|कॉल|सुरक्षा|आपके नियम"; do
+    IFS='|' read -r locale calls protection rules <<< "$spec"
+    adb shell cmd locale set-app-locales "$app_id" --locales "$locale"
+    adb shell am force-stop "$app_id"
+    adb shell am start -W -n "$app_id/$activity" > /dev/null
+    wait_for_text "$calls"
+    tap_text "$protection"
+    wait_for_text "$rules"
+    adb exec-out screencap -p > "$out/$locale-protection.png"
+    tap_text "$calls"
+    sleep 1
+    adb exec-out screencap -p > "$out/$locale-calls.png"
+    assert_alive
+    echo "$locale: tabs shown in the translation ($calls, $protection)"
+  done
+
+  adb shell cmd locale set-app-locales "$app_id" --locales ar-XB
+  adb shell am force-stop "$app_id"
+  adb shell am start -W -n "$app_id/$activity" > /dev/null
+  sleep 3
+  calls_x="$(x_of Calls)"
+  protection_x="$(x_of Protection)"
+  adb exec-out screencap -p > "$out/ar-XB-calls.png"
+  if [[ -z "$calls_x" || -z "$protection_x" ]]; then
+    echo "::error::ar-XB: the bottom bar's labels weren't found"
+    dump || true
+    exit 1
+  fi
+  if [[ "$calls_x" -le "$protection_x" ]]; then
+    echo "::error::ar-XB: the bottom bar isn't mirrored (Calls at x=$calls_x, Protection at x=$protection_x)"
+    exit 1
+  fi
+  assert_alive
+  echo "ar-XB: right to left, Calls (x=$calls_x) right of Protection (x=$protection_x)"
+  restore_display
+else
+  echo "API $sdk has no per-app languages: the bn, hi and ar-XB walk runs on the API 36 emulator"
+fi
