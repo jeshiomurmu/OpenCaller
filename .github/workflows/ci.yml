@@ -274,9 +274,9 @@ jobs:
         # The emulators' own -tcpdump on the API 36 image records only a few packets (run 43823739801: no request to
         # the server at all), so the check reads what the emulators send through the host: every interface, without
         # adb and the emulator console (5037, 5554-5682), which carry the test's own commands (the canaries are planted
-        # through them).
+        # through them). It is kept out of build/e2e: about 3 GB per run, too large for the uploaded logs.
         run: |
-          sudo tcpdump -Z root -i any -U -s 0 -w build/e2e/host.pcap \
+          sudo tcpdump -Z root -i any -U -s 0 -w "$RUNNER_TEMP/host.pcap" \
             'not (tcp port 5037 or tcp portrange 5554-5682)' > build/e2e/tcpdump.log 2>&1 &
           sleep 2
           pgrep -x tcpdump
@@ -304,10 +304,10 @@ jobs:
           sudo pkill -INT -x tcpdump || true
           sleep 2
           cat build/e2e/tcpdump.log || true
-          sudo chown "$(id -u)" build/e2e/host.pcap
-          ls -l build/e2e/*.pcap
+          sudo chown "$(id -u)" "$RUNNER_TEMP/host.pcap"
+          ls -l build/e2e/*.pcap "$RUNNER_TEMP/host.pcap"
           timeout 600 python3 scripts/e2e/check_traffic.py --server-port 8080 \
-            --pcap build/e2e/host.pcap --pcap build/e2e/a.pcap --pcap build/e2e/b.pcap \
+            --pcap "$RUNNER_TEMP/host.pcap" --pcap build/e2e/a.pcap --pcap build/e2e/b.pcap \
             --canary "Canary Contact Qx7" --canary "+12025550177" --canary "+12025550178" --canary "+12025550179" \
             --canary "CANARY-SMS-7d1f"
 
