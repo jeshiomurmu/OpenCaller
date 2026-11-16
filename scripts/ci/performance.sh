@@ -93,10 +93,17 @@ adb shell dumpsys batterystats --reset
 adb shell input keyevent KEYCODE_SLEEP
 sleep $((idle_minutes * 60))
 adb shell input keyevent KEYCODE_WAKEUP
-uid=$(adb shell dumpsys package "$package" | tr -d '\r' | sed -n 's/.*userId=\([0-9]*\).*/\1/p' | head -n 1)
+# `cmd package list packages -U` prints "package:<name> uid:<uid>" (dumpsys package's userId line wasn't found on API 36).
+uid=$(adb shell cmd package list packages -U "$package" | tr -d '\r' | sed -n "s/^package:$package uid:\([0-9]*\).*/\1/p" | head -n 1)
 adb shell dumpsys batterystats --checkin | tr -d '\r' > "../$out/batterystats-checkin.txt"
 adb shell dumpsys batterystats "$package" | tr -d '\r' > "../$out/batterystats-app.txt"
 echo "app uid: $uid"
+if [ -n "$uid" ] && [ "$uid" -ge 10000 ]; then
+  # The app's own line in the estimated power use ("UID u0a<uid - 10000>: <mAh> …"); absent = nothing measurable.
+  label="u0a$((uid - 10000))"
+  echo "app power ($label):"
+  grep -A 3 "UID $label:" "../$out/batterystats-app.txt" || echo "  no estimated power use for $label"
+fi
 # Checkin rows for the app's uid: wakelocks (wl), jobs (jb), alarms/wakeups (wua), network (nt), process (pr), cpu.
 grep -E "^9,${uid}," "../$out/batterystats-checkin.txt" | grep -E ",(wl|jb|wua|nt|pr|cpu|awl|sr)," || echo "no checkin rows for uid $uid"
 sed -n '1,120p' "../$out/batterystats-app.txt"

@@ -201,8 +201,9 @@ user-facing text is `PRIVACY.md` (draft for legal review), and Phase 14 adds:
 - invariant 1 enforced in CI (`scripts/ci/privacy-imports.sh`): `core:network` is a JVM module, and no file that
   reads the contacts, call-log or SMS providers imports the network layer (it replaced a Detekt rule the
   architecture promised but that was never written);
-- the e2e traffic check: the e2e emulators record their network traffic and `scripts/e2e/check_traffic.py` checks
-  every request's host and body against §10 (see `docs/testing.md`, Privacy);
+- the e2e traffic check: canaries (a contact, a call-log entry, an SMS) are planted on both e2e phones, the CI host
+  records the phones' traffic and `scripts/e2e/check_traffic.py` fails if a canary appears anywhere on the wire and
+  lists the server endpoints used (TC-PRIV-001; the API 36 emulator's own `-tcpdump` recorded almost nothing);
 - the onboarding promise about crash reports corrected (the app has none).
 
 ## Server checklist (beyond MASVS)

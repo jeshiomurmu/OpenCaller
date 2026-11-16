@@ -462,6 +462,70 @@ scanner):
    MinIO; the row is gone a day later. The scanner's log names the room, never a number or a sentence.
 8. A number of a country that isn't approved: Scan voice says it isn't available there.
 
+### Hardening (Phase 14)
+
+| ID | Title | Expected | Type |
+| --- | --- | --- | --- |
+| TC-A11Y-001 | Caller card with TalkBack | Who is calling is one stop (name, number, source, risk in words); the card's actions follow within three swipes | R (`CallerCardSemanticsTest`); device step 1 |
+| TC-A11Y-002 | OTP guard with TalkBack | Announced as a pane with an assertive heading; Hang up and I understand are 48 dp buttons | R (`OtpGuardScreenSemanticsTest`); device step 1 |
+| TC-A11Y-003 | Blocked log with TalkBack | Heading; each call one item saying what happened and why; actions name the call ("Unblock +1 555…") | R (`BlockedLogSemanticsTest`) |
+| TC-A11Y-004 | 200 % font | Every tab shows its content at font scale 2.0 | E (`scripts/ci/emulator-smoke.sh`, screenshots `font200-*.png`, API 29 + 36) |
+| TC-PERF-001 | Cold start | Median measured with and without the Baseline Profile | M (`:benchmark` `StartupBenchmark`, `performance` job) |
+| TC-PERF-002 | Screening in the app | `OpenCaller.screen` trace section per decision | M (`ScreeningBenchmark`) |
+| TC-PERF-003 | Screening engine | Time per decision for an unknown number, a spam-list number and the 51st rule | M (`:microbenchmark` `ScreeningEngineBenchmark`) |
+| TC-PERF-004 | Battery | 24 h on a phone < 1 % drain from OpenCaller (§5 step 6); 30 min idle proxy on the emulator | D (procedure below); E (`performance.sh` step 3) |
+| TC-SEC-001 | Exported components | Every exported component of the merged manifest is system-guarded or reviewed | R (`ExportedComponentsTest`, debug and release) |
+| TC-SEC-002 | Pinning | Server key and backup accepted, other keys refused, other hosts system trust | U (`PinningTest`); device step 3 |
+| TC-SEC-003 | SQL injection | Payloads in numbers are input errors, in names plain text; tables unchanged | I (`SqlInjectionTest`) |
+| TC-SEC-004 | Dependencies | No open OSV finding | CI (`dependency-audit`) |
+| TC-PRIV-001 | Traffic | No planted contact, call-log entry or SMS (text or number, any spelling) in the e2e phones' traffic; server endpoints listed | E (`scripts/e2e/check_traffic.py` on the CI host's capture, e2e job); manual capture §5 step 10 |
+| TC-PRIV-002 | Provider readers apart from the network | No file reading contacts, call log or SMS imports the network layer | CI (`scripts/ci/privacy-imports.sh`) |
+| TC-L10N-001 | Translations complete | Every string in Bengali and Hindi with the same placeholders and plurals | CI (`check_translations.py`, lint `MissingTranslation` as error) |
+| TC-L10N-002 | Languages on the phone | The tabs show in Bengali and Hindi (per-app language); ar-XB mirrors the bottom bar | E (`emulator-smoke.sh`, API 36: `bn-*.png`, `hi-*.png`, `ar-XB-calls.png`) |
+
+**Results on the CI API 36 emulator (indicative, not a phone).** Run 43823739801 on `b110a1c`, 2026-11-16:
+
+| Measure | Result |
+| --- | --- |
+| Cold start, median, no compilation | 361 ms |
+| Cold start, median, Baseline Profile | 388 ms (no gain on the emulator; measure on a phone, device step 2) |
+| Screening trace section, median (Test a number, offline release build) | 1.4 ms |
+| Screening engine, per decision (microbenchmark, speed-compiled) | 0.22–0.29 ms |
+| Battery proxy, 30 min idle, screen off | Phone total discharge 0 mAh; the app's own UID wasn't identified in that run (script fixed: `cmd package list packages -U`); the next PR run prints the app's line |
+| Baseline Profile | 30,572 rules (`app/src/main/generated/baselineProfiles`) |
+
+**24 h battery procedure (TC-PERF-004, the owner on a phone).** Phone charged to 100 %, OpenCaller release build
+signed in, default phone and SMS app, spam list downloaded; every other app as normally used.
+
+1. `adb shell dumpsys batterystats --reset`, unplug, note the time.
+2. Over 24 h: 10 incoming calls (3 from contacts, 3 from spam-list numbers, 4 unknown), 20 SMS (5 codes), normal use.
+3. Plug in USB (`adb shell dumpsys battery unplug` keeps it counting as on battery), then
+   `adb shell dumpsys batterystats io.github.jeshiomurmu.opencaller > battery-24h.txt` and
+   `adb shell cmd package list packages -U io.github.jeshiomurmu.opencaller` for the UID.
+4. Record below: the app's estimated mAh and its share of the phone's discharge, wakelock time, wakeups (alarms),
+   jobs, mobile and Wi-Fi bytes. Pass: < 1 % of the battery's capacity for OpenCaller.
+
+| Date | Phone, Android | Build | App mAh / % capacity | Wakelock | Jobs | Wakeups | Network | Result |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| | | | | | | | | (owner) |
+
+**Phase 14 device steps (the owner).**
+
+1. **TalkBack walkthrough:** TalkBack on, display size Largest, font Largest. Walk every screen of the app (each tab,
+   every Settings entry and the call, message and OTP screens): every control is spoken with a name and role, focus order follows the
+   screen, nothing is said by colour alone. On an incoming spam call the caller card says "Likely scam" and Block is
+   reachable within three swipes; Announce Caller speaks the name; the OTP guard (TC-OTP-005) is announced at once.
+   Note every finding in the bug log.
+2. **Cold start on a phone:** `./gradlew :benchmark:connectedFossBenchmarkReleaseAndroidTest
+   -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.enabledRules=Macrobenchmark` with the phone
+   connected; record both medians above.
+3. **Pinning against a real server:** a play release built with a deliberately wrong pin pair: every request fails
+   with "Couldn't reach the server"; with the right pins it works.
+4. **Languages:** a native speaker of Bengali and one of Hindi read every screen (and the family consent text with
+   the lawyer, it is legal wording) and correct `values-bn` / `values-hi`; remove the "NEEDS NATIVE REVIEW" notes
+   only then (the checker requires them until the review is recorded in `docs/phase.md`).
+5. **Crash-free rate:** from Google Play Console → Android vitals for the closed test (≥ 99.5 %).
+
 ## 5. Manual QA checklist (before each release)
 
 1. Fresh install on Android 10, 13, 16 emulators and one physical phone (dual SIM preferred).
@@ -487,6 +551,16 @@ Format: one row per bug, newest first. Severity: S1 crash/data loss/privacy leak
 
 | ID | Date | Sev | Module | Summary | Repro | Status | Fix / notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| BUG-0012 | 2026-11-16 | S4 | core:designsystem | Send and backspace icons pointed the wrong way in right-to-left languages | ar-XB pseudo-locale, thread composer and dial pad | fixed | `android:autoMirrored="true"` on `ic_send` and `ic_backspace` (Phase 14 RTL pass; the emulator walk now checks that the bottom bar mirrors in ar-XB) |
+| BUG-0011 | 2026-11-16 | S3 | feature:otp | The OTP guard warning could be covered by another app's overlay (screen-sharing or "support" apps scammers ask for) | Overlay app drawing over `OtpGuardActivity` | fixed (Android 12+) | `Window.setHideOverlayWindows(true)` with `HIDE_OVERLAY_WINDOWS`; Android 10–11 have no API for it (`docs/security.md` SEC-3) |
+| BUG-0010 | 2026-11-16 | S2 → fixed | docs, CI | Architecture §10 invariant 1 promised a Detekt rule keeping contacts, call-log and SMS data out of `core:network`; the rule never existed (an unverified privacy claim) | Search for the rule | fixed | `scripts/ci/privacy-imports.sh` in the android job (negative-tested), plus the e2e traffic check with canaries; architecture text corrected (`docs/security.md` SEC-1) |
+| BUG-0009 | 2026-11-16 | S3 | feature:onboarding | Onboarding said "Crash reports stay off unless you turn them on" for a feature that doesn't exist | Onboarding privacy page | fixed | Text says the app sends no crash reports (en, bn, hi); invariant 5 rewritten |
+| BUG-0008 | 2026-11-16 | S3 | server | Raw reports are kept with the account instead of 18 months then aggregated (phase.md issue 52); expired refresh tokens were never deleted (issue 42) | `RetentionJob` | open (reports) / fixed (tokens) | Expired refresh tokens: deleted by the daily retention job (`RefreshRotationTest`). Reports: needs scoring to keep aggregates before deleting raw rows; Phase 15. `PRIVACY.md` says so until then. Downgraded from a privacy promise to S3 because the policy no longer claims it |
+| BUG-0007 | 2026-11-16 | S2 → S3 | ml/voice-spoof | The voice scanner flags 31.8 % of real voices as possibly generated on GSM-FR audio (issue 166) | `voice-spoof-evaluate`, `gsm` condition | open, accepted for the beta | Downgraded: the result is a warning that always says it can be wrong, never blocks or reports, and the feature is off unless the operator enables it. Fix path: fine-tune on codec-augmented data (owner's decision) |
+| BUG-0006 | 2026-11-16 | S2 → S3 | infra (recording line) | The provider ↔ server SIP leg of the recording line, assistant and scanner isn't TLS/SRTP yet (issue 148) | `infra/docker/compose.telephony.yml` | open, gated | Downgraded: off by default (no `RECORDING_LINES`, no assistant numbers), and the phone-network part of any call isn't end-to-end encrypted either; `infra/deploy/telephony.md` → Security makes TLS a production step. Must be done before an operator enables the lines in production (Phase 15 checklist) |
+| BUG-0005 | 2026-11-16 | S1 → S3 | feature:voip (LiveKit) | Native crash in LiveKit's WebRTC microphone thread, once, 2 s into an app call on an API 36 emulator (issue 157) | PR #20 run 42770702992 | not reproduced | Downgraded: one occurrence in the emulator's emulated audio, no recurrence in the e2e runs since (TC-VOIP-001 runs in each; latest green: run 43830309101); a crash on a phone would be S1 again. Collect the tombstone if it repeats |
+| BUG-0004 | 2026-11-16 | S2 → S3 | core:database | A lost Keystore key (e.g. a restore to a new phone) makes the encrypted database unreadable and it is recreated empty (issue 10) | Restore app data without the Keystore key | open, accepted | Downgraded: the data can't be decrypted without the key whatever the app does; rules can be brought back from the app's own encrypted backup (Phase 10). A "your local data was reset" notice is Phase 15 polish |
+| BUG-0003 | 2026-11-16 | S3 | emulator QA | TC-INCALL-001 / TC-OTP-005 lost the emulated incoming call before Answer on the API 36 emulator (issue 101) | `scripts/qa/incall.sh` on API 36 | not reproduced on phones | Emulator Telecom timing; passes on re-run; device step TC-INCALL-001 on a phone |
 | BUG-0002 | 2026-10-16 | S3 | core:telephony | Emulator p95 local decision latency sits at the 50 ms gate (Phase 3 exit criterion) | `scripts/qa/blocking.sh` in CI, 33 calls, debug screen | fixed (CI gate) — phone check open | Tried: (1) `ScreeningWarmUp` loads the home country's numbering metadata at start (removed an 85 ms first call); (2) local lookups started concurrently; this exposed a ~0.5 s stall at the same call on both emulators (526/527 ms, matches opening another SQLCipher connection); (3) database reads chained (stall gone, max 68 ms); (4) 33-call sample and per-step timings (run 38899690568). Result: API 29 p95 46 ms, API 36 p95 50 ms. The step timings show the system contacts lookup (`PhoneLookup`, a call into the contacts provider) at 24–58 ms on the slow decisions; the app's own steps are 0–16 ms. Fix (option a, 2026-10-16): CI gates the app's own time (decision minus the contacts lookup) at p95 < 50 ms and the emulator total at p95 < 100 ms; the 50 ms total is measured on a phone (manual step under "Where they run (Phase 3)"). Same commit had passed and failed the old gate (`d3bf5ea`: push run green, PR run red) |
 | BUG-0001 | | | | _example_ Caller card missing on Android 10 when overlay denied | TC-ONB-007 | open | |
 

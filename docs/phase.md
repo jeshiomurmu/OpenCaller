@@ -17,12 +17,17 @@
 
 Copied from `docs/implementation_plan.md` → Phase 14. Tick here as you go; copy the ticked list back to the plan when the phase exits.
 
-- [ ] Accessibility audit (TalkBack walkthrough of every screen, font scale 200%)
-- [ ] Performance: Baseline Profiles, Macrobenchmark for cold start and screening; battery test 24 h
-- [ ] Security review: OWASP MASVS checklist, dependency audit, pinning tests
-- [ ] Privacy review: data inventory matches `architecture.md` §10; privacy policy + terms published
-- [ ] Localization: Bengali, Hindi, English first; RTL check (Arabic)
-- [ ] Crash-free ≥ 99.5% in beta cohort
+- [ ] Accessibility audit (TalkBack walkthrough of every screen, font scale 200%) — code audit, fixes, semantics tests
+  and the 200 % font walk done; the TalkBack walkthrough on a phone is the owner's device step 1
+- [ ] Performance: Baseline Profiles, Macrobenchmark for cold start and screening; battery test 24 h — profile,
+  Macrobenchmark and Microbenchmark done (CI emulator numbers in `docs/testing.md`); the 24 h figure on a phone is open
+- [x] Security review: OWASP MASVS checklist, dependency audit, pinning tests (`docs/security.md`)
+- [ ] Privacy review: data inventory matches `architecture.md` §10; privacy policy + terms published — inventory
+  checked and enforced in CI (traffic check, privacy imports); `PRIVACY.md` / `TERMS.md` are drafts awaiting the
+  lawyer and publication (issue 110)
+- [x] Localization: Bengali, Hindi, English first; RTL check (Arabic) — every string in bn and hi, marked NEEDS NATIVE
+  REVIEW (blocks the Play release, issue 171); ar-XB walk with the mirrored bottom bar on API 36
+- [ ] Crash-free ≥ 99.5% in beta cohort — Play Console vitals once the closed test runs (issue 173)
 
 **Exit:** all P0/P1 test cases pass; no open Severity-1/2 bugs.
 
@@ -74,10 +79,14 @@ Plan:
 
 ## Next step
 
-Phase 14 (first part) is on `claude/vibrant-johnson-4pfw6q` with CI green (run 43830309101). Next: the owner reviews
-the PR; then the rest of the phase on the same branch: Bengali and Hindi strings with `MissingTranslation` as an error,
-the RTL pass, bug triage, the 24 h battery figure and the TalkBack walkthrough on a phone (owner), crash-free rate from
-the closed test.
+Phase 14 is done in code on `claude/vibrant-johnson-4pfw6q` (PR #23): accessibility, benchmarks and the Baseline
+Profile, the security review, the privacy checks and drafts, Bengali and Hindi for every string with the RTL pass, and
+the bug triage (`docs/testing.md` §6: no open S1/S2; four downgraded with reasons, BUG-0004…0007). Next: CI green on the
+PR, the owner reviews and merges. Then the owner's steps for the phase exit (`docs/testing.md` → Hardening (Phase 14),
+device steps): the TalkBack walkthrough, cold start and the 24 h battery figure on a phone, pinning against a real
+server, the native speakers' review of bn and hi (issue 171), the lawyer's review and publication of `PRIVACY.md` /
+`TERMS.md` (issue 110), and the crash-free rate from Play's vitals once the closed test runs (issue 173). Phase 13's
+device steps (TC-REC-001, TC-AST-001, TC-SCAN-001) are still open too.
 
 The voice scanner (13c) is done in code on `claude/vibrant-johnson-4pfw6q` (PR to `main`), which completes Phase 13's
 checklist in code. CI is green on PR #22 (runs 43599649170 and 43599652892 on `d54ac8a`). Next: the owner merges, then tag `v1.1.0` (the release workflow needs the four signing
@@ -132,6 +141,24 @@ Phase 3 carry-over: measure the total screening p95 < 50 ms on a physical phone 
 
 ## Open issues / blockers
 
+171. **Bengali and Hindi need a native speaker's review before the Play release.** All 1,187 translatable strings
+     were translated without a native speaker (owner's decision, 2026-11-16); every `values-bn` / `values-hi` file says
+     NEEDS NATIVE REVIEW and `scripts/ci/check_translations.py` keeps requiring the note until the review is done. The
+     family consent texts (wording version 1) also need the lawyer, since consent is recorded against them.
+172. **Phase 14 device steps** (owner): TalkBack walkthrough, cold start and 24 h battery on a phone, pinning against a
+     real server (`docs/testing.md` → Hardening (Phase 14)). On the CI emulator the Baseline Profile gave no cold-start
+     gain (361 ms without, 388 ms with); judge it on a phone.
+173. **Crash-free ≥ 99.5 %** is measured with Play Console's Android vitals during the closed test (no SDK, rules.md
+     §2); it stays open until a beta cohort exists. F-Droid installs report nothing.
+174. **No forced update** (MASVS-CODE-2, `docs/security.md` SEC-6): proposal for Phase 15, the server answers too-old
+     versions with `426 upgrade_required` and the app asks to update.
+175. **The voice scanner's GSM false positives, the recording line's SIP leg without TLS and the lost-Keystore reset**
+     were downgraded from S2 to S3 in the triage (BUG-0004, 0006, 0007; issues 10, 148, 166): each has a reason and a
+     fix path, but the owner should confirm the downgrades; the SIP leg must be TLS before an operator enables the
+     lines in production.
+176. **Reports aren't aggregated after 18 months** (issue 52): `PRIVACY.md` says so; expired refresh tokens are now
+     deleted by the retention job (issue 42 resolved).
+
 1. **Repository visibility.** `jeshiomurmu/OpenCaller` is public, but the plan says private until v0.1. The owner decides (GitHub → Settings → Danger zone → Change visibility).
 2. **MinIO distribution.** MinIO no longer publishes images and its repo is archived. The stack uses `cgr.dev/chainguard/minio:latest` (free tier, `latest` only, not pinnable) plus a static BusyBox for the healthcheck (`infra/docker/minio/Dockerfile`). It is verified in CI. Long term: pin a digest/paid tag, build from source, or move to an S3-compatible alternative (Garage/SeaweedFS) via an ADR before Phase 4.
 3. **Compose is held at BOM 2026.06.01 (Compose 1.11.x).** Compose 1.12+ requires `compileSdk 37`, and `architecture.md` §2 fixes `compileSdk 36`. Raising compileSdk to 37 (targetSdk can stay 36) would allow current Compose; needs a decision/ADR.
@@ -174,7 +201,7 @@ Phase 3 carry-over: measure the total screening p95 < 50 ms on a physical phone 
 39. **`integrityToken`** is accepted by `/v1/auth/verify` (max 4 KiB) but not verified yet; Play Integrity verification belongs to the play-flavor hardening work.
 40. **Access tokens can't be revoked early.** They are stateless JWTs valid 15 minutes; revoking a device's refresh chain stops new ones. A deny-list would be needed for instant logout (`DELETE /v1/me`, Phase 4 part 2 / Phase 8).
 41. **SMS text** is English only and has no Android SMS Retriever app hash yet (needed for automatic code reading; add when the release signing key exists).
-42. **Rotated refresh tokens** stay in `refresh_tokens` until they expire (needed to detect reuse); a cleanup job should delete expired rows (with the scoring/maintenance jobs).
+42. **Rotated refresh tokens** stay in `refresh_tokens` until they expire (needed to detect reuse). Resolved in Phase 14: the daily `retention` job deletes expired rows (`RefreshRotationTest`).
 43. **Concurrent refreshes** with the same token count as reuse and revoke the device. Resolved in Phase 5: `TokenAuthenticator` refreshes one at a time and reuses a token another request already refreshed (unit test).
 44. **TC-API-004** now runs on `/v1/reports` (`ReportsApiTest`) as well as on the auth endpoints (resolved in part 2).
 45. **Twilio docs.** `twilio.com` is blocked in the agent sandbox; the adapter follows Twilio's official API definition (`twilio-oai/spec/json/twilio_api_v2010.json`, operation `CreateMessage`). Before production, send one message with Twilio test credentials (`AC…` test SID, magic number `+15005550006`) and check the error-body handling.
@@ -491,12 +518,17 @@ Fill as dependencies are added (the source of truth is `libs.versions.toml`; thi
 | LiveKit rtc audio input (scanner) | `rtc.AudioStream.from_track(track, sample_rate, num_channels)`, `AudioFrameEvent.frame.data`, `aclose()` in livekit 1.2.0 (already pinned) | the installed wheel | 2026-11-14 |
 | Material Symbols `graphic_eq` | `master` (Apache-2.0) | https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/ | 2026-11-14 |
 | Material Symbols `radio_button_checked`, `play_arrow` | `master` (Apache-2.0) | https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/ | 2026-11-10 |
+| AndroidX Benchmark (macro-junit4, junit4, Baseline Profile Gradle plugin) | 1.5.0 | https://developer.android.com/jetpack/androidx/releases/benchmark | 2026-11-16 |
+| AndroidX ProfileInstaller | 1.4.1 | https://developer.android.com/jetpack/androidx/releases/profileinstaller | 2026-11-16 |
+| Jackson BOM (server, security floor) / Guava (server `-jre`, app `-android`, security floors) | 2.23.0 / 33.8.0 | Maven Central `com/fasterxml/jackson/jackson-bom`, `com/google/guava/guava` metadata (OSV findings on older transitive versions) | 2026-11-16 |
+| OWASP MASVS v2 controls (review reference) | `master` | https://raw.githubusercontent.com/OWASP/masvs/master/controls/ | 2026-11-16 |
 | LiveKit server's config and flags | `rtc.tcp_port`, `port_range_start/end`, `use_external_ip`, `turn.enabled/udp_port/tls_port/relay_range_*`, `room.max_participants`; `LIVEKIT_KEYS`, `NODE_IP` | https://raw.githubusercontent.com/livekit/livekit/v1.13.11/config-sample.yaml, `cmd/server/main.go`, `pkg/service/turn.go`; run locally with `/rtc/validate` | 2026-11-04 |
 
 ## Progress log (newest first)
 
 | Date | Phase | What changed | Verified by |
 | --- | --- | --- | --- |
+| 2026-11-16 | 14 | Phase 14, second part. Localization: `values-bn` and `values-hi` for all 22 modules (1,187 strings, NEEDS NATIVE REVIEW), `check_translations.py` in the android job, lint `MissingTranslation`/`ExtraTranslation`/`MissingQuantity`/`ImpliedQuantity` as errors, `en-XA`/`ar-XB` pseudo-locales in debug, send and backspace icons mirrored; emulator walk at 200 % font and, on API 33+, in bn, hi and ar-XB (bottom bar mirrored). Security/privacy follow-ups: OTP guard hides foreign overlays (Android 12+), expired refresh tokens deleted daily, admin jobs not served by the public API (test), crash-report wording, architecture §10 invariants 1 and 5 corrected. Bug triage (BUG-0003…0012). `docs/testing.md` → Hardening (Phase 14) with results, the 24 h battery procedure and the device steps; the battery proxy finds the app's UID with `cmd package list packages -U` | Locally: translation checker 44 files, 0 problems; privacy-imports (and a negative probe); traffic checker self-test; backend `SqlInjectionTest`, `AdminWebTest`, `RefreshRotationTest`, `DeleteAccountTest`, `VisitorsTest`, `BusinessClaimsTest` green with Testcontainers; core:network 22 tests (JVM harness, incl. `PinningTest`); Spotless + Detekt clean. CI: see Last green CI run |
 | 2026-11-16 | 14 | Phase 14, first part (work in progress, one PR). Accessibility: caller card summary as one TalkBack stop, labelled blocked-log actions, OTP guard announced as a pane, labelled switches and text fields; Compose semantics tests. Performance: `:benchmark` (cold start, screening through a trace section, Baseline Profile generator), `:microbenchmark` (screening engine), `profileinstaller`, the generated Baseline Profile committed (30,572 rules), `performance` CI job on pull requests. Security: `docs/security.md` (MASVS v2), `ExportedComponentsTest` (library components reviewed: Telecom's `MuteStateReceiver`, Play services' revocation service, the debug-only Compose preview), `PinningTest`, external-extras and SQL-injection tests, OSV dependency audit job (Jackson 2.23.0 BOM and Guava 33.8.0 raised for advisories). Privacy: canaries planted on both e2e phones and `check_traffic.py` on a capture of the CI host (the API 36 emulator's own `-tcpdump` records only a few packets), `PRIVACY.md` and `TERMS.md` drafts. Not done yet: localization (bn, hi, RTL), bug triage, the device steps | CI: run 43830309101 on `732c872`, every job green (android, backend, agents, voice-spoof, compose smoke, emulators API 29 + 36, e2e with the traffic check: 33 server endpoints seen, 5 canaries, none found; OSV audit; ml; license). Performance on `b110a1c` (run 43823739801, CI API 36 emulator, indicative): cold start median 361 ms without and 388 ms with the Baseline Profile, screening trace median 1.4 ms, screening engine microbenchmark 0.22–0.29 ms per decision |
 | 2026-11-14 | 13c | The voice scanner (F-PR-13, ADR 0011). `ml/voice-spoof`: AASIST (`clovaai/aasist`, MIT; weights fetched with a pinned SHA-256, never committed), ONNX export, FastAPI `POST /v1/score` (4 s of 16 kHz mono PCM or WAV → spoof probability, bearer token, input checks), image (PyTorch CPU export stage, onnxruntime runtime), ASVspoof 2019 LA subset fetcher (range requests) and evaluation with ffmpeg codecs; README with the licence, the API and the EER. Server: V10 (`kind`, `scan_probability`, `scan_cues` on `recording_sessions`), `POST/GET /v1/lines/scanner`, kind-aware agent claim (`409 other_kind`), `/agent/v1/scanner/sessions/{id}/result`, one-day purge, `SCANNER_ENABLED`, `features.scanner`, OpenAPI. Agents: `scanner` (claim, beep, two 4 s speech windows from `rtc.AudioStream`, voice-spoof, Whisper, en/bn/hi cue rules, report, hang up), recorder sends `kind` and leaves scans quietly, `room_audio.py`; compose `scanner` profile with `voice-spoof`; the Whisper cache volume now mounted where the `agent` user writes. App: `LineConnection` and `LinePlan` in `core:telephony` (shared by `LineRecorder` and the new `LineScanner`), `VoiceScanApi`, `VoiceScanRepository`, `VoiceScanResult`/`ScamCue`, `feature:scanner`, in-call Scan voice with the explanation, mute while listening, result card ("Likely human" / "Possibly AI-generated", "can be wrong", cues). CI job `voice-spoof`. v1.1.0 (1010099), CHANGELOG, fastlane, F-Droid entry. Docs: ADR 0011, telephony guide, TC-SCAN-001 steps, architecture §4.9/§10, Data safety | Locally: backend `./gradlew check` green (incl. `ScannerApiTest` 3, `RecordingConfigTest`; MinIO via `MINIO_TEST_IMAGE`); OpenAPI 3.1 valid; agents pytest 71 passed, ruff clean; voice-spoof pytest 13 passed, ruff clean; compose config with every profile valid; android Spotless + Detekt clean; JVM harness 18 tests (`LineScannerTest` 5, `LineRecorderTest` 6, `LinePlanTest`, `VoiceScanMappingTest`, `RecordingsViewModelTest`) and `VoiceScanTest`. Evaluation on 2,300 ASVspoof 2019 LA eval utterances: EER clean 0.78 %, G.711 1.09 %, GSM-FR 6.61 %, G.711 → Opus 1.30 % (issue 166). CI: runs 43599649170 (push) and 43599652892 (PR) on `d54ac8a` green, all 10 jobs (API 29 in the PR run after one re-run; see Last green CI run); android incl. lint, `InCallViewModelTest` and `LineScannerTest`; `voice-spoof` built the image with PyTorch's CPU wheels and scored with the real model |
 | 2026-11-11 | 13b | The AI call-screening assistant (F-UT-04, ADR 0010). Server: V9 (`assistant_numbers` pool synced from `ASSISTANT_NUMBERS`, `assistant_calls` without numbers, `assistant_usage`, `assistant_call` push kind), `POST/GET/DELETE /v1/lines/assistant` (supporter or self-hosted, the user's country), `GET /v1/assistant/usage`, `GET /v1/assistant/calls/{id}` (data-only LiveKit token), agent claim by dialed number (404/403/429 with `ASSISTANT_MONTHLY_MINUTES`, 0 = no cap) and end, cleanup in `voip-cleanup`, `GET /v1/server` `features.assistant`, OpenAPI. Agents: `assistant` (STT → LLM → TTS by env, Silero VAD, fixed disclosure, prompt forbidding codes and bank details, `record_details`/`end_call` tools, data channel to the user's identity only, wrap-up before the limit), `assistant` extra and image, compose `assistant` profile, CI. App: models, `AssistantApi`, `CallAssistant`, `AssistantMessages`, optional `AssistantRoomClient` (LiveKit in `feature:voip`), push routing, Room v6 `screened_call` + migration, `feature:assistant` (setup with the GSM codes and carrier guidance, minutes meter, history, live screen with Call back / Quick reply / Spam, notification), Settings row. Docs: ADR 0010, telephony guide section, architecture §4.9/§6/§10, testing (TC-AST-001 steps), Data safety | Locally: backend `./gradlew check` green (255 tests incl. `AssistantApiTest` 8, `AssistantConfigTest` 3; MinIO via `MINIO_TEST_IMAGE`); OpenAPI 3.1 valid; agents pytest 44 passed, ruff clean; compose config with the `assistant` profile valid; android Spotless + Detekt clean; JVM harness 10 tests (`AssistantDataTest`, `ForwardingCodesTest`, `AssistantViewModelTest`, `LiveScreeningViewModelTest`). CI: run 42946496611 on `80c36ef` (server + agents) all jobs green; the app run follows |
