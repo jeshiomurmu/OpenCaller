@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindi. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="sign_in_title">अपने नंबर से साइन इन करें</string>
+    <string name="sign_in_body">साइन इन वैकल्पिक है। इससे आप समुदाय के साथ स्पैम रिपोर्ट साझा कर सकते हैं और नंबर खोज सकते हैं। इसके बिना भी ब्लॉक करना काम करता है।</string>
+    <string name="sign_in_number">आपका फ़ोन नंबर</string>
+    <string name="sign_in_number_hint">हम SMS से 6 अंकों का कोड भेजेंगे।</string>
+    <string name="sign_in_send_code">कोड भेजें</string>
+    <string name="sign_in_not_now">अभी नहीं</string>
+    <string name="sign_in_privacy">OpenCaller आपके संपर्क, कॉल हिस्ट्री या मैसेज कभी अपलोड नहीं करता।</string>
+    <string name="sign_in_code_title">कोड डालें</string>
+    <string name="sign_in_code_body">हमने %1$s पर 6 अंकों का कोड भेजा है।</string>
+    <plurals name="sign_in_code_valid">
+        <item quantity="one">कोड %d मिनट तक काम करेगा।</item>
+        <item quantity="other">कोड %d मिनट तक काम करेगा।</item>
+    </plurals>
+    <string name="sign_in_code">कोड</string>
+    <string name="sign_in_verify">साइन इन करें</string>
+    <string name="sign_in_resend">नया कोड भेजें</string>
+    <string name="sign_in_change_number">नंबर बदलें</string>
+    <string name="sign_in_done_title">आपने साइन इन कर लिया है</string>
+    <string name="sign_in_done_body">अब आपकी रिपोर्ट दूसरों को बचाने में मदद करती हैं, और आप नंबर खोज सकते हैं।</string>
+    <string name="sign_in_done">हो गया</string>
+    <string name="sign_in_back">वापस</string>
+    <string name="sign_in_problem_number">यह सही फ़ोन नंबर नहीं है। देश का कोड भी लिखें, जैसे +91 98765 43210।</string>
+    <string name="sign_in_problem_wrong_code">यह कोड सही नहीं है। SMS देखें और फिर से कोशिश करें।</string>
+    <string name="sign_in_problem_code_format">कोड के सभी 6 अंक डालें।</string>
+    <string name="sign_in_problem_expired">यह कोड अब काम नहीं करता। नया कोड भेजें।</string>
+    <string name="sign_in_problem_too_many">बहुत ज़्यादा कोशिशें। कृपया थोड़ा इंतज़ार करें।</string>
+    <plurals name="sign_in_problem_too_many_wait">
+        <item quantity="one">बहुत ज़्यादा कोशिशें। %d मिनट बाद फिर से कोशिश करें।</item>
+        <item quantity="other">बहुत ज़्यादा कोशिशें। %d मिनट बाद फिर से कोशिश करें।</item>
+    </plurals>
+    <string name="problem_offline">आप ऑफ़लाइन हैं। सेव की गई स्पैम सूची से ब्लॉक करना अब भी काम करता है।</string>
+    <string name="problem_server">हमारी तरफ़ कुछ गड़बड़ हो गई। आपकी सुरक्षा ऑफ़लाइन भी काम करती है।</string>
+    <string name="not_connected_title">किसी सर्वर से कनेक्ट नहीं</string>
+    <string name="not_connected_body">OpenCaller के इस वर्ज़न में कोई सर्वर नहीं है, इसलिए साइन इन, रिपोर्ट और खोज बंद हैं। इस फ़ोन की स्पैम सूची से ब्लॉक करना काम करता है।</string>
+    <string name="account_title">खाता</string>
+    <string name="account_sign_in">साइन इन (वैकल्पिक)</string>
+    <string name="account_sign_in_summary">अपनी रिपोर्ट साझा करें और नंबर खोजें</string>
+    <string name="account_signed_in">साइन इन है</string>
+    <string name="account_sign_out">इस फ़ोन पर साइन आउट करने के लिए टैप करें</string>
+    <string name="account_search">कोई नंबर खोजें</string>
+    <string name="account_search_summary">देखें कि समुदाय किसी नंबर के बारे में क्या जानता है</string>
+    <string name="account_dispute">गलती से स्पैम बताया गया?</string>
+    <string name="account_dispute_summary">किसी नंबर के स्पैम लेबल की समीक्षा माँगें</string>
+    <string name="account_unlist">मेरा नंबर सूची से हटाएँ</string>
+    <string name="account_unlist_summary">OpenCaller से अपना नाम हटाएँ (एक वेब पेज खुलता है)</string>
+    <string name="account_claim_business">अपने व्यवसाय का दावा करें</string>
+    <string name="account_claim_business_summary">ग्राहकों के फ़ोन पर अपने व्यवसाय का नाम और लोगो दिखाएँ</string>
+    <string name="account_profile">मेरी प्रोफ़ाइल</string>
+    <string name="account_profile_summary">आपका नाम, फ़ोटो, उन्हें कौन देखता है, इनकॉग्निटो</string>
+    <string name="profile_title">मेरी प्रोफ़ाइल</string>
+    <string name="profile_retry">फिर से कोशिश करें</string>
+    <string name="profile_picture">प्रोफ़ाइल फ़ोटो</string>
+    <string name="profile_picture_change">फ़ोटो बदलें</string>
+    <string name="profile_picture_remove">फ़ोटो हटाएँ</string>
+    <string name="profile_name">आपका नाम</string>
+    <string name="profile_name_hint">कॉलर आईडी और खोज में दिखता है, आपकी दृश्यता सेटिंग के अनुसार</string>
+    <string name="profile_save">सेव करें</string>
+    <string name="profile_saved">सेव हो गया</string>
+    <string name="profile_problem_signed_out">आप साइन आउट हो गए हैं। अपनी प्रोफ़ाइल देखने के लिए फिर से साइन इन करें।</string>
+    <string name="profile_problem_picture">यह फ़ोटो इस्तेमाल नहीं हो सकी। कोई दूसरी आज़माएँ।</string>
+    <string name="profile_activity_title">आपकी प्रोफ़ाइल की गतिविधि</string>
+    <string name="profile_viewers">मेरी प्रोफ़ाइल किसने देखी</string>
+    <plurals name="profile_viewers_summary">
+        <item quantity="one">पिछले 90 दिनों में %d बार देखी गई</item>
+        <item quantity="other">पिछले 90 दिनों में %d बार देखी गई</item>
+    </plurals>
+    <string name="profile_searchers">मुझे किसने खोजा</string>
+    <plurals name="profile_searchers_summary">
+        <item quantity="one">पिछले 90 दिनों में %d खोज</item>
+        <item quantity="other">पिछले 90 दिनों में %d खोजें</item>
+    </plurals>
+    <string name="profile_requests">संपर्क अनुरोध</string>
+    <string name="profile_requests_summary">आपका नाम माँगने वाले लोग</string>
+    <string name="profile_delete">खाता मिटाएँ</string>
+    <string name="profile_delete_summary">OpenCaller से आपकी प्रोफ़ाइल, आपकी रिपोर्ट और आपके विज़िटर हटा देता है</string>
+    <string name="visibility_title">आपका नाम कौन देखे</string>
+    <string name="visibility_everyone">सभी</string>
+    <string name="visibility_everyone_explain">जब आप कॉल करते हैं तो OpenCaller वाला कोई भी व्यक्ति आपका नाम देखता है, साइन इन हो या न हो।</string>
+    <string name="visibility_registered">साइन इन किए हुए OpenCaller यूज़र</string>
+    <string name="visibility_registered_explain">सिर्फ़ OpenCaller में साइन इन किए हुए लोग आपका नाम देखते हैं। यही डिफ़ॉल्ट है।</string>
+    <string name="visibility_nobody">कोई नहीं</string>
+    <string name="visibility_nobody_explain">आपका नाम कभी नहीं दिखाया जाता। लोग इसे माँग सकते हैं, और फ़ैसला आपका होता है।</string>
+    <string name="visibility_note">आप जो भी चुनें, जिन्हें आप कॉल करते हैं वे आपका नंबर देखते रहेंगे, और आपके नंबर पर स्पैम रिपोर्ट बनी रहेंगी।</string>
+    <string name="incognito_title">इनकॉग्निटो</string>
+    <string name="incognito_summary">आप जिन्हें खोजते हैं, उन्हें आपकी खोजें और प्रोफ़ाइल विज़िट नहीं दिखतीं। इसे चालू करने से पहले की विज़िट बनी रहती हैं।</string>
+    <string name="delete_first_title">अपना खाता मिटाएँ?</string>
+    <string name="delete_first_body">OpenCaller आपकी प्रोफ़ाइल और फ़ोटो, आपकी लिखी स्पैम रिपोर्ट, और किसने आपको देखा या खोजा, यह सब मिटा देता है। आप हर फ़ोन पर साइन आउट हो जाएँगे। इस फ़ोन पर आपके ब्लॉक करने के नियम और सेटिंग बनी रहती हैं।</string>
+    <string name="delete_continue">आगे बढ़ें</string>
+    <string name="delete_cancel">रद्द करें</string>
+    <string name="delete_second_title">इसे वापस नहीं लाया जा सकता</string>
+    <string name="delete_second_body">आपकी प्रोफ़ाइल कॉलर आईडी और खोज से तुरंत हट जाती है; बाकी सब 30 दिनों के अंदर मिटा दिया जाता है। अभी अपना खाता मिटाएँ?</string>
+    <string name="delete_confirm">खाता मिटाएँ</string>
+    <string name="delete_progress">आपका खाता मिटाया जा रहा है…</string>
+    <string name="visitors_supporters_only">किसने आपको देखा या खोजा, यह देखना सपोर्टर सुविधा है। सपोर्टर प्लान अगले अपडेट में आएँगे।</string>
+    <plurals name="visitors_total">
+        <item quantity="one">पिछले %2$d दिनों में %1$d</item>
+        <item quantity="other">पिछले %2$d दिनों में %1$d</item>
+    </plurals>
+    <string name="visitors_empty">अभी कोई नहीं।</string>
+    <string name="visitors_hidden_name">कोई जो अपना नाम छिपाता है</string>
+    <string name="visitors_unknown_time">अनजान समय</string>
+    <string name="requests_explain">इन लोगों ने आपका नाम माँगा है। अगर आप इसे साझा करते हैं, तो वे आपका नंबर खोजने पर इसे देखेंगे। अनुरोध के साथ आपको उनका नंबर और नाम मिला है।</string>
+    <string name="requests_empty">कोई अनुरोध नहीं।</string>
+    <string name="requests_approve">मेरा नाम साझा करें</string>
+    <string name="requests_deny">साझा न करें</string>
+    <string name="public_profile_no_name">नाम नहीं दिखाया गया</string>
+    <string name="public_profile_visit_note">मालिक देख सकता है कि आपने यह प्रोफ़ाइल देखी, जब तक आप अपनी प्रोफ़ाइल में इनकॉग्निटो चालू न करें।</string>
+    <string name="public_profile_request">उनका नाम माँगें</string>
+    <string name="public_profile_request_explain">अगर इस नंबर की कोई निजी OpenCaller प्रोफ़ाइल है, तो उसका मालिक आपका नंबर और नाम देखेगा और आपके साथ अपना नाम साझा कर सकता है। अगर वे मना करते हैं, तो आपको नहीं बताया जाएगा।</string>
+    <string name="public_profile_request_sent">अनुरोध भेजा गया। अगर वे अपना नाम साझा करते हैं, तो इस नंबर को खोजने पर आपको दिखेगा।</string>
+</resources>
