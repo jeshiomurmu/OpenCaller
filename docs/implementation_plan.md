@@ -215,9 +215,9 @@ per screened minute (carried over in `docs/phase.md`; the owner moved on to Phas
 
 - [ ] Accessibility audit (TalkBack walkthrough of every screen, font scale 200%)
 - [ ] Performance: Baseline Profiles, Macrobenchmark for cold start and screening; battery test 24 h
-- [ ] Security review: OWASP MASVS checklist, dependency audit, pinning tests
+- [x] Security review: OWASP MASVS checklist, dependency audit, pinning tests
 - [ ] Privacy review: data inventory matches `architecture.md` §10; privacy policy + terms published
-- [ ] Localization: Bengali, Hindi, English first; RTL check (Arabic)
+- [x] Localization: Bengali, Hindi, English first; RTL check (Arabic)
 - [ ] Crash-free ≥ 99.5% in beta cohort
 
 **Exit:** all P0/P1 test cases pass; no open Severity-1/2 bugs.
