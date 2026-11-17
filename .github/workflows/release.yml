@@ -1,10 +1,9 @@
 name: Release
 
-# A version tag (v0.5.0-beta, v1.2.3) builds the signed foss and play release APKs and the play App Bundle, and
-# publishes the APKs with their SHA-256 as a GitHub release (a pre-release when the version has a suffix such as
-# -beta). The App Bundle (for Play Console) is a workflow artifact, not a release asset. One key signs everything and is
-# the Play upload key (owner's decision, 2026-11-02). It comes from four repository secrets and never touches the
-# repository:
+# A version tag (v0.5.0-beta, v1.2.3) runs the checks, builds the signed foss and play release APKs and the play App
+# Bundle, and publishes them with their SHA-256 and the R8 mapping files as a GitHub release (a pre-release when the
+# version has a suffix such as -beta), with notes from CHANGELOG.md. One key signs everything and is the Play upload
+# key. It comes from four repository secrets and never touches the repository (docs/release/signing.md):
 #   OPENCALLER_KEYSTORE_BASE64   the keystore file, base64-encoded
 #   OPENCALLER_KEYSTORE_PASSWORD the keystore password
 #   OPENCALLER_KEY_ALIAS         the key's alias
@@ -12,24 +11,81 @@ name: Release
 # Two optional secrets set the server (empty: an offline build, like v0.1.0-alpha):
 #   OPENCALLER_API_BASE_URL      https:// address of the server
 #   OPENCALLER_API_PINS          comma-separated sha256/ pins, at least two (needed by play builds with a server)
+#
+# Pipeline test: a tag starting with v0.0.0-ci-test (pushed from any branch) signs with a throwaway key made in the job,
+# skips the versionName check, publishes a pre-release, downloads it again to check the files and their SHA-256, and
+# then deletes its own release and tag (docs/release/signing.md → Testing the pipeline).
 on:
   push:
     tags: ["v*"]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: signed APKs and App Bundle
+  android-check:
+    name: android checks
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Privacy imports and translations
+        working-directory: .
+        run: |
+          scripts/ci/privacy-imports.sh
+          python3 scripts/ci/check_translations.py android
+      - name: The foss flavor has no proprietary dependencies
+        working-directory: .
+        run: scripts/ci/foss-dependencies.sh
+      - name: Format, static analysis, lint and unit tests
+        run: >-
+          ./gradlew --continue
+          spotlessCheck detekt lint
+          testFossDebugUnitTest testPlayDebugUnitTest
+          check
+
+  backend-check:
+    name: backend checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend/server
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v6
+      # The video caller ID tests run the real transcoder (ffmpeg and ffprobe), as the transcoder image does.
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: Check (format, static analysis, tests incl. Testcontainers)
+        run: ./gradlew check
+
+  release:
+    name: signed APKs and App Bundle
+    needs: [android-check, backend-check]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
     env:
       TAG: ${{ github.ref_name }}
+      CI_TEST: ${{ startsWith(github.ref_name, 'v0.0.0-ci-test') }}
     steps:
       - uses: actions/checkout@v7
 
@@ -41,6 +97,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
 
       - name: Check the tag matches versionName
+        if: env.CI_TEST != 'true'
         run: |
           version="$(sed -n 's/^ *versionName = "\(.*\)"/\1/p' android/app/build.gradle.kts)"
           if [[ "v$version" != "$TAG" ]]; then
@@ -49,6 +106,7 @@ jobs:
           fi
 
       - name: Restore the signing key
+        if: env.CI_TEST != 'true'
         env:
           KEYSTORE_BASE64: ${{ secrets.OPENCALLER_KEYSTORE_BASE64 }}
           STORE_PASSWORD: ${{ secrets.OPENCALLER_KEYSTORE_PASSWORD }}
@@ -61,20 +119,39 @@ jobs:
           [[ -n "$KEY_ALIAS" ]] || missing+=" OPENCALLER_KEY_ALIAS"
           [[ -n "$KEY_PASSWORD" ]] || missing+=" OPENCALLER_KEY_PASSWORD"
           if [[ -n "$missing" ]]; then
-            echo "::error::repository secrets not set:$missing"
+            echo "::error::repository secrets not set:$missing (docs/release/signing.md)"
             exit 1
           fi
           printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
-          echo "OPENCALLER_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+          {
+            echo "OPENCALLER_KEYSTORE_FILE=$RUNNER_TEMP/release.jks"
+            echo "OPENCALLER_KEYSTORE_PASSWORD=$STORE_PASSWORD"
+            echo "OPENCALLER_KEY_ALIAS=$KEY_ALIAS"
+            echo "OPENCALLER_KEY_PASSWORD=$KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      # The pipeline test signs with a key that exists only in this job: the release it makes is deleted at the end
+      # and nothing signed with it can update an installed OpenCaller.
+      - name: Make a throwaway signing key (pipeline test only)
+        if: env.CI_TEST == 'true'
+        run: |
+          password="$(openssl rand -hex 24)"
+          echo "::add-mask::$password"
+          keytool -genkeypair -keystore "$RUNNER_TEMP/release.jks" -storetype PKCS12 -alias ci-test \
+            -keyalg RSA -keysize 4096 -validity 1 -dname "CN=OpenCaller CI test, O=throwaway" \
+            -storepass "$password" -keypass "$password" -noprompt
+          {
+            echo "OPENCALLER_KEYSTORE_FILE=$RUNNER_TEMP/release.jks"
+            echo "OPENCALLER_KEYSTORE_PASSWORD=$password"
+            echo "OPENCALLER_KEY_ALIAS=ci-test"
+            echo "OPENCALLER_KEY_PASSWORD=$password"
+          } >> "$GITHUB_ENV"
 
       - name: Build the release APKs and the App Bundle
         working-directory: android
         env:
-          OPENCALLER_KEYSTORE_PASSWORD: ${{ secrets.OPENCALLER_KEYSTORE_PASSWORD }}
-          OPENCALLER_KEY_ALIAS: ${{ secrets.OPENCALLER_KEY_ALIAS }}
-          OPENCALLER_KEY_PASSWORD: ${{ secrets.OPENCALLER_KEY_PASSWORD }}
-          API_BASE_URL: ${{ secrets.OPENCALLER_API_BASE_URL }}
-          API_PINS: ${{ secrets.OPENCALLER_API_PINS }}
+          API_BASE_URL: ${{ env.CI_TEST != 'true' && secrets.OPENCALLER_API_BASE_URL || '' }}
+          API_PINS: ${{ env.CI_TEST != 'true' && secrets.OPENCALLER_API_PINS || '' }}
         run: |
           server=()
           if [[ -n "$API_BASE_URL" ]]; then
@@ -88,12 +165,15 @@ jobs:
       - name: Verify the signatures and compute the SHA-256
         run: |
           apksigner="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
-          mkdir -p dist bundle
+          mkdir -p dist
           for flavor in foss play; do
             apk="android/app/build/outputs/apk/$flavor/release/app-$flavor-release.apk"
             test -f "$apk" || { echo "::error::no signed APK at $apk"; ls -R android/app/build/outputs/apk; exit 1; }
             "$apksigner" verify --verbose --print-certs "$apk"
             cp "$apk" "dist/OpenCaller-$TAG-$flavor.apk"
+            mapping="android/app/build/outputs/mapping/${flavor}Release/mapping.txt"
+            test -f "$mapping" || { echo "::error::no R8 mapping at $mapping (is minification on?)"; exit 1; }
+            cp "$mapping" "dist/OpenCaller-$TAG-$flavor-mapping.txt"
           done
           aab=android/app/build/outputs/bundle/playRelease/app-play-release.aab
           test -f "$aab" || { echo "::error::no App Bundle at $aab"; ls -R android/app/build/outputs/bundle; exit 1; }
@@ -102,15 +182,14 @@ jobs:
           verdict="$(jarsigner -verify "$aab" || true)"
           echo "$verdict"
           grep -q "jar verified" <<< "$verdict" || { echo "::error::the App Bundle is not signed"; exit 1; }
-          cp "$aab" "bundle/OpenCaller-$TAG-play.aab"
-          (cd dist && sha256sum ./*.apk | sed 's# \./# #' > SHA256SUMS && cat SHA256SUMS)
-          (cd bundle && sha256sum ./*.aab | sed 's# \./# #' > SHA256SUMS && cat SHA256SUMS)
+          cp "$aab" "dist/OpenCaller-$TAG-play.aab"
+          (cd dist && sha256sum ./* | sed 's# \./# #' > SHA256SUMS && cat SHA256SUMS)
 
-      - name: Upload the App Bundle for Play Console
+      - name: Keep the files as a workflow artifact
         uses: actions/upload-artifact@v7
         with:
-          name: OpenCaller-${{ github.ref_name }}-play-aab
-          path: bundle/
+          name: OpenCaller-${{ github.ref_name }}
+          path: dist/
           retention-days: 90
 
       - name: Release notes from CHANGELOG.md
@@ -121,10 +200,19 @@ jobs:
             on && /^(## )?\[/ { exit }
             on { print }
           ' CHANGELOG.md > notes.md
+          if [[ ! -s notes.md ]]; then
+            if [[ "$CI_TEST" == "true" ]]; then
+              echo "Pipeline test: signed with a throwaway key; this release deletes itself." > notes.md
+            else
+              echo "::error::CHANGELOG.md has no section '## [$version]'"
+              exit 1
+            fi
+          fi
           {
             echo
             echo "**Which file?** \`-foss.apk\` has no Google services (like the F-Droid build); \`-play.apk\` is the Google Play build."
-            echo "Both have the same app ID and signing key, so either one updates the other."
+            echo "Both have the same app ID and signing key, so either one updates the other. \`-play.aab\` is the bundle for Play Console;"
+            echo "\`-mapping.txt\` turns R8-shortened stack traces back into readable ones."
             echo
             echo "SHA-256:"
             echo '```'
@@ -140,8 +228,21 @@ jobs:
         run: |
           prerelease=""
           if [[ "$TAG" == *-* ]]; then prerelease="--prerelease"; fi
-          gh release create "$TAG" dist/*.apk dist/SHA256SUMS \
-            --title "OpenCaller ${TAG#v}" --notes-file notes.md --verify-tag $prerelease
+          gh release create "$TAG" dist/* --title "OpenCaller ${TAG#v}" --notes-file notes.md --verify-tag $prerelease
+
+      - name: Pipeline test - download the release again, check it, then delete it and the tag
+        if: env.CI_TEST == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p check && cd check
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY"
+          ls -l
+          sha256sum -c SHA256SUMS
+          apksigner="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
+          for apk in ./*.apk; do "$apksigner" verify "$apk" && echo "signed: $apk"; done
+          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes
+          echo "Pipeline test passed; release and tag $TAG deleted."
 
       - name: Remove the signing key
         if: always()

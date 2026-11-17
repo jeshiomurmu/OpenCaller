@@ -38,6 +38,11 @@ jobs:
         working-directory: .
         run: python3 scripts/ci/check_translations.py android
 
+      # F-Droid: the foss flavor ships no Google Play services, Firebase or Play Billing (docs/release/fdroid.md).
+      - name: The foss flavor has no proprietary dependencies
+        working-directory: .
+        run: scripts/ci/foss-dependencies.sh
+
       - name: Lint, test and assemble both flavors
         # --continue: run every task and report all failures in one CI run.
         run: >-
