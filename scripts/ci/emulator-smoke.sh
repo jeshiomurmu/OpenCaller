@@ -51,23 +51,31 @@ wait_for_any() {
   exit 1
 }
 
-# Like wait_for_any, but scrolls the screen up between looks: at 200 % font a tab's text can sit below the fold, and
-# uiautomator only reports what is on screen. The swipe stays clear of the bottom bar.
+# Like wait_for_any, but also scrolls: at 200 % font a tab's text can sit below the fold, and uiautomator only reports
+# what is on screen. It looks a few times first (the tab may still be drawing; an early swipe would push a title at
+# the top out of view), then scrolls down step by step, then back up. The swipes stay clear of the bottom bar.
 find_scrolling() {
-  local choice window choices size w h
+  local choice window choices size w h step
   IFS='|' read -r -a choices <<< "$1"
   size="$(adb shell wm size | tail -n 1 | grep -oE '[0-9]+x[0-9]+')"
   w="${size%x*}"
   h="${size#*x}"
-  for _ in $(seq 1 10); do
+  for step in $(seq 1 16); do
     window="$(dump)"
     for choice in "${choices[@]}"; do
       if grep -qF "text=\"$choice\"" <<< "$window"; then return 0; fi
     done
-    adb shell input swipe $((w / 2)) $((h * 6 / 10)) $((w / 2)) $((h * 3 / 10)) 300
+    if [[ "$step" -le 5 ]]; then
+      sleep 1
+    elif [[ "$step" -le 10 ]]; then
+      adb shell input swipe $((w / 2)) $((h * 6 / 10)) $((w / 2)) $((h * 3 / 10)) 300
+    else
+      adb shell input swipe $((w / 2)) $((h * 3 / 10)) $((w / 2)) $((h * 6 / 10)) 300
+    fi
     sleep 1
   done
   echo "::error::none of \"$1\" appeared, also after scrolling"
+  dump || true
   exit 1
 }
 
