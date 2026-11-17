@@ -51,6 +51,26 @@ wait_for_any() {
   exit 1
 }
 
+# Like wait_for_any, but scrolls the screen up between looks: at 200 % font a tab's text can sit below the fold, and
+# uiautomator only reports what is on screen. The swipe stays clear of the bottom bar.
+find_scrolling() {
+  local choice window choices size w h
+  IFS='|' read -r -a choices <<< "$1"
+  size="$(adb shell wm size | tail -n 1 | grep -oE '[0-9]+x[0-9]+')"
+  w="${size%x*}"
+  h="${size#*x}"
+  for _ in $(seq 1 10); do
+    window="$(dump)"
+    for choice in "${choices[@]}"; do
+      if grep -qF "text=\"$choice\"" <<< "$window"; then return 0; fi
+    done
+    adb shell input swipe $((w / 2)) $((h * 6 / 10)) $((w / 2)) $((h * 3 / 10)) 300
+    sleep 1
+  done
+  echo "::error::none of \"$1\" appeared, also after scrolling"
+  exit 1
+}
+
 wait_for_text() {
   for _ in $(seq 1 30); do
     if dump | grep -qF "text=\"$1\""; then return 0; fi
@@ -312,7 +332,7 @@ wait_for_text "Calls"
 for tab in "${tabs[@]}"; do
   label="${tab%%|*}"
   tap_text "$label"
-  wait_for_any "${tab#*|}"
+  find_scrolling "${tab#*|}"
   adb exec-out screencap -p > "$out/font200-$label.png"
 done
 assert_alive

@@ -180,6 +180,9 @@ dependencies {
     // DialerEligibilityTest reads the merged manifest.
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
+    // LargeFontTabsTest (Compose on Robolectric; the manifest artifact declares the host activity for unit tests only).
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.androidx.compose.ui.test.manifest)
 
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.test.ext.junit)
