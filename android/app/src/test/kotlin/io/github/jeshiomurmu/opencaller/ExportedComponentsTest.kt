@@ -35,9 +35,7 @@ class ExportedComponentsTest {
             info.services.orEmpty().forEach { add(it to it.permission) }
             info.receivers.orEmpty().forEach { add(it to it.permission) }
             info.providers.orEmpty().forEach { add(it to (it.writePermission ?: it.readPermission)) }
-        }.filter { (component, _) ->
-            component.exported && !component.name.startsWith(TEST_ONLY_PREFIX) && component.name !in TEST_ONLY
-        }
+        }.filter { (component, _) -> component.exported && !component.name.startsWith(TEST_ONLY_PREFIX) }
     }
 
     @Test
@@ -68,10 +66,6 @@ class ExportedComponentsTest {
         // The unit-test manifest also merges the test dependencies' manifests: androidx.test:core declares exported
         // activities (InstrumentationActivityInvoker's bootstrap and empty activities) that never ship in the app.
         const val TEST_ONLY_PREFIX = "androidx.test."
-
-        // Compose's ui-test-manifest (a testImplementation, LargeFontTabsTest) declares the activity the Compose test
-        // rule hosts its content in; the app's own manifest doesn't declare it.
-        val TEST_ONLY = setOf("androidx.activity.ComponentActivity")
 
         // Permissions only the system (or Google Play services, for FCM) can hold.
         val SYSTEM_GUARDS =

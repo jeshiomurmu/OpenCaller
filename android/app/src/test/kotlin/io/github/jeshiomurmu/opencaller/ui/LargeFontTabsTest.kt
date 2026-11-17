@@ -1,7 +1,11 @@
 package io.github.jeshiomurmu.opencaller.ui
 
 import android.app.Application
+import android.content.ComponentName
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
+import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
@@ -16,8 +20,11 @@ import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
 import io.github.jeshiomurmu.opencaller.core.model.AccessItemStatus
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExternalResource
+import org.junit.rules.RuleChain
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
@@ -28,8 +35,27 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.VANILLA_ICE_CREAM], application = Application::class, qualifiers = "w320dp-h480dp")
 class LargeFontTabsTest {
+    private val compose = createComposeRule()
+
+    /**
+     * Robolectric reads an application module's own manifest, where the Compose rule's host activity isn't declared
+     * (`ui-test-manifest` only reaches library modules' test manifests), so the test registers it.
+     */
+    private val composeHost =
+        object : ExternalResource() {
+            override fun before() {
+                val app = ApplicationProvider.getApplicationContext<Application>()
+                val host = ComponentName(app, ComponentActivity::class.java)
+                val launcher = IntentFilter(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_LAUNCHER) }
+                shadowOf(app.packageManager).apply {
+                    addActivityIfNotPresent(host)
+                    addIntentFilterForActivity(host, launcher)
+                }
+            }
+        }
+
     @get:Rule
-    val compose = createComposeRule()
+    val rules: RuleChain = RuleChain.outerRule(composeHost).around(compose)
 
     private val context = ApplicationProvider.getApplicationContext<Application>()
 
