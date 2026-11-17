@@ -34,6 +34,7 @@ import io.github.jeshiomurmu.opencaller.core.network.OpenCallerNetwork
 import io.github.jeshiomurmu.opencaller.core.network.ProfileApi
 import io.github.jeshiomurmu.opencaller.core.network.ServerConfig
 import io.github.jeshiomurmu.opencaller.core.network.TokenStore
+import io.github.jeshiomurmu.opencaller.core.network.UpdateRequiredSignal
 import javax.inject.Singleton
 
 /**
@@ -84,6 +85,11 @@ interface NetworkModule {
                 cipher = AndroidKeystoreCipher(KeystoreTokenStore.KEY_ALIAS),
             )
 
+        /** Raised when the server refuses this app version (426); the app shell asks the user to update. */
+        @Provides
+        @Singleton
+        fun updateRequired(): UpdateRequiredSignal = UpdateRequiredSignal()
+
         /** Clients and APIs for the configured server. */
         @Provides
         @Singleton
@@ -91,7 +97,8 @@ interface NetworkModule {
             config: ServerConfig,
             tokens: TokenStore,
             clock: Clock,
-        ): OpenCallerNetwork = OpenCallerNetwork(config, tokens, clock)
+            updateRequired: UpdateRequiredSignal,
+        ): OpenCallerNetwork = OpenCallerNetwork(config, tokens, clock, updateRequired = updateRequired)
 
         /** The main API. */
         @Provides

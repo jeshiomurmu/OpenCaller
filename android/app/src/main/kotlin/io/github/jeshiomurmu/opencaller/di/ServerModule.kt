@@ -21,6 +21,7 @@ object ServerModule {
             pins = BuildConfig.API_PINS,
             flavor = BuildConfig.FLAVOR,
             versionName = BuildConfig.VERSION_NAME,
+            versionCode = BuildConfig.VERSION_CODE,
         )
 }
 
@@ -30,12 +31,14 @@ internal fun serverConfigOf(
     pins: String,
     flavor: String,
     versionName: String,
+    versionCode: Int = 0,
 ): ServerConfig =
     ServerConfig(
         baseUrl = baseUrl.trim().ifEmpty { null },
         pins = if (flavor == PLAY_FLAVOR) pins.split(',').map(String::trim).filter { it.isNotEmpty() } else emptyList(),
         userAgent = "OpenCaller/$versionName ($flavor)",
         flavor = flavor,
+        versionCode = versionCode,
     )
 
 private const val PLAY_FLAVOR = "play"

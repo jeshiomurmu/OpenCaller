@@ -7,6 +7,8 @@ info:
 
     Errors are RFC 9457 problem details (`application/problem+json`) with a stable machine-readable `code`.
     Every response carries `X-Request-Id`; send your own (1–64 letters, digits, `-` or `_`) to correlate logs.
+    The app sends its `versionCode` as `X-OpenCaller-Version`; when the server sets a minimum (`MIN_APP_VERSION_CODE`),
+    any `/v1/` request from an older version gets 426 `upgrade_required` and the app asks the user to update.
     Prometheus metrics (`GET /metrics`) and the admin endpoints (`POST /admin/jobs/{scoring|lists}` with
     `Authorization: Bearer <ADMIN_TOKEN>`; 409 `job_running` while a run holds the job's lock) are served on a
     separate internal port and are not part of this API; neither is the admin web (business-claim review, OTP-source
