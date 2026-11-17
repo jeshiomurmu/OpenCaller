@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bengali. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="channel_otp_guard">কোড সুরক্ষা সতর্কতা</string>
+    <string name="channel_otp_guard_description">অচেনা কারও সঙ্গে কলের সময় সাইন-ইন কোড এলে, বা একসঙ্গে অনেক কোড এলে সতর্কতা।</string>
+    <string name="otp_guard_title">এই কোড কাউকে বলবেন না</string>
+    <string name="otp_guard_body">আপনার কন্টাক্টে নেই এমন কারও সঙ্গে কলের সময় বা কলের ঠিক পরে একটি সাইন-ইন কোড এসেছে। ব্যাংক, ডেলিভারি কোম্পানি বা পুলিশ কখনো কোড চায় না। কলার যদি কোডটি চায়, তবে এটি প্রতারণা।</string>
+    <string name="otp_guard_from">কোডটি এসেছে %1$s থেকে।</string>
+    <string name="otp_guard_flash_call">কোডটি %1$s থেকে মিসড কল হিসেবে এসেছে।</string>
+    <string name="otp_guard_hang_up">কল কেটে দিন</string>
+    <string name="otp_guard_close">আমি বুঝেছি</string>
+    <string name="otp_guard_notification_title">কলারকে কোড বলবেন না</string>
+    <string name="otp_guard_notification_text">অচেনা কারও সঙ্গে কলের সময় একটি সাইন-ইন কোড এসেছে।</string>
+    <string name="otp_burst_title">একসঙ্গে কয়েকটি সাইন-ইন কোড</string>
+    <plurals name="otp_burst_text">
+        <item quantity="one">কয়েক মিনিটের মধ্যে বিভিন্ন সেবা থেকে %1$dটি কোড এসেছে। আপনি না চাইলে কেউ হয়তো আপনার অ্যাকাউন্টে ঢোকার চেষ্টা করছে। কোড কাউকে বলবেন না।</item>
+        <item quantity="other">কয়েক মিনিটের মধ্যে বিভিন্ন সেবা থেকে %1$dটি কোড এসেছে। আপনি না চাইলে কেউ হয়তো আপনার অ্যাকাউন্টে ঢোকার চেষ্টা করছে। কোনো কোড কাউকে বলবেন না।</item>
+    </plurals>
+</resources>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bengali. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="onboarding_progress">ধাপ %1$d / %2$d</string>
+    <string name="onboarding_get_started">শুরু করুন</string>
+    <string name="onboarding_continue">চালিয়ে যান</string>
+    <string name="onboarding_finish">শেষ করুন</string>
+    <string name="onboarding_bullet">• %1$s</string>
+    <string name="onboarding_welcome_title">জানুন কে কল করছে</string>
+    <string name="onboarding_welcome_body">OpenCaller দেখায় কে কল করছে এবং স্প্যাম কল থামায়। এটি একবারে একটি জিনিসই চায় এবং আগে কারণ বুঝিয়ে বলে। যেকোনো কিছুতে “এখন নয়” বলতে পারেন।</string>
+    <string name="onboarding_privacy_title">আপনার ফোন, আপনার তথ্য</string>
+    <string name="onboarding_privacy_leaves_title">যা আপনার ফোন থেকে বাইরে যায়</string>
+    <string name="onboarding_privacy_leaves_1">কলার যাচাই করতে, নম্বর থেকে তৈরি একটি ছোট এলোমেলো কোড। পুরো নম্বর কখনো নয়।</string>
+    <string name="onboarding_privacy_leaves_2">যে নম্বর আপনি নিজে খোঁজেন।</string>
+    <string name="onboarding_privacy_leaves_3">যে নম্বর আপনি স্প্যাম হিসেবে রিপোর্ট করেন, আপনার বেছে নেওয়া লেবেল ও মন্তব্যসহ।</string>
+    <string name="onboarding_privacy_never_title">যা কখনো আপনার ফোন থেকে বাইরে যায় না</string>
+    <string name="onboarding_privacy_never_1">আপনার কন্টাক্ট।</string>
+    <string name="onboarding_privacy_never_2">আপনার কলের ইতিহাস।</string>
+    <string name="onboarding_privacy_never_3">আপনার মেসেজ।</string>
+    <string name="onboarding_privacy_never_4">বিজ্ঞাপন বা ট্র্যাকিংয়ের জন্য কিছুই নয়: OpenCaller-এ এর কোনোটিই নেই, আর এটি কোনো ক্র্যাশ রিপোর্ট পাঠায় না।</string>
+    <string name="onboarding_extras_title">ঐচ্ছিক সুবিধা</string>
+    <string name="onboarding_extras_body">এগুলো এখন চালু করুন, অথবা পরে আমি → সেটিংস → অনুমতি ও ভূমিকায়।</string>
+    <string name="onboarding_set_up">সেট আপ করুন</string>
+    <string name="onboarding_sign_in">সাইন ইন (ঐচ্ছিক)</string>
+    <string name="onboarding_sign_in_summary">আপনার স্প্যাম রিপোর্ট শেয়ার করুন এবং নম্বর খুঁজুন। এটি ছাড়াও ব্লক করা কাজ করে।</string>
+    <string name="onboarding_signed_in">সাইন ইন করা আছে</string>
+    <string name="onboarding_sign_in_action">সাইন ইন করুন</string>
+    <string name="onboarding_status_on">চালু</string>
+    <string name="onboarding_status_optional">ঐচ্ছিক</string>
+    <string name="onboarding_status_coming_later">পরের আপডেটে আসছে</string>
+</resources>

@@ -30,6 +30,14 @@ jobs:
       # Caches Gradle dependencies and validates the Gradle wrapper JAR checksum.
       - uses: gradle/actions/setup-gradle@v6
 
+      - name: Privacy invariant 1 (provider readers never import the network layer)
+        working-directory: .
+        run: scripts/ci/privacy-imports.sh
+
+      - name: Translations match the English strings (bn, hi)
+        working-directory: .
+        run: python3 scripts/ci/check_translations.py android
+
       - name: Lint, test and assemble both flavors
         # --continue: run every task and report all failures in one CI run.
         run: >-
@@ -158,12 +166,59 @@ jobs:
             android/app/build/reports/androidTests/
           if-no-files-found: ignore
 
+  performance:
+    # Phase 14: Baseline Profile generation, Macrobenchmark (cold start, screening), the screening Microbenchmark and a
+    # 30-minute battery proxy on the API 36 emulator. Long, so only on pull requests; the results are printed into the
+    # log (scripts/ci/performance.sh) and recorded in docs/testing.md.
+    if: github.event_name == 'pull_request'
+    name: performance (Baseline Profile, benchmarks, battery proxy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Baseline Profile, benchmarks and battery proxy
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          ram-size: 4096M
+          disable-animations: true
+          script: scripts/ci/performance.sh build/performance
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: performance
+          path: |
+            build/performance/
+            android/benchmark/build/outputs/
+            android/microbenchmark/build/outputs/
+          if-no-files-found: ignore
+
   e2e:
     # API 36 only: on the API 29 image, TCP from the emulator never connects, to the host or to its own loopback
     # (ping works, no firewall drops, not in Doze; docs/phase.md issue 138).
-    name: e2e (TC-E2E-001, TC-VOIP, TC-FAM emulators)
+    name: e2e (TC-E2E-001, TC-VOIP, TC-FAM, privacy traffic)
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # The tests' own limits add up to 45 minutes (scripts/e2e/ci.sh), plus the build, the stack and the traffic
+    # check: a hang must end in the scripts' diagnostics, not in the job's timeout (which keeps no log).
+    timeout-minutes: 80
     steps:
       - uses: actions/checkout@v7
 
@@ -176,7 +231,10 @@ jobs:
 
       - name: Assemble foss debug APK
         working-directory: android
-        run: ./gradlew assembleFossDebug
+        # The Gradle and Kotlin daemons are stopped afterwards: two 4 GB emulators and the stack need the memory.
+        run: |
+          ./gradlew assembleFossDebug
+          ./gradlew --stop
 
       - name: Create .env with throwaway credentials
         working-directory: infra/docker
@@ -199,8 +257,8 @@ jobs:
             echo "MINIO_PUBLIC_ENDPOINT=http://10.0.2.2:9000"
           } >> .env
 
-      - name: Install ffmpeg (test clip for the video caller ID)
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: Install ffmpeg (test clip for the video caller ID) and tcpdump (privacy traffic check)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg tcpdump
 
       - name: Build and start the stack
         run: GIT_SHA="${GITHUB_SHA::7}" docker compose -f infra/docker/compose.yml up -d --build --wait --wait-timeout 300
@@ -211,6 +269,22 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Traffic checker self-test
+        run: |
+          mkdir -p build/e2e
+          python3 -m unittest scripts/e2e/test_check_traffic.py
+
+      - name: Capture the host's traffic (privacy traffic check)
+        # The emulators' own -tcpdump on the API 36 image records only a few packets (run 43823739801: no request to
+        # the server at all), so the check reads what the emulators send through the host: every interface, without
+        # adb and the emulator console (5037, 5554-5682), which carry the test's own commands (the canaries are planted
+        # through them). It is kept out of build/e2e: about 3 GB per run, too large for the uploaded logs.
+        run: |
+          sudo tcpdump -Z root -i any -U -s 0 -w "$RUNNER_TEMP/host.pcap" \
+            'not (tcp port 5037 or tcp portrange 5554-5682)' > build/e2e/tcpdump.log 2>&1 &
+          sleep 2
+          pgrep -x tcpdump
+
       - name: Device A reports and device B blocks; A calls B over the app, sends a Flash message and a clip
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -219,9 +293,27 @@ jobs:
           arch: x86_64
           ram-size: 4096M
           disable-animations: true
-          # The runner's defaults without -noaudio: app calls record from the emulated microphone.
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -camera-back none
+          # The runner's defaults without -noaudio: app calls record from the emulated microphone. A's packets go to
+          # a.pcap for the privacy traffic check (scripts/e2e/check_traffic.py).
+          emulator-options: >-
+            -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -camera-back none
+            -tcpdump ${{ github.workspace }}/build/e2e/a.pcap
           script: scripts/e2e/ci.sh 36 android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/e2e
+
+      - name: Privacy traffic check (no canary on the wire; the server endpoints used)
+        # After the emulators have exited, so both captures are complete (scripts/e2e/ci.sh). The canaries are the
+        # values scripts/e2e/canaries.sh planted on both phones.
+        if: ${{ !cancelled() }}
+        run: |
+          sudo pkill -INT -x tcpdump || true
+          sleep 2
+          cat build/e2e/tcpdump.log || true
+          sudo chown "$(id -u)" "$RUNNER_TEMP/host.pcap"
+          ls -l build/e2e/*.pcap "$RUNNER_TEMP/host.pcap"
+          timeout 600 python3 scripts/e2e/check_traffic.py --server-port 8080 \
+            --pcap "$RUNNER_TEMP/host.pcap" --pcap build/e2e/a.pcap --pcap build/e2e/b.pcap \
+            --canary "Canary Contact Qx7" --canary "+12025550177" --canary "+12025550178" --canary "+12025550179" \
+            --canary "CANARY-SMS-7d1f"
 
       - name: Server logs
         if: always()
@@ -339,6 +431,40 @@ jobs:
             --data-binary @tone.pcm http://127.0.0.1:8090/v1/score | tee score.json
           python3 -c "import json; p=json.load(open('score.json'))['spoofProbability']; assert 0 <= p <= 1, p"
           docker logs voice-spoof
+
+  dependency-audit:
+    # Phase 14 (docs/security.md, MASVS-CODE-3): every resolved dependency of the app (both flavors' release
+    # runtime), the server and the Python services checked against OSV; reviewed exceptions in
+    # docs/security/osv-ignore.txt.
+    name: dependency audit (OSV)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Resolve dependencies
+        run: |
+          mkdir -p build/audit
+          (cd android && ./gradlew -q :app:dependencies --configuration fossReleaseRuntimeClasspath) > build/audit/app-foss.txt
+          (cd android && ./gradlew -q :app:dependencies --configuration playReleaseRuntimeClasspath) > build/audit/app-play.txt
+          (cd backend/server && ./gradlew -q dependencies --configuration runtimeClasspath) > build/audit/server.txt
+          python3 -m venv build/audit/venv
+          build/audit/venv/bin/pip install --quiet --upgrade pip
+          build/audit/venv/bin/pip install --quiet --dry-run --ignore-installed --report build/audit/agents.json './backend/agents[transcripts,assistant]'
+          build/audit/venv/bin/pip install --quiet --dry-run --ignore-installed --report build/audit/voice-spoof.json ./ml/voice-spoof
+
+      - name: Check with OSV
+        run: >-
+          python3 scripts/ci/dependency_audit.py
+          --gradle build/audit/app-foss.txt --gradle build/audit/app-play.txt --gradle build/audit/server.txt
+          --pip build/audit/agents.json --pip build/audit/voice-spoof.json
 
   agents:
     name: agents (recorder, transcriber, assistant, scanner)

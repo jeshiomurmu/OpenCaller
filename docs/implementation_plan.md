@@ -200,11 +200,14 @@ the signing secrets; the store submissions are the owner's.
 
 ## Phase 13 — Recording line, AI assistant, voice scanner
 
-- [ ] LiveKit SIP + SIP trunk config docs (provider-agnostic) in `infra/deploy`
-- [ ] Line allocation API; per-country legal switch for recording
-- [ ] Recording: merge flow UI, beep, download, server deletion ≤ 1 h, local playback, transcript + summary (optional)
-- [ ] AI assistant: Python LiveKit agent (STT → LLM → TTS), guided call-forwarding setup with MMI codes and carrier notes, live transcript UI, pick-up/reply/block actions
-- [ ] Voice scanner: anti-spoofing service in `ml/voice-spoof`, agent integration, warning UI with uncertainty text
+- [x] LiveKit SIP + SIP trunk config docs (provider-agnostic) in `infra/deploy`
+- [x] Line allocation API; per-country legal switch for recording
+- [x] Recording: merge flow UI, beep, download, server deletion ≤ 1 h, local playback, transcript + summary (optional) — summaries left for later (owner: transcripts only)
+- [x] AI assistant: Python LiveKit agent (STT → LLM → TTS), guided call-forwarding setup with MMI codes and carrier notes, live transcript UI, pick-up/reply/block actions
+- [x] Voice scanner: anti-spoofing service in `ml/voice-spoof`, agent integration, warning UI with uncertainty text
+
+Done in code (PRs #20, #21, #22, 2026-11-10…15). Exit criteria still open: TC-REC/AST/SCAN on a real SIM and the cost
+per screened minute (carried over in `docs/phase.md`; the owner moved on to Phase 14 on 2026-11-16).
 
 **Exit:** TC-REC-*, TC-AST-*, TC-SCAN-* pass on a real SIM in one launch country; cost per screened minute measured and recorded.
 

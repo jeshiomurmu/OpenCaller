@@ -37,6 +37,9 @@
     <string name="assistant_spam_label">Likely spam</string>
     <string name="assistant_urgent_label">Urgent</string>
     <string name="assistant_delete">Delete</string>
+    <!-- TalkBack: what tapping a screened call does. -->
+    <string name="assistant_show_conversation">show the conversation</string>
+    <string name="assistant_hide_conversation">hide the conversation</string>
     <string name="assistant_signed_out">Sign in to use the call assistant.</string>
     <string name="assistant_supporter">The call assistant is part of the supporter tier.</string>
     <string name="assistant_unavailable">There is no assistant number for your country on this server yet.</string>

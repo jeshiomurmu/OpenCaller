@@ -38,6 +38,7 @@ import io.github.jeshiomurmu.opencaller.core.telephony.providers.ContactsSource
 import io.github.jeshiomurmu.opencaller.core.telephony.providers.DefaultPhoneAppRole
 import io.github.jeshiomurmu.opencaller.core.telephony.providers.DeviceCallLog
 import io.github.jeshiomurmu.opencaller.core.telephony.providers.DeviceContacts
+import io.github.jeshiomurmu.opencaller.core.telephony.screening.AndroidScreeningTrace
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.CallerIdListener
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.CallerLookup
 import io.github.jeshiomurmu.opencaller.core.telephony.screening.ContactLookup
@@ -174,7 +175,8 @@ internal interface TelephonyModule {
             normalizer: PhoneNumberNormalizer,
             dispatchers: DispatcherProvider,
             config: ScreeningConfig,
-        ): ScreeningEngine = ScreeningEngine(device, lists, normalizer, dispatchers, TimeSource.Monotonic, config)
+        ): ScreeningEngine =
+            ScreeningEngine(device, lists, normalizer, dispatchers, TimeSource.Monotonic, config, trace = AndroidScreeningTrace())
 
         @Provides
         fun callerLookup(

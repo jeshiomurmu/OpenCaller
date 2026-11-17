@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindi. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="voip_channel_incoming">आने वाली ऐप कॉल</string>
+    <string name="voip_channel_incoming_description">जब कोई दूसरा OpenCaller यूज़र ऐप से कॉल करता है, तब घंटी बजती है</string>
+    <string name="voip_channel_ongoing">ऐप कॉल चल रही है</string>
+    <string name="voip_incoming">OpenCaller ऐप कॉल</string>
+    <string name="voip_ongoing">ऐप कॉल</string>
+    <string name="voip_answer">उठाएँ</string>
+    <string name="voip_decline">अस्वीकार करें</string>
+    <string name="voip_hang_up">कॉल काटें</string>
+    <string name="voip_mute">म्यूट</string>
+    <string name="voip_speaker">स्पीकर</string>
+    <string name="voip_connecting">कनेक्ट हो रहा है…</string>
+    <string name="voip_ringing_out">घंटी बज रही है…</string>
+    <string name="voip_ringing_in">आने वाली ऐप कॉल</string>
+    <string name="voip_answering">कॉल उठाई जा रही है…</string>
+    <string name="voip_active">ऐप कॉल</string>
+    <string name="voip_ended">कॉल खत्म</string>
+    <string name="voip_declined">कॉल अस्वीकार की गई</string>
+    <string name="voip_missed">किसी ने नहीं उठाई</string>
+    <string name="voip_unreachable">इस नंबर तक OpenCaller से नहीं पहुँचा जा सकता।</string>
+    <string name="voip_failed">कॉल कनेक्ट नहीं हो सकी। अपना कनेक्शन जाँचें और फिर से कोशिश करें।</string>
+    <string name="voip_busy">आप पहले से एक कॉल पर हैं।</string>
+    <string name="voip_microphone_needed">ऐप कॉल के लिए OpenCaller को माइक्रोफ़ोन चाहिए। दूसरा व्यक्ति आपको सिर्फ़ कॉल चालू रहने तक सुनता है।</string>
+    <string name="voip_allow_microphone">माइक्रोफ़ोन की अनुमति दें</string>
+    <string name="voip_video_caller_id">कॉल करने वाले की वीडियो कॉलर आईडी, बिना आवाज़</string>
+    <string name="voip_via_app">आपके फ़ोन प्लान से नहीं, OpenCaller से</string>
+</resources>

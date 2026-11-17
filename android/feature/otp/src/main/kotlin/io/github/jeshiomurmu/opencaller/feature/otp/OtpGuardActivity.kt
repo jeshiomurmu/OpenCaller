@@ -2,6 +2,7 @@ package io.github.jeshiomurmu.opencaller.feature.otp
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -22,6 +23,9 @@ class OtpGuardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Scammers ask victims to install screen-sharing or "support" apps; their overlays must not cover or fake the
+        // warning (docs/security.md, MASVS-PLATFORM-3). System windows (the call, the keyguard) still show.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) window.setHideOverlayWindows(true)
         alarm.cancelCallWarning()
         setContent { OpenCallerTheme { OtpGuardRoute(viewModel = viewModel, onClose = ::finish) } }
     }

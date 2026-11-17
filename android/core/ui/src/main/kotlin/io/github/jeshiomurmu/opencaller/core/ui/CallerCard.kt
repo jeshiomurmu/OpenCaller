@@ -32,7 +32,6 @@ import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacin
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
 import io.github.jeshiomurmu.opencaller.core.model.CallerInfo
 import io.github.jeshiomurmu.opencaller.core.model.CallerVerification
-import io.github.jeshiomurmu.opencaller.core.model.LineType
 import io.github.jeshiomurmu.opencaller.core.model.NameSource
 import io.github.jeshiomurmu.opencaller.core.model.RiskLevel
 import java.util.Locale
@@ -59,30 +58,45 @@ fun CallerCard(
         modifier = modifier.fillMaxWidth().padding(OpenCallerSpacing.m),
         verticalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xs),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.s)) {
-            CallerAvatar(state = state, name = name, logoPath = caller.logoPath.takeIf { caller.isVerifiedBusiness })
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xxs)) {
-                Text(
-                    text = name ?: formattedNumber ?: stringResource(state.fallbackTitle()),
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.semantics { heading() },
-                )
-                if (name != null && formattedNumber != null) {
-                    Text(
-                        text = formattedNumber,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                caller.nameSource?.takeIf { name != null }?.let { SourceChip(source = it) }
-                caller.badge?.takeIf { name != null }?.let { SupporterBadgeLabel(it) }
-                if (caller.isVerifiedBusiness) VerifiedBadge()
-            }
-        }
-        caller.spamVerdict?.let { RiskBanner(level = it.level, category = it.category, reportCount = it.reportCount) }
-        CallerDetails(caller = caller, state = state)
+        // Who is calling is one TalkBack stop (name, number, source, risk, details), so the actions come right after it
+        // (docs/design.md §11: the card's actions within 3 swipes). A clickable badge stays its own stop.
+        Column(
+            modifier = Modifier.semantics(mergeDescendants = true) {},
+            verticalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xs),
+        ) { CallerSummary(caller = caller, state = state, name = name, formattedNumber = formattedNumber) }
         Row(horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xs), content = content)
     }
+}
+
+@Composable
+private fun CallerSummary(
+    caller: CallerInfo,
+    state: CallerCardState,
+    name: String?,
+    formattedNumber: String?,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(OpenCallerSpacing.s)) {
+        CallerAvatar(state = state, name = name, logoPath = caller.logoPath.takeIf { caller.isVerifiedBusiness })
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(OpenCallerSpacing.xxs)) {
+            Text(
+                text = name ?: formattedNumber ?: stringResource(state.fallbackTitle()),
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.semantics { heading() },
+            )
+            if (name != null && formattedNumber != null) {
+                Text(
+                    text = formattedNumber,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            caller.nameSource?.takeIf { name != null }?.let { SourceChip(source = it) }
+            caller.badge?.takeIf { name != null }?.let { SupporterBadgeLabel(it) }
+            if (caller.isVerifiedBusiness) VerifiedBadge()
+        }
+    }
+    caller.spamVerdict?.let { RiskBanner(level = it.level, category = it.category, reportCount = it.reportCount) }
+    CallerDetails(caller = caller, state = state)
 }
 
 @Composable
@@ -206,24 +220,6 @@ private fun CallerCardState.fallbackTitle(): Int =
         R.string.caller_card_hidden
     } else {
         R.string.caller_card_unknown
-    }
-
-/** Short label of a line type, or `null` when unknown. */
-@StringRes
-internal fun LineType.labelRes(): Int? =
-    when (this) {
-        LineType.FIXED_LINE -> R.string.line_fixed
-        LineType.MOBILE -> R.string.line_mobile
-        LineType.FIXED_LINE_OR_MOBILE -> R.string.line_fixed_or_mobile
-        LineType.TOLL_FREE -> R.string.line_toll_free
-        LineType.PREMIUM_RATE -> R.string.line_premium_rate
-        LineType.SHARED_COST -> R.string.line_shared_cost
-        LineType.VOIP -> R.string.line_voip
-        LineType.PERSONAL_NUMBER -> R.string.line_personal
-        LineType.PAGER -> R.string.line_pager
-        LineType.UAN -> R.string.line_uan
-        LineType.VOICEMAIL -> R.string.line_voicemail
-        LineType.UNKNOWN -> null
     }
 
 /** The caller card on its own surface, as drawn over other apps (rounded, elevated). */

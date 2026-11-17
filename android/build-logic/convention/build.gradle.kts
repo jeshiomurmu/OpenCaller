@@ -35,6 +35,10 @@ gradlePlugin {
             id = "opencaller.android.application"
             implementationClass = "AndroidApplicationConventionPlugin"
         }
+        register("androidTest") {
+            id = "opencaller.android.test"
+            implementationClass = "AndroidTestConventionPlugin"
+        }
         register("androidLibrary") {
             id = "opencaller.android.library"
             implementationClass = "AndroidLibraryConventionPlugin"

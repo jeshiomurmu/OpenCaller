@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindi. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="recordings_title">रिकॉर्डिंग</string>
+    <string name="recordings_intro">रिकॉर्डिंग लाइन से की गई रिकॉर्डिंग सिर्फ़ इसी फ़ोन पर रखी जाती हैं। आपके फ़ोन के सेव करने के एक घंटे के अंदर, और ज़्यादा से ज़्यादा 24 घंटे बाद, सर्वर अपनी कॉपी मिटा देता है।</string>
+    <string name="recordings_empty">अभी कोई रिकॉर्डिंग नहीं है। कॉल के दौरान रिकॉर्ड दबाएँ।</string>
+    <string name="recordings_transcripts">ट्रांसक्रिप्ट</string>
+    <string name="recordings_transcripts_summary">नई रिकॉर्डिंग को OpenCaller के सर्वर पर लिखित रूप में बदलें (अपने सर्वर पर आवाज़ पहचान; ऑडियो कहीं और नहीं जाता)। शुरू में बंद रहता है।</string>
+    <string name="recordings_unknown_party">अनजान नंबर</string>
+    <string name="recordings_play">चलाएँ</string>
+    <string name="recordings_stop">रोकें</string>
+    <string name="recordings_delete">मिटाएँ</string>
+    <string name="recordings_cancel">रद्द करें</string>
+    <string name="recordings_delete_title">यह रिकॉर्डिंग मिटाएँ?</string>
+    <string name="recordings_delete_text">यह इस फ़ोन से, और अगर सर्वर पर अब भी है तो वहाँ से भी मिट जाएगी। इसे वापस नहीं लाया जा सकता।</string>
+    <string name="recordings_cannot_play">यह रिकॉर्डिंग चलाई नहीं जा सकती।</string>
+    <string name="recordings_signed_out">सर्वर से रिकॉर्डिंग लाने के लिए साइन इन करें।</string>
+    <string name="recordings_network_error">सर्वर तक नहीं पहुँच पाए। सेव की गई रिकॉर्डिंग फिर भी चलेंगी।</string>
+    <string name="recordings_storage_error">रिकॉर्डिंग इस फ़ोन पर सेव नहीं हो सकी।</string>
+</resources>

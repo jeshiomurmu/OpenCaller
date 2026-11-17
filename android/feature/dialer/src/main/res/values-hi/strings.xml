@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindi. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="dialpad_hint">नंबर डालें</string>
+    <string name="dialpad_call">कॉल करें</string>
+    <string name="dialpad_delete">मिटाएँ</string>
+    <string name="dialpad_clear">नंबर मिटाएँ</string>
+    <string name="dialpad_paste">पेस्ट करें</string>
+    <string name="dialpad_voicemail">वॉइसमेल पर कॉल करें</string>
+    <string name="dialpad_plus">+ लिखें</string>
+    <string name="dialpad_call_suggestion">%1$s को कॉल करें</string>
+    <string name="dialpad_sim_title">किस सिम से कॉल करें</string>
+    <string name="dialpad_hand_off_note">OpenCaller अभी आपका फ़ोन ऐप नहीं है, इसलिए कॉल करें दबाने पर यह नंबर आपके फ़ोन ऐप में खुलेगा।</string>
+    <string name="dialpad_permission_title">OpenCaller को कॉल करने दें</string>
+    <string name="dialpad_permission_why">ताकि डायल पैड आपके डाले गए नंबरों पर आपके फ़ोन की अपनी कॉलिंग सेवा से कॉल कर सके।</string>
+    <string name="dialpad_permission_never">OpenCaller अपने आप कभी कॉल नहीं करता। यह तभी कॉल करता है जब आप कॉल करें दबाते हैं।</string>
+    <string name="dialpad_permission_denied">कॉल की अनुमति के बिना कॉल नहीं की जा सकती। आप इसे फ़ोन की सेटिंग में दे सकते हैं: ऐप्स → OpenCaller → अनुमतियाँ।</string>
+    <string name="dialpad_cant_call">यह फ़ोन कॉल नहीं कर सकता।</string>
+    <string name="dialpad_code_refused">Android ने यह कोड स्वीकार नहीं किया।</string>
+</resources>

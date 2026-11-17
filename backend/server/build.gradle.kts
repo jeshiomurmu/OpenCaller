@@ -51,6 +51,12 @@ dependencies {
     implementation(libs.logback.classic)
     // Compile scope: PostgreSQL enum columns are written as PGobject (db/PgEnum.kt).
     implementation(libs.postgresql)
+    // Ktor's JWT support brings Jackson and Guava (java-jwt, jwks-rsa); raised past the versions with known
+    // advisories (scripts/ci/dependency_audit.py).
+    implementation(platform(libs.jackson.bom))
+    constraints {
+        implementation(libs.guava) { because("jwks-rsa 0.24.1 brings 33.6.0-jre (GHSA-xxph-c9ww-hj94)") }
+    }
 
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)

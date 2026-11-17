@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindi. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="channel_caller_id">कॉलर आईडी</string>
+    <string name="channel_caller_id_description">कौन कॉल कर रहा है, जब OpenCaller आपके फ़ोन ऐप के ऊपर अपना कार्ड नहीं दिखा पाता।</string>
+    <string name="channel_after_call">कॉल के बाद का सारांश</string>
+    <string name="channel_after_call_description">ऐसे नंबर से कॉल के बाद एक छोटा सारांश जो आपके संपर्कों में नहीं है।</string>
+    <string name="callerid_close">बंद करें</string>
+    <string name="after_call_title">%1$s से कॉल</string>
+    <string name="after_call_block">ब्लॉक करें</string>
+    <string name="after_call_report">रिपोर्ट करें</string>
+    <string name="after_call_not_spam">स्पैम नहीं है</string>
+    <string name="after_call_save_contact">संपर्क सेव करें</string>
+    <string name="after_call_blocked">%1$s ब्लॉक किया गया</string>
+    <string name="after_call_marked_not_spam">इस फ़ोन पर %1$s को अब स्पैम नहीं माना जाएगा</string>
+    <string name="after_call_failed">कुछ गड़बड़ हो गई। फिर से कोशिश करें।</string>
+    <string name="after_call_screen_ended">कॉल खत्म</string>
+    <string name="after_call_screen_missed">मिस्ड कॉल</string>
+    <string name="after_call_call_back">वापस कॉल करें</string>
+    <string name="after_call_message">मैसेज</string>
+    <string name="after_call_message_own">मैसेज लिखें</string>
+    <string name="after_call_close">बंद करें</string>
+    <string name="messenger_listener_label">WhatsApp, Telegram और Signal कॉल के लिए OpenCaller कॉलर आईडी</string>
+    <string name="announce_named">%1$s कॉल कर रहे हैं</string>
+    <string name="announce_spam">संभवतः स्पैम कॉल</string>
+    <string name="announce_hidden">छिपे नंबर से कॉल</string>
+    <string name="announce_unknown">अनजान नंबर से कॉल</string>
+</resources>

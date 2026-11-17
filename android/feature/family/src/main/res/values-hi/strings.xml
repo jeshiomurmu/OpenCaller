@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindi. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <!-- Consent texts translate wording version 1 (FamilySharing.CONSENT_VERSION); they need a legal review too. -->
+    <string name="family_title">फ़ैमिली सुरक्षा</string>
+    <string name="family_entry_summary">OpenCaller जब आपकी सुरक्षा करे तो किसी भरोसेमंद व्यक्ति को बताएँ, या परिवार के किसी सदस्य का ध्यान रखें</string>
+    <string name="family_signed_out">फ़ैमिली सुरक्षा इस्तेमाल करने के लिए साइन इन करें। यह मुफ़्त है।</string>
+    <string name="family_sign_in">साइन इन करें</string>
+    <string name="family_intro">फ़ैमिली सुरक्षा से आपका कोई भरोसेमंद व्यक्ति देख सकता है कि OpenCaller आपकी सुरक्षा कर रहा है, और उसे पता चलता है जब कोई ठग कॉल के दौरान आपका वन-टाइम कोड माँग रहा हो सकता है। सिर्फ़ वही साझा होता है जो आप चुनते हैं, और आपके अपने कोड और सहमति के बिना कोई आपको जोड़ नहीं सकता।</string>
+    <string name="family_create_title">ग्रुप शुरू करें</string>
+    <string name="family_create_text">आप ग्रुप के एडमिन बनेंगे। आप ज़्यादा से ज़्यादा 4 लोगों को बुला सकते हैं। एडमिन के रूप में आप कुछ भी साझा नहीं करते; आपके सदस्य चुनते हैं कि वे आपके साथ क्या साझा करें।</string>
+    <string name="family_group_name">ग्रुप का नाम</string>
+    <string name="family_your_label">ग्रुप में आपका नाम</string>
+    <string name="family_your_label_hint">जैसे माँ, राफ़ी या दादाजी</string>
+    <string name="family_create">ग्रुप बनाएँ</string>
+    <string name="family_join_title">ग्रुप में शामिल हों</string>
+    <string name="family_join_text">ग्रुप के एडमिन का दिया 8 अक्षरों का कोड डालें। कुछ भी साझा होने से पहले आप देखेंगे कि शामिल होने का मतलब क्या है।</string>
+    <string name="family_code">आमंत्रण कोड</string>
+    <string name="family_continue">आगे बढ़ें</string>
+    <string name="family_consent_title">%1$s में शामिल हों?</string>
+    <string name="family_consent_admin">%1$s ग्रुप के एडमिन हैं। चुनें कि %1$s क्या देख सकते हैं:</string>
+    <string name="family_consent_alerts">कोड चेतावनियाँ</string>
+    <string name="family_consent_alerts_text">जब किसी अनजान व्यक्ति से कॉल के दौरान वन-टाइम कोड आता है, या एक साथ कई कोड आते हैं, तो %1$s को एक संदेश मिलता है कि ऐसा हुआ। कोड नहीं, और यह भी नहीं कि किसने कॉल या मैसेज किया।</string>
+    <string name="family_consent_counts">रोज़ की गिनती</string>
+    <string name="family_consent_counts_text">दिन में एक बार, आपके फ़ोन पर OpenCaller ने कितनी कॉल ब्लॉक कीं और कितने मैसेज स्पैम या धोखाधड़ी मानकर अलग किए। सिर्फ़ ये दो संख्याएँ। %1$s पिछले 7 दिन देख सकते हैं।</string>
+    <string name="family_consent_never_title">%1$s कभी नहीं देखते</string>
+    <string name="family_consent_never">किसने आपको कॉल या मैसेज किया, कोई भी फ़ोन नंबर, आपके मैसेज, संपर्क, कॉल हिस्ट्री या आप कहाँ हैं।</string>
+    <string name="family_consent_change">आप सुरक्षा → फ़ैमिली सुरक्षा में किसी भी समय इनमें से हर एक को बंद कर सकते हैं या ग्रुप छोड़ सकते हैं। कुछ बंद करने पर सर्वर ने उसका जो रखा था वह मिट जाता है।</string>
+    <string name="family_consent_check">मैंने खुद शामिल होना चुना है, और मैं समझता/समझती हूँ कि %1$s क्या देखेंगे।</string>
+    <plurals name="family_consent_people">
+        <item quantity="one">इस ग्रुप में %2$d में से %1$d व्यक्ति</item>
+        <item quantity="other">इस ग्रुप में %2$d में से %1$d लोग</item>
+    </plurals>
+    <string name="family_join">ग्रुप में शामिल हों</string>
+    <string name="family_cancel">रद्द करें</string>
+    <plurals name="family_group_admin">
+        <item quantity="one">आप एडमिन हैं। %2$d में से %1$d व्यक्ति।</item>
+        <item quantity="other">आप एडमिन हैं। %2$d में से %1$d लोग।</item>
+    </plurals>
+    <string name="family_group_member">%1$s एडमिन हैं। आप ग्रुप में %2$s के नाम से हैं।</string>
+    <string name="family_my_sharing">आप %1$s के साथ क्या साझा करते हैं</string>
+    <string name="family_share_alerts_summary">किसी अनजान व्यक्ति से कॉल के दौरान कोड आने पर, या एक साथ कई कोड आने पर एक संदेश</string>
+    <string name="family_share_counts_summary">दिन में एक बार: ब्लॉक की गई कॉल और अलग किए गए मैसेज, दो संख्याओं के रूप में</string>
+    <string name="family_never_short">कभी साझा नहीं होता: किसने कॉल या मैसेज किया, नंबर, मैसेज, संपर्क, कॉल हिस्ट्री, लोकेशन।</string>
+    <string name="family_leave">ग्रुप छोड़ें</string>
+    <string name="family_end">ग्रुप बंद करें</string>
+    <string name="family_leave_confirm">%1$s छोड़ें? आपके एडमिन अब आपकी ओर से कुछ नहीं देखेंगे, और सर्वर ने जो रखा था वह मिट जाएगा।</string>
+    <string name="family_end_confirm">%1$s बंद करें? सभी ग्रुप से निकल जाएँगे और सर्वर ने जो रखा था वह मिट जाएगा।</string>
+    <string name="family_invite_title">किसी को बुलाएँ</string>
+    <string name="family_invite_text">एक कोड बनाएँ और उसे खुद उस व्यक्ति को दें, जैसे आमने-सामने या फ़ोन पर। वे इसे अपने फ़ोन पर डालेंगे और तय करेंगे कि क्या साझा करें। एक कोड एक बार, 48 घंटे तक काम करता है।</string>
+    <string name="family_invite_make">कोड बनाएँ</string>
+    <string name="family_invite_code">कोड: %1$s</string>
+    <string name="family_invite_expires">एक बार काम करेगा, %1$s तक</string>
+    <string name="family_invite_share">कोड साझा करें</string>
+    <string name="family_invite_share_text">मेरा OpenCaller फ़ैमिली सुरक्षा कोड: %1$s। OpenCaller खोलें → सुरक्षा → फ़ैमिली सुरक्षा → ग्रुप में शामिल हों।</string>
+    <string name="family_invite_done">हो गया</string>
+    <string name="family_full">ग्रुप भर गया है (5 लोग)।</string>
+    <string name="family_members_title">सदस्य</string>
+    <string name="family_member_you">%1$s (आप, एडमिन)</string>
+    <string name="family_member_shares_both">कोड चेतावनियाँ और रोज़ की गिनती साझा करते हैं</string>
+    <string name="family_member_shares_alerts">कोड चेतावनियाँ साझा करते हैं</string>
+    <string name="family_member_shares_counts">रोज़ की गिनती साझा करते हैं</string>
+    <string name="family_member_shares_nothing">कुछ भी साझा नहीं करते</string>
+    <string name="family_member_day">%1$s: ब्लॉक की गई कॉल %2$d, अलग किए गए मैसेज %3$d</string>
+    <string name="family_member_no_days">अभी कोई गिनती नहीं। ये दिन में एक बार आती हैं।</string>
+    <string name="family_remove">हटाएँ</string>
+    <string name="family_remove_confirm">%1$s को ग्रुप से हटाएँ? सर्वर ने उनका जो रखा था वह मिट जाएगा।</string>
+    <string name="family_alerts_title">चेतावनियाँ (पिछले 30 दिन)</string>
+    <string name="family_alerts_empty">कोई चेतावनी नहीं। जब किसी सदस्य का फ़ोन उन्हें चेतावनी देगा, तो आपको सूचना मिलेगी।</string>
+    <string name="family_alert_line">%1$s, %2$s</string>
+    <string name="family_alert_during_call">किसी अनजान व्यक्ति से कॉल के दौरान एक वन-टाइम कोड आया। उनके फ़ोन ने उन्हें चेतावनी दी। हाल-चाल पूछने के लिए एक कॉल मदद कर सकती है।</string>
+    <string name="family_alert_burst">कुछ ही मिनटों में कई वन-टाइम कोड आए। हो सकता है कोई उनके खातों में घुसने की कोशिश कर रहा हो।</string>
+    <string name="family_channel">फ़ैमिली चेतावनियाँ</string>
+    <string name="family_channel_description">जब आपके फ़ैमिली ग्रुप के किसी सदस्य को वन-टाइम कोड के बारे में चेतावनी मिलती है</string>
+    <string name="family_notification_title">फ़ैमिली चेतावनी: %1$s</string>
+    <string name="family_error_network">सर्वर तक नहीं पहुँच पा रहे। अपना कनेक्शन जाँचें और फिर से कोशिश करें।</string>
+    <string name="family_error_rate_limited">बहुत ज़्यादा कोशिशें। थोड़ा रुककर फिर से कोशिश करें।</string>
+    <string name="family_error_code">यह कोड काम नहीं कर रहा। हो सकता है यह गलत लिखा हो, पहले ही इस्तेमाल हो चुका हो या इसकी समय सीमा खत्म हो गई हो।</string>
+    <string name="family_error_consent">शामिल होने की पुष्टि के लिए बॉक्स पर टिक करें।</string>
+    <string name="family_error_already_in">आप पहले से एक फ़ैमिली ग्रुप में हैं। पहले उसे छोड़ें।</string>
+    <string name="family_error_full">इस ग्रुप में पहले से 5 लोग हैं।</string>
+    <string name="family_error_update_app">सहमति का टेक्स्ट बदल गया है। ऐप अपडेट करें और उसे फिर से पढ़ें।</string>
+    <string name="family_error_too_many_invites">आपके 5 कोड खुले हैं। किसी एक के इस्तेमाल होने या खत्म होने तक इंतज़ार करें।</string>
+    <string name="family_error_label">नाम एक लाइन में 1 से 40 अक्षरों का होना चाहिए।</string>
+    <string name="family_error_generic">कुछ गड़बड़ हो गई। फिर से कोशिश करें।</string>
+</resources>

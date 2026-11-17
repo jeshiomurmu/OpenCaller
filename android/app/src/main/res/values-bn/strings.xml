@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bengali. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="tab_calls">কল</string>
+    <string name="tab_messages">মেসেজ</string>
+    <string name="tab_contacts">কন্টাক্ট</string>
+    <string name="tab_protection">সুরক্ষা</string>
+    <string name="tab_me">আমি</string>
+
+    <string name="placeholder_calls">আপনার কলের ইতিহাস এখানে দেখা যাবে।</string>
+    <string name="placeholder_messages">আপনার মেসেজ এখানে দেখা যাবে।</string>
+    <string name="placeholder_contacts">আপনার কন্টাক্ট এখানে দেখা যাবে।</string>
+    <string name="placeholder_protection">স্প্যাম সুরক্ষা ও ব্লক করার নিয়ম এখানে দেখা যাবে।</string>
+    <string name="placeholder_me">আপনার প্রোফাইল এখানে দেখা যাবে।</string>
+
+    <string name="banner_screening_off">OpenCaller এখন কল যাচাই করতে পারছে না। কল স্ক্রিনিং আবার চালু করুন।</string>
+    <string name="banner_fix">ঠিক করুন</string>
+
+    <string name="calls_search">একটি নম্বর খুঁজুন</string>
+
+    <string name="calls_default_app_title">ডিফল্ট ফোন অ্যাপ করুন</string>
+    <string name="calls_default_app_body">কলের স্ক্রিনেই কলার আইডি দেখুন এবং কলের ইতিহাস এক জায়গায় রাখুন।</string>
+    <string name="calls_default_app_later">OpenCaller-এর নিজস্ব ফোন অ্যাপ পরের আপডেটে আসবে। আপনি এখন যে ফোন অ্যাপ ব্যবহার করেন, তার সঙ্গেই কলার আইডি কাজ করে।</string>
+    <string name="calls_default_app_action">ডিফল্ট করুন</string>
+    <string name="messages_default_app_title">ডিফল্ট মেসেজ অ্যাপ করুন</string>
+    <string name="messages_default_app_body">OpenCaller-এ টেক্সট ও ছবির মেসেজ পড়ুন ও পাঠান। আপনার মেসেজ এই ফোনেই থাকে।</string>
+    <string name="messages_default_app_later">এই ফোনে এখনো OpenCaller-এর মেসেজ অ্যাপ বেছে নেওয়া যাচ্ছে না।</string>
+</resources>

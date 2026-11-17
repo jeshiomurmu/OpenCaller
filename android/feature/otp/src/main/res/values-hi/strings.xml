@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindi. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="channel_otp_guard">कोड सुरक्षा चेतावनी</string>
+    <string name="channel_otp_guard_description">किसी अनजान व्यक्ति से कॉल के दौरान साइन-इन कोड आने पर, या एक साथ कई कोड आने पर चेतावनी।</string>
+    <string name="otp_guard_title">यह कोड किसी को न बताएँ</string>
+    <string name="otp_guard_body">किसी ऐसे व्यक्ति से कॉल के दौरान या ठीक बाद एक साइन-इन कोड आया है जो आपके संपर्कों में नहीं है। बैंक, डिलीवरी कंपनियाँ और पुलिस कभी कोड नहीं माँगते। अगर कॉल करने वाला कोड माँगे, तो यह धोखाधड़ी है।</string>
+    <string name="otp_guard_from">कोड %1$s से आया है।</string>
+    <string name="otp_guard_flash_call">कोड %1$s से मिस्ड कॉल के रूप में आया है।</string>
+    <string name="otp_guard_hang_up">कॉल काटें</string>
+    <string name="otp_guard_close">मैं समझ गया/गई</string>
+    <string name="otp_guard_notification_title">कॉल करने वाले को कोड न बताएँ</string>
+    <string name="otp_guard_notification_text">किसी अनजान व्यक्ति से कॉल के दौरान एक साइन-इन कोड आया है।</string>
+    <string name="otp_burst_title">एक साथ कई साइन-इन कोड</string>
+    <plurals name="otp_burst_text">
+        <item quantity="one">कुछ ही मिनटों में अलग-अलग सेवाओं से %1$d कोड आया है। अगर आपने यह नहीं माँगा था, तो हो सकता है कोई आपके खातों में घुसने की कोशिश कर रहा हो। इसे किसी को न बताएँ।</item>
+        <item quantity="other">कुछ ही मिनटों में अलग-अलग सेवाओं से %1$d कोड आए हैं। अगर आपने ये नहीं माँगे थे, तो हो सकता है कोई आपके खातों में घुसने की कोशिश कर रहा हो। इनमें से कोई भी कोड किसी को न बताएँ।</item>
+    </plurals>
+</resources>

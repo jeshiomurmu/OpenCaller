@@ -39,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -197,14 +198,20 @@ private fun SearchField(
     query: String,
     onSearch: (String) -> Unit,
 ) {
+    val hint = stringResource(R.string.calllog_search_hint)
     OutlinedTextField(
         value = query,
         onValueChange = onSearch,
-        placeholder = { Text(stringResource(R.string.calllog_search_hint)) },
+        placeholder = { Text(hint) },
         leadingIcon = { Icon(painter = painterResource(OpenCallerIcons.Search), contentDescription = null) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = OpenCallerSpacing.screenPadding, vertical = OpenCallerSpacing.xs),
+        // The placeholder goes once there is text; TalkBack keeps the field's name.
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = OpenCallerSpacing.screenPadding, vertical = OpenCallerSpacing.xs)
+                .semantics { contentDescription = hint },
     )
 }
 

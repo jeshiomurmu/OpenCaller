@@ -23,7 +23,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -60,7 +63,13 @@ fun OtpGuardScreen(
     modifier: Modifier = Modifier,
 ) {
     val danger = OpenCallerTheme.semanticColors
-    Surface(color = danger.dangerContainer, contentColor = danger.onDangerContainer, modifier = modifier.fillMaxSize()) {
+    val title = stringResource(R.string.otp_guard_title)
+    // A pane title: TalkBack announces the warning as soon as it covers the call screen.
+    Surface(
+        color = danger.dangerContainer,
+        contentColor = danger.onDangerContainer,
+        modifier = modifier.fillMaxSize().semantics { paneTitle = title },
+    ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(OpenCallerSpacing.m, Alignment.CenterVertically),
@@ -72,24 +81,38 @@ fun OtpGuardScreen(
         ) {
             Icon(painterResource(OpenCallerIcons.Danger), contentDescription = null, modifier = Modifier.size(OpenCallerSpacing.iconLarge))
             Text(
-                text = stringResource(R.string.otp_guard_title),
+                text = title,
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.semantics { heading() },
+                modifier =
+                    Modifier.semantics {
+                        heading()
+                        liveRegion = LiveRegionMode.Assertive
+                    },
             )
             Text(text = stringResource(R.string.otp_guard_body), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
             source(state)?.let { Text(text = it, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center) }
-            if (state.canHangUp) {
-                Button(
-                    onClick = onHangUp,
-                    colors = ButtonDefaults.buttonColors(containerColor = danger.danger, contentColor = danger.onDanger),
-                    modifier = Modifier.fillMaxWidth().heightIn(min = OpenCallerSpacing.minTouchTarget),
-                ) { Text(stringResource(R.string.otp_guard_hang_up)) }
-            }
-            OutlinedButton(onClick = onClose, modifier = Modifier.fillMaxWidth().heightIn(min = OpenCallerSpacing.minTouchTarget)) {
-                Text(stringResource(R.string.otp_guard_close))
-            }
+            GuardActions(canHangUp = state.canHangUp, onHangUp = onHangUp, onClose = onClose)
         }
+    }
+}
+
+@Composable
+private fun GuardActions(
+    canHangUp: Boolean,
+    onHangUp: () -> Unit,
+    onClose: () -> Unit,
+) {
+    val danger = OpenCallerTheme.semanticColors
+    if (canHangUp) {
+        Button(
+            onClick = onHangUp,
+            colors = ButtonDefaults.buttonColors(containerColor = danger.danger, contentColor = danger.onDanger),
+            modifier = Modifier.fillMaxWidth().heightIn(min = OpenCallerSpacing.minTouchTarget),
+        ) { Text(stringResource(R.string.otp_guard_hang_up)) }
+    }
+    OutlinedButton(onClick = onClose, modifier = Modifier.fillMaxWidth().heightIn(min = OpenCallerSpacing.minTouchTarget)) {
+        Text(stringResource(R.string.otp_guard_close))
     }
 }
 

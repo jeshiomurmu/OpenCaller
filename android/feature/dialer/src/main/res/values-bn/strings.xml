@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bengali. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="dialpad_hint">একটি নম্বর লিখুন</string>
+    <string name="dialpad_call">কল করুন</string>
+    <string name="dialpad_delete">মুছুন</string>
+    <string name="dialpad_clear">নম্বর মুছে ফেলুন</string>
+    <string name="dialpad_paste">পেস্ট করুন</string>
+    <string name="dialpad_voicemail">ভয়েসমেইলে কল করুন</string>
+    <string name="dialpad_plus">+ লিখুন</string>
+    <string name="dialpad_call_suggestion">%1$s-কে কল করুন</string>
+    <string name="dialpad_sim_title">কোন সিম দিয়ে কল করবেন</string>
+    <string name="dialpad_hand_off_note">OpenCaller এখনো আপনার ফোন অ্যাপ নয়, তাই কল করুন চাপলে এই নম্বর আপনার ফোন অ্যাপে খুলবে।</string>
+    <string name="dialpad_permission_title">OpenCaller-কে কল করার অনুমতি দিন</string>
+    <string name="dialpad_permission_why">যাতে ডায়াল প্যাড আপনার লেখা নম্বরে আপনার ফোনের নিজস্ব কলিং সেবা দিয়ে কল করতে পারে।</string>
+    <string name="dialpad_permission_never">OpenCaller নিজে থেকে কখনো কল করে না। আপনি কল করুন চাপলেই শুধু কল করে।</string>
+    <string name="dialpad_permission_denied">কলের অনুমতি ছাড়া কল করা যায় না। ফোনের সেটিংসে অনুমতি দিতে পারেন: অ্যাপ → OpenCaller → অনুমতি।</string>
+    <string name="dialpad_cant_call">এই ফোন থেকে কল করা যায় না।</string>
+    <string name="dialpad_code_refused">Android এই কোডটি গ্রহণ করেনি।</string>
+</resources>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindi. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="tab_calls">कॉल</string>
+    <string name="tab_messages">मैसेज</string>
+    <string name="tab_contacts">संपर्क</string>
+    <string name="tab_protection">सुरक्षा</string>
+    <string name="tab_me">मैं</string>
+
+    <string name="placeholder_calls">आपकी कॉल हिस्ट्री यहाँ दिखेगी।</string>
+    <string name="placeholder_messages">आपके मैसेज यहाँ दिखेंगे।</string>
+    <string name="placeholder_contacts">आपके संपर्क यहाँ दिखेंगे।</string>
+    <string name="placeholder_protection">स्पैम सुरक्षा और ब्लॉक करने के नियम यहाँ दिखेंगे।</string>
+    <string name="placeholder_me">आपकी प्रोफ़ाइल यहाँ दिखेगी।</string>
+
+    <string name="banner_screening_off">OpenCaller अभी कॉल की जाँच नहीं कर पा रहा है। कॉल स्क्रीनिंग फिर से चालू करें।</string>
+    <string name="banner_fix">ठीक करें</string>
+
+    <string name="calls_search">कोई नंबर खोजें</string>
+
+    <string name="calls_default_app_title">डिफ़ॉल्ट फ़ोन ऐप बनाएँ</string>
+    <string name="calls_default_app_body">कॉल स्क्रीन पर ही कॉलर आईडी देखें और अपनी कॉल हिस्ट्री एक जगह रखें।</string>
+    <string name="calls_default_app_later">OpenCaller का अपना फ़ोन ऐप अगले अपडेट में आएगा। आप अभी जो फ़ोन ऐप इस्तेमाल करते हैं, उसके साथ कॉलर आईडी पहले से काम करती है।</string>
+    <string name="calls_default_app_action">डिफ़ॉल्ट बनाएँ</string>
+    <string name="messages_default_app_title">डिफ़ॉल्ट मैसेज ऐप बनाएँ</string>
+    <string name="messages_default_app_body">OpenCaller में टेक्स्ट और फ़ोटो वाले मैसेज पढ़ें और भेजें। आपके मैसेज इसी फ़ोन पर रहते हैं।</string>
+    <string name="messages_default_app_later">इस फ़ोन पर अभी OpenCaller का मैसेज ऐप नहीं चुना जा सकता।</string>
+</resources>

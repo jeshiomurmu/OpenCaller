@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindi. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="backup_title">बैकअप और रीस्टोर</string>
+    <string name="backup_intro">आपकी सेटिंग, ब्लॉक करने के नियम, कॉल स्क्रीनिंग की हिस्ट्री और मैसेज की श्रेणियाँ, आपके चुने पासफ़्रेज़ से एन्क्रिप्ट की गई एक फ़ाइल में। आपके मैसेज, संपर्क और कॉल लॉग Android में ही रहते हैं, फ़ाइल में नहीं। वन-टाइम कोड का कभी बैकअप नहीं लिया जाता।</string>
+    <string name="backup_passphrase">पासफ़्रेज़</string>
+    <string name="backup_confirm">पासफ़्रेज़ फिर से</string>
+    <string name="backup_passphrase_hint">कम से कम 8 अक्षर। इसके बिना कोई भी बैकअप नहीं खोल सकता, आप भी नहीं: इसे रीसेट नहीं किया जा सकता।</string>
+    <string name="backup_file_title">एक फ़ाइल</string>
+    <string name="backup_to_file">फ़ाइल में बैकअप लें</string>
+    <string name="backup_from_file">फ़ाइल से रीस्टोर करें</string>
+    <string name="backup_drive_title">Google Drive</string>
+    <string name="backup_drive_body">आपकी Google Drive के एक छिपे फ़ोल्डर में रखा जाता है जिसे सिर्फ़ OpenCaller खोल सकता है। यह पहले फ़ोन पर ही एन्क्रिप्ट होता है।</string>
+    <string name="backup_to_drive">Google Drive में बैकअप लें</string>
+    <string name="backup_from_drive">Google Drive से रीस्टोर करें</string>
+    <string name="backup_restore_note">रीस्टोर करने पर आपके ब्लॉक करने के नियम और हिस्ट्री बैकअप वाले से बदल जाते हैं, और इस फ़ोन की अनुमतियाँ बनी रहती हैं। रीस्टोर मुफ़्त है; बैकअप बनाना सपोर्टर सुविधा है।</string>
+    <string name="backup_saved">बैकअप सेव हो गया।</string>
+    <string name="backup_restored">रीस्टोर हो गया।</string>
+    <plurals name="backup_restored_rules">
+        <item quantity="one">%d ब्लॉक नियम</item>
+        <item quantity="other">%d ब्लॉक नियम</item>
+    </plurals>
+    <plurals name="backup_restored_events">
+        <item quantity="one">%d हिस्ट्री एंट्री</item>
+        <item quantity="other">%d हिस्ट्री एंट्री</item>
+    </plurals>
+    <plurals name="backup_restored_messages">
+        <item quantity="one">%d मैसेज श्रेणी फिर से मिली</item>
+        <item quantity="other">%d मैसेज श्रेणियाँ फिर से मिलीं</item>
+    </plurals>
+    <plurals name="backup_restored_missing">
+        <item quantity="one">%d मैसेज इस फ़ोन पर नहीं है</item>
+        <item quantity="other">%d मैसेज इस फ़ोन पर नहीं हैं</item>
+    </plurals>
+    <string name="backup_problem_not_entitled">बैकअप बनाना सपोर्टर सुविधा है।</string>
+    <string name="backup_problem_short">पासफ़्रेज़ में कम से कम 8 अक्षर होने चाहिए।</string>
+    <string name="backup_problem_differ">दोनों पासफ़्रेज़ मेल नहीं खाते।</string>
+    <string name="backup_problem_wrong">गलत पासफ़्रेज़, या फ़ाइल बदली गई है।</string>
+    <string name="backup_problem_not_backup">यह OpenCaller का बैकअप नहीं है, या किसी नए वर्ज़न से बना है।</string>
+    <string name="backup_problem_no_drive">आपकी Google Drive में अभी कोई बैकअप नहीं है।</string>
+    <string name="backup_problem_drive">Google Drive की अनुमति नहीं दी गई।</string>
+    <string name="backup_problem_offline">आप ऑफ़लाइन हैं। कनेक्ट होने पर फिर से कोशिश करें।</string>
+    <string name="backup_problem_failed">बैकअप पढ़ा या लिखा नहीं जा सका। फिर से कोशिश करें।</string>
+</resources>

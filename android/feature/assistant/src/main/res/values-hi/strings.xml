@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindi. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="assistant_title">कॉल असिस्टेंट</string>
+    <string name="assistant_intro">जब आप कॉल नहीं उठाते, तो आपकी कॉल एक ऑटोमैटिक असिस्टेंट के पास जा सकती है। यह कॉल करने वाले को बताता है कि यह एक असिस्टेंट है, पूछता है कि कौन कॉल कर रहा है और क्यों, और आपको बातचीत लाइव दिखाता है। यह कभी कोड, पासवर्ड या बैंक की जानकारी नहीं माँगता।</string>
+    <string name="assistant_privacy">कॉल करने वाले का नंबर, बातचीत और सारांश सिर्फ़ इसी फ़ोन पर आते हैं। सर्वर आपके मिनट रखता है, यह नहीं कि किसने कॉल किया या क्या कहा गया।</string>
+    <string name="assistant_turn_on">मेरा असिस्टेंट नंबर लें</string>
+    <string name="assistant_turn_off">असिस्टेंट बंद करें</string>
+    <string name="assistant_your_number">आपका असिस्टेंट नंबर: %1$s</string>
+    <string name="assistant_forwarding_title">न उठाई गई कॉल फ़ॉरवर्ड करें</string>
+    <string name="assistant_forwarding_intro">नीचे दिया हर कोड डायल करें। आपका फ़ोन नेटवर्क का जवाब दिखाता है; ज़्यादातर नेटवर्क एक छोटे मैसेज से पुष्टि करते हैं।</string>
+    <string name="assistant_code_no_reply">जब आप कॉल नहीं उठाते</string>
+    <string name="assistant_code_unreachable">जब आपका फ़ोन बंद हो या सिग्नल न हो</string>
+    <string name="assistant_code_busy">जब आप किसी दूसरी कॉल पर हों</string>
+    <string name="assistant_dial">डायल करें</string>
+    <string name="assistant_cancel_title">फ़ॉरवर्ड करना बंद करें</string>
+    <string name="assistant_cancel_text">इस सिम की हर कॉल फ़ॉरवर्डिंग रद्द करने के लिए %1$s डायल करें, फिर असिस्टेंट बंद करें।</string>
+    <string name="assistant_carrier_title">मेरा ऑपरेटर इसे सपोर्ट नहीं करता</string>
+    <string name="assistant_carrier_text">कुछ ऑपरेटर, प्रीपेड प्लान और VoLTE नेटवर्क ये कोड स्वीकार नहीं करते, या फ़ॉरवर्ड की गई कॉल का पैसा लेते हैं। अपने फ़ोन की कॉल सेटिंग (कॉल → कॉल फ़ॉरवर्डिंग) या ऑपरेटर के ऐप में देखें, और वहाँ से अपने असिस्टेंट नंबर पर फ़ॉरवर्ड करें। फ़ॉरवर्ड की गई कॉल का खर्च अपने ऑपरेटर से पूछें। अगर कुछ भी काम न करे, तो आपका ऑपरेटर इस प्लान पर शर्तों वाली फ़ॉरवर्डिंग नहीं देता।</string>
+    <string name="assistant_turn_off_title">असिस्टेंट बंद करें?</string>
+    <string name="assistant_turn_off_text">पहले %1$s डायल करें, नहीं तो कॉल ऐसे नंबर पर जाती रहेंगी जो अब आपके लिए जवाब नहीं देता।</string>
+    <string name="assistant_turn_off_confirm">बंद करें</string>
+    <string name="assistant_cancel">रद्द करें</string>
+    <string name="assistant_usage_title">इस महीने</string>
+    <plurals name="assistant_usage">
+        <item quantity="one">%2$d में से %1$d मिनट इस्तेमाल हुआ</item>
+        <item quantity="other">%2$d में से %1$d मिनट इस्तेमाल हुए</item>
+    </plurals>
+    <plurals name="assistant_usage_unlimited">
+        <item quantity="one">%1$d मिनट इस्तेमाल हुआ</item>
+        <item quantity="other">%1$d मिनट इस्तेमाल हुए</item>
+    </plurals>
+    <string name="assistant_usage_exhausted">इस महीने के आपके मिनट खत्म हो गए हैं। अगले महीने तक कॉल करने वाले सुनेंगे कि आप कॉल नहीं ले सकते।</string>
+    <string name="assistant_history_title">जाँची गई कॉल</string>
+    <string name="assistant_history_empty">अभी कोई जाँची गई कॉल नहीं है।</string>
+    <string name="assistant_hidden_number">छिपा नंबर</string>
+    <string name="assistant_spam_label">संभवतः स्पैम</string>
+    <string name="assistant_urgent_label">ज़रूरी</string>
+    <string name="assistant_delete">मिटाएँ</string>
+    <string name="assistant_show_conversation">बातचीत दिखाने के लिए</string>
+    <string name="assistant_hide_conversation">बातचीत छिपाने के लिए</string>
+    <string name="assistant_signed_out">कॉल असिस्टेंट इस्तेमाल करने के लिए साइन इन करें।</string>
+    <string name="assistant_supporter">कॉल असिस्टेंट सपोर्टर स्तर का हिस्सा है।</string>
+    <string name="assistant_unavailable">इस सर्वर पर अभी आपके देश के लिए कोई असिस्टेंट नंबर नहीं है।</string>
+    <string name="assistant_network_error">सर्वर तक नहीं पहुँच पाए। फिर से कोशिश करें।</string>
+    <string name="assistant_not_on_server">यह सर्वर कॉल असिस्टेंट नहीं देता।</string>
+    <string name="assistant_not_in_build">यह बिल्ड लाइव कॉल नहीं दिखा सकता (F-Droid बिल्ड में LiveKit नहीं है)। Play बिल्ड या LiveKit वाला अपना बिल्ड इस्तेमाल करें।</string>
+    <string name="assistant_live_title">असिस्टेंट जवाब दे रहा है</string>
+    <string name="assistant_live_connecting">कॉल से जुड़ रहे हैं…</string>
+    <string name="assistant_live_failed">कॉल में शामिल नहीं हो सके। शायद कॉल खत्म हो गई है।</string>
+    <string name="assistant_live_ended">कॉल खत्म हो गई।</string>
+    <string name="assistant_live_not_in_build">यह बिल्ड कॉल को लाइव नहीं दिखा सकता।</string>
+    <string name="assistant_live_caller">कॉल करने वाला</string>
+    <string name="assistant_live_assistant">असिस्टेंट</string>
+    <string name="assistant_live_name">नाम: %1$s</string>
+    <string name="assistant_live_reason">वजह: %1$s</string>
+    <string name="assistant_live_reply_hint">कॉल करने वाले के लिए तुरंत जवाब</string>
+    <string name="assistant_live_send">भेजें</string>
+    <string name="assistant_live_call_back">वापस कॉल करें</string>
+    <string name="assistant_live_spam">स्पैम, कॉल काटें</string>
+    <string name="assistant_live_close">बंद करें</string>
+    <string name="assistant_live_not_connected">कॉल कनेक्ट नहीं है।</string>
+    <string name="assistant_live_send_failed">इसे असिस्टेंट को नहीं भेजा जा सका।</string>
+    <string name="assistant_end_callback">आपने कहा कि आप वापस कॉल करेंगे</string>
+    <string name="assistant_end_spam">स्पैम के रूप में चिह्नित</string>
+    <string name="assistant_end_time">समय सीमा पर खत्म हुई</string>
+    <string name="assistant_end_hung_up">कॉल करने वाले ने कॉल काट दी</string>
+    <string name="assistant_end_done">असिस्टेंट ने अलविदा कहा</string>
+    <string name="assistant_channel">कॉल असिस्टेंट</string>
+    <string name="assistant_channel_description">जब असिस्टेंट आपके लिए किसी कॉल का जवाब देता है</string>
+    <string name="assistant_notification_title">असिस्टेंट एक कॉल का जवाब दे रहा है</string>
+    <string name="assistant_notification_text">लाइव देखने के लिए टैप करें</string>
+</resources>

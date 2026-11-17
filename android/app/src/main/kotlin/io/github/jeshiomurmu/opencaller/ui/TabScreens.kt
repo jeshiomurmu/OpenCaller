@@ -2,9 +2,13 @@ package io.github.jeshiomurmu.opencaller.ui
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -42,7 +46,7 @@ internal fun CallsScreen(
     modifier: Modifier = Modifier,
     onSearch: () -> Unit = {},
 ) {
-    Column(modifier = modifier.fillMaxSize()) {
+    TabWithPlaceholder(TopLevelDestination.CALLS, modifier) {
         SearchButton(onSearch)
         if (defaultPhoneApp != null) {
             DefaultAppCard(
@@ -52,7 +56,6 @@ internal fun CallsScreen(
                 modifier = Modifier.padding(OpenCallerSpacing.screenPadding),
             )
         }
-        PlaceholderScreen(TopLevelDestination.CALLS, modifier = Modifier.weight(1f))
     }
 }
 
@@ -66,7 +69,7 @@ internal fun MessagesScreen(
     onSetDefault: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxSize()) {
+    TabWithPlaceholder(TopLevelDestination.MESSAGES, modifier) {
         if (defaultSmsApp != null) {
             DefaultAppCard(
                 text =
@@ -80,7 +83,29 @@ internal fun MessagesScreen(
                 modifier = Modifier.padding(OpenCallerSpacing.screenPadding),
             )
         }
-        PlaceholderScreen(TopLevelDestination.MESSAGES, modifier = Modifier.weight(1f))
+    }
+}
+
+/**
+ * [header] at the top and the tab's placeholder centred in the space below it. The column scrolls when the content is
+ * taller than the screen (a large font, docs/design.md §11): with a fixed height the role card squeezed the placeholder
+ * to nothing at 200 % font and its button could end up off screen.
+ */
+@Composable
+private fun TabWithPlaceholder(
+    destination: TopLevelDestination,
+    modifier: Modifier = Modifier,
+    header: @Composable ColumnScope.() -> Unit,
+) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        // At least the screen's height, so the weighted spacers centre the placeholder; when the content is taller
+        // they get nothing and the column scrolls.
+        Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).heightIn(min = maxHeight)) {
+            header()
+            Spacer(modifier = Modifier.weight(1f))
+            PlaceholderScreen(destination, modifier = Modifier.padding(vertical = OpenCallerSpacing.m))
+            Spacer(modifier = Modifier.weight(1f))
+        }
     }
 }
 

@@ -30,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -184,15 +185,26 @@ private fun NumberTester(
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { onEvent(RulesEvent.RunTest) }),
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).testTag(TEST_NUMBER_TAG),
             )
-            OutlinedButton(onClick = { onEvent(RulesEvent.RunTest) }, enabled = !state.testing) {
+            OutlinedButton(
+                onClick = { onEvent(RulesEvent.RunTest) },
+                enabled = !state.testing,
+                modifier = Modifier.testTag(TEST_RUN_TAG),
+            ) {
                 Text(text = stringResource(R.string.test_run))
             }
         }
-        state.testOutcome?.let { Text(text = testOutcomeText(it), style = MaterialTheme.typography.bodyLarge) }
+        state.testOutcome?.let {
+            Text(text = testOutcomeText(it), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.testTag(TEST_OUTCOME_TAG))
+        }
     }
 }
+
+/** Test tags of the number tester, for UI tests and the :benchmark screening journey (keep in step with it). */
+internal const val TEST_NUMBER_TAG = "rules_test_number"
+internal const val TEST_RUN_TAG = "rules_test_run"
+internal const val TEST_OUTCOME_TAG = "rules_test_outcome"
 
 private fun RuleType.hintRes(): Int =
     when (this) {

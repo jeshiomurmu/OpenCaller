@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindi. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="contacts_search_hint">संपर्क खोजें</string>
+    <string name="contacts_favourites">पसंदीदा</string>
+    <string name="contacts_favourite">पसंदीदा</string>
+    <string name="contacts_go_to">%1$s पर जाएँ</string>
+    <string name="contacts_create">नया संपर्क</string>
+    <string name="contacts_edit">संपर्क बदलें</string>
+    <string name="contacts_empty">अभी कोई संपर्क नहीं है।</string>
+    <string name="contacts_no_match">कोई संपर्क नहीं मिला।</string>
+    <string name="contacts_failed">आपके संपर्क पढ़े नहीं जा सके।</string>
+    <string name="contacts_permission_title">अपने संपर्क दिखाएँ</string>
+    <string name="contacts_permission_why">ताकि आपका फ़ोन ऐप OpenCaller आपके संपर्कों की सूची दिखा सके, कॉल पर उनके नाम दिखा सके और आपको उन्हें कॉल या मैसेज करने दे।</string>
+    <string name="contacts_permission_never">आपके संपर्क इसी फ़ोन पर रहते हैं। OpenCaller उन्हें कभी अपलोड नहीं करता।</string>
+    <string name="contacts_permission_needed">OpenCaller को पढ़ने की अनुमति मिलते ही आपके संपर्क यहाँ दिखेंगे।</string>
+    <string name="contacts_allow">अनुमति दें</string>
+    <string name="contacts_write_title">अपने संपर्क बदलें</string>
+    <string name="contacts_write_why">ताकि OpenCaller आपके बनाए या बदले गए संपर्क और आपके पसंदीदा, आपके फ़ोन के संपर्कों में सेव कर सके।</string>
+    <string name="contacts_make_favourite">पसंदीदा में जोड़ें</string>
+    <string name="contacts_unfavourite">पसंदीदा से हटाएँ</string>
+    <string name="contacts_call">%1$s को कॉल करें</string>
+    <string name="contacts_message">%1$s को मैसेज करें</string>
+    <string name="contacts_action_failed">यह नहीं हो सका। फिर से कोशिश करें।</string>
+    <string name="contacts_ok">ठीक है</string>
+    <string name="contacts_label_mobile">मोबाइल</string>
+    <string name="contacts_label_home">घर</string>
+    <string name="contacts_label_work">काम</string>
+    <string name="contacts_label_main">मुख्य</string>
+    <string name="contacts_label_other">अन्य</string>
+    <string name="contacts_name">नाम</string>
+    <string name="contacts_phone">फ़ोन</string>
+    <string name="contacts_email">ईमेल</string>
+    <string name="contacts_add_phone">नंबर जोड़ें</string>
+    <string name="contacts_remove_phone">नंबर हटाएँ</string>
+    <string name="contacts_cancel">रद्द करें</string>
+    <string name="contacts_save">सेव करें</string>
+    <string name="contacts_problem_empty">नाम या नंबर डालें।</string>
+    <string name="contacts_problem_failed">संपर्क सेव नहीं हो सका। हो सकता है यह किसी ऐसे खाते का हो जिसे यहाँ बदला नहीं जा सकता।</string>
+    <string name="contacts_problem_permission">इसे सेव करने के लिए OpenCaller को आपके संपर्क बदलने की अनुमति चाहिए।</string>
+</resources>

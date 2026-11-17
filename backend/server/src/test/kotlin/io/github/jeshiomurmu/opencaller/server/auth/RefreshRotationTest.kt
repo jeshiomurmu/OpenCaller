@@ -89,6 +89,33 @@ class RefreshRotationTest {
             refresh(tokens.refreshToken).assertProblem(HttpStatusCode.Unauthorized, "invalid_refresh_token")
         }
 
+    // docs/phase.md issue 42: rotated tokens stay until they expire (reuse detection), then the daily job deletes them.
+    @Test
+    fun theRetentionJobDeletesExpiredRefreshTokensOnly() =
+        apiTest { server ->
+            val old = signIn(server, number)
+            refresh(old.refreshToken)
+            server.clock.advance(20.days)
+            val fresh = signIn(server, "+12015550124")
+            assertEquals(
+                0,
+                server.deps.retentionJob
+                    .run()
+                    .refreshTokensExpired,
+            )
+
+            server.clock.advance(10.days + 1.seconds)
+            assertEquals(
+                2,
+                server.deps.retentionJob
+                    .run()
+                    .refreshTokensExpired,
+            )
+            val left = TestInfra.database.query { RefreshTokens.selectAll().toList() }
+            assertEquals(listOf(deviceOf(fresh.accessToken)), left.map { it[RefreshTokens.deviceId] })
+            assertEquals(HttpStatusCode.OK, refresh(fresh.refreshToken).status)
+        }
+
     @Test
     fun unknownOrMalformedTokensAreRejected() =
         apiTest {

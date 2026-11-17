@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
     alias(libs.plugins.android.lint) apply false
+    alias(libs.plugins.android.test) apply false
+    alias(libs.plugins.androidx.baselineprofile) apply false
     alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.hilt) apply false
     alias(libs.plugins.kotlin.jvm) apply false
@@ -34,7 +36,7 @@ detekt {
     buildUponDefaultConfig = true
     parallel = true
     config.setFrom(file("config/detekt/detekt.yml"))
-    source.setFrom(files("app/src", "core", "feature", "build-logic/convention/src"))
+    source.setFrom(files("app/src", "core", "feature", "benchmark/src", "microbenchmark/src", "build-logic/convention/src"))
 }
 
 tasks.withType<Detekt>().configureEach {

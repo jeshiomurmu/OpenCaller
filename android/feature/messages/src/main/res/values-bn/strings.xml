@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bengali. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="channel_messages">মেসেজ</string>
+    <string name="channel_messages_description">নতুন টেক্সট ও ছবির মেসেজ, প্রতিটি কথোপকথনের জন্য একটি নোটিফিকেশন।</string>
+    <string name="channel_message_failures">পাঠানো যায়নি এমন মেসেজ</string>
+    <string name="channel_message_failures_description">আপনার লেখা কোনো মেসেজ পাঠানো না গেলে।</string>
+    <string name="messages_you">আপনি</string>
+    <string name="messages_new_message">নতুন মেসেজ</string>
+    <string name="messages_reply">উত্তর দিন</string>
+    <string name="messages_mark_read">পড়া হয়েছে চিহ্নিত করুন</string>
+    <string name="messages_not_sent_title">মেসেজ পাঠানো যায়নি</string>
+    <string name="messages_not_sent_body">আবার চেষ্টা করতে কথোপকথনটি খুলুন।</string>
+    <string name="messages_picture">ছবি</string>
+    <string name="messages_picture_message">ছবির মেসেজ</string>
+    <string name="messages_new">নতুন মেসেজ</string>
+    <string name="messages_empty">এখনো কোনো কথোপকথন নেই। মেসেজ লিখতে + চাপুন।</string>
+    <string name="messages_failed">আপনার মেসেজ পড়া যায়নি। একটু পরে আবার চেষ্টা করুন।</string>
+    <string name="messages_not_default">এখানে মেসেজ পড়তে ও পাঠাতে OpenCaller-কে আপনার মেসেজ অ্যাপ করুন।</string>
+    <string name="messages_snippet_you">আপনি: %1$s</string>
+    <plurals name="messages_unread">
+        <item quantity="one">%1$dটি না-পড়া মেসেজ</item>
+        <item quantity="other">%1$dটি না-পড়া মেসেজ</item>
+    </plurals>
+    <string name="messages_delete">মুছুন</string>
+    <string name="messages_keep">রাখুন</string>
+    <string name="messages_delete_title">এই কথোপকথন মুছবেন?</string>
+    <string name="messages_delete_body">%1$s-এর সঙ্গে সব মেসেজ এই ফোন থেকে মুছে যাবে।</string>
+    <string name="messages_compose_hint">টেক্সট মেসেজ</string>
+    <string name="messages_send">পাঠান</string>
+    <string name="messages_attach">একটি ছবি যুক্ত করুন</string>
+    <string name="messages_remove_picture">ছবি সরান</string>
+    <string name="messages_status_sending">পাঠানো হচ্ছে…</string>
+    <string name="messages_status_sent">পাঠানো হয়েছে</string>
+    <string name="messages_status_delivered">পৌঁছেছে</string>
+    <string name="messages_status_failed">পাঠানো যায়নি · আবার চেষ্টা করতে ট্যাপ করুন</string>
+    <string name="messages_retry">আবার চেষ্টা করুন</string>
+    <string name="messages_download">ডাউনলোড</string>
+    <string name="messages_downloading">ডাউনলোড হচ্ছে…</string>
+    <string name="messages_download_waiting">ছবির মেসেজ (%1$s)</string>
+    <string name="messages_download_failed">ডাউনলোড ব্যর্থ (%1$s)</string>
+    <string name="messages_action_failed">কাজটি হয়নি। নেটওয়ার্ক দেখে আবার চেষ্টা করুন।</string>
+    <string name="messages_ok">ঠিক আছে</string>
+    <string name="messages_cancel">বাতিল</string>
+    <string name="messages_sim_title">কোন সিম দিয়ে পাঠাবেন</string>
+    <string name="messages_sim_ask">সিম বেছে নিন</string>
+    <string name="messages_sim_slot">সিম %1$d</string>
+    <string name="messages_to">প্রাপক</string>
+    <string name="messages_to_hint">নাম বা নম্বর</string>
+    <string name="messages_add_number">%1$s যোগ করুন</string>
+    <string name="messages_next">পরবর্তী</string>
+    <string name="channel_otp">যাচাইকরণ কোড</string>
+    <string name="channel_otp_description">এককালীন কোড। লক স্ক্রিনে কখনো দেখানো হয় না।</string>
+    <string name="channel_filtered">স্প্যাম ও সন্দেহজনক মেসেজ</string>
+    <string name="channel_filtered_description">স্প্যামে সাজানো মেসেজ, নিঃশব্দে দেখানো হয়।</string>
+    <string name="otp_notification_title">যাচাইকরণ কোড</string>
+    <string name="otp_notification_title_from">%1$s থেকে কোড</string>
+    <string name="otp_notification_expires">মেয়াদ শেষ %1$s</string>
+    <string name="otp_notification_never_share">যে আপনাকে কল করে, তাকে কখনো এই কোড বলবেন না।</string>
+    <string name="otp_copy">কোড কপি করুন</string>
+    <string name="inbox_tab_personal">ব্যক্তিগত</string>
+    <string name="inbox_tab_otp">কোড</string>
+    <string name="inbox_tab_transactions">লেনদেন</string>
+    <string name="inbox_tab_bills">বিল</string>
+    <string name="inbox_tab_deliveries">ডেলিভারি</string>
+    <string name="inbox_tab_promotions">প্রচার</string>
+    <string name="inbox_tab_spam">স্প্যাম</string>
+    <string name="inbox_tab_unread">%1$s (%2$d)</string>
+    <string name="inbox_empty_tab">এখানে কিছু নেই।</string>
+    <string name="inbox_clean">পরিষ্কার করুন</string>
+    <string name="inbox_clean_title">ইনবক্স পরিষ্কার করুন</string>
+    <string name="inbox_clean_nothing">পরিষ্কার করার কিছু নেই: এখানে এক দিনের বেশি পুরোনো কোড, এবং ৩০ দিনের বেশি পুরোনো ডেলিভারি, প্রচার ও স্প্যাম মুছে যায়।</string>
+    <plurals name="inbox_clean_body">
+        <item quantity="one">%1$dটি পুরোনো মেসেজ মুছে যাবে: এক দিনের বেশি পুরোনো কোড, ৩০ দিনের বেশি পুরোনো ডেলিভারি, প্রচার ও স্প্যাম। ব্যক্তিগত মেসেজ, লেনদেন ও বিল থেকে যাবে।</item>
+        <item quantity="other">%1$dটি পুরোনো মেসেজ মুছে যাবে: এক দিনের বেশি পুরোনো কোড, ৩০ দিনের বেশি পুরোনো ডেলিভারি, প্রচার ও স্প্যাম। ব্যক্তিগত মেসেজ, লেনদেন ও বিল থেকে যাবে।</item>
+    </plurals>
+    <string name="inbox_auto_delete">কোড আসার এক দিন পরে মুছে দিন</string>
+    <plurals name="inbox_cleaned">
+        <item quantity="one">%1$dটি মেসেজ মুছে ফেলা হয়েছে।</item>
+        <item quantity="other">%1$dটি মেসেজ মুছে ফেলা হয়েছে।</item>
+    </plurals>
+    <string name="inbox_ok">ঠিক আছে</string>
+    <string name="inbox_risky">সন্দেহজনক মেসেজ</string>
+    <string name="schedule_title">পরে পাঠান</string>
+    <string name="schedule_in_an_hour">এক ঘণ্টা পরে</string>
+    <string name="schedule_tonight">আজ রাতে</string>
+    <string name="schedule_tomorrow_morning">আগামীকাল সকালে</string>
+    <string name="schedule_tomorrow_evening">আগামীকাল সন্ধ্যায়</string>
+    <string name="schedule_about">প্রায় ওই সময়ে পাঠানো হবে; ব্যাটারি বাঁচাতে ফোন কয়েক মিনিট দেরি করতে পারে।</string>
+    <string name="schedule_line">%1$s: %2$s</string>
+    <string name="schedule_cancel">বাতিল</string>
+    <string name="messages_risky_warning">সাবধান: সন্দেহজনক লিংক বা কোড। পাসওয়ার্ড বা কার্ডের তথ্য দেবেন না।</string>
+</resources>

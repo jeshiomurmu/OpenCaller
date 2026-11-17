@@ -6,6 +6,7 @@ import io.github.jeshiomurmu.opencaller.server.db.BusinessClaims
 import io.github.jeshiomurmu.opencaller.server.db.Disputes
 import io.github.jeshiomurmu.opencaller.server.db.NumberReputation
 import io.github.jeshiomurmu.opencaller.server.db.ProfileViews
+import io.github.jeshiomurmu.opencaller.server.db.RefreshTokens
 import io.github.jeshiomurmu.opencaller.server.db.Reports
 import io.github.jeshiomurmu.opencaller.server.db.ServerDatabase
 import io.github.jeshiomurmu.opencaller.server.db.Users
@@ -36,6 +37,7 @@ data class RetentionResult(
     val reportsDeleted: Int,
     val visitsExpired: Int,
     val claimFilesDeleted: Int = 0,
+    val refreshTokensExpired: Int = 0,
 )
 
 /**
@@ -44,7 +46,9 @@ data class RetentionResult(
  *    rescoring), the profile picture and the user row with everything that cascades from it (devices, tokens,
  *    reporter trust, subscriptions, family groups); disputes they opened stay, without the claimant;
  * 2. deletes profile views and searches older than 90 days;
- * 3. deletes the files of business claims decided more than 90 days ago (an approved business keeps its logo).
+ * 3. deletes the files of business claims decided more than 90 days ago (an approved business keeps its logo);
+ * 4. deletes refresh tokens past their expiry (rotated ones are kept until then to detect reuse; docs/phase.md
+ *    issue 42).
  * A run happens daily, so a deleted account is gone within a day, well inside the 30 days the PRD allows.
  */
 class RetentionJob(
@@ -77,7 +81,8 @@ class RetentionJob(
             db.query {
                 ProfileViews.deleteWhere { ProfileViews.at less now().minusDays(ProfileService.VISIT_DAYS) }
             }
-        return RetentionResult(purged, reports, expired, expireClaimFiles())
+        val tokens = db.query { RefreshTokens.deleteWhere { RefreshTokens.expiresAt less now() } }
+        return RetentionResult(purged, reports, expired, expireClaimFiles(), tokens)
     }
 
     // Files of claims decided more than 90 days ago; a file that can't be deleted now keeps its row for the next run.

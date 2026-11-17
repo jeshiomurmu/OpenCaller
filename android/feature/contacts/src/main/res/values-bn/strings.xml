@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bengali. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="contacts_search_hint">কন্টাক্ট খুঁজুন</string>
+    <string name="contacts_favourites">প্রিয়</string>
+    <string name="contacts_favourite">প্রিয়</string>
+    <string name="contacts_go_to">%1$s-এ যান</string>
+    <string name="contacts_create">নতুন কন্টাক্ট</string>
+    <string name="contacts_edit">কন্টাক্ট সম্পাদনা</string>
+    <string name="contacts_empty">এখনো কোনো কন্টাক্ট নেই।</string>
+    <string name="contacts_no_match">কোনো কন্টাক্ট মেলেনি।</string>
+    <string name="contacts_failed">আপনার কন্টাক্ট পড়া যায়নি।</string>
+    <string name="contacts_permission_title">আপনার কন্টাক্ট দেখান</string>
+    <string name="contacts_permission_why">যাতে আপনার ফোন অ্যাপ OpenCaller আপনার কন্টাক্টের তালিকা দেখাতে, কলে তাদের নাম দেখাতে এবং তাদের কল বা মেসেজ করতে দিতে পারে।</string>
+    <string name="contacts_permission_never">আপনার কন্টাক্ট এই ফোনেই থাকে। OpenCaller কখনো সেগুলো আপলোড করে না।</string>
+    <string name="contacts_permission_needed">OpenCaller পড়ার অনুমতি পেলে আপনার কন্টাক্ট এখানে দেখা যাবে।</string>
+    <string name="contacts_allow">অনুমতি দিন</string>
+    <string name="contacts_write_title">আপনার কন্টাক্ট বদলান</string>
+    <string name="contacts_write_why">যাতে OpenCaller আপনার তৈরি বা সম্পাদিত কন্টাক্ট এবং প্রিয় তালিকা আপনার ফোনের কন্টাক্টে সেভ করতে পারে।</string>
+    <string name="contacts_make_favourite">প্রিয়তে যোগ করুন</string>
+    <string name="contacts_unfavourite">প্রিয় থেকে সরান</string>
+    <string name="contacts_call">%1$s-কে কল করুন</string>
+    <string name="contacts_message">%1$s-কে মেসেজ করুন</string>
+    <string name="contacts_action_failed">কাজটি হয়নি। আবার চেষ্টা করুন।</string>
+    <string name="contacts_ok">ঠিক আছে</string>
+    <string name="contacts_label_mobile">মোবাইল</string>
+    <string name="contacts_label_home">বাসা</string>
+    <string name="contacts_label_work">অফিস</string>
+    <string name="contacts_label_main">প্রধান</string>
+    <string name="contacts_label_other">অন্যান্য</string>
+    <string name="contacts_name">নাম</string>
+    <string name="contacts_phone">ফোন</string>
+    <string name="contacts_email">ই-মেইল</string>
+    <string name="contacts_add_phone">নম্বর যোগ করুন</string>
+    <string name="contacts_remove_phone">নম্বর সরান</string>
+    <string name="contacts_cancel">বাতিল</string>
+    <string name="contacts_save">সেভ করুন</string>
+    <string name="contacts_problem_empty">একটি নাম বা নম্বর লিখুন।</string>
+    <string name="contacts_problem_failed">কন্টাক্টটি সেভ করা যায়নি। এটি হয়তো এমন কোনো অ্যাকাউন্টের, যা এখানে বদলানো যায় না।</string>
+    <string name="contacts_problem_permission">এটি সেভ করতে OpenCaller-এর আপনার কন্টাক্ট বদলানোর অনুমতি দরকার।</string>
+</resources>

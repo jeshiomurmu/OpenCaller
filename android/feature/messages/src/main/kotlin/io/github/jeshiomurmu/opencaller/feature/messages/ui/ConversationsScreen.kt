@@ -33,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -189,7 +190,8 @@ private fun ConversationItem(
                     onLongClick = onLongPress,
                     onClick = onOpen,
                 ).padding(horizontal = OpenCallerSpacing.screenPadding, vertical = OpenCallerSpacing.s)
-                .semantics { unreadLabel?.let { contentDescription = "${row.title}, $it" } },
+                // Read after the merged text (name, preview, time), not instead of it.
+                .semantics { unreadLabel?.let { stateDescription = it } },
     ) {
         Avatar(title = row.title, group = row.isGroup)
         ConversationText(row = row, unread = unread, modifier = Modifier.weight(1f))

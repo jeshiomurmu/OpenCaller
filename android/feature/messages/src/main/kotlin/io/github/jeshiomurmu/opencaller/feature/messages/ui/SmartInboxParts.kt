@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import io.github.jeshiomurmu.opencaller.core.designsystem.preview.OpenCallerPreviews
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerSpacing
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
@@ -129,13 +132,21 @@ private fun CleanPlanText(
         plan.counts.forEach { (category, count) ->
             Text(text = "${stringResource(tabName(InboxTab.of(category)))}: $count", style = MaterialTheme.typography.bodyMedium)
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // The whole row is the switch, so TalkBack reads its label with its state.
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = OpenCallerSpacing.minTouchTarget)
+                    .toggleable(value = autoDelete, role = Role.Switch) { onEvent(ConversationsEvent.AutoDeleteCodes(it)) },
+        ) {
             Text(
                 text = stringResource(R.string.inbox_auto_delete),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f),
             )
-            Switch(checked = autoDelete, onCheckedChange = { onEvent(ConversationsEvent.AutoDeleteCodes(it)) })
+            Switch(checked = autoDelete, onCheckedChange = null)
         }
     }
 }

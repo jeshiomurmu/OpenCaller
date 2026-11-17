@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bengali. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="search_title">একটি নম্বর খুঁজুন</string>
+    <string name="search_number">ফোন নম্বর</string>
+    <string name="search_button">খুঁজুন</string>
+    <plurals name="search_quota_left">
+        <item quantity="one">আজ %2$dটির মধ্যে %1$dটি খোঁজ বাকি</item>
+        <item quantity="other">আজ %2$dটির মধ্যে %1$dটি খোঁজ বাকি</item>
+    </plurals>
+    <plurals name="search_quota_used">
+        <item quantity="one">আজকের %1$dটি খোঁজ শেষ। আগামীকাল আরও পাবেন, অথবা সমর্থক হোন।</item>
+        <item quantity="other">আজকের %1$dটি খোঁজ শেষ। আগামীকাল আরও পাবেন, অথবা সমর্থক হোন।</item>
+    </plurals>
+    <string name="search_privacy">আপনি যে নম্বর লেখেন, তা খুঁজতে OpenCaller-এ পাঠানো হয়। কল ভিন্নভাবে যাচাই হয়: কলের সময় শুধু একটি ছোট কোড পাঠানো হয়। নম্বরটি কোনো OpenCaller ব্যবহারকারীর হলে তিনি দেখতে পারেন যে আপনি খুঁজেছেন, যদি না আপনি প্রোফাইলে ইনকগনিটো চালু করেন।</string>
+    <string name="search_offline">আপনি অফলাইনে আছেন। সেভ করা স্প্যাম তালিকা দিয়ে ব্লক করা তবুও কাজ করে।</string>
+    <string name="search_server_error">আমাদের দিকে কিছু ভুল হয়েছে। আপনার সুরক্ষা অফলাইনেও কাজ করে।</string>
+    <string name="search_retry">আবার চেষ্টা করুন</string>
+    <string name="search_invalid_number">এটি সঠিক ফোন নম্বর নয়। অন্য দেশের হলে দেশের কোডসহ লিখুন।</string>
+    <string name="search_not_connected">কোনো সার্ভারের সঙ্গে সংযুক্ত নয়। OpenCaller-এর এই সংস্করণ নম্বর খুঁজতে পারে না; এই ফোনের স্প্যাম তালিকা দিয়ে ব্লক করা কাজ করে।</string>
+    <string name="search_needs_sign_in">নম্বর খুঁজতে সাইন ইন করুন। সাইন ইন ঐচ্ছিক এবং শুধু আপনার ফোন নম্বর লাগে।</string>
+    <string name="search_sign_in_again">আবার সাইন ইন করুন।</string>
+    <string name="search_sign_in">সাইন ইন করুন</string>
+    <plurals name="search_not_spam_count">
+        <item quantity="one">%d জন বলেছেন এটি স্প্যাম নয়।</item>
+        <item quantity="other">%d জন বলেছেন এটি স্প্যাম নয়।</item>
+    </plurals>
+    <string name="search_dispute">এটি কি আপনার নম্বর? পর্যালোচনা চান</string>
+    <string name="search_open_profile">প্রোফাইল খুলুন</string>
+    <string name="search_open_business">ব্যবসার প্রোফাইল</string>
+    <string name="dispute_title">ভুল করে স্প্যাম চিহ্নিত?</string>
+    <string name="dispute_body">স্প্যাম লেবেলটি কেন ভুল তা জানান, যেমন এটি আপনার নম্বর বা আপনার ব্যবসার নম্বর। প্রতিটি অনুরোধ একজন মানুষ পর্যালোচনা করেন।</string>
+    <string name="dispute_reason">লেবেলটি কেন ভুল?</string>
+    <string name="dispute_reason_hint">১,০০০ অক্ষর পর্যন্ত।</string>
+    <string name="dispute_send">পর্যালোচনা চান</string>
+    <string name="dispute_sent">ধন্যবাদ। আমরা লেবেলটি পর্যালোচনা করব।</string>
+    <string name="dispute_done">হয়েছে</string>
+    <string name="dispute_needs_sign_in">পর্যালোচনা চাইতে সাইন ইন করুন। এতে বোঝা যায় যে একজন সত্যিকারের মানুষ চাইছেন।</string>
+    <string name="dispute_invalid_reason">লেবেলটি কেন ভুল, কয়েকটি কথায় লিখুন।</string>
+    <string name="dispute_too_many">আজ আপনি অনেক অনুরোধ পাঠিয়েছেন। আগামীকাল আবার চেষ্টা করুন।</string>
+</resources>

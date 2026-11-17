@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bengali. NEEDS NATIVE REVIEW: translated without a native speaker (Phase 14); a native speaker must check every
+     string before the Play release (docs/phase.md). Names, format arguments and plurals follow values/strings.xml. -->
+<resources>
+    <string name="calllog_search_hint">কল খুঁজুন</string>
+    <string name="calllog_filter_all">সব</string>
+    <string name="calllog_filter_missed">মিসড</string>
+    <string name="calllog_filter_blocked">ব্লক করা</string>
+    <string name="calllog_filter_spam">স্প্যাম</string>
+    <string name="calllog_today">আজ</string>
+    <string name="calllog_yesterday">গতকাল</string>
+    <string name="calllog_hidden">লুকানো নম্বর</string>
+    <string name="calllog_type_incoming">আসা কল</string>
+    <string name="calllog_type_outgoing">যাওয়া কল</string>
+    <string name="calllog_type_missed">মিসড</string>
+    <string name="calllog_type_rejected">প্রত্যাখ্যাত</string>
+    <string name="calllog_type_blocked">ব্লক করা</string>
+    <string name="calllog_type_voicemail">ভয়েসমেইল</string>
+    <string name="calllog_type_elsewhere">অন্য ডিভাইসে ধরা হয়েছে</string>
+    <string name="calllog_type_unknown">কল</string>
+    <plurals name="calllog_count">
+        <item quantity="one">%1$dটি কল</item>
+        <item quantity="other">%1$dটি কল</item>
+    </plurals>
+    <string name="calllog_spam">স্প্যাম</string>
+    <string name="calllog_suspicious">সন্দেহজনক</string>
+    <string name="calllog_blocked_label">ব্লক করা</string>
+    <string name="calllog_call_back">%1$s-কে কল করুন</string>
+    <string name="calllog_more_actions">আরও কাজ</string>
+    <string name="calllog_action_call">কল করুন</string>
+    <string name="calllog_action_message">মেসেজ</string>
+    <string name="calllog_action_open_contact">কন্টাক্ট খুলুন</string>
+    <string name="calllog_action_add_contact">কন্টাক্ট হিসেবে সেভ করুন</string>
+    <string name="calllog_action_block">ব্লক করুন</string>
+    <string name="calllog_action_delete">ইতিহাস থেকে মুছুন</string>
+    <string name="calllog_delete_title">কলের ইতিহাস থেকে মুছবেন?</string>
+    <plurals name="calllog_delete_body">
+        <item quantity="one">%1$s: %2$dটি কল। এটি আর ফেরানো যাবে না।</item>
+        <item quantity="other">%1$s: %2$dটি কল। এটি আর ফেরানো যাবে না।</item>
+    </plurals>
+    <string name="calllog_delete_confirm">মুছুন</string>
+    <string name="calllog_cancel">বাতিল</string>
+    <string name="calllog_blocked">%1$s ব্লক করা হয়েছে</string>
+    <string name="calllog_undo">ফিরিয়ে নিন</string>
+    <string name="calllog_failed">কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।</string>
+    <string name="calllog_empty">এখনো কোনো কল নেই।</string>
+    <string name="calllog_empty_filtered">কোনো কল মেলেনি।</string>
+    <string name="calllog_dial_pad">ডায়াল প্যাড</string>
+    <string name="calllog_permission_title">আপনার কলের ইতিহাস দেখান</string>
+    <string name="calllog_permission_why">যাতে আপনার ফোন অ্যাপ OpenCaller আপনার কলের তালিকা দেখাতে, ব্লক করা ও স্প্যাম কল চিহ্নিত করতে এবং আপনাকে কল ব্যাক করতে বা মুছতে দিতে পারে।</string>
+    <string name="calllog_permission_never">আপনার কলের ইতিহাস এই ফোনেই থাকে। OpenCaller কখনো তা আপলোড করে না।</string>
+    <string name="calllog_permission_needed">OpenCaller পড়ার অনুমতি পেলে আপনার কলের ইতিহাস এখানে দেখা যাবে।</string>
+    <string name="calllog_allow">অনুমতি দিন</string>
+</resources>

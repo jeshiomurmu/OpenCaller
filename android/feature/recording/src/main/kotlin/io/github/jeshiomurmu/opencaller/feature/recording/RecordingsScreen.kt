@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -27,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -109,12 +111,19 @@ private fun Header(
         if (state.busy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
         state.message?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
         state.transcripts?.let { on ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // The whole row is the switch, so TalkBack reads its label and summary with its state.
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier =
+                    Modifier.fillMaxWidth().toggleable(value = on, enabled = !state.busy, role = Role.Switch) {
+                        onEvent(RecordingsEvent.SetTranscripts(it))
+                    },
+            ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.recordings_transcripts), style = MaterialTheme.typography.titleSmall)
                     Text(stringResource(R.string.recordings_transcripts_summary), style = MaterialTheme.typography.bodySmall)
                 }
-                Switch(checked = on, enabled = !state.busy, onCheckedChange = { onEvent(RecordingsEvent.SetTranscripts(it)) })
+                Switch(checked = on, enabled = !state.busy, onCheckedChange = null)
             }
         }
     }
