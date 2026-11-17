@@ -19,8 +19,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The permission explainer at 200 % font on a small screen (docs/design.md §11): the title, the reasons and both
- * buttons are reachable by scrolling, and nothing is squeezed out.
+ * The permission explainer at 200 % font on a small screen (docs/design.md §11): Continue and Not now stay on screen
+ * (onboarding depends on them being visible without scrolling), and the title and reasons above them scroll.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.VANILLA_ICE_CREAM], qualifiers = "w320dp-h480dp")
@@ -49,15 +49,15 @@ class PermissionExplainerLargeFontTest {
     }
 
     @Test
-    fun everythingIsReachableAtDoubleFont() {
+    fun buttonsStayAndTheTextScrollsAtDoubleFont() {
         show(fontScale = 2f)
 
+        compose.onNodeWithText(context.getString(R.string.explainer_continue)).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.explainer_not_now)).assertIsDisplayed()
         compose.onNodeWithText(TITLE).assertIsDisplayed()
-        for (text in listOf(WHY, NEVER, context.getString(R.string.explainer_continue), context.getString(R.string.explainer_not_now))) {
+        for (text in listOf(WHY, NEVER, TITLE)) {
             compose.onNodeWithText(text).performScrollTo().assertIsDisplayed()
         }
-        // Scrolling back brings the title into view again.
-        compose.onNodeWithText(TITLE).performScrollTo().assertIsDisplayed()
     }
 
     @Test

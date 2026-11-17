@@ -2,12 +2,9 @@ package io.github.jeshiomurmu.opencaller.core.ui
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -50,54 +47,38 @@ fun PermissionExplainer(
     progress: String? = null,
     continueLabel: String = stringResource(R.string.explainer_continue),
 ) {
-    // One scrolling column at least the screen's height: the buttons sit at the bottom while everything fits, and
-    // at a large font (docs/design.md §11) they scroll with the text instead of squeezing it into a sliver.
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+    Column(
+        modifier = modifier.fillMaxSize().padding(OpenCallerSpacing.screenPadding),
+        verticalArrangement = Arrangement.spacedBy(OpenCallerSpacing.m),
+    ) {
         Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .heightIn(min = maxHeight)
-                    .padding(OpenCallerSpacing.screenPadding),
+            modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(OpenCallerSpacing.m),
         ) {
-            ExplainerText(icon = icon, title = title, why = why, never = never, progress = progress)
-            Spacer(modifier = Modifier.weight(1f))
-            Button(onClick = onContinue, shape = OpenCallerShape.pill, modifier = Modifier.fillMaxWidth()) {
-                Text(text = continueLabel)
+            progress?.let {
+                Text(text = it, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            TextButton(onClick = onNotNow, modifier = Modifier.fillMaxWidth()) {
-                Text(text = stringResource(R.string.explainer_not_now))
-            }
+            Icon(
+                painter = painterResource(icon),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(OpenCallerSpacing.iconLarge),
+            )
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.semantics { heading() },
+            )
+            Text(text = why, style = MaterialTheme.typography.bodyLarge)
+            NeverDoesCard(text = never)
+        }
+        Button(onClick = onContinue, shape = OpenCallerShape.pill, modifier = Modifier.fillMaxWidth()) {
+            Text(text = continueLabel)
+        }
+        TextButton(onClick = onNotNow, modifier = Modifier.fillMaxWidth()) {
+            Text(text = stringResource(R.string.explainer_not_now))
         }
     }
-}
-
-@Composable
-private fun ExplainerText(
-    @DrawableRes icon: Int,
-    title: String,
-    why: String,
-    never: String,
-    progress: String?,
-) {
-    progress?.let {
-        Text(text = it, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-    Icon(
-        painter = painterResource(icon),
-        contentDescription = null,
-        tint = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.size(OpenCallerSpacing.iconLarge),
-    )
-    Text(
-        text = title,
-        style = MaterialTheme.typography.headlineMedium,
-        modifier = Modifier.semantics { heading() },
-    )
-    Text(text = why, style = MaterialTheme.typography.bodyLarge)
-    NeverDoesCard(text = never)
 }
 
 @Composable
