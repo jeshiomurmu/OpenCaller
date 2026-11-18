@@ -15,7 +15,7 @@ check() {
   # "+--- group:artifact:version" or "\--- group:artifact:requested -> resolved"; project modules are "project :x".
   # A grep without a match must not end the script silently (set -e with pipefail), so each one tolerates none.
   artifacts="$({ grep -oE -- '--- [A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+' "$out" || true; } | sed -E 's/^--- //' | sort -u)"
-  modules="$({ grep -oE -- '--- project :[A-Za-z0-9:_-]+' "$out" || true; } | sed 's/--- project //' | sort -u)"
+  modules="$({ grep -oE -- '--- project :?[A-Za-z0-9:_-]+' "$out" || true; } | sed 's/--- project //' | sort -u)"
   if [[ -z "$artifacts" ]]; then
     echo "::error::no dependencies parsed from the report; its first lines:"
     head -40 "$out"
@@ -24,7 +24,7 @@ check() {
 
   local forbidden='^(com\.google\.firebase|com\.google\.android\.gms|com\.android\.billingclient|com\.google\.android\.play|com\.google\.mlkit|com\.crashlytics|io\.fabric|com\.google\.android\.datatransport):'
 
-  echo "fossReleaseRuntimeClasspath ($label): $(wc -l <<< "$artifacts") external artifacts in $(cut -d: -f1 <<< "$artifacts" | sort -u | wc -l) groups, $(wc -l <<< "$modules") project modules"
+  echo "fossReleaseRuntimeClasspath ($label): $(wc -l <<< "$artifacts") external artifacts in $(cut -d: -f1 <<< "$artifacts" | sort -u | wc -l) groups, $(grep -c . <<< "$modules" || true) project modules"
   echo "Artifacts per group:"
   cut -d: -f1 <<< "$artifacts" | sort | uniq -c | sort -rn | sed 's/^/  /'
 

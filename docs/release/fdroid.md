@@ -30,7 +30,20 @@ foss classpath.
 
 Output summary (CI, recorded at the end of Phase 15):
 
-<!-- FOSS-DEPENDENCIES-SUMMARY -->
+From CI run 44231936660 (`android` job, commit `5cbb159`, 2026-11-18):
+
+| Configuration | External artifacts | Groups | Proprietary groups found |
+| --- | --- | --- | --- |
+| GitHub release (`foss`, app calls included) | 207 | 79 | none |
+| F-Droid (`foss`, `-Popencaller.voip=false`) | 197 | 72 | none |
+
+The largest groups are AndroidX (Lifecycle, Compose, DataStore, Navigation, CameraX, Room, Hilt), kotlinx, Dagger,
+Square (Retrofit, OkHttp, Okio), protobuf, SQLCipher (`net.zetetic`), libphonenumber, Timber, Tink and the
+UnifiedPush connector. The F-Droid configuration drops exactly LiveKit's groups: `io.livekit`, `io.github.webrtc-sdk`,
+`net.java.dev.jna`, `javax.sip`, `com.auth0.android`, `com.vdurmont`, `com.github.davidliu` (JitPack), plus one
+`androidx.core` and one `org.jetbrains.kotlin` artifact that only the app-call module pulls in (10 artifacts in all). `com.google.*` artifacts on the classpath are
+open-source libraries (Guava, Gson, Tink, protobuf, Dagger, error-prone annotations, AutoValue annotations, findbugs
+JSR-305), none of the forbidden groups. The script prints the full per-group counts in every CI run.
 
 What else F-Droid looks for, and where the build stands:
 

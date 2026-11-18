@@ -3,7 +3,6 @@ package io.github.jeshiomurmu.opencaller.ui
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -11,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.core.net.toUri
 import io.github.jeshiomurmu.opencaller.R
 import io.github.jeshiomurmu.opencaller.core.designsystem.preview.OpenCallerPreviews
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
@@ -43,7 +43,7 @@ internal fun UpdateRequiredDialog(
 
 private fun openStorePage(context: Context) {
     val intent =
-        Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${context.packageName}"))
+        Intent(Intent.ACTION_VIEW, "market://details?id=${context.packageName}".toUri())
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     try {
         context.startActivity(intent)
