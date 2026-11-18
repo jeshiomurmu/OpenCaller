@@ -53,10 +53,11 @@ Optional, for builds that talk to your server (leave them unset for an offline b
 
 ```bash
 gh secret set OPENCALLER_API_BASE_URL --repo "$repo" --body https://api.example.org
-gh secret set OPENCALLER_API_PINS --repo "$repo" --body "sha256/<current key>,sha256/<backup key>"
+infra/deploy/pins.sh api.example.org   # prints the two pins and the gh secret set line for OPENCALLER_API_PINS
 ```
 
-How to compute the pins is in `infra/deploy/README.md` → Certificate pins.
+The pins are Let's Encrypt's two roots, not the server's own key, which Caddy replaces at every renewal
+(`infra/deploy/README.md` → Certificate pins).
 
 ## 3. Release
 

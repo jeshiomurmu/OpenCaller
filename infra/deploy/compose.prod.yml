@@ -1,0 +1,288 @@
+# OpenCaller in production on one VPS (infra/deploy/README.md). Images come from the GitHub Container Registry, built
+# and signed for each release tag by .github/workflows/images.yml; OPENCALLER_VERSION picks the release.
+#
+#   cd /opt/opencaller/infra/deploy
+#   ./init-env.sh                 # once: .env with fresh secrets, then fill in the domains and providers
+#   ./preflight.sh                # checks .env, DNS and the image versions
+#   docker compose -f compose.prod.yml up -d
+#
+# Only Caddy (80, 443) and LiveKit's media ports are reachable from the internet. Docker publishes ports past ufw, so
+# nothing else is published except the admin web, on the host's loopback for an SSH tunnel. The server migrates the
+# database with Flyway on start.
+name: opencaller
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+# The server's configuration (backend/server/src/main/resources/application.conf), shared with the transcoder.
+x-server-environment: &server-environment
+  ENV: production
+  APP_VERSION: ${OPENCALLER_VERSION}
+  PORT: "8080"
+  METRICS_PORT: "9090"
+  # Behind Caddy only (the server publishes no port): the client's address is Caddy's X-Forwarded-For.
+  TRUST_FORWARDED_HEADERS: "true"
+  MIN_APP_VERSION_CODE: ${MIN_APP_VERSION_CODE:-0}
+  DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+  DB_USER: ${POSTGRES_USER}
+  DB_PASSWORD: ${POSTGRES_PASSWORD}
+  REDIS_URL: redis://redis:6379
+  REDIS_PASSWORD: ${REDIS_PASSWORD}
+  MINIO_ENDPOINT: http://minio:9000
+  MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+  MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+  MINIO_BUCKET: ${MINIO_BUCKET:-opencaller}
+  # Presigned picture, clip and recording links point here; Caddy passes the Host header on, so MinIO's signature check
+  # sees the same host the server signed for (issue 104).
+  MINIO_PUBLIC_ENDPOINT: https://${MEDIA_DOMAIN}
+  JWT_SECRET: ${JWT_SECRET}
+  OTP_PEPPER: ${OTP_PEPPER}
+  OTP_PROVIDER: ${OTP_PROVIDER:-twilio}
+  TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+  TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+  TWILIO_FROM: ${TWILIO_FROM:-}
+  TWILIO_MESSAGING_SERVICE_SID: ${TWILIO_MESSAGING_SERVICE_SID:-}
+  TWILIO_VOICE_FROM: ${TWILIO_VOICE_FROM:-}
+  ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+  ADMIN_WEB_PORT: "8081"
+  ADMIN_WEB_USER: ${ADMIN_WEB_USER}
+  ADMIN_WEB_PASSWORD: ${ADMIN_WEB_PASSWORD}
+  # Requests through the SSH tunnel arrive from the backend network's gateway.
+  ADMIN_WEB_ALLOWED_NETWORKS: 172.30.0.1/32
+  SELF_HOSTED: ${SELF_HOSTED:-false}
+  GOOGLE_PLAY_SERVICE_ACCOUNT_FILE: ${GOOGLE_PLAY_SERVICE_ACCOUNT_FILE:-}
+  GOOGLE_PLAY_PACKAGE_NAME: ${GOOGLE_PLAY_PACKAGE_NAME:-}
+  GOOGLE_PLAY_PRODUCT_ID: ${GOOGLE_PLAY_PRODUCT_ID:-opencaller_supporter}
+  BILLING_ACCOUNT_SECRET: ${BILLING_ACCOUNT_SECRET:-}
+  LIVEKIT_URL: wss://${LIVEKIT_DOMAIN}
+  LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-opencaller}
+  LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+  FCM_SERVICE_ACCOUNT_FILE: ${FCM_SERVICE_ACCOUNT_FILE:-}
+  FCM_PROJECT_ID: ${FCM_PROJECT_ID:-}
+  VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+  VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+  VAPID_SUBJECT: ${VAPID_SUBJECT:-}
+  # The recording line, assistant and voice scanner stay off unless infra/deploy/telephony.md is followed.
+  RECORDING_LINES: ${RECORDING_LINES:-}
+  RECORDING_COUNTRIES: ${RECORDING_COUNTRIES:-BD,IN}
+  RECORDING_AGENT_TOKEN: ${RECORDING_AGENT_TOKEN:-}
+  ASSISTANT_NUMBERS: ${ASSISTANT_NUMBERS:-}
+  SCANNER_ENABLED: ${SCANNER_ENABLED:-false}
+
+services:
+  caddy:
+    image: caddy:2.11.9
+    restart: unless-stopped
+    logging: *logging
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL}
+      API_DOMAIN: ${API_DOMAIN}
+      MEDIA_DOMAIN: ${MEDIA_DOMAIN}
+      LIVEKIT_DOMAIN: ${LIVEKIT_DOMAIN}
+      GRAFANA_DOMAIN: ${GRAFANA_DOMAIN}
+      SIP_DOMAIN: ${SIP_DOMAIN:-}
+      MEDIA_BUCKET: ${MINIO_BUCKET:-opencaller}
+      # Empty in production; "local_certs" for a test without public DNS (Caddy's own CA instead of Let's Encrypt).
+      CADDY_EXTRA_GLOBAL: ${CADDY_EXTRA_GLOBAL:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy-sites:/etc/caddy/sites:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks: [backend]
+    depends_on: [server]
+
+  postgres:
+    image: postgres:18.7
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      # Nightly dumps are written here by backup/backup.sh (pg_dump runs inside this container).
+      - ./backups:/backups
+    networks: [backend]
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  redis:
+    image: redis:8.8
+    restart: unless-stopped
+    logging: *logging
+    command: ["sh", "-c", "exec redis-server --requirepass \"$${REDIS_PASSWORD}\" --appendonly yes"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDISCLI_AUTH: ${REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: ghcr.io/jeshiomurmu/opencaller-minio:${OPENCALLER_VERSION}
+    restart: unless-stopped
+    logging: *logging
+    command: ["server", "/data"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_PROMETHEUS_AUTH_TYPE: public
+    volumes:
+      - minio-data:/data
+    networks: [backend]
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/busybox", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  server:
+    image: ghcr.io/jeshiomurmu/opencaller-server:${OPENCALLER_VERSION}
+    restart: unless-stopped
+    logging: *logging
+    environment: *server-environment
+    # Only the admin web, on this host's loopback, for `ssh -L 8081:127.0.0.1:8081 <server>`.
+    ports:
+      - "127.0.0.1:8081:8081"
+    volumes:
+      # Optional key files (Google Play, FCM): put them in ./secrets and point the *_FILE variables at /secrets/<name>.
+      - ./secrets:/secrets:ro
+    networks: [backend]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  transcoder:
+    image: ghcr.io/jeshiomurmu/opencaller-transcoder:${OPENCALLER_VERSION}
+    restart: unless-stopped
+    logging: *logging
+    environment: *server-environment
+    networks: [backend]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+  # App-to-app calls (Phase 11). Signalling goes through Caddy (wss://LIVEKIT_DOMAIN); media and TURN go straight to
+  # the published UDP ports and 7881/tcp, which the firewall must allow.
+  livekit:
+    image: livekit/livekit-server:v1.13.11
+    restart: unless-stopped
+    logging: *logging
+    command: ["--config", "/etc/livekit.yaml"]
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-opencaller}: ${LIVEKIT_API_SECRET}"
+      NODE_IP: ${PUBLIC_IP}
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+    ports:
+      - "7881:7881"
+      - "3478:3478/udp"
+      - "50000-50200:50000-50200/udp"
+    networks: [backend]
+
+  # Monitoring: Prometheus scrapes the server, MinIO, Caddy, PostgreSQL and this host; Grafana (behind Caddy, with its
+  # own login) shows them. Neither publishes a port.
+  prometheus:
+    image: prom/prometheus:v3.16.0
+    restart: unless-stopped
+    logging: *logging
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks: [backend]
+
+  grafana:
+    image: grafana/grafana:13.3.1
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_SERVER_ROOT_URL: https://${GRAFANA_DOMAIN}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    networks: [backend]
+
+  node-exporter:
+    image: prom/node-exporter:v1.12.1
+    restart: unless-stopped
+    logging: *logging
+    command: ["--path.rootfs=/host"]
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    networks: [backend]
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.20.1
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      DATA_SOURCE_URI: postgres:5432/${POSTGRES_DB}?sslmode=disable
+      DATA_SOURCE_USER: ${POSTGRES_USER}
+      DATA_SOURCE_PASS: ${POSTGRES_PASSWORD}
+    networks: [backend]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+networks:
+  backend:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+
+volumes:
+  caddy-data:
+  caddy-config:
+  postgres-data:
+  redis-data:
+  minio-data:
+  prometheus-data:
+  grafana-data:

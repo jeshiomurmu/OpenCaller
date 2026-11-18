@@ -11,7 +11,7 @@ messages, so the training command refuses to run on it, and the app uses its rul
 
 | Source | What it is | Licence | Size |
 | --- | --- | --- | --- |
-| `corpus/templates.py` + `corpus/generate.py` (this repository) | Hand-written templates that imitate the shape of common SMS in Bangladesh, India and the United States (where the code sits, keywords, sender IDs, amount and card formats), filled with made-up values by a seeded generator | GPL-3.0-only, like the rest of the repository | 846 messages: 454 train, 202 val, 190 test; 360 carry a one-time code (120 each for BD, IN and US; English, Bengali and Hindi) |
+| `corpus/templates.py` + `corpus/generate.py` (this repository) | Hand-written templates that imitate the shape of common SMS in Bangladesh, India and the United States (where the code sits, keywords, sender IDs, amount and card formats), filled with made-up values by a seeded generator | GPL-3.0-or-later, like the rest of the repository | 846 messages: 454 train, 202 val, 190 test; 360 carry a one-time code (120 each for BD, IN and US; English, Bengali and Hindi) |
 
 No collected or third-party messages are included, and no real person's message is in it: codes, amounts, card
 digits, order numbers, names, phone numbers (fictional ranges) and links are invented, and most brands are invented

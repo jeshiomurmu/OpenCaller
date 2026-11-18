@@ -1,5 +1,9 @@
 # OpenCaller
 
+[![CI](https://github.com/jeshiomurmu/OpenCaller/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jeshiomurmu/OpenCaller/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/jeshiomurmu/OpenCaller?include_prereleases&sort=semver)](https://github.com/jeshiomurmu/OpenCaller/releases)
+[![License: GPL-3.0-or-later](https://img.shields.io/github/license/jeshiomurmu/OpenCaller)](LICENSE)
+
 > Working name. Check GitHub, Play Store and trademark search for conflicts before the first public release.
 
 OpenCaller is an open-source, privacy-first caller ID, spam blocker, dialer and SMS app for **Android**, with a self-hostable backend. It aims for feature parity with Truecaller (free and Premium tiers) without harvesting anyone's address book.
@@ -7,7 +11,9 @@ OpenCaller is an open-source, privacy-first caller ID, spam blocker, dialer and 
 - **License:** GPL-3.0-or-later (required because we reuse GPL-3.0 code from Fossify Phone and Fossify Messages)
 - **Platform:** Android 10 (API 29) and newer. `targetSdk 36` (Google Play requirement since 31 Aug 2026)
 - **Distribution:** GitHub Releases (APK), F-Droid (`foss` flavor), Google Play (`play` flavor)
-- **Status:** Phase 0, planning. See [`docs/phase.md`](docs/phase.md)
+- **Status:** in maintenance: Phases 0–15 are done in code; device tests and the store submissions are the owner's next steps. See [`docs/phase.md`](docs/phase.md)
+- **Self-hosting:** [`infra/deploy/README.md`](infra/deploy/README.md) (one Ubuntu VPS, under an hour)
+- **Contributing:** [`CONTRIBUTING.md`](CONTRIBUTING.md) · [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) · security issues: [`SECURITY.md`](SECURITY.md)
 
 ## What makes it different
 

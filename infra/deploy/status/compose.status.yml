@@ -1,0 +1,27 @@
+# Uptime checks and a public status page with Uptime Kuma (README → Uptime and status page). Run it on a different
+# machine from the VPS it watches (a second small VPS or a home server), so an outage of the VPS is still seen and
+# reported. Caddy gets the certificate for STATUS_DOMAIN.
+#
+#   cd infra/deploy/status && echo STATUS_DOMAIN=status.example.org > .env && docker compose -f compose.status.yml up -d
+name: opencaller-status
+
+services:
+  caddy:
+    image: caddy:2.11.9
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    command: ["caddy", "reverse-proxy", "--from", "${STATUS_DOMAIN}", "--to", "uptime-kuma:3001"]
+    volumes:
+      - caddy-data:/data
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:2.5.11
+    restart: unless-stopped
+    volumes:
+      - kuma-data:/app/data
+
+volumes:
+  caddy-data:
+  kuma-data:

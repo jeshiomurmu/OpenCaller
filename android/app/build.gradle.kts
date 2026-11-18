@@ -33,6 +33,13 @@ fun quoted(value: String): String = "\"" + value.replace("\\", "\\\\").replace("
 android {
     namespace = "io.github.jeshiomurmu.opencaller"
 
+    // AGP's "Dependency metadata" signing block is encrypted for Google only: F-Droid rejects APKs that carry it and it
+    // stops builds from matching byte for byte (docs/release/fdroid.md). Play still gets it in the App Bundle.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = true
+    }
+
     defaultConfig {
         applicationId = "io.github.jeshiomurmu.opencaller"
         // versionCode = MAJOR * 1_000_000 + MINOR * 10_000 + PATCH * 100 + stage, where stage is 10 + n for alpha.n,

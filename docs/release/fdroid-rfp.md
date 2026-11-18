@@ -6,7 +6,7 @@ Title: **OpenCaller: caller ID, spam blocker, dialer and SMS app**
 
 * **Name:** OpenCaller
 * **Source code:** https://github.com/jeshiomurmu/OpenCaller
-* **License:** GPL-3.0-only (`LICENSE`)
+* **License:** GPL-3.0-or-later (`LICENSE`)
 * **Issue tracker:** https://github.com/jeshiomurmu/OpenCaller/issues
 * **Changelog:** https://github.com/jeshiomurmu/OpenCaller/blob/main/CHANGELOG.md
 * **Category:** Phone & SMS

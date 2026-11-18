@@ -72,7 +72,7 @@ jobs:
             latest=auto
           labels: |
             org.opencontainers.image.title=opencaller-${{ matrix.name }}
-            org.opencontainers.image.licenses=GPL-3.0-only
+            org.opencontainers.image.licenses=GPL-3.0-or-later
 
       - name: Build and push
         uses: docker/build-push-action@v7

@@ -54,3 +54,8 @@ ml/**/*.onnx
 ml/voice-spoof/model/
 ml/voice-spoof/results/
 *.pth
+
+# infra/deploy on a server: dumps, the operator's rclone config and extra Caddy sites
+infra/deploy/backups/
+infra/deploy/backup/rclone.conf
+infra/deploy/caddy-sites/*.caddy

@@ -3,7 +3,7 @@
 # opening a merge request.
 Categories:
   - Phone & SMS
-License: GPL-3.0-only
+License: GPL-3.0-or-later
 AuthorName: OpenCaller contributors
 SourceCode: https://github.com/jeshiomurmu/OpenCaller
 IssueTracker: https://github.com/jeshiomurmu/OpenCaller/issues
