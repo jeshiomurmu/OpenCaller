@@ -333,17 +333,19 @@ credentials; OpenCaller doesn't use it.)
 
 - **Signalling and media encryption.** Turn both on before real users' calls go through the line (issue 148).
   LiveKit documents [secure trunking](https://docs.livekit.io/telephony/features/secure-trunking.md); on our side:
-  1. **A certificate for the SIP server.** Point a name (`SIP_DOMAIN`, e.g. `sip.example.org`) at the server. With the
-     production stack (`infra/deploy/README.md`), Caddy gets it: set `SIP_DOMAIN` in `infra/deploy/.env`, copy
-     `infra/deploy/caddy-sites/sip.caddy.example` to `sip.caddy`, restart Caddy, then run
-     `infra/deploy/sip-cert.sh`, which copies the certificate to `infra/deploy/secrets/sip/` and restarts the SIP
-     server when it changed; its weekly cron line (README → Backups and cron) picks up Caddy's renewals. Any other
-     certificate for that name works too (the full chain in one PEM file and its key).
+  1. **A certificate for the SIP server.** Point a name (`SIP_DOMAIN`, e.g. `sip.example.org`) at the server and
+     get a certificate for it (the full chain in one PEM file and its key). On a telephony server of its own (the
+     setup today, `infra/deploy/README.md` §11) any ACME client works, e.g. `certbot certonly --standalone -d
+     sip.example.org` with port 80 free, and its renewal hook restarts the SIP server. On a server that also runs the
+     production stack's Caddy (once issue 155 is done), Caddy can get it instead: set `SIP_DOMAIN` in
+     `infra/deploy/.env`, copy `infra/deploy/caddy-sites/sip.caddy.example` to `sip.caddy`, restart Caddy and run
+     `infra/deploy/sip-cert.sh` (it copies the certificate to `infra/deploy/secrets/sip/` and restarts the SIP server
+     when it changed; run it weekly from cron to pick up renewals).
   2. **The TLS listener.** Add the TLS overlay and the paths to `infra/docker/.env`:
      ```shell
      SIP_DOMAIN=sip.example.org
-     SIP_TLS_CERT_FILE=../deploy/secrets/sip/sip.crt
-     SIP_TLS_KEY_FILE=../deploy/secrets/sip/sip.key
+     SIP_TLS_CERT_FILE=/etc/letsencrypt/live/sip.example.org/fullchain.pem   # certbot; sip-cert.sh: ../deploy/secrets/sip/sip.crt
+     SIP_TLS_KEY_FILE=/etc/letsencrypt/live/sip.example.org/privkey.pem       # certbot; sip-cert.sh: ../deploy/secrets/sip/sip.key
      docker compose -f infra/docker/compose.yml -f infra/docker/compose.telephony.yml \
        -f infra/docker/compose.sip-tls.yml up -d
      ```

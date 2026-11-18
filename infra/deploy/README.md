@@ -324,11 +324,15 @@ monthly for the third-party images, after bumping their tags in `compose.prod.ym
 ## 11. Telephony (optional)
 
 The recording line, the call assistant and the voice scanner need a SIP provider, numbers, LiveKit SIP and Egress and
-the agents; `telephony.md` covers them, including SIP over TLS with a certificate Caddy obtains (`SIP_DOMAIN`,
-`caddy-sites/sip.caddy.example`, `sip-cert.sh`; add a weekly cron line
-`23 5 * * 1 root /opt/opencaller/infra/deploy/sip-cert.sh >> /var/log/opencaller-sip-cert.log 2>&1`). Those services
-run with host networking and are started from `infra/docker` with the telephony overlays; they are not part of
-`compose.prod.yml` (`docs/phase.md` issue 155).
+the agents; `telephony.md` covers them, including SIP over TLS (`infra/docker/compose.sip-tls.yml`).
+
+**Not on the same server as `compose.prod.yml` yet.** The telephony services come from `infra/docker` with the
+telephony overlays: they run with host networking and expect LiveKit and Redis on the host's loopback, while
+`compose.prod.yml` keeps LiveKit and Redis inside its Docker network and publishes LiveKit's ports itself. Run
+together they would clash on LiveKit's ports. Until the production stack includes them (`docs/phase.md` issue 155), run
+the telephony setup on its own server following `telephony.md`, or leave the recording line, assistant and scanner
+off (the default: the server offers none of them unless `RECORDING_LINES`, `ASSISTANT_NUMBERS` or `SCANNER_ENABLED`
+is set).
 
 ## 12. Troubleshooting
 

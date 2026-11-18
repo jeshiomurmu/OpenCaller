@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Phases 14 and 15: hardening, translations, and the release and self-hosting setup.
+
+### Added
+
+- Bengali and Hindi for every screen (translated without a native speaker; a review is pending), and layouts checked
+  for right-to-left languages.
+- "Update OpenCaller": when a server no longer supports an old version, the app says so once and opens the store page.
+- Self-hosting guide for one Ubuntu server (`infra/deploy/README.md`): TLS, nightly encrypted off-site backups with a
+  restore test, monitoring and uptime checks.
+
+### Changed
+
+- Release builds are smaller and start faster: R8 shrinking and a Baseline Profile. Each release publishes the R8
+  mapping files.
+- Better TalkBack support (the caller card is read in one go, labelled actions) and layouts that fit at 200 % font
+  size.
+- APKs no longer carry Google's encrypted dependency-metadata block (the Play bundle still does).
+
+### Security
+
+- Behind the production proxy the server rate-limits by the client's real address and ignores spoofed
+  `X-Forwarded-For` headers.
+- The OTP warning can't be covered by other apps' overlays on Android 12 and newer.
+
 ## [1.1.0] - 2026-11-14
 
 Phase 13: features that work through the server's own phone lines. They need a server with LiveKit SIP and a SIP

@@ -30,7 +30,7 @@ Severity of findings follows `docs/testing.md` §6 (S1 critical … S4 cosmetic)
 | MASVS-CODE-2 | Gap (S3) | No forced-update mechanism (Play in-app updates not used) |
 | MASVS-CODE-3 | Pass | OSV audit of every resolved dependency in CI (`dependency-audit` job), Renovate/Dependabot weekly per rules.md §7 |
 | MASVS-CODE-4 | Pass | Validation on both sides; parameterised SQL only (`SqlInjectionTest`) |
-| MASVS-RESILIENCE-1…4 | N/A (by design) / Gap for R8 | Open-source app: no root detection or anti-tampering; release minification is off (issue 59) |
+| MASVS-RESILIENCE-1…4 | N/A (by design) | Open-source app: no root detection or anti-tampering; release builds are minified with R8 since Phase 15 |
 | MASVS-PRIVACY-1…4 | Pass | See `docs/architecture.md` §10, the traffic check and `PRIVACY.md` |
 
 ## MASVS-STORAGE — data at rest
@@ -93,7 +93,8 @@ Severity of findings follows `docs/testing.md` §6 (S1 critical … S4 cosmetic)
   audit log (`AdminRoutesTest`, `AdminWebTest`, including that the public API serves neither the admin pages nor
   the admin jobs).
 - Notes: Play Integrity tokens are accepted but not verified (issue 39, S3); access tokens can't be revoked before
-  they expire (issue 40, S4); the admin web has one shared account (issue 114, S3, Phase 15).
+  they expire (issue 40, S4); the admin web has one shared account (issue 114, S3); the production guide publishes it only on the
+  server's loopback, reached through an SSH tunnel (`infra/deploy/README.md` §9).
 
 **AUTH-2: Local authentication. — N/A.** The app has no app lock.
 
@@ -159,9 +160,11 @@ tied to the signed-in number; there is no extra step-up check. Accepted for the 
 **CODE-1: Up-to-date platform version. — Pass.** minSdk 29 (Android 10), targetSdk 36; lint `OldTargetApi` is off
 only because targetSdk 36 is fixed by architecture §2 (issue 4, revisit before Play production).
 
-**CODE-2: Enforcing app updates. — Gap (S3).** The app can't make a user update. Proposal for Phase 15: the server
-answers requests from versions below a minimum with `426`/`upgrade_required` and the app shows "Update OpenCaller"
-(works for Play and F-Droid). Tracked as an open issue.
+**CODE-2: Enforcing app updates. — Pass (Phase 15).** The app sends its `versionCode` as `X-OpenCaller-Version` to
+the server's own host only; the server's `MIN_APP_VERSION_CODE` answers older `/v1/` requests with `426`
+`upgrade_required`, and the app shows one "Update OpenCaller" dialog that opens the store page (works for Play and
+F-Droid). Tests: `ClientVersionTest` (server), `AppVersionTest` (app). A request without the header passes, so the
+operator raises the minimum only after the release that needs it is out (`infra/deploy/README.md` §10).
 
 **CODE-3: Components without known vulnerabilities. — Pass**
 
@@ -189,8 +192,10 @@ answers requests from versions below a minimum with `426`/`upgrade_required` and
 **RESILIENCE-1…4 (platform integrity, anti-tampering, anti-static and anti-dynamic analysis). — N/A by design,
 one gap.** OpenCaller is GPL-3.0 and built reproducibly for F-Droid; hiding how it works defeats the point, and the
 server never trusts the client (rate limits, ownership checks, reporter trust). Root detection is not used (rules.md
-§2 forbids root-only features, not rooted users). Gap (S3, issue 59): release builds are not minified; R8 with
-tested keep rules is planned before the Play production release (Phase 15). Play Integrity verification
+§2 forbids root-only features, not rooted users). Since Phase 15 release builds are minified and
+obfuscated by R8 (`proguard-rules.pro` plus the libraries' own rules), checked by installing the minified foss build
+on the API 36 emulator and walking onboarding and the five tabs (`scripts/ci/release-smoke.sh`); the mapping files
+are kept with each release. Play Integrity verification
 (issue 39) would add a platform-integrity signal for abuse scoring on the server.
 
 ## MASVS-PRIVACY
@@ -225,6 +230,6 @@ user-facing text is `PRIVACY.md` (draft for legal review), and Phase 14 adds:
 | SEC-3 | The OTP guard could be covered by another app's overlay | S3 | Fixed on Android 12+ (`setHideOverlayWindows`) |
 | SEC-4 | No dependency vulnerability audit | S3 | Fixed: `dependency-audit` CI job (OSV) |
 | SEC-5 | No test that exported components stay guarded | S3 | Fixed: `ExportedComponentsTest` |
-| SEC-6 | No forced update | S3 | Open (Phase 15 proposal above) |
-| SEC-7 | Release builds not minified | S3 | Open (issue 59) |
+| SEC-6 | No forced update | S3 | Fixed in Phase 15: `426 upgrade_required` and the update dialog (CODE-2) |
+| SEC-7 | Release builds not minified | S3 | Fixed in Phase 15: R8 with tested rules (issue 59) |
 | SEC-8 | Play Integrity token not verified | S3 | Open (issue 39) |
