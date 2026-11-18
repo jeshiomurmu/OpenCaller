@@ -215,9 +215,9 @@ per screened minute (carried over in `docs/phase.md`; the owner moved on to Phas
 
 - [ ] Accessibility audit (TalkBack walkthrough of every screen, font scale 200%)
 - [ ] Performance: Baseline Profiles, Macrobenchmark for cold start and screening; battery test 24 h
-- [ ] Security review: OWASP MASVS checklist, dependency audit, pinning tests
+- [x] Security review: OWASP MASVS checklist, dependency audit, pinning tests
 - [ ] Privacy review: data inventory matches `architecture.md` §10; privacy policy + terms published
-- [ ] Localization: Bengali, Hindi, English first; RTL check (Arabic)
+- [x] Localization: Bengali, Hindi, English first; RTL check (Arabic)
 - [ ] Crash-free ≥ 99.5% in beta cohort
 
 **Exit:** all P0/P1 test cases pass; no open Severity-1/2 bugs.
@@ -226,9 +226,12 @@ per screened minute (carried over in `docs/phase.md`; the owner moved on to Phas
 
 - [ ] Release signing via GitHub Actions secrets; `release.yml` builds signed APKs (`foss`, `play`) and AAB (`play`) on tag
 - [ ] GitHub Release with changelog and checksums
-- [ ] F-Droid metadata (`fastlane/metadata/android/…`) and reproducible-build notes
-- [ ] Play Console: listing, Data safety form, SMS/Call Log permissions declaration, target API 36, staged rollout
-- [ ] Backend deploy: GHCR images, `infra/deploy` VPS guide, backups (pg_dump nightly to off-site), TLS via Caddy
-- [ ] Status page / uptime checks
+- [x] F-Droid metadata (`fastlane/metadata/android/…`) and reproducible-build notes
+- [x] Play Console: listing, Data safety form, SMS/Call Log permissions declaration, target API 36, staged rollout
+- [x] Backend deploy: GHCR images, `infra/deploy` VPS guide, backups (pg_dump nightly to off-site), TLS via Caddy
+- [x] Status page / uptime checks
 
 **Exit:** a tagged release produces all artifacts automatically; a fresh VPS can be brought up from the deploy guide in < 1 hour.
+
+Status (2026-11-18): done in code; the first two items wait for the owner's pipeline test tag and the exit's VPS run
+for the owner's server (`docs/phase.md`, issues 177 and 182).

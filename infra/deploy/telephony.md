@@ -331,12 +331,39 @@ credentials; OpenCaller doesn't use it.)
 
 ## Security
 
-- **Signalling and media encryption.** LiveKit documents [secure trunking](https://docs.livekit.io/telephony/features/secure-trunking.md):
-  enable Secure Trunking on the Twilio trunk, use `;transport=tls` in the origination URL (port 5061) and set the
-  trunk's media encryption (`media.encryption`: `SIP_MEDIA_ENCRYPT_ALLOW` or `SIP_MEDIA_ENCRYPT_REQUIRE`). The
-  self-hosted SIP server then needs a certificate for its TLS listener; that part of the SIP server's configuration
-  isn't covered by this guide yet (open issue in docs/phase.md). Until then, signalling and media between the
-  provider and your server are unencrypted on the internet, like most PSTN trunks.
+- **Signalling and media encryption.** Turn both on before real users' calls go through the line (issue 148).
+  LiveKit documents [secure trunking](https://docs.livekit.io/telephony/features/secure-trunking.md); on our side:
+  1. **A certificate for the SIP server.** Point a name (`SIP_DOMAIN`, e.g. `sip.example.org`) at the server and
+     get a certificate for it (the full chain in one PEM file and its key). On a telephony server of its own (the
+     setup today, `infra/deploy/README.md` §11) any ACME client works, e.g. `certbot certonly --standalone -d
+     sip.example.org` with port 80 free, and its renewal hook restarts the SIP server. On a server that also runs the
+     production stack's Caddy (once issue 155 is done), Caddy can get it instead: set `SIP_DOMAIN` in
+     `infra/deploy/.env`, copy `infra/deploy/caddy-sites/sip.caddy.example` to `sip.caddy`, restart Caddy and run
+     `infra/deploy/sip-cert.sh` (it copies the certificate to `infra/deploy/secrets/sip/` and restarts the SIP server
+     when it changed; run it weekly from cron to pick up renewals).
+  2. **The TLS listener.** Add the TLS overlay and the paths to `infra/docker/.env`:
+     ```shell
+     SIP_DOMAIN=sip.example.org
+     SIP_TLS_CERT_FILE=/etc/letsencrypt/live/sip.example.org/fullchain.pem   # certbot; sip-cert.sh: ../deploy/secrets/sip/sip.crt
+     SIP_TLS_KEY_FILE=/etc/letsencrypt/live/sip.example.org/privkey.pem       # certbot; sip-cert.sh: ../deploy/secrets/sip/sip.key
+     docker compose -f infra/docker/compose.yml -f infra/docker/compose.telephony.yml \
+       -f infra/docker/compose.sip-tls.yml up -d
+     ```
+     The overlay (`infra/docker/compose.sip-tls.yml`) adds `sip_hostname` and the `tls` block of the SIP server's
+     configuration (`port: 5061`, `min_version: tls1.2`, `certs` with `cert_file`/`key_file`; keys from
+     `pkg/config/config.go` of livekit/sip v1.23.0). Open 5061/TCP to the provider's signalling ranges only
+     (§2). Check it from another machine: `openssl s_client -connect sip.example.org:5061 -servername sip.example.org`
+     shows the certificate.
+  3. **The provider.** On Twilio, enable Secure Trunking on the trunk and change the origination URL to
+     `sip:sip.example.org:5061;transport=tls` (a name, not an address, so the certificate matches).
+  4. **SRTP on the trunk.** Create (or update) each inbound trunk with media encryption required, so a call without
+     SRTP is refused instead of falling back to plain RTP: `"media": {"encryption": "SIP_MEDIA_ENCRYPT_REQUIRE"}` in
+     the trunk's JSON for `lk sip inbound create` (§3; `SIPMediaConfig.encryption` in livekit/protocol, which
+     livekit/sip v1.23.0 reads; the older top-level `media_encryption` is deprecated). Use `SIP_MEDIA_ENCRYPT_ALLOW`
+     only while you switch over.
+
+  Without these steps, signalling and media between the provider and your server are unencrypted on the internet,
+  like most PSTN trunks; the server's own legs (LiveKit ↔ phones) are always encrypted.
 - **Who can reach the line.** Anyone can dial the number; a call without a valid one-time code gets the beep, a
   prompt and is hung up after 3 tries. Codes are 8 digits, single use, valid 10 minutes, stored as HMAC hashes, and
   the server limits failed claims per line.

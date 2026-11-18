@@ -17,7 +17,9 @@ import io.github.jeshiomurmu.opencaller.server.health.configureHealthRoutes
 import io.github.jeshiomurmu.opencaller.server.http.ApiJson
 import io.github.jeshiomurmu.opencaller.server.http.ApiProblem
 import io.github.jeshiomurmu.opencaller.server.http.installBodyLimit
+import io.github.jeshiomurmu.opencaller.server.http.installForwardedHeaders
 import io.github.jeshiomurmu.opencaller.server.http.installMetrics
+import io.github.jeshiomurmu.opencaller.server.http.installMinimumAppVersion
 import io.github.jeshiomurmu.opencaller.server.http.installProblemResponses
 import io.github.jeshiomurmu.opencaller.server.http.installRequestIds
 import io.github.jeshiomurmu.opencaller.server.http.metricsModule
@@ -113,8 +115,10 @@ fun main(args: Array<String>) {
 /** The public API: plugins, error mapping and routes. */
 fun Application.module(deps: ServerDependencies) {
     installRequestIds()
+    installForwardedHeaders(deps.config.http.trustForwardedHeaders)
     installMetrics(deps.meterRegistry)
     installProblemResponses()
+    installMinimumAppVersion(deps.config.http.minAppVersionCode)
     installBodyLimit()
     install(ContentNegotiation) {
         json(ApiJson)

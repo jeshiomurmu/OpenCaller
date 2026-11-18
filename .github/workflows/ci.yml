@@ -38,6 +38,11 @@ jobs:
         working-directory: .
         run: python3 scripts/ci/check_translations.py android
 
+      # F-Droid: the foss flavor ships no Google Play services, Firebase or Play Billing (docs/release/fdroid.md).
+      - name: The foss flavor has no proprietary dependencies
+        working-directory: .
+        run: scripts/ci/foss-dependencies.sh
+
       - name: Lint, test and assemble both flavors
         # --continue: run every task and report all failures in one CI run.
         run: >-
@@ -129,6 +134,12 @@ jobs:
         working-directory: android
         run: ./gradlew assembleFossDebug
 
+      # The minified (R8) release build, run on the API 36 emulator by scripts/ci/release-smoke.sh (issue 59).
+      - name: Assemble foss release APK (R8)
+        if: matrix.api-level == 36
+        working-directory: android
+        run: ./gradlew assembleFossRelease
+
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -148,6 +159,7 @@ jobs:
           disable-animations: true
           script: |
             scripts/ci/emulator-heap.sh
+            if [ "${{ matrix.api-level }}" = 36 ]; then scripts/ci/release-smoke.sh android/app/build/outputs/apk/foss/release/app-foss-release-unsigned.apk build/emulator/api-36/release; fi
             cd android && ./gradlew --continue :core:database:connectedDebugAndroidTest :app:connectedFossDebugAndroidTest || { find core/database/build/outputs/androidTest-results app/build/outputs/androidTest-results -name '*.txt' -exec cat {} +; adb logcat -d -b crash; adb logcat -d | grep -iE 'opencaller|AndroidRuntime|RoleController|Killing' | tail -n 400; echo '== Test reports (last, so they stay in the log tail)'; find core/database/build/outputs/androidTest-results app/build/outputs/androidTest-results -name '*.xml' -exec cat {} +; exit 1; }
             scripts/ci/emulator-smoke.sh android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/emulator/api-${{ matrix.api-level }}
             scripts/qa/blocking.sh android/app/build/outputs/apk/foss/debug/app-foss-debug.apk io.github.jeshiomurmu.opencaller.debug build/emulator/api-${{ matrix.api-level }}/blocking || { adb logcat -d | grep -iE 'opencaller|Telecom|CallScreen|AndroidRuntime' | tail -n 400; exit 1; }

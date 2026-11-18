@@ -26,6 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.jeshiomurmu.opencaller.core.designsystem.theme.OpenCallerTheme
 import io.github.jeshiomurmu.opencaller.core.model.ThemeMode
+import io.github.jeshiomurmu.opencaller.core.network.UpdateRequiredSignal
 import io.github.jeshiomurmu.opencaller.core.telephony.RefreshAccessOnResume
 import io.github.jeshiomurmu.opencaller.feature.callerid.CallerIdIntents
 import io.github.jeshiomurmu.opencaller.feature.messages.MessageLinks
@@ -36,6 +37,7 @@ import io.github.jeshiomurmu.opencaller.feature.profile.AccountViewModel
 import io.github.jeshiomurmu.opencaller.feature.profile.SignInRoute
 import io.github.jeshiomurmu.opencaller.push.VoipStartup
 import io.github.jeshiomurmu.opencaller.ui.OpenCallerApp
+import io.github.jeshiomurmu.opencaller.ui.UpdateRequiredDialog
 import javax.inject.Inject
 
 /** Single activity: onboarding until it is finished, then the app shell. */
@@ -46,6 +48,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var voipStartup: VoipStartup
+
+    @Inject
+    lateinit var updateRequired: UpdateRequiredSignal
 
     private val viewModel: MainViewModel by viewModels()
 
@@ -84,6 +89,8 @@ class MainActivity : ComponentActivity() {
             val report by viewModel.pendingReport.collectAsStateWithLifecycle()
             val dial by viewModel.pendingDial.collectAsStateWithLifecycle()
             val message by viewModel.pendingMessage.collectAsStateWithLifecycle()
+            val outdated by updateRequired.required.collectAsStateWithLifecycle()
+            var updateDismissed by rememberSaveable { mutableStateOf(false) }
             // Compose test tags double as resource ids, so UiAutomator (the :benchmark journeys) can find them.
             Box(modifier = Modifier.fillMaxSize().semantics { testTagsAsResourceId = true }) {
                 when {
@@ -107,6 +114,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
+                if (outdated && !updateDismissed) UpdateRequiredDialog(onDismiss = { updateDismissed = true })
             }
         }
     }

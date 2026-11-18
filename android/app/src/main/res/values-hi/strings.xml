@@ -26,4 +26,8 @@
     <string name="messages_default_app_title">डिफ़ॉल्ट मैसेज ऐप बनाएँ</string>
     <string name="messages_default_app_body">OpenCaller में टेक्स्ट और फ़ोटो वाले मैसेज पढ़ें और भेजें। आपके मैसेज इसी फ़ोन पर रहते हैं।</string>
     <string name="messages_default_app_later">इस फ़ोन पर अभी OpenCaller का मैसेज ऐप नहीं चुना जा सकता।</string>
+    <string name="update_required_title">OpenCaller अपडेट करें</string>
+    <string name="update_required_body">यह वर्ज़न सर्वर के लिए बहुत पुराना है: अपडेट करने तक साइन-इन, कॉलर खोज और दूसरी ऑनलाइन सुविधाएँ काम नहीं करेंगी। ब्लॉक करना और आपके अपने नियम काम करते रहेंगे।</string>
+    <string name="update_required_open">अपडेट करें</string>
+    <string name="update_required_later">बाद में</string>
 </resources>

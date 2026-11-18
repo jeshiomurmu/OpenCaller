@@ -26,4 +26,8 @@
     <string name="messages_default_app_title">ডিফল্ট মেসেজ অ্যাপ করুন</string>
     <string name="messages_default_app_body">OpenCaller-এ টেক্সট ও ছবির মেসেজ পড়ুন ও পাঠান। আপনার মেসেজ এই ফোনেই থাকে।</string>
     <string name="messages_default_app_later">এই ফোনে এখনো OpenCaller-এর মেসেজ অ্যাপ বেছে নেওয়া যাচ্ছে না।</string>
+    <string name="update_required_title">OpenCaller আপডেট করুন</string>
+    <string name="update_required_body">এই সংস্করণটি সার্ভারের জন্য অনেক পুরোনো: আপডেট না করা পর্যন্ত সাইন-ইন, কলার খোঁজা ও অন্যান্য অনলাইন সুবিধা কাজ করবে না। ব্লক করা ও আপনার নিজের নিয়ম কাজ করতে থাকবে।</string>
+    <string name="update_required_open">আপডেট করুন</string>
+    <string name="update_required_later">পরে</string>
 </resources>

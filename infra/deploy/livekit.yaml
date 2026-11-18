@@ -1,0 +1,25 @@
+# LiveKit for app calls in production (keys and the public IP come from compose.prod.yml's environment).
+# Keys from https://raw.githubusercontent.com/livekit/livekit/v1.13.11/config-sample.yaml.
+port: 7880
+
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 50100
+  # NODE_IP (the server's public address) is set, so LiveKit doesn't look it up.
+  use_external_ip: false
+
+turn:
+  enabled: true
+  udp_port: 3478
+  tls_port: 0
+  relay_range_start: 50101
+  relay_range_end: 50200
+
+room:
+  max_participants: 2
+  empty_timeout: 60
+  departure_timeout: 10
+
+logging:
+  level: info

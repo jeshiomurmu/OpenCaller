@@ -42,7 +42,13 @@ internal class ConfigReader(
             AppConfig(
                 environment = environment ?: Environment.DEVELOPMENT,
                 version = string("version").orEmpty(),
-                http = HttpConfig(int("http.port", "PORT", 1..MAX_PORT), int("http.metricsPort", "METRICS_PORT", 1..MAX_PORT)),
+                http =
+                    HttpConfig(
+                        port = int("http.port", "PORT", 1..MAX_PORT),
+                        metricsPort = int("http.metricsPort", "METRICS_PORT", 1..MAX_PORT),
+                        trustForwardedHeaders = bool("http.trustForwardedHeaders", "TRUST_FORWARDED_HEADERS"),
+                        minAppVersionCode = int("http.minAppVersionCode", "MIN_APP_VERSION_CODE", 0..Int.MAX_VALUE),
+                    ),
                 database = readDatabase(),
                 redis = RedisConfig(prefixed("redis.url", "REDIS_URL", "redis://", "rediss://"), string("redis.password")),
                 minio = readMinio(),

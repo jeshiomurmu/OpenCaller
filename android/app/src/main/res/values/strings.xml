@@ -31,4 +31,8 @@
     <string name="messages_default_app_title">Set as default messages app</string>
     <string name="messages_default_app_body">Read and send texts and picture messages in OpenCaller. Your messages stay on this phone.</string>
     <string name="messages_default_app_later">OpenCaller\'s messages app can\'t be chosen on this phone yet.</string>
+    <string name="update_required_title">Update OpenCaller</string>
+    <string name="update_required_body">This version is too old for the server: sign-in, caller lookup and other online features stop working until you update. Blocking and your own rules keep working.</string>
+    <string name="update_required_open">Update</string>
+    <string name="update_required_later">Later</string>
 </resources>

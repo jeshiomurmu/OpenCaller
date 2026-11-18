@@ -20,12 +20,14 @@ import java.util.concurrent.TimeUnit
  *   trust only.
  * @property userAgent e.g. `OpenCaller/0.1.0-alpha (foss)`.
  * @property flavor the app's build flavor (`foss` or `play`), registered with each signed-in device.
+ * @property versionCode the app's `versionCode`, sent to the server as `X-OpenCaller-Version` (0 = not sent).
  */
 data class ServerConfig(
     val baseUrl: String?,
     val pins: List<String> = emptyList(),
     val userAgent: String = "OpenCaller",
     val flavor: String = "unknown",
+    val versionCode: Int = 0,
 ) {
     /** The parsed base URL, or `null` when none is configured (or it doesn't parse). */
     val httpUrl: HttpUrl? get() = baseUrl?.takeIf { it.isNotBlank() }?.let { it.trimEnd('/') + "/" }?.toHttpUrlOrNull()
@@ -40,13 +42,15 @@ data class ServerConfig(
 /**
  * Builds the HTTP clients and API interfaces for one [ServerConfig]: the main client (30 s timeouts, auth,
  * pinning), a lookup client limited to [lookupTimeoutMillis] per call (docs/architecture.md §4.1 step 10) and a
- * refresh client without the authenticator.
+ * refresh client without the authenticator. Every request to the server carries the app's version; a 426 answer
+ * raises [updateRequired].
  */
 class OpenCallerNetwork(
     val config: ServerConfig,
     tokens: TokenStore,
     clock: Clock,
     lookupTimeoutMillis: Long = DEFAULT_LOOKUP_TIMEOUT_MILLIS,
+    val updateRequired: UpdateRequiredSignal = UpdateRequiredSignal(),
 ) {
     private val baseUrl: HttpUrl = config.httpUrl ?: UNCONFIGURED
 
@@ -61,6 +65,7 @@ class OpenCallerNetwork(
             .writeTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .addInterceptor(serverConfigured())
             .addInterceptor(userAgent())
+            .addInterceptor(appVersion())
             .apply { certificatePinner?.let(::certificatePinner) }
             .build()
 
@@ -136,6 +141,19 @@ class OpenCallerNetwork(
             )
         }
 
+    /** Sends the version to the server's own host only (not to presigned storage links) and notices a 426. */
+    private fun appVersion() =
+        Interceptor { chain ->
+            val request = chain.request()
+            val ours = config.versionCode > 0 && request.url.host == baseUrl.host
+            val response =
+                chain.proceed(
+                    if (ours) request.newBuilder().header(APP_VERSION_HEADER, config.versionCode.toString()).build() else request,
+                )
+            if (ours && response.code == HTTP_UPGRADE_REQUIRED) updateRequired.raise()
+            response
+        }
+
     private fun pinner(): CertificatePinner? {
         val host = config.httpUrl?.host
         return if (host == null || config.pins.isEmpty()) {
@@ -153,6 +171,10 @@ class OpenCallerNetwork(
         /** docs/architecture.md §4.1 step 10. */
         const val DEFAULT_LOOKUP_TIMEOUT_MILLIS = 800L
         private const val TIMEOUT_SECONDS = 30L
+        private const val HTTP_UPGRADE_REQUIRED = 426
+
+        /** The app's `versionCode` on every request to the server (the server may answer 426 below its minimum). */
+        const val APP_VERSION_HEADER = "X-OpenCaller-Version"
         private val JSON = "application/json".toMediaType()
 
         // Retrofit needs some base URL even when none is configured; requests never reach it (serverConfigured()).

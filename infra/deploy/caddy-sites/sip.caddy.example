@@ -1,0 +1,5 @@
+# Copy to sip.caddy (and set SIP_DOMAIN in .env) so Caddy gets a certificate for the SIP server's TLS listener;
+# sip-cert.sh copies it to secrets/sip/ (telephony.md → Security). Nothing is served on this name.
+{$SIP_DOMAIN} {
+	respond 404
+}

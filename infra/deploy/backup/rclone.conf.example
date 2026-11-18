@@ -1,0 +1,20 @@
+# Off-site backup target for backup/backup.sh: copy to backup/rclone.conf (chmod 600) and fill in. Any S3-compatible
+# storage works (Backblaze B2, Wasabi, Hetzner Object Storage, AWS S3...). "offsite" is the bucket; "offsite-crypt"
+# encrypts file contents and names before upload. BACKUP_REMOTE in .env points at offsite-crypt:opencaller.
+# The two crypt passwords: make two passphrases with `openssl rand -hex 32`, save both in your password manager (without
+# them the backups can't be decrypted), and put each one's `docker run --rm rclone/rclone:1.76.0 obscure <passphrase>`
+# output below. The bucket is created on the first upload if the key may create buckets; otherwise create it first.
+
+[offsite]
+type = s3
+provider = Other
+endpoint = https://s3.example.com
+region = auto
+access_key_id =
+secret_access_key =
+
+[offsite-crypt]
+type = crypt
+remote = offsite:your-backup-bucket
+password =
+password2 =

@@ -35,10 +35,16 @@ data class AppConfig(
     val assistant: AssistantConfig = AssistantConfig(),
 )
 
-/** Public API port and the internal metrics port. */
+/**
+ * Public API port and the internal metrics port. [trustForwardedHeaders] takes the client's address from the
+ * `X-Forwarded-For` header a reverse proxy sets (only for a server whose port is reachable through the proxy alone).
+ * [minAppVersionCode] is the oldest app `versionCode` the API serves; older apps get `426 upgrade_required` (0 = off).
+ */
 data class HttpConfig(
     val port: Int,
     val metricsPort: Int,
+    val trustForwardedHeaders: Boolean = false,
+    val minAppVersionCode: Int = 0,
 )
 
 /** PostgreSQL connection. */

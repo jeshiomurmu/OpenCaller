@@ -33,6 +33,13 @@ fun quoted(value: String): String = "\"" + value.replace("\\", "\\\\").replace("
 android {
     namespace = "io.github.jeshiomurmu.opencaller"
 
+    // AGP's "Dependency metadata" signing block is encrypted for Google only: F-Droid rejects APKs that carry it and it
+    // stops builds from matching byte for byte (docs/release/fdroid.md). Play still gets it in the App Bundle.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = true
+    }
+
     defaultConfig {
         applicationId = "io.github.jeshiomurmu.opencaller"
         // versionCode = MAJOR * 1_000_000 + MINOR * 10_000 + PATCH * 100 + stage, where stage is 10 + n for alpha.n,
@@ -78,12 +85,17 @@ android {
         }
         release {
             signingConfig = signingConfigs.findByName("release")
+            // R8 shrinks and obfuscates release builds (issue 59); the mapping file is published with each release.
+            // The CI emulator job installs the minified foss build and walks it (scripts/ci/release-smoke.sh).
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             buildConfigField("String", "API_BASE_URL", quoted(releaseApiBaseUrl.get()))
             // Read only by the play flavor (ServerModule); foss release builds use system trust.
             buildConfigField("String", "API_PINS", quoted(releaseApiPins.get()))
         }
-        // The Baseline Profile plugin adds benchmarkRelease and nonMinifiedRelease (initWith(release), profileable, not
-        // minified) for :benchmark; without release signing secrets it signs them with the debug key.
+        // The Baseline Profile plugin adds benchmarkRelease (initWith(release), minified like it) and nonMinifiedRelease
+        // (for generating the profile) for :benchmark; without release signing secrets it signs them with the debug key.
     }
 
     // foss: F-Droid / GitHub Releases, no Google Play Services. play: Google Play.

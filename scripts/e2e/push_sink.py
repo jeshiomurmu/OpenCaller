@@ -18,6 +18,20 @@ HEADERS = ("Content-Encoding", "Content-Type", "TTL", "Urgency", "Authorization"
 MAX_BODY = 8192
 
 
+def readable(body: bytes):
+    """The body as text if it is a JSON document (a push sent in the clear), else None.
+
+    Web Push ciphertext starts with a 16-byte random salt, so its first byte is "{" once in 256 pushes; only a body
+    that is valid UTF-8 and parses as JSON counts as readable (PR #24's run 44230384551 failed on such a salt).
+    """
+    try:
+        text = body.decode("utf-8")
+        json.loads(text)
+    except (UnicodeDecodeError, ValueError):
+        return None
+    return text
+
+
 class Sink(BaseHTTPRequestHandler):
     def do_POST(self):  # noqa: N802 (http.server's naming)
         length = min(int(self.headers.get("Content-Length", "0") or 0), MAX_BODY)
@@ -27,7 +41,7 @@ class Sink(BaseHTTPRequestHandler):
             "headers": {name: self.headers.get(name) for name in HEADERS if self.headers.get(name) is not None},
             "length": len(body),
             "head": body[:32].hex(),
-            "plain": body.decode("utf-8", "replace") if body[:1] == b"{" else None,
+            "plain": readable(body),
         }
         # VAPID's JWT is a credential of the test's throwaway key pair; keep only its scheme.
         if "Authorization" in record["headers"]:
